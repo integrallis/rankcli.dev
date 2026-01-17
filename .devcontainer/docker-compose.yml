@@ -1,0 +1,21 @@
+services:
+  workspace:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: sleep infinity
+    environment:
+      - ENVIRONMENT=development
+    env_file:
+      - ../.env
+    networks:
+      - seo-autopilot
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  seo-autopilot:
+    driver: bridge

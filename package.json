@@ -1,0 +1,37 @@
+{
+  "name": "seo-autopilot",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Developer-centric SEO automation platform",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "cli": "pnpm --filter @seo-autopilot/cli",
+    "api": "pnpm --filter @seo-autopilot/api",
+    "web": "pnpm --filter @seo-autopilot/web"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0",
+  "keywords": [
+    "seo",
+    "automation",
+    "cli",
+    "developer-tools",
+    "marketing",
+    "ai"
+  ],
+  "author": "Brian Sam-Bodden",
+  "license": "MIT"
+}
