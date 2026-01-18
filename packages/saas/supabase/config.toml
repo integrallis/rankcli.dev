@@ -1,0 +1,55 @@
+# Supabase Configuration for SEO Autopilot SaaS
+# https://supabase.com/docs/guides/cli/config
+
+[project]
+id = "" # Fill with your project ID
+
+[api]
+# Port to use for the API URL.
+port = 54321
+# Schemas to expose in your API. Tables, views and stored procedures in this schema will get API endpoints.
+schemas = ["public", "storage"]
+# Extra schemas to add to the search_path of every request.
+extra_search_path = ["public", "extensions"]
+# The maximum number of rows returns from a view, table, or stored procedure. Limits payload size for accidental or malicious requests.
+max_rows = 1000
+
+[auth]
+# The base URL of your website. Used as an allow-list for redirects.
+site_url = "http://localhost:3000"
+# The list of additional redirect URLs allowed.
+additional_redirect_urls = ["https://localhost:3000", "http://127.0.0.1:3000"]
+# How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 seconds (one week).
+jwt_expiry = 3600
+# Allow/disallow new user signups to your project.
+enable_signup = true
+
+[auth.external.google]
+enabled = true
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[auth.external.github]
+enabled = true
+client_id = ""
+secret = ""
+redirect_uri = ""
+
+[db]
+# Port to use for the local database URL.
+port = 54322
+# The database major version to use. This has to be the same as your remote database's.
+major_version = 15
+
+[studio]
+# Port to use for Supabase Studio.
+port = 54323
+
+[storage]
+# The maximum file size allowed (e.g. "5MB", "500KB").
+file_size_limit = "50MiB"
+
+[functions]
+# Verify JWT tokens for functions
+verify_jwt = true

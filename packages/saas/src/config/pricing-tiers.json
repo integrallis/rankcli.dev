@@ -1,0 +1,114 @@
+{
+  "default_view": "subscriptions",
+  "free_tier": {
+    "enabled": true,
+    "sites_limit": 1,
+    "checks_limit": 50,
+    "keywords_limit": 10,
+    "historical_days": 7,
+    "features": {
+      "manual_audit_only": true,
+      "limited_report": true,
+      "tagline": "Analyze your site for free"
+    }
+  },
+  "subscriptions": [
+    {
+      "id": "solo",
+      "name": "Solo",
+      "price_cents": 900,
+      "billing_period": "month",
+      "tagline": "For indie developers",
+      "popular": false,
+      "limits": {
+        "sites": 3,
+        "team_members": 1,
+        "keywords": 50,
+        "api_requests_day": 100,
+        "historical_days": 30
+      },
+      "features": {
+        "full_audit": true,
+        "weekly_schedule": true,
+        "github_connect": true,
+        "github_auto_fix": false,
+        "slack_alerts": false,
+        "api_access": true,
+        "competitor_tracking": 0
+      },
+      "highlights": [
+        "200+ SEO checks",
+        "3 sites monitored",
+        "Weekly automated audits",
+        "GitHub repo connection",
+        "CLI with API key"
+      ]
+    },
+    {
+      "id": "pro",
+      "name": "Pro",
+      "price_cents": 2900,
+      "billing_period": "month",
+      "tagline": "For teams & startups",
+      "popular": true,
+      "limits": {
+        "sites": 10,
+        "team_members": 5,
+        "keywords": 200,
+        "api_requests_day": 1000,
+        "historical_days": 90
+      },
+      "features": {
+        "full_audit": true,
+        "daily_schedule": true,
+        "github_connect": true,
+        "github_auto_fix": true,
+        "slack_alerts": true,
+        "api_access": true,
+        "competitor_tracking": 3
+      },
+      "highlights": [
+        "Everything in Solo",
+        "10 sites monitored",
+        "Daily automated audits",
+        "Auto-fix PRs via GitHub App",
+        "Slack/Discord alerts",
+        "Track 3 competitors"
+      ]
+    },
+    {
+      "id": "agency",
+      "name": "Agency",
+      "price_cents": 9900,
+      "billing_period": "month",
+      "tagline": "For agencies & enterprises",
+      "popular": false,
+      "limits": {
+        "sites": 50,
+        "team_members": null,
+        "keywords": 1000,
+        "api_requests_day": 10000,
+        "historical_days": 365
+      },
+      "features": {
+        "full_audit": true,
+        "hourly_schedule": true,
+        "github_connect": true,
+        "github_auto_fix": true,
+        "slack_alerts": true,
+        "api_access": true,
+        "competitor_tracking": 10,
+        "white_label": true,
+        "priority_support": true
+      },
+      "highlights": [
+        "Everything in Pro",
+        "50 sites monitored",
+        "Unlimited team members",
+        "On-demand audits",
+        "White-label reports",
+        "Dedicated support"
+      ]
+    }
+  ]
+}
