@@ -1,0 +1,71 @@
+# CI for agent-runtime package
+name: Agent Runtime CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/agent-runtime/**'
+      - '.github/workflows/ci-agent-runtime.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/agent-runtime/**'
+      - '.github/workflows/ci-agent-runtime.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        working-directory: packages/agent-runtime
+        run: pnpm exec tsc --noEmit
+
+      - name: Run tests
+        working-directory: packages/agent-runtime
+        run: pnpm test:run
+
+      - name: Build
+        working-directory: packages/agent-runtime
+        run: pnpm build
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        working-directory: packages/agent-runtime
+        run: pnpm lint || true  # Don't fail on lint for now

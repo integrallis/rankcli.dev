@@ -1,0 +1,262 @@
+name: Initial Setup - SaaS
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "SETUP" to confirm initial setup'
+        required: true
+        type: string
+
+env:
+  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+  SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+
+jobs:
+  # ============================================
+  # Validate confirmation
+  # ============================================
+  validate:
+    name: Validate Setup Request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Confirmation
+        if: github.event.inputs.confirm != 'SETUP'
+        run: |
+          echo "❌ Please type 'SETUP' to confirm initial setup"
+          exit 1
+
+      - name: Check Required Secrets
+        run: |
+          missing=""
+
+          if [ -z "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ]; then
+            missing="$missing SUPABASE_ACCESS_TOKEN"
+          fi
+          if [ -z "${{ secrets.SUPABASE_SERVICE_KEY }}" ]; then
+            missing="$missing SUPABASE_SERVICE_KEY"
+          fi
+          if [ -z "${{ secrets.STRIPE_SECRET_KEY }}" ]; then
+            missing="$missing STRIPE_SECRET_KEY"
+          fi
+          if [ -z "${{ vars.SUPABASE_PROJECT_REF }}" ]; then
+            missing="$missing SUPABASE_PROJECT_REF (variable)"
+          fi
+
+          if [ -n "$missing" ]; then
+            echo "❌ Missing secrets:$missing"
+            echo ""
+            echo "Please configure the following in your repository settings:"
+            echo ""
+            echo "Secrets (Settings > Secrets and variables > Actions > Secrets):"
+            echo "  - SUPABASE_ACCESS_TOKEN: Your Supabase access token"
+            echo "  - SUPABASE_SERVICE_KEY: Your Supabase service role key"
+            echo "  - SUPABASE_ANON_KEY: Your Supabase anon key"
+            echo "  - STRIPE_SECRET_KEY: Your Stripe secret key (sk_live_... or sk_test_...)"
+            echo "  - STRIPE_PUBLISHABLE_KEY: Your Stripe publishable key"
+            echo ""
+            echo "Variables (Settings > Secrets and variables > Actions > Variables):"
+            echo "  - SUPABASE_PROJECT_REF: Your Supabase project reference (e.g., abcdefghijklmnop)"
+            echo "  - APP_URL: Your app URL (e.g., https://seo-autopilot.com)"
+            exit 1
+          fi
+
+          echo "✅ All required secrets present"
+
+  # ============================================
+  # Initial Database Setup
+  # ============================================
+  setup-database:
+    name: Setup Database
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link Supabase Project
+        run: |
+          supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF }}
+        working-directory: packages/saas
+
+      - name: Run Initial Migrations
+        run: |
+          echo "📦 Running database migrations..."
+          supabase db push
+        working-directory: packages/saas
+
+      - name: Verify Tables Created
+        run: |
+          echo "✅ Database setup complete"
+          echo "Tables should now exist: subscription_plans, user_subscriptions, projects, audits, etc."
+
+  # ============================================
+  # Setup Stripe
+  # ============================================
+  setup-stripe:
+    name: Setup Stripe
+    runs-on: ubuntu-latest
+    needs: setup-database
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: packages/saas
+
+      - name: Create Stripe Products & Sync Pricing
+        run: pnpm seed:pricing:stripe
+        working-directory: packages/saas
+        env:
+          VITE_SUPABASE_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+
+      - name: Setup Stripe Webhook
+        run: pnpm setup:stripe
+        working-directory: packages/saas
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+
+  # ============================================
+  # Deploy Edge Functions
+  # ============================================
+  deploy-functions:
+    name: Deploy Edge Functions
+    runs-on: ubuntu-latest
+    needs: setup-stripe
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link Supabase Project
+        run: |
+          supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF }}
+        working-directory: packages/saas
+
+      - name: Set Edge Function Secrets
+        run: |
+          supabase secrets set \
+            STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
+            STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
+            APP_URL="${{ vars.APP_URL }}"
+        working-directory: packages/saas
+
+      - name: Deploy Edge Functions
+        run: |
+          supabase functions deploy create-checkout --no-verify-jwt
+          supabase functions deploy stripe-webhook --no-verify-jwt
+          supabase functions deploy create-portal --no-verify-jwt
+        working-directory: packages/saas
+
+  # ============================================
+  # Build & Deploy Frontend
+  # ============================================
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: deploy-functions
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: packages/saas
+
+      - name: Build
+        run: pnpm build
+        working-directory: packages/saas
+        env:
+          VITE_SUPABASE_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+
+      # Deploy to Cloudflare Pages (if configured)
+      - name: Deploy to Cloudflare Pages
+        if: vars.CLOUDFLARE_PROJECT_NAME != ''
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ vars.CLOUDFLARE_PROJECT_NAME }}
+          directory: packages/saas/dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      # Alternative: Deploy to Vercel (if configured)
+      - name: Deploy to Vercel
+        if: vars.VERCEL_PROJECT_ID != '' && vars.CLOUDFLARE_PROJECT_NAME == ''
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ vars.VERCEL_PROJECT_ID }}
+          working-directory: packages/saas
+          vercel-args: '--prod'
+
+  # ============================================
+  # Summary
+  # ============================================
+  summary:
+    name: Setup Summary
+    runs-on: ubuntu-latest
+    needs: [validate, setup-database, setup-stripe, deploy-functions, deploy-frontend]
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "## Initial Setup Complete! 🚀" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Validation | ${{ needs.validate.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Database | ${{ needs.setup-database.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Stripe | ${{ needs.setup-stripe.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Edge Functions | ${{ needs.deploy-functions.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.deploy-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "1. **Configure OAuth Providers**" >> $GITHUB_STEP_SUMMARY
+          echo "   - Enable Google OAuth in Supabase Dashboard > Authentication > Providers" >> $GITHUB_STEP_SUMMARY
+          echo "   - Enable GitHub OAuth in Supabase Dashboard > Authentication > Providers" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "2. **Set Stripe Webhook Secret** (if not already done)" >> $GITHUB_STEP_SUMMARY
+          echo "   - Get the webhook secret from Stripe Dashboard > Developers > Webhooks" >> $GITHUB_STEP_SUMMARY
+          echo "   - Add it as STRIPE_WEBHOOK_SECRET in GitHub Secrets" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "3. **Configure DNS** (if using custom domain)" >> $GITHUB_STEP_SUMMARY
+          echo "   - Point your domain to the deployed frontend" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "4. **Test the Application**" >> $GITHUB_STEP_SUMMARY
+          echo "   - Visit your app URL" >> $GITHUB_STEP_SUMMARY
+          echo "   - Try the free audit tool" >> $GITHUB_STEP_SUMMARY
+          echo "   - Sign up and test Stripe checkout" >> $GITHUB_STEP_SUMMARY

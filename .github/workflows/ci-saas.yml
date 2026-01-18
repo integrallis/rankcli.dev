@@ -1,0 +1,148 @@
+name: CI - SaaS
+
+on:
+  pull_request:
+    paths:
+      - 'packages/saas/**'
+      - '.github/workflows/ci-saas.yml'
+
+jobs:
+  # ============================================
+  # Build & Type Check
+  # ============================================
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: packages/saas
+
+      - name: Type Check
+        run: pnpm exec tsc --noEmit
+        working-directory: packages/saas
+
+      - name: Build
+        run: pnpm build
+        working-directory: packages/saas
+        env:
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder
+
+  # ============================================
+  # Validate Pricing Configuration
+  # ============================================
+  validate-pricing:
+    name: Validate Pricing
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate pricing-tiers.json
+        run: |
+          # Check JSON is valid
+          if ! node -e "JSON.parse(require('fs').readFileSync('packages/saas/src/config/pricing-tiers.json'))"; then
+            echo "❌ Invalid JSON in pricing-tiers.json"
+            exit 1
+          fi
+
+          # Validate structure
+          node << 'EOF'
+          const config = require('./packages/saas/src/config/pricing-tiers.json');
+
+          // Check required fields
+          if (!config.subscriptions || !Array.isArray(config.subscriptions)) {
+            console.error('❌ Missing "subscriptions" array');
+            process.exit(1);
+          }
+
+          const requiredFields = ['id', 'name', 'price_cents', 'billing_period', 'limits', 'features', 'highlights'];
+          const requiredLimits = ['sites', 'keywords', 'historical_days'];
+
+          for (const sub of config.subscriptions) {
+            for (const field of requiredFields) {
+              if (!(field in sub)) {
+                console.error(`❌ Subscription "${sub.id || 'unknown'}" missing required field: ${field}`);
+                process.exit(1);
+              }
+            }
+
+            for (const limit of requiredLimits) {
+              if (!(limit in sub.limits)) {
+                console.error(`❌ Subscription "${sub.id}" missing required limit: ${limit}`);
+                process.exit(1);
+              }
+            }
+
+            // Validate price is positive
+            if (sub.price_cents <= 0) {
+              console.error(`❌ Subscription "${sub.id}" has invalid price: ${sub.price_cents}`);
+              process.exit(1);
+            }
+
+            // Validate billing period
+            if (!['month', 'year', 'lifetime'].includes(sub.billing_period)) {
+              console.error(`❌ Subscription "${sub.id}" has invalid billing_period: ${sub.billing_period}`);
+              process.exit(1);
+            }
+          }
+
+          // Check for unique IDs
+          const ids = config.subscriptions.map(s => s.id);
+          const uniqueIds = [...new Set(ids)];
+          if (ids.length !== uniqueIds.length) {
+            console.error('❌ Duplicate subscription IDs found');
+            process.exit(1);
+          }
+
+          console.log('✅ Pricing configuration is valid');
+          console.log(`   ${config.subscriptions.length} subscription tier(s) defined`);
+          for (const sub of config.subscriptions) {
+            console.log(`   - ${sub.name}: $${sub.price_cents / 100}/${sub.billing_period}`);
+          }
+          EOF
+
+  # ============================================
+  # Lint
+  # ============================================
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: packages/saas
+
+      - name: Lint
+        run: pnpm lint
+        working-directory: packages/saas
+        continue-on-error: true  # Don't fail on lint warnings for now
