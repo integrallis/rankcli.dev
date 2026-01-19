@@ -1,0 +1,105 @@
+{
+  "name": "seo-autopilot",
+  "displayName": "SEO Autopilot",
+  "description": "Real-time SEO linting for HTML, React, Vue, and Astro files",
+  "version": "0.0.1",
+  "publisher": "seo-autopilot",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/seo-autopilot/seo-autopilot"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "keywords": [
+    "seo",
+    "meta tags",
+    "html",
+    "accessibility",
+    "linter"
+  ],
+  "activationEvents": [
+    "onLanguage:html",
+    "onLanguage:javascriptreact",
+    "onLanguage:typescriptreact",
+    "onLanguage:vue",
+    "onLanguage:astro",
+    "onLanguage:svelte"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "seo-autopilot.runAudit",
+        "title": "Run SEO Audit",
+        "category": "SEO Autopilot"
+      },
+      {
+        "command": "seo-autopilot.showReport",
+        "title": "Show SEO Report",
+        "category": "SEO Autopilot"
+      }
+    ],
+    "configuration": {
+      "title": "SEO Autopilot",
+      "properties": {
+        "seo-autopilot.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable SEO linting"
+        },
+        "seo-autopilot.severity": {
+          "type": "string",
+          "default": "warning",
+          "enum": ["error", "warning", "information", "hint"],
+          "description": "Severity level for SEO issues"
+        },
+        "seo-autopilot.checks": {
+          "type": "object",
+          "default": {
+            "title": true,
+            "metaDescription": true,
+            "openGraph": true,
+            "twitterCard": true,
+            "canonical": true,
+            "headings": true,
+            "images": true,
+            "links": true
+          },
+          "description": "Enable/disable specific SEO checks"
+        }
+      }
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "seo-autopilot.runAudit",
+          "group": "seo-autopilot",
+          "when": "editorLangId == html || editorLangId == typescriptreact || editorLangId == javascriptreact"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "pnpm run build",
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
+    "watch": "pnpm run build --watch",
+    "test": "vitest run",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.22.0",
+    "esbuild": "^0.19.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.6.0"
+  },
+  "dependencies": {}
+}
