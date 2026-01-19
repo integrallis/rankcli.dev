@@ -22,14 +22,14 @@ export function Hero() {
 
           {/* Headline */}
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
-            SEO that runs{' '}
-            <span className="gradient-text">while you code.</span>
+            Ship code,{' '}
+            <span className="gradient-text">get ranked.</span>
           </h1>
 
           {/* Subheadline */}
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl">
-            200+ automated checks. Auto-fix PRs. GitHub integration.
-            The CLI-first SEO tool for developers.
+            SEO meets CI/CD. 200+ automated checks. Auto-fix PRs. GitHub integration.
+            Engineering as marketing.
           </p>
 
           {/* CTA Buttons */}
@@ -41,7 +41,7 @@ export function Hero() {
               </Button>
             </Link>
             <a
-              href="https://github.com/seo-autopilot/seo-autopilot"
+              href="https://github.com/rankcli/rankcli"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -60,11 +60,11 @@ export function Hero() {
           {/* Install command */}
           <div className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
             <code className="px-3 py-1.5 bg-muted rounded-md font-mono">
-              npm install -g @seo-autopilot/cli
+              npm install -g @rankcli/cli
             </code>
             <button
               className="p-1.5 hover:bg-muted rounded-md transition-colors"
-              onClick={() => navigator.clipboard.writeText('npm install -g @seo-autopilot/cli')}
+              onClick={() => navigator.clipboard.writeText('npm install -g @rankcli/cli')}
               title="Copy to clipboard"
             >
               <svg

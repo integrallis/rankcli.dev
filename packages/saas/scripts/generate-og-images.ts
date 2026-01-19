@@ -84,8 +84,8 @@ interface OGImageConfig {
 const images: OGImageConfig[] = [
   {
     name: 'og-image',
-    title: 'SEO Autopilot',
-    subtitle: 'Engineering as Marketing',
+    title: 'RankCLI',
+    subtitle: 'Ship code, get ranked',
     badge: 'CLI-First SEO Tool',
     showTerminal: true,
   },
@@ -164,7 +164,7 @@ function createOGImage(config: OGImageConfig) {
                   style: { display: 'flex', gap: 8 },
                   children: [
                     { type: 'span', props: { style: { color: '#89b4fa' }, children: '$' } },
-                    { type: 'span', props: { style: { color: '#cdd6f4' }, children: 'seo audit https://myapp.com' } },
+                    { type: 'span', props: { style: { color: '#cdd6f4' }, children: 'rankcli audit https://myapp.com' } },
                   ],
                 },
               },
@@ -194,7 +194,7 @@ function createOGImage(config: OGImageConfig) {
                   style: { display: 'flex', gap: 8, marginTop: 8 },
                   children: [
                     { type: 'span', props: { style: { color: '#89b4fa' }, children: '$' } },
-                    { type: 'span', props: { style: { color: '#cdd6f4' }, children: 'seo apply --auto' } },
+                    { type: 'span', props: { style: { color: '#cdd6f4' }, children: 'rankcli fix --auto' } },
                   ],
                 },
               },
@@ -344,7 +344,7 @@ function createOGImage(config: OGImageConfig) {
                     fontWeight: 700,
                     color: '#3b82f6',
                   },
-                  children: 'S',
+                  children: 'R',
                 },
               },
               {
@@ -359,14 +359,14 @@ function createOGImage(config: OGImageConfig) {
                       type: 'div',
                       props: {
                         style: { fontSize: 20, fontWeight: 700, color: '#ffffff' },
-                        children: 'SEO Autopilot',
+                        children: 'RankCLI',
                       },
                     },
                     {
                       type: 'div',
                       props: {
                         style: { fontSize: 16, color: '#64748b' },
-                        children: 'seo-autopilot.dev',
+                        children: 'rankcli.dev',
                       },
                     },
                   ],

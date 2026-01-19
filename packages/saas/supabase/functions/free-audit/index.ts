@@ -10,7 +10,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const USER_AGENT = 'SEO-Autopilot/1.0 (+https://seo-autopilot.dev)';
+const USER_AGENT = 'RankCLI/1.0 (+https://rankcli.dev)';
 
 // Rate limit: 10 requests per IP per hour
 const RATE_LIMIT = 10;
@@ -316,7 +316,7 @@ serve(async (req) => {
 
 async function hashIP(ip: string): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(ip + Deno.env.get('IP_SALT') || 'seo-autopilot');
+  const data = encoder.encode(ip + Deno.env.get('IP_SALT') || 'rankcli');
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 32);

@@ -94,7 +94,7 @@ export function TerminalOutput({
 // Pre-built demo for landing page
 export function LandingTerminalDemo() {
   const demoLines: TerminalLine[] = [
-    { type: 'prompt', content: 'seo audit https://myapp.com', delay: 1500 },
+    { type: 'prompt', content: 'rankcli audit https://myapp.com', delay: 1500 },
     { type: 'output', content: '', delay: 300 },
     { type: 'output', content: 'Scanning... 47 pages crawled in 12s', delay: 800 },
     { type: 'output', content: '', delay: 200 },
@@ -105,10 +105,10 @@ export function LandingTerminalDemo() {
     { type: 'error', content: '  ❌ No sitemap.xml', delay: 300 },
     { type: 'error', content: '  ❌ Images missing alt text (24 images)', delay: 300 },
     { type: 'output', content: '', delay: 800 },
-    { type: 'prompt', content: 'seo apply --auto', delay: 1500 },
+    { type: 'prompt', content: 'rankcli fix --auto', delay: 1500 },
     { type: 'output', content: '', delay: 300 },
     { type: 'output', content: 'Generating fixes...', delay: 1000 },
-    { type: 'output', content: 'Creating branch: seo/auto-fix-2024', delay: 500 },
+    { type: 'output', content: 'Creating branch: rankcli/auto-fix-2024', delay: 500 },
     { type: 'success', content: '✓ PR #47 created with 12 fixes', delay: 500 },
     { type: 'success', content: '  https://github.com/you/app/pull/47', delay: 500 },
   ];

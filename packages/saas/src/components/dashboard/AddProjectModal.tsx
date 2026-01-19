@@ -209,7 +209,7 @@ export function AddProjectModal({ open, onOpenChange, onSubmit }: AddProjectModa
                 </div>
                 <Button variant="outline" size="sm" asChild>
                   <a
-                    href="https://github.com/apps/seo-autopilot"
+                    href="https://github.com/apps/rankcli"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="gap-1"

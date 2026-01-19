@@ -10,7 +10,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const USER_AGENT = 'SEO-Autopilot/1.0 (+https://seo-autopilot.dev)';
+const USER_AGENT = 'RankCLI/1.0 (+https://rankcli.dev)';
 
 interface AuditIssue {
   code: string;

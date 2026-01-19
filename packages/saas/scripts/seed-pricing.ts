@@ -66,7 +66,7 @@ async function findOrCreateStripeProduct(
 ): Promise<{ productId: string; priceId: string }> {
   if (!stripe) throw new Error('Stripe not initialized');
 
-  const productMetadataKey = 'seo_autopilot_plan_id';
+  const productMetadataKey = 'rankcli_plan_id';
 
   // Search for existing product
   const existingProducts = await stripe.products.search({
@@ -78,7 +78,7 @@ async function findOrCreateStripeProduct(
   if (existingProducts.data.length > 0) {
     // Update existing product
     product = await stripe.products.update(existingProducts.data[0].id, {
-      name: `SEO Autopilot ${tier.name}`,
+      name: `RankCLI ${tier.name}`,
       description: tier.tagline,
       metadata: {
         [productMetadataKey]: tier.id,
@@ -90,8 +90,8 @@ async function findOrCreateStripeProduct(
   } else {
     // Create new product
     product = await stripe.products.create({
-      id: `seo_autopilot_${tier.id}`,
-      name: `SEO Autopilot ${tier.name}`,
+      id: `rankcli_${tier.id}`,
+      name: `RankCLI ${tier.name}`,
       description: tier.tagline,
       metadata: {
         [productMetadataKey]: tier.id,
@@ -191,7 +191,7 @@ async function syncToSupabase(
 }
 
 async function main() {
-  console.log('🚀 SEO Autopilot Pricing Sync');
+  console.log('🚀 RankCLI Pricing Sync');
   console.log(`   Mode: ${syncStripe ? 'Stripe + Supabase' : 'Supabase only'}`);
   console.log('');
 

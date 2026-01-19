@@ -1,4 +1,4 @@
-// Database types for SEO Autopilot
+// Database types for RankCLI
 
 export interface SubscriptionPlan {
   id: string;

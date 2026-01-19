@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 const navLinks = [
   { href: '/free-audit', label: 'Free Audit' },
   { href: '/pricing', label: 'Pricing' },
-  { href: 'https://github.com/seo-autopilot/seo-autopilot', label: 'GitHub', external: true },
+  { href: 'https://github.com/rankcli/rankcli', label: 'GitHub', external: true },
 ];
 
 export function Navbar() {
@@ -22,7 +22,7 @@ export function Navbar() {
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2">
           <Terminal className="h-6 w-6 text-primary" />
-          <span className="font-semibold text-lg">SEO Autopilot</span>
+          <span className="font-semibold text-lg">RankCLI</span>
         </Link>
 
         {/* Desktop Navigation */}

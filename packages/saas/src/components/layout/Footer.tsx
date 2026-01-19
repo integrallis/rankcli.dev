@@ -28,16 +28,16 @@ export function Footer() {
           <div className="col-span-2 md:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4">
               <Terminal className="h-6 w-6 text-primary" />
-              <span className="font-semibold text-lg">SEO Autopilot</span>
+              <span className="font-semibold text-lg">RankCLI</span>
             </Link>
             <p className="text-sm text-muted-foreground mb-4">
-              Engineering as Marketing.
+              Ship code, get ranked.
               <br />
-              SEO that runs while you code.
+              SEO meets CI/CD.
             </p>
             <div className="flex gap-4">
               <a
-                href="https://github.com/seo-autopilot"
+                href="https://github.com/rankcli"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground transition-colors"
@@ -45,7 +45,7 @@ export function Footer() {
                 <Github className="h-5 w-5" />
               </a>
               <a
-                href="https://twitter.com/seoautopilot"
+                href="https://twitter.com/rankcli"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-muted-foreground hover:text-foreground transition-colors"
@@ -110,7 +110,7 @@ export function Footer() {
         {/* Bottom */}
         <div className="mt-12 pt-8 border-t border-border/40">
           <p className="text-sm text-muted-foreground text-center">
-            &copy; {new Date().getFullYear()} SEO Autopilot. All rights reserved.
+            &copy; {new Date().getFullYear()} RankCLI. All rights reserved.
           </p>
         </div>
       </div>

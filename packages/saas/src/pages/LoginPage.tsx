@@ -86,7 +86,7 @@ export function LoginPage() {
         <div className="flex justify-center mb-8">
           <Link to="/" className="flex items-center gap-2">
             <Terminal className="h-8 w-8 text-primary" />
-            <span className="font-semibold text-xl">SEO Autopilot</span>
+            <span className="font-semibold text-xl">RankCLI</span>
           </Link>
         </div>
 

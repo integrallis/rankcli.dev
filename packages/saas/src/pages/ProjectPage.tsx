@@ -90,7 +90,7 @@ export function ProjectPage() {
   }
 
   // Calculate category scores from latest audit
-  const healthScores = latestAudit?.health_scores || {};
+  const healthScores = (latestAudit?.health_scores || {}) as Record<string, number | undefined>;
 
   return (
     <div className="min-h-screen bg-background">

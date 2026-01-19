@@ -21,14 +21,14 @@ interface SEOProps {
   };
 }
 
-const BASE_URL = 'https://seo-autopilot.dev';
+const BASE_URL = 'https://rankcli.dev';
 const DEFAULT_IMAGE = `${BASE_URL}/og-image.png`;
-const SITE_NAME = 'SEO Autopilot';
-const TWITTER_HANDLE = '@seoautopilot';
+const SITE_NAME = 'RankCLI';
+const TWITTER_HANDLE = '@rankcli';
 
 export function SEO({
   title,
-  description = 'SEO that runs while you code. 200+ automated checks, auto-fix PRs, GitHub integration.',
+  description = 'Ship code, get ranked. SEO meets CI/CD. 200+ automated checks, auto-fix PRs, GitHub integration.',
   image = DEFAULT_IMAGE,
   url,
   type = 'website',
@@ -36,7 +36,7 @@ export function SEO({
   article,
   product,
 }: SEOProps) {
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - Engineering as Marketing`;
+  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - Ship code, get ranked`;
   const fullUrl = url ? `${BASE_URL}${url}` : BASE_URL;
   const fullImage = image.startsWith('http') ? image : `${BASE_URL}${image}`;
 
@@ -109,7 +109,7 @@ export function SEO({
 export const PageSEO = {
   Landing: () => (
     <SEO
-      description="SEO that runs while you code. 200+ automated checks, auto-fix PRs, GitHub integration. The CLI-first SEO automation tool for developers."
+      description="Ship code, get ranked. SEO meets CI/CD. 200+ automated checks, auto-fix PRs, GitHub integration. Engineering as marketing."
       url="/"
     />
   ),
@@ -117,7 +117,7 @@ export const PageSEO = {
   Pricing: () => (
     <SEO
       title="Pricing"
-      description="Simple, transparent pricing for SEO Autopilot. Start free, upgrade when you need more. Solo, Pro, and Agency plans available."
+      description="Simple, transparent pricing for RankCLI. Start free, upgrade when you need more. Solo, Pro, and Agency plans available."
       url="/pricing"
     />
   ),
@@ -133,7 +133,7 @@ export const PageSEO = {
   Login: () => (
     <SEO
       title="Login"
-      description="Sign in to your SEO Autopilot account to manage your sites and SEO audits."
+      description="Sign in to your RankCLI account to manage your sites and SEO audits."
       url="/login"
       noindex
     />
@@ -142,7 +142,7 @@ export const PageSEO = {
   Signup: () => (
     <SEO
       title="Sign Up"
-      description="Create your SEO Autopilot account. Start with a free audit and upgrade anytime."
+      description="Create your RankCLI account. Start with a free audit and upgrade anytime."
       url="/signup"
     />
   ),

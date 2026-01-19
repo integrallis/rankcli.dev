@@ -5,19 +5,19 @@ const steps = [
     icon: Terminal,
     title: 'Install the CLI',
     description: 'One command to install. Works with any framework.',
-    code: 'npm install -g @seo-autopilot/cli',
+    code: 'npm install -g @rankcli/cli',
   },
   {
     icon: GitPullRequest,
     title: 'Connect your repo',
     description: 'Link GitHub for automated audits and auto-fix PRs.',
-    code: 'seo connect github',
+    code: 'rankcli connect github',
   },
   {
     icon: CheckCircle,
     title: 'Merge the fixes',
     description: 'Review and merge PRs. SEO improves automatically.',
-    code: 'git merge seo/auto-fix',
+    code: 'git merge rankcli/auto-fix',
   },
 ];
 

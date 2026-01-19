@@ -1,4 +1,4 @@
-# SEO Autopilot SaaS Frontend
+# RankCLI SaaS Frontend
 FROM node:20-alpine
 
 WORKDIR /app

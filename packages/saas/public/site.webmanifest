@@ -1,7 +1,7 @@
 {
-  "name": "SEO Autopilot",
-  "short_name": "SEO Autopilot",
-  "description": "CLI-first SEO automation tool for developers",
+  "name": "RankCLI",
+  "short_name": "RankCLI",
+  "description": "Ship code, get ranked. SEO meets CI/CD.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",
