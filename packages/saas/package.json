@@ -1,7 +1,9 @@
 {
-  "name": "@seo-autopilot/saas",
+  "name": "@rankcli/saas",
   "version": "0.0.1",
   "private": true,
+  "description": "RankCLI SaaS - Ship code, get ranked.",
+  "homepage": "https://rankcli.dev",
   "type": "module",
   "scripts": {
     "dev": "vite --port 3000",

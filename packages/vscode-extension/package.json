@@ -1,13 +1,14 @@
 {
-  "name": "seo-autopilot",
-  "displayName": "SEO Autopilot",
-  "description": "Real-time SEO linting for HTML, React, Vue, and Astro files",
+  "name": "rankcli",
+  "displayName": "RankCLI",
+  "description": "Real-time SEO linting for HTML, React, Vue, and Astro files - Ship code, get ranked.",
   "version": "0.0.1",
-  "publisher": "seo-autopilot",
+  "publisher": "rankcli",
   "license": "MIT",
+  "homepage": "https://rankcli.dev",
   "repository": {
     "type": "git",
-    "url": "https://github.com/seo-autopilot/seo-autopilot"
+    "url": "https://github.com/rankcli/rankcli"
   },
   "engines": {
     "vscode": "^1.85.0"
@@ -21,7 +22,8 @@
     "meta tags",
     "html",
     "accessibility",
-    "linter"
+    "linter",
+    "rankcli"
   ],
   "activationEvents": [
     "onLanguage:html",
@@ -35,31 +37,31 @@
   "contributes": {
     "commands": [
       {
-        "command": "seo-autopilot.runAudit",
+        "command": "rankcli.runAudit",
         "title": "Run SEO Audit",
-        "category": "SEO Autopilot"
+        "category": "RankCLI"
       },
       {
-        "command": "seo-autopilot.showReport",
+        "command": "rankcli.showReport",
         "title": "Show SEO Report",
-        "category": "SEO Autopilot"
+        "category": "RankCLI"
       }
     ],
     "configuration": {
-      "title": "SEO Autopilot",
+      "title": "RankCLI",
       "properties": {
-        "seo-autopilot.enabled": {
+        "rankcli.enabled": {
           "type": "boolean",
           "default": true,
           "description": "Enable/disable SEO linting"
         },
-        "seo-autopilot.severity": {
+        "rankcli.severity": {
           "type": "string",
           "default": "warning",
           "enum": ["error", "warning", "information", "hint"],
           "description": "Severity level for SEO issues"
         },
-        "seo-autopilot.checks": {
+        "rankcli.checks": {
           "type": "object",
           "default": {
             "title": true,
@@ -78,8 +80,8 @@
     "menus": {
       "editor/context": [
         {
-          "command": "seo-autopilot.runAudit",
-          "group": "seo-autopilot",
+          "command": "rankcli.runAudit",
+          "group": "rankcli",
           "when": "editorLangId == html || editorLangId == typescriptreact || editorLangId == javascriptreact"
         }
       ]

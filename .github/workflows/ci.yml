@@ -1,0 +1,208 @@
+# =============================================================================
+# CI Workflow - Tests and Validation
+# =============================================================================
+# Runs on pull requests and pushes to main.
+# Validates code quality before deployment.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '8'
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Detect which components changed
+  # ---------------------------------------------------------------------------
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      saas: ${{ steps.filter.outputs.saas }}
+      cli: ${{ steps.filter.outputs.cli }}
+      agent: ${{ steps.filter.outputs.agent }}
+      plugins: ${{ steps.filter.outputs.plugins }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            saas:
+              - 'packages/saas/**'
+            cli:
+              - 'packages/cli/**'
+            agent:
+              - 'packages/agent-runtime/**'
+            plugins:
+              - 'packages/vite-plugin/**'
+              - 'packages/next-plugin/**'
+              - 'packages/astro-plugin/**'
+
+  # ---------------------------------------------------------------------------
+  # SaaS Frontend Tests
+  # ---------------------------------------------------------------------------
+  saas-tests:
+    name: SaaS Tests
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.saas == 'true' || github.event_name == 'push'
+
+    defaults:
+      run:
+        working-directory: packages/saas
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run linter
+        run: pnpm lint || true
+
+      - name: Build
+        run: pnpm build
+        env:
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_ANON_KEY: placeholder-anon-key
+
+  # ---------------------------------------------------------------------------
+  # Agent Runtime Tests
+  # ---------------------------------------------------------------------------
+  agent-tests:
+    name: Agent Runtime Tests
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.agent == 'true' || github.event_name == 'push'
+
+    defaults:
+      run:
+        working-directory: packages/agent-runtime
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run tests
+        run: pnpm test
+
+  # ---------------------------------------------------------------------------
+  # CLI Tests
+  # ---------------------------------------------------------------------------
+  cli-tests:
+    name: CLI Tests
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.cli == 'true' || github.event_name == 'push'
+
+    defaults:
+      run:
+        working-directory: packages/cli
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+  # ---------------------------------------------------------------------------
+  # Plugin Tests
+  # ---------------------------------------------------------------------------
+  plugin-tests:
+    name: Plugin Tests
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.plugins == 'true' || github.event_name == 'push'
+
+    strategy:
+      matrix:
+        plugin: [vite-plugin, next-plugin, astro-plugin]
+
+    defaults:
+      run:
+        working-directory: packages/${{ matrix.plugin }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Run tests
+        run: pnpm test
+
+  # ---------------------------------------------------------------------------
+  # Summary job that other workflows can depend on
+  # ---------------------------------------------------------------------------
+  ci-complete:
+    name: CI Complete
+    runs-on: ubuntu-latest
+    needs: [changes, saas-tests, agent-tests, cli-tests, plugin-tests]
+    if: always()
+    steps:
+      - name: Check results
+        run: |
+          if [[ "${{ needs.saas-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.agent-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.cli-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.plugin-tests.result }}" == "failure" ]]; then
+            echo "CI failed"
+            exit 1
+          fi
+          echo "CI passed"

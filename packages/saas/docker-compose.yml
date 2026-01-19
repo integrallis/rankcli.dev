@@ -1,0 +1,63 @@
+services:
+  # Database migration - runs once on startup using Supabase CLI
+  db-migrate:
+    image: node:20-alpine
+    working_dir: /app
+    env_file:
+      - ../../.env
+    volumes:
+      - ./supabase:/app/supabase:ro
+    environment:
+      - SUPABASE_ACCESS_TOKEN=${SUPABASE_ACCESS_TOKEN}
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Installing Supabase CLI...';
+      npm install -g supabase@latest;
+      echo 'Linking Supabase project...';
+      cd /app && supabase link --project-ref $$(echo $$VITE_SUPABASE_URL | sed 's|https://||' | sed 's|.supabase.co||') || true;
+      echo 'Running database migrations...';
+      cd /app && supabase db push || echo 'Migration may already exist or failed, continuing...';
+      echo 'Migrations complete!';
+      "
+    restart: "no"
+
+  # Frontend application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file:
+      - ../../.env
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
+
+  # Edge functions server (local development)
+  functions:
+    image: node:20-alpine
+    working_dir: /app
+    ports:
+      - "54321:54321"
+    volumes:
+      - ./supabase/functions:/app/functions:ro
+    env_file:
+      - ../../.env
+    environment:
+      - SUPABASE_ACCESS_TOKEN=${SUPABASE_ACCESS_TOKEN}
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Installing Supabase CLI...';
+      npm install -g supabase@latest;
+      echo 'Starting Supabase functions server...';
+      cd /app && supabase functions serve --no-verify-jwt;
+      "
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully

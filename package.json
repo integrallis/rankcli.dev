@@ -1,8 +1,9 @@
 {
-  "name": "seo-autopilot",
+  "name": "rankcli",
   "version": "0.0.1",
   "private": true,
-  "description": "Developer-centric SEO automation platform",
+  "description": "Ship code, get ranked. SEO meets CI/CD.",
+  "homepage": "https://rankcli.dev",
   "workspaces": [
     "packages/*"
   ],
@@ -11,9 +12,9 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",
-    "cli": "pnpm --filter @seo-autopilot/cli",
-    "api": "pnpm --filter @seo-autopilot/api",
-    "web": "pnpm --filter @seo-autopilot/web"
+    "cli": "pnpm --filter @rankcli/cli",
+    "saas": "pnpm --filter @rankcli/saas",
+    "agent": "pnpm --filter @rankcli/agent-runtime"
   },
   "devDependencies": {
     "turbo": "^2.0.0",
@@ -26,11 +27,12 @@
   "packageManager": "pnpm@8.15.0",
   "keywords": [
     "seo",
-    "automation",
+    "ci-cd",
     "cli",
     "developer-tools",
-    "marketing",
-    "ai"
+    "engineering-as-marketing",
+    "ai",
+    "github-actions"
   ],
   "author": "Brian Sam-Bodden",
   "license": "MIT"

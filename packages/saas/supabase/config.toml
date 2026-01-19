@@ -50,6 +50,23 @@ port = 54323
 # The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 
-[functions]
-# Verify JWT tokens for functions
-verify_jwt = true
+# =============================================================================
+# Edge Functions Configuration
+# =============================================================================
+# Note: verify_jwt = false allows public access. Each function handles its own
+# authentication internally when needed.
+
+[functions.create-checkout]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.create-portal]
+verify_jwt = false
+
+[functions.run-audit]
+verify_jwt = false
+
+[functions.free-audit]
+verify_jwt = false

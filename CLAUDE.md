@@ -2,25 +2,38 @@
 
 This file provides context for Claude Code to work autonomously on this project.
 
-## Project: SEO Autopilot
+## Project: RankCLI
+
+**Ship code, get ranked. SEO meets CI/CD.**
 
 A developer-first SEO automation tool. CLI-based, AI-powered, event-driven.
 
+Website: https://rankcli.dev
+
 ## Current State
 
-**Status**: Early development - building the MVP
+**Status**: MVP development - SaaS platform with CLI
 
 **What exists**:
-- Project plan and architecture docs in `docs/`
-- Agent YAML definitions in `agents/`
-- DevContainer setup in `.devcontainer/`
-- CLI scaffold in `packages/cli/`
+- Agent runtime with 200+ SEO checks (`packages/agent-runtime/`)
+- CLI scaffold (`packages/cli/`)
+- SaaS frontend with auth, billing, dashboard (`packages/saas/`)
+- Framework plugins (Vite, Next.js, Astro)
+- GitHub Action for CI/CD integration
+- VS Code extension
 
-**What needs to be built**:
-1. Agent runtime (load YAML agents, execute with tools)
-2. CLI commands (`seo init`, `seo analyze`, `seo apply`)
-3. Supabase integration (schema already defined in `.devcontainer/init-db.sql`)
-4. GitHub Action for CI/CD
+**Packages**:
+```
+packages/
+├── cli/                 # CLI entry point (rankcli command)
+├── agent-runtime/       # Core audit engine, GEO tracking, content generation
+├── saas/                # SaaS web app (React + Vite + Supabase + Stripe)
+├── github-action/       # GitHub Action for CI/CD
+├── vscode-extension/    # VS Code extension
+├── vite-plugin/         # Vite plugin
+├── next-plugin/         # Next.js plugin
+└── astro-plugin/        # Astro integration
+```
 
 ## Test Repo: animerm.ai
 
@@ -31,16 +44,6 @@ There's a real SaaS at `test_repos/animerm.ai` to test against:
 **Stack**: React + TypeScript + Vite (frontend), Rust (backend), Supabase (auth/DB)
 **SEO Status**: ZERO SEO implemented - perfect test case
 
-**What animerm.ai needs**:
-- Meta tags (title, description) on all pages
-- Open Graph / Twitter cards
-- JSON-LD schema (SoftwareApplication)
-- sitemap.xml
-- robots.txt
-- Proper heading hierarchy (H1s)
-- Image alt text
-- Core Web Vitals optimization
-
 ## Environment
 
 All credentials are in `.env`:
@@ -50,103 +53,72 @@ VITE_SUPABASE_URL=...        # Supabase project URL
 VITE_SUPABASE_ANON_KEY=...   # Supabase public key
 SUPABASE_SERVICE_KEY=...     # Supabase admin key
 SUPABASE_ACCESS_TOKEN=...    # Supabase CLI token
+STRIPE_SECRET_KEY=...        # Stripe API key
 ```
-
-**Backend**: Uses Supabase directly (no local PostgreSQL needed).
-See `test_repos/animerm.ai/ui/supabase/` for migration patterns.
-
-## Goal: Build the CLI
-
-When I say "go", build the SEO Autopilot CLI that can:
-
-### Phase 1: Analysis (Priority)
-1. `seo init` - Initialize in a project directory
-   - Detect framework (animerm.ai uses Vite + React)
-   - Create `.seo-autopilot.yaml` config
-   - Identify all pages/routes
-
-2. `seo analyze` - Run full SEO analysis
-   - Crawl all pages (can test against http://localhost:9000 or https://animerm.ai)
-   - Check meta tags, headings, schema, images
-   - Generate report with score and issues
-   - Use the agent definitions in `agents/site-analyzer.yaml`
-
-3. `seo apply` - Apply fixes
-   - Generate code changes for each issue
-   - Create git commits (or PR if GitHub repo)
-   - Changes should be framework-aware (Vite/React patterns)
-
-### Architecture
-
-```
-packages/
-├── cli/                 # CLI entry point
-│   └── src/
-│       ├── index.ts     # Main CLI using Commander.js
-│       └── commands/    # Command implementations
-├── agent-runtime/       # Agent executor
-│   └── src/
-│       ├── loader.ts    # Load YAML agents
-│       ├── executor.ts  # Run agents with Claude API
-│       └── tools/       # Tool implementations (crawl, analyze, etc.)
-└── core/                # Shared utilities
-```
-
-### Key Files to Reference
-
-- `docs/CONSOLIDATED_PLAN.md` - Full technical spec
-- `agents/*.yaml` - Agent definitions with SEO best practices
-- `test_repos/animerm.ai/` - Test target (Vite + React SaaS)
 
 ## Commands
 
 ```bash
-# In DevContainer
+# Development
 pnpm install           # Install all deps
 pnpm dev               # Run all packages in dev mode
-pnpm cli               # Run CLI package commands
+pnpm test              # Run all tests
 
-# Test against animerm.ai
-cd test_repos/animerm.ai/ui
-docker compose up      # Start animerm.ai on localhost:9000
+# CLI
+pnpm cli               # Run CLI commands
+rankcli init           # Initialize in a project
+rankcli audit          # Run SEO audit
+rankcli fix            # Apply auto-fixes
 
-# Then from project root
-seo init test_repos/animerm.ai
-seo analyze --url http://localhost:9000
-seo apply
+# SaaS
+cd packages/saas
+pnpm dev               # Start dev server on localhost:3000
+
+# Development deployment
+./scripts/dev-deploy.sh   # Full dev setup (migrations, functions, server)
 ```
 
-## Output Format
+## CLI Commands
 
-When generating fixes for animerm.ai, output should be:
-
-1. **Git commits** with clear messages
-2. **One commit per fix category** (meta tags, schema, images, etc.)
-3. **Framework-aware code** (Vite patterns, React conventions)
-
-Example fix for animerm.ai (adding meta tags):
-
-```typescript
-// ui/src/main.tsx or ui/index.html
-// Add to <head>:
-<title>animerm.ai - Animate Mermaid Diagrams with Keynote-Style Controls</title>
-<meta name="description" content="Create stunning animated Mermaid diagrams. Write Mermaid code, apply professional animations, and export to GIF. Free to start." />
-<meta property="og:title" content="animerm.ai - Animated Mermaid Diagrams" />
-<meta property="og:description" content="Create stunning animated Mermaid diagrams. Export to GIF." />
-<meta property="og:image" content="https://animerm.ai/og-image.png" />
-<link rel="canonical" href="https://animerm.ai" />
+```bash
+rankcli init [dir]              # Initialize RankCLI in a project
+rankcli audit [url]             # Run SEO audit on a URL
+rankcli fix [--dry-run]         # Apply fixes (or preview)
+rankcli report [--format json]  # Generate audit report
+rankcli ci                      # CI/CD mode (for GitHub Actions)
 ```
 
-## Success Criteria
+## Taglines
 
-1. Run `seo analyze` on animerm.ai → Get comprehensive report
-2. Run `seo apply` → Generate commits with all SEO fixes
-3. Fixes are correct for Vite + React (not Next.js patterns)
-4. Score improves from ~20 to 80+
+- **Main**: "Ship code, get ranked."
+- **CI/CD pages**: "SEO meets CI/CD"
+- **Developer focus**: "Engineering as Marketing"
+
+## Architecture
+
+### SaaS Stack
+- **Frontend**: React + Vite + TypeScript + Tailwind + shadcn/ui
+- **Backend**: Supabase (Auth, Database, Edge Functions)
+- **Payments**: Stripe (subscriptions + one-time)
+- **Hosting**: Cloudflare Pages
+
+### Pricing Tiers
+- **Free**: 1 site, 50 checks, manual audits
+- **Solo** ($9/mo): 3 sites, 200+ checks, weekly audits, GitHub connect
+- **Pro** ($29/mo): 10 sites, daily audits, auto-fix PRs, Slack alerts
+- **Agency** ($99/mo): 50 sites, on-demand audits, white-label, API access
+
+## Key Files
+
+- `DEPLOYMENT.md` - Full deployment guide
+- `github_deployments.md` - GitHub secrets/variables reference
+- `packages/saas/supabase/migrations/` - Database schema
+- `packages/saas/supabase/functions/` - Edge functions (checkout, webhook, audit)
+- `.github/workflows/` - CI/CD pipelines
 
 ## Don't
 
-- Don't create Next.js patterns (animerm.ai is Vite)
+- Don't create Next.js patterns for Vite projects
 - Don't add complex abstractions - keep it simple
 - Don't wait for user input - propose and execute
-- Don't write tests first - build working code, test manually
+- Don't add time estimates

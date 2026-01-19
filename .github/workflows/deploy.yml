@@ -1,0 +1,293 @@
+# =============================================================================
+# Main Deployment Workflow
+# =============================================================================
+# Deploys frontend to Cloudflare Pages and runs Supabase migrations
+# Triggered on release creation or manual dispatch
+#
+# Required Secrets (set in GitHub repo Settings > Secrets):
+# - CLOUDFLARE_API_TOKEN
+# - CLOUDFLARE_ACCOUNT_ID
+# - SUPABASE_ACCESS_TOKEN
+# - SUPABASE_ANON_KEY
+# - SUPABASE_SERVICE_KEY
+# - SUPABASE_DB_PASSWORD
+# - STRIPE_SECRET_KEY
+# - STRIPE_WEBHOOK_SECRET
+
+name: Deploy
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      deploy_frontend:
+        description: 'Deploy frontend'
+        type: boolean
+        default: true
+      run_migrations:
+        description: 'Run database migrations'
+        type: boolean
+        default: true
+      sync_stripe_pricing:
+        description: 'Sync pricing to Stripe'
+        type: boolean
+        default: false
+
+env:
+  CLOUDFLARE_PROJECT_NAME: rankcli
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Preflight Check - Verify secrets are configured
+  # ---------------------------------------------------------------------------
+  preflight:
+    name: Preflight Check
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+    steps:
+      - name: Check required secrets
+        id: check
+        run: |
+          MISSING=""
+          if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then MISSING="$MISSING CLOUDFLARE_API_TOKEN"; fi
+          if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then MISSING="$MISSING CLOUDFLARE_ACCOUNT_ID"; fi
+          if [ -z "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ]; then MISSING="$MISSING SUPABASE_ACCESS_TOKEN"; fi
+
+          if [ -n "$MISSING" ]; then
+            echo "## ⏭️ Deployment Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Missing required secrets:$MISSING" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Please configure secrets in **Settings → Secrets and variables → Actions**" >> $GITHUB_STEP_SUMMARY
+            echo "See [DEPLOYMENT.md](../blob/main/DEPLOYMENT.md) for setup instructions." >> $GITHUB_STEP_SUMMARY
+            echo "ready=false" >> $GITHUB_OUTPUT
+          else
+            echo "## ✅ Preflight Check Passed" >> $GITHUB_STEP_SUMMARY
+            echo "All required secrets are configured." >> $GITHUB_STEP_SUMMARY
+            echo "ready=true" >> $GITHUB_OUTPUT
+          fi
+
+  # ---------------------------------------------------------------------------
+  # Detect Changes
+  # ---------------------------------------------------------------------------
+  changes:
+    runs-on: ubuntu-latest
+    needs: preflight
+    if: needs.preflight.outputs.ready == 'true'
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      migrations: ${{ steps.filter.outputs.migrations }}
+      pricing: ${{ steps.filter.outputs.pricing }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'packages/saas/**'
+            migrations:
+              - 'packages/saas/supabase/migrations/**'
+            pricing:
+              - 'packages/saas/src/config/pricing-tiers.json'
+
+  # ---------------------------------------------------------------------------
+  # Deploy Frontend to Cloudflare Pages
+  # ---------------------------------------------------------------------------
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: [preflight, changes]
+    if: |
+      needs.preflight.outputs.ready == 'true' && (
+        github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_frontend == 'true' ||
+        github.event_name == 'release' ||
+        needs.changes.outputs.frontend == 'true'
+      )
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        working-directory: packages/saas
+        run: pnpm install
+
+      - name: Build
+        working-directory: packages/saas
+        env:
+          VITE_SUPABASE_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: pnpm build
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy packages/saas/dist --project-name=${{ env.CLOUDFLARE_PROJECT_NAME }} --branch=main
+
+  # ---------------------------------------------------------------------------
+  # Run Database Migrations & Deploy Edge Functions
+  # ---------------------------------------------------------------------------
+  migrate:
+    name: Database Migrations & Edge Functions
+    runs-on: ubuntu-latest
+    needs: [preflight, changes]
+    if: |
+      needs.preflight.outputs.ready == 'true' && (
+        github.event_name == 'workflow_dispatch' && github.event.inputs.run_migrations == 'true' ||
+        github.event_name == 'release' ||
+        needs.changes.outputs.migrations == 'true'
+      )
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        working-directory: packages/saas
+        run: pnpm install
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link Supabase Project
+        working-directory: packages/saas
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF }}
+
+      - name: Create Database Backup Note
+        run: |
+          echo "Migration timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
+          echo "Backup: Supabase Pro plan provides automatic Point-in-Time Recovery" >> $GITHUB_STEP_SUMMARY
+
+      - name: Run Database Migrations
+        working-directory: packages/saas
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase db push
+
+      - name: Set Edge Function Secrets
+        working-directory: packages/saas
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase secrets set \
+            STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
+            STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
+            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
+
+      - name: Deploy Edge Functions
+        working-directory: packages/saas
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          supabase functions deploy create-checkout --no-verify-jwt
+          supabase functions deploy stripe-webhook --no-verify-jwt
+          supabase functions deploy create-portal --no-verify-jwt
+          supabase functions deploy run-audit --no-verify-jwt
+          supabase functions deploy free-audit --no-verify-jwt
+
+  # ---------------------------------------------------------------------------
+  # Sync Stripe Pricing (when pricing config changes)
+  # ---------------------------------------------------------------------------
+  sync-stripe:
+    name: Sync Stripe Pricing
+    runs-on: ubuntu-latest
+    needs: [preflight, changes, migrate]
+    if: |
+      always() && needs.preflight.outputs.ready == 'true' && (
+        needs.changes.outputs.pricing == 'true' ||
+        github.event.inputs.sync_stripe_pricing == 'true'
+      ) && needs.migrate.result != 'failure'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        working-directory: packages/saas
+        run: pnpm install
+
+      - name: Sync Pricing to Stripe
+        working-directory: packages/saas
+        env:
+          VITE_SUPABASE_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+        run: |
+          echo "Syncing pricing to Stripe..."
+          pnpm seed:pricing:stripe
+          echo "✅ Pricing synced to Stripe" >> $GITHUB_STEP_SUMMARY
+
+  # ---------------------------------------------------------------------------
+  # Post-deployment Summary
+  # ---------------------------------------------------------------------------
+  summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [preflight, deploy-frontend, migrate, sync-stripe]
+    if: always()
+
+    steps:
+      - name: Summary
+        run: |
+          if [ "${{ needs.preflight.outputs.ready }}" != "true" ]; then
+            echo "## ⏭️ Deployment Skipped" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Required secrets are not configured. See the Preflight Check job for details." >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ${{ needs.deploy-frontend.result == 'success' && '✅ Deployed' || needs.deploy-frontend.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Migrations & Edge Functions | ${{ needs.migrate.result == 'success' && '✅ Applied' || needs.migrate.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Stripe Pricing Sync | ${{ needs.sync-stripe.result == 'success' && '✅ Synced' || needs.sync-stripe.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Edge Functions" >> $GITHUB_STEP_SUMMARY
+          echo "- create-checkout" >> $GITHUB_STEP_SUMMARY
+          echo "- stripe-webhook" >> $GITHUB_STEP_SUMMARY
+          echo "- create-portal" >> $GITHUB_STEP_SUMMARY
+          echo "- run-audit" >> $GITHUB_STEP_SUMMARY
+          echo "- free-audit" >> $GITHUB_STEP_SUMMARY
