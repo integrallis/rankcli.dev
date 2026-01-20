@@ -103,13 +103,11 @@ echo -e "  Project ref: ${BLUE}$PROJECT_REF${NC}"
 echo ""
 echo -e "${YELLOW}Step 2: Checking Supabase CLI...${NC}"
 
-if ! command -v supabase &> /dev/null; then
-  echo -e "${YELLOW}  Supabase CLI not found. Installing...${NC}"
-  npm install -g supabase
-fi
+# Use npx to run supabase (installs if needed)
+SUPABASE_CMD="npx supabase"
 
-echo -e "${GREEN}✓ Supabase CLI is available${NC}"
-supabase --version
+echo -e "${GREEN}✓ Using npx supabase${NC}"
+$SUPABASE_CMD --version
 
 # =============================================================================
 # Step 3: Link Supabase project
@@ -126,11 +124,11 @@ if [ -f "supabase/.temp/project-ref" ]; then
     echo -e "${GREEN}✓ Already linked to project $PROJECT_REF${NC}"
   else
     echo "  Relinking to $PROJECT_REF..."
-    supabase link --project-ref $PROJECT_REF
+    $SUPABASE_CMD link --project-ref $PROJECT_REF
     echo -e "${GREEN}✓ Linked to project $PROJECT_REF${NC}"
   fi
 else
-  supabase link --project-ref $PROJECT_REF
+  $SUPABASE_CMD link --project-ref $PROJECT_REF
   echo -e "${GREEN}✓ Linked to project $PROJECT_REF${NC}"
 fi
 
@@ -141,7 +139,7 @@ if [ "$SKIP_MIGRATIONS" = false ]; then
   echo ""
   echo -e "${YELLOW}Step 4: Running database migrations...${NC}"
 
-  supabase db push
+  $SUPABASE_CMD db push
 
   echo -e "${GREEN}✓ Database migrations applied${NC}"
 else
@@ -174,11 +172,11 @@ if [ "$SKIP_FUNCTIONS" = false ]; then
   fi
 
   if [ -n "$SECRETS_TO_SET" ]; then
-    supabase secrets set $SECRETS_TO_SET 2>/dev/null || true
+    $SUPABASE_CMD secrets set $SECRETS_TO_SET 2>/dev/null || true
     echo -e "${GREEN}  ✓ Secrets set${NC}"
   fi
 
-  # Deploy functions
+  # Deploy functions (--use-api bundles server-side, avoids Docker mount issues)
   FUNCTIONS=(
     "create-checkout"
     "stripe-webhook"
@@ -190,7 +188,7 @@ if [ "$SKIP_FUNCTIONS" = false ]; then
   for func in "${FUNCTIONS[@]}"; do
     if [ -d "supabase/functions/$func" ]; then
       echo "  Deploying $func..."
-      supabase functions deploy $func --no-verify-jwt 2>&1 | grep -v "^$" || true
+      $SUPABASE_CMD functions deploy $func --no-verify-jwt --use-api 2>&1 | grep -v "^$" || true
     fi
   done
 
@@ -201,17 +199,17 @@ else
 fi
 
 # =============================================================================
-# Step 6: Install dependencies
+# Step 6: Install dependencies (from monorepo root)
 # =============================================================================
 echo ""
 echo -e "${YELLOW}Step 6: Installing dependencies...${NC}"
 
+cd ../..  # Back to monorepo root
+
 if [ -f "pnpm-lock.yaml" ]; then
-  pnpm install
-elif [ -f "package-lock.json" ]; then
-  npm ci
+  pnpm install --frozen-lockfile 2>/dev/null || pnpm install
 else
-  npm install
+  npm ci 2>/dev/null || npm install
 fi
 
 echo -e "${GREEN}✓ Dependencies installed${NC}"
@@ -233,14 +231,15 @@ if [ "$START_SERVER" = true ]; then
   echo -e "  Press ${YELLOW}Ctrl+C${NC} to stop the server"
   echo ""
 
-  npm run dev
+  cd packages/saas
+  pnpm run dev
 else
   echo ""
   echo -e "${GREEN}================================================${NC}"
   echo -e "${GREEN}   Development environment is ready!${NC}"
   echo -e "${GREEN}================================================${NC}"
   echo ""
-  echo -e "  To start the server: ${BLUE}cd packages/saas && npm run dev${NC}"
+  echo -e "  To start the server: ${BLUE}cd packages/saas && pnpm run dev${NC}"
   echo -e "  Frontend will be at: ${BLUE}http://localhost:3000${NC}"
   echo ""
 fi
