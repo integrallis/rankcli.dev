@@ -36,7 +36,7 @@ serve(async (req) => {
       });
     }
 
-    const { priceId, planId } = await req.json();
+    const { priceId, planId, successUrl, cancelUrl } = await req.json();
 
     if (!priceId) {
       return new Response(JSON.stringify({ error: 'Price ID required' }), {
@@ -44,6 +44,11 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Use URLs from request, or fall back to APP_URL env var
+    const appUrl = Deno.env.get('APP_URL') || 'http://localhost:3005';
+    const finalSuccessUrl = successUrl || `${appUrl}/account/billing?success=true`;
+    const finalCancelUrl = cancelUrl || `${appUrl}/pricing?canceled=true`;
 
     // Check if user already has a Stripe customer ID
     const { data: subscription } = await supabase
@@ -71,9 +76,6 @@ serve(async (req) => {
         .eq('user_id', user.id);
     }
 
-    // Get the app URL for redirects
-    const appUrl = Deno.env.get('APP_URL') || 'http://localhost:3000';
-
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -84,8 +86,8 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
-      success_url: `${appUrl}/account/billing?success=true`,
-      cancel_url: `${appUrl}/pricing?canceled=true`,
+      success_url: finalSuccessUrl,
+      cancel_url: finalCancelUrl,
       metadata: {
         supabase_user_id: user.id,
         plan_id: planId,

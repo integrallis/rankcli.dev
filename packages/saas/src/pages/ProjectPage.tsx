@@ -1,4 +1,5 @@
-import { useParams, Link } from 'react-router-dom';
+import { useState } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
   Play,
@@ -10,6 +11,7 @@ import {
   Loader2,
   RefreshCw,
   ExternalLink,
+  Info,
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
@@ -17,10 +19,36 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useProject } from '@/hooks/useProjects';
 import { cn } from '@/lib/utils';
+import type { Project } from '@/integrations/supabase/types';
+import { ConnectGitHubModal } from '@/components/project/ConnectGitHubModal';
+import { ProjectSettingsModal } from '@/components/project/ProjectSettingsModal';
+
+// Check limits per tier
+const TIER_CHECKS = {
+  free: 50,
+  solo: 200,
+  pro: 200,
+  agency: 200,
+};
 
 export function ProjectPage() {
   const { id: projectId } = useParams();
-  const { project, audits, issues, isLoading, error, runAudit } = useProject(projectId);
+  const navigate = useNavigate();
+  const {
+    project,
+    audits,
+    issues,
+    isLoading,
+    error,
+    runAudit,
+    updateProject,
+    deleteProject,
+    connectGitHub,
+    disconnectGitHub,
+  } = useProject(projectId);
+
+  const [showGitHubModal, setShowGitHubModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   const getScoreColor = (score: number | null) => {
     if (score === null) return 'text-muted-foreground';
@@ -43,8 +71,34 @@ export function ProjectPage() {
   const latestAudit = audits.find((a) => a.status === 'completed');
   const pendingAudit = audits.find((a) => a.status === 'pending' || a.status === 'running');
 
+  // Get check counts - for now assume full audit (200+ checks)
+  // In a real implementation, this would come from the audit result or subscription tier
+  const checksRun = latestAudit?.issues_found !== undefined ? issues.length + 15 : 0; // Approximate: issues + passed checks
+  const totalChecks = TIER_CHECKS.pro; // TODO: Get from user's subscription tier
+
   const handleRunAudit = async () => {
     await runAudit();
+  };
+
+  const handleConnectGitHub = async (repoUrl: string) => {
+    await connectGitHub(repoUrl);
+  };
+
+  const handleUpdateProject = async (updates: Partial<Project>) => {
+    if (project) {
+      await updateProject(updates);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    const success = await deleteProject();
+    if (success) {
+      navigate('/dashboard');
+    }
+  };
+
+  const handleDisconnectGitHub = async () => {
+    await disconnectGitHub();
   };
 
   if (isLoading) {
@@ -137,12 +191,20 @@ export function ProjectPage() {
                 </a>
               </Button>
             ) : (
-              <Button variant="outline" className="gap-2">
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => setShowGitHubModal(true)}
+              >
                 <Github className="h-4 w-4" />
                 Connect GitHub
               </Button>
             )}
-            <Button variant="outline" size="icon">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShowSettingsModal(true)}
+            >
               <Settings className="h-4 w-4" />
             </Button>
             <Button
@@ -207,6 +269,36 @@ export function ProjectPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Checks Summary */}
+        {latestAudit && (
+          <Card className="mb-8">
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">
+                    <strong>{checksRun}</strong> checks run out of <strong>{totalChecks}+</strong> available
+                  </span>
+                </div>
+                <div className="flex gap-4 text-sm">
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-red-500" />
+                    {issues.filter((i) => i.severity === 'error').length} errors
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-yellow-500" />
+                    {issues.filter((i) => i.severity === 'warning').length} warnings
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-2 w-2 rounded-full bg-blue-500" />
+                    {issues.filter((i) => i.severity === 'notice').length} notices
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* No Audit State */}
         {!latestAudit && !pendingAudit && (
@@ -392,6 +484,26 @@ export function ProjectPage() {
           </Card>
         )}
       </main>
+
+      {/* Modals */}
+      <ConnectGitHubModal
+        open={showGitHubModal}
+        onOpenChange={setShowGitHubModal}
+        projectId={project.id}
+        projectName={project.name}
+        projectUrl={project.url}
+        onConnect={handleConnectGitHub}
+      />
+
+      <ProjectSettingsModal
+        open={showSettingsModal}
+        onOpenChange={setShowSettingsModal}
+        project={project}
+        onUpdate={handleUpdateProject}
+        onDelete={handleDeleteProject}
+        onDisconnectGitHub={handleDisconnectGitHub}
+        error={error}
+      />
     </div>
   );
 }

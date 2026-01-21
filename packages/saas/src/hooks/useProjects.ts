@@ -125,7 +125,13 @@ export function useProjects(): UseProjectsReturn {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Check for unique constraint/index violation
+        if (error.code === '23505' && (error.message?.includes('projects_user_id_name') || error.message?.includes('duplicate key'))) {
+          throw new Error(`A project named "${input.name}" already exists. Please choose a different name.`);
+        }
+        throw error;
+      }
 
       // Refetch to get updated list with stats
       await fetchProjects();
@@ -133,8 +139,9 @@ export function useProjects(): UseProjectsReturn {
       return data;
     } catch (err) {
       console.error('Error creating project:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create project');
-      return null;
+      const message = err instanceof Error ? err.message : 'Failed to create project';
+      setError(message);
+      throw new Error(message);
     }
   };
 
@@ -159,14 +166,21 @@ export function useProjects(): UseProjectsReturn {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Check for unique constraint/index violation
+        if (error.code === '23505' && (error.message?.includes('projects_user_id_name') || error.message?.includes('duplicate key'))) {
+          throw new Error(`A project with this name already exists. Please choose a different name.`);
+        }
+        throw error;
+      }
 
       await fetchProjects();
       return data;
     } catch (err) {
       console.error('Error updating project:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update project');
-      return null;
+      const message = err instanceof Error ? err.message : 'Failed to update project';
+      setError(message);
+      throw new Error(message);
     }
   };
 
@@ -211,6 +225,10 @@ interface UseProjectReturn {
   error: string | null;
   refetch: () => Promise<void>;
   runAudit: () => Promise<Audit | null>;
+  updateProject: (updates: Partial<Project>) => Promise<boolean>;
+  deleteProject: () => Promise<boolean>;
+  connectGitHub: (repoUrl: string) => Promise<boolean>;
+  disconnectGitHub: () => Promise<boolean>;
 }
 
 export function useProject(projectId: string | undefined): UseProjectReturn {
@@ -334,6 +352,110 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
     }
   };
 
+  const updateProject = async (updates: Partial<Project>): Promise<boolean> => {
+    if (!user || !projectId) return false;
+
+    try {
+      const { data, error: updateError } = await supabase
+        .from('projects')
+        .update(updates)
+        .eq('id', projectId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        // Check for unique constraint violation (duplicate name)
+        if (updateError.code === '23505' && (updateError.message?.includes('projects_user_id_name') || updateError.message?.includes('duplicate key'))) {
+          throw new Error('A project with this name already exists. Please choose a different name.');
+        }
+        // Check for "no rows returned" error (RLS blocked or project not found)
+        if (updateError.code === 'PGRST116') {
+          throw new Error('Project not found or you do not have permission to update it.');
+        }
+        throw updateError;
+      }
+
+      if (!data) {
+        throw new Error('Failed to update project. Please try again.');
+      }
+
+      await fetchProject();
+      return true;
+    } catch (err) {
+      console.error('Error updating project:', err);
+      const message = err instanceof Error ? err.message : 'Failed to update project';
+      setError(message);
+      return false;
+    }
+  };
+
+  const deleteProject = async (): Promise<boolean> => {
+    if (!user || !projectId) return false;
+
+    try {
+      const { error: deleteError } = await supabase
+        .from('projects')
+        .update({ is_active: false })
+        .eq('id', projectId)
+        .eq('user_id', user.id);
+
+      if (deleteError) throw deleteError;
+
+      return true;
+    } catch (err) {
+      console.error('Error deleting project:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete project');
+      return false;
+    }
+  };
+
+  const connectGitHub = async (repoUrl: string): Promise<boolean> => {
+    if (!user || !projectId) return false;
+
+    try {
+      const { error: connectError } = await supabase
+        .from('projects')
+        .update({ github_repo_url: repoUrl })
+        .eq('id', projectId)
+        .eq('user_id', user.id);
+
+      if (connectError) throw connectError;
+
+      await fetchProject();
+      return true;
+    } catch (err) {
+      console.error('Error connecting GitHub:', err);
+      setError(err instanceof Error ? err.message : 'Failed to connect GitHub');
+      return false;
+    }
+  };
+
+  const disconnectGitHub = async (): Promise<boolean> => {
+    if (!user || !projectId) return false;
+
+    try {
+      const { error: disconnectError } = await supabase
+        .from('projects')
+        .update({
+          github_repo_url: null,
+          github_repo_id: null,
+          github_installation_id: null,
+        })
+        .eq('id', projectId)
+        .eq('user_id', user.id);
+
+      if (disconnectError) throw disconnectError;
+
+      await fetchProject();
+      return true;
+    } catch (err) {
+      console.error('Error disconnecting GitHub:', err);
+      setError(err instanceof Error ? err.message : 'Failed to disconnect GitHub');
+      return false;
+    }
+  };
+
   return {
     project,
     audits,
@@ -342,5 +464,9 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
     error,
     refetch: fetchProject,
     runAudit,
+    updateProject,
+    deleteProject,
+    connectGitHub,
+    disconnectGitHub,
   };
 }

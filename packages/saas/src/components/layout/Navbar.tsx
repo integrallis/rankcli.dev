@@ -1,7 +1,14 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { Menu, X, Terminal, Github } from 'lucide-react';
+import { Menu, X, Terminal, Github, User, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
@@ -65,9 +72,36 @@ export function Navbar() {
                   Dashboard
                 </Button>
               </Link>
-              <Button variant="outline" size="sm" onClick={() => logout()}>
-                Log out
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <User className="h-4 w-4" />
+                    Account
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link to="/account" className="flex items-center gap-2 cursor-pointer">
+                      <Settings className="h-4 w-4" />
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/account/billing" className="flex items-center gap-2 cursor-pointer">
+                      <User className="h-4 w-4" />
+                      Billing
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => logout()}
+                    className="flex items-center gap-2 cursor-pointer text-red-500 focus:text-red-500"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <>
@@ -132,14 +166,21 @@ export function Navbar() {
                       Dashboard
                     </Button>
                   </Link>
+                  <Link to="/account" onClick={() => setMobileMenuOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start gap-2">
+                      <Settings className="h-4 w-4" />
+                      Account Settings
+                    </Button>
+                  </Link>
                   <Button
                     variant="outline"
-                    className="w-full justify-start"
+                    className="w-full justify-start gap-2 text-red-500"
                     onClick={() => {
                       logout();
                       setMobileMenuOpen(false);
                     }}
                   >
+                    <LogOut className="h-4 w-4" />
                     Log out
                   </Button>
                 </>
