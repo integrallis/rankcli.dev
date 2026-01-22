@@ -53,6 +53,14 @@ if [ -f "package.json" ]; then
 fi
 
 # ===========================================
+# Build Deno Bundle for Edge Functions
+# ===========================================
+echo "Building Deno bundle for Edge Functions..."
+cd /workspace/packages/agent-runtime
+pnpm build:deno 2>/dev/null || echo "Deno bundle build skipped (will build on first dev run)"
+cd /workspace
+
+# ===========================================
 # Supabase CLI
 # ===========================================
 echo "Installing Supabase CLI..."
