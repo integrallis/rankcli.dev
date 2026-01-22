@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-01-21T23:56:42.037Z
+// Generated: 2026-01-22T00:46:53.947Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -8357,6 +8357,45 @@ function analyzeRendering(html) {
     }
   }
   const hasDynamicMetaTags = metaManagement !== null || $("meta[data-react-helmet]").length > 0 || $("meta[data-vue-meta]").length > 0;
+  const hasH1 = $("h1").length > 0 && $("h1").text().trim().length > 0;
+  const hasH2 = $("h2").length > 0;
+  const hasMain = $('main, [role="main"]').length > 0;
+  const hasArticle = $("article").length > 0;
+  const hasSemanticStructure = hasH1 && (hasMain || hasArticle);
+  const title = $("title").text().trim();
+  const h1Text = $("h1").first().text().trim();
+  const firstParagraph = $("p").first().text().trim();
+  const keyContentInHTML = title.length > 10 && h1Text.length > 5 && firstParagraph.length > 50;
+  const EXPECTED_MIN_CONTENT = 1e3;
+  const htmlContentRatio = Math.min(100, mainContentCharCount / EXPECTED_MIN_CONTENT * 100);
+  let aiReadableScore = 50;
+  if (mainContentCharCount > 2e3)
+    aiReadableScore += 20;
+  else if (mainContentCharCount > 1e3)
+    aiReadableScore += 15;
+  else if (mainContentCharCount > 500)
+    aiReadableScore += 10;
+  else if (mainContentCharCount < 200)
+    aiReadableScore -= 20;
+  if (hasSemanticStructure)
+    aiReadableScore += 15;
+  if (hasH1 && hasH2)
+    aiReadableScore += 5;
+  if (keyContentInHTML)
+    aiReadableScore += 15;
+  else
+    aiReadableScore -= 10;
+  if (hasHydrationMarkers || ssrScore > csrScore)
+    aiReadableScore += 10;
+  if (csrScore > ssrScore + 3)
+    aiReadableScore -= 20;
+  aiReadableScore = Math.max(0, Math.min(100, aiReadableScore));
+  const aiAccessibility = {
+    htmlContentRatio: Math.round(htmlContentRatio),
+    hasSemanticStructure,
+    keyContentInHTML,
+    aiReadableScore
+  };
   let renderingMethod;
   let confidence;
   if (csrScore > ssrScore + 3) {
@@ -8390,7 +8429,8 @@ function analyzeRendering(html) {
     mainContentCharCount,
     recommendations,
     metaManagement,
-    hasDynamicMetaTags
+    hasDynamicMetaTags,
+    aiAccessibility
   };
 }
 function generateRecommendations2(renderingMethod, hasContentInHTML, charCount, framework) {
@@ -8502,6 +8542,53 @@ function analyzeClientRendering(html, url) {
         }
       });
     }
+  }
+  if (analysis.aiAccessibility.aiReadableScore < 50) {
+    issues.push({
+      code: "AI_LOW_HTML_READABILITY",
+      severity: "warning",
+      category: "ai-readiness",
+      title: "Content not optimally accessible to AI systems",
+      description: `AI readability score: ${analysis.aiAccessibility.aiReadableScore}/100. AI systems like ChatGPT primarily read raw HTML and may miss JavaScript-rendered content.`,
+      impact: "Content may not be properly indexed by AI search systems (ChatGPT, Perplexity, etc.), reducing AI citation likelihood.",
+      howToFix: "Ensure key content is in the initial HTML response: 1) Use SSR/SSG, 2) Include title, H1, and main content in HTML, 3) Don't hide content behind JavaScript interactions.",
+      affectedUrls: [url],
+      details: {
+        aiReadableScore: analysis.aiAccessibility.aiReadableScore,
+        htmlContentRatio: analysis.aiAccessibility.htmlContentRatio,
+        hasSemanticStructure: analysis.aiAccessibility.hasSemanticStructure,
+        keyContentInHTML: analysis.aiAccessibility.keyContentInHTML
+      }
+    });
+  }
+  if (!analysis.aiAccessibility.hasSemanticStructure && analysis.mainContentCharCount > 500) {
+    issues.push({
+      code: "AI_NO_SEMANTIC_STRUCTURE",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "Content lacks semantic HTML structure for AI parsing",
+      description: "Missing semantic landmarks (<main>, <article>) or heading hierarchy. AI systems use these to identify and extract key content.",
+      impact: "AI may not correctly identify the main content area, potentially extracting navigation or footer text instead.",
+      howToFix: "Add semantic HTML: wrap main content in <main> or <article>, ensure H1 exists and heading hierarchy is logical (H1 \u2192 H2 \u2192 H3).",
+      affectedUrls: [url]
+    });
+  }
+  if (!analysis.aiAccessibility.keyContentInHTML && analysis.renderingMethod !== "csr") {
+    issues.push({
+      code: "AI_KEY_CONTENT_NOT_IN_HTML",
+      severity: "warning",
+      category: "ai-readiness",
+      title: "Key content elements missing from initial HTML",
+      description: "Title, H1, or opening paragraph content is missing or too short in the HTML. AI systems extract these first.",
+      impact: "AI may not have access to your primary message, reducing chances of accurate citation.",
+      howToFix: "Ensure the initial HTML contains: meaningful <title>, descriptive <h1>, and a substantial first paragraph with your key message.",
+      affectedUrls: [url],
+      details: {
+        hasTitle: $("title").text().trim().length > 10,
+        hasH1: $("h1").text().trim().length > 5,
+        hasFirstParagraph: $("p").first().text().trim().length > 50
+      }
+    });
   }
   return { issues, data: analysis };
 }
@@ -11976,6 +12063,887 @@ function analyzeFreshnessSignals(html, url) {
   };
 }
 
+// src/audit/checks/bing-optimization.ts
+import * as cheerio42 from "https://esm.sh/cheerio@1.0.0";
+async function analyzeBingOptimization(html, url) {
+  const issues = [];
+  const $ = cheerio42.load(html);
+  const parsedUrl = new URL(url);
+  const baseUrl = `${parsedUrl.protocol}//${parsedUrl.hostname}`;
+  const detectedIssues = [];
+  const bingMetaTag = $('meta[name="msvalidate.01"]').attr("content");
+  const hasBingMetaTag = !!bingMetaTag && bingMetaTag.length > 0;
+  let hasBingSiteAuth = false;
+  try {
+    const authResponse = await httpGet(`${baseUrl}/BingSiteAuth.xml`, { timeout: 5e3 });
+    hasBingSiteAuth = authResponse.status === 200 && authResponse.data.includes("<?xml") && authResponse.data.toLowerCase().includes("users");
+  } catch {
+  }
+  let hasBingIndexNowKey = false;
+  try {
+    const keyPatterns = [
+      `${baseUrl}/indexnow.txt`,
+      `${baseUrl}/.well-known/indexnow`
+    ];
+    for (const keyUrl of keyPatterns) {
+      try {
+        const keyResponse = await httpGet(keyUrl, { timeout: 5e3 });
+        if (keyResponse.status === 200 && keyResponse.data.length >= 8) {
+          hasBingIndexNowKey = true;
+          break;
+        }
+      } catch {
+      }
+    }
+  } catch {
+  }
+  const scripts = $('script[type="application/ld+json"]');
+  let bingPlacesDetected = false;
+  scripts.each((_, el) => {
+    try {
+      const jsonText = $(el).html();
+      if (jsonText) {
+        const data = JSON.parse(jsonText);
+        const schemas = Array.isArray(data) ? data : [data];
+        for (const schema of schemas) {
+          if (schema["@type"] === "LocalBusiness" || schema["@type"] === "Organization" && schema.address) {
+            bingPlacesDetected = true;
+          }
+          if (schema.sameAs) {
+            const sameAsUrls = Array.isArray(schema.sameAs) ? schema.sameAs : [schema.sameAs];
+            if (sameAsUrls.some((u) => u.includes("bing.com/maps"))) {
+              bingPlacesDetected = true;
+            }
+          }
+        }
+      }
+    } catch {
+    }
+  });
+  let bingSitemapAccessible = false;
+  try {
+    const sitemapResponse = await httpGet(`${baseUrl}/sitemap.xml`, { timeout: 5e3 });
+    bingSitemapAccessible = sitemapResponse.status === 200 && sitemapResponse.data.includes("<?xml");
+  } catch {
+  }
+  if (!hasBingMetaTag && !hasBingSiteAuth) {
+    detectedIssues.push("No Bing site verification");
+    issues.push({
+      code: "BING_NOT_VERIFIED",
+      severity: "warning",
+      category: "ai-readiness",
+      title: "Site not verified with Bing Webmaster Tools",
+      description: "ChatGPT Search uses Bing's index. Verifying your site with Bing Webmaster Tools ensures proper indexing and access to Bing-specific SEO tools.",
+      impact: "May reduce visibility in ChatGPT Search results and miss Bing-specific optimization opportunities.",
+      howToFix: "Add Bing verification: 1) Go to Bing Webmaster Tools, 2) Add your site, 3) Choose verification method (meta tag or XML file), 4) Add the verification code to your site.",
+      affectedUrls: [url],
+      details: {
+        hasBingMetaTag,
+        hasBingSiteAuth,
+        verificationMethods: [
+          'Add <meta name="msvalidate.01" content="YOUR_CODE"> to <head>',
+          "Upload BingSiteAuth.xml to root directory"
+        ]
+      }
+    });
+  }
+  if (!hasBingIndexNowKey) {
+    detectedIssues.push("No IndexNow key for Bing");
+    issues.push({
+      code: "BING_NO_INDEXNOW",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "IndexNow not configured for Bing instant indexing",
+      description: "IndexNow enables instant content indexing by Bing (and subsequently ChatGPT Search). Without it, new content may take longer to appear in AI search results.",
+      impact: "Content updates may be delayed in Bing's index and ChatGPT Search results.",
+      howToFix: "Implement IndexNow: 1) Generate an API key, 2) Host the key file at /indexnow.txt or /.well-known/indexnow, 3) Notify Bing of URL changes via the IndexNow API.",
+      affectedUrls: [url],
+      details: {
+        indexNowEndpoint: "https://www.bing.com/indexnow",
+        documentation: "https://www.indexnow.org/documentation"
+      }
+    });
+  }
+  if (!bingSitemapAccessible) {
+    detectedIssues.push("Sitemap not accessible");
+    issues.push({
+      code: "BING_SITEMAP_MISSING",
+      severity: "warning",
+      category: "ai-readiness",
+      title: "XML sitemap not accessible for Bing crawling",
+      description: "A sitemap helps Bing discover and index all your pages. Without it, some content may not be indexed and thus not appear in ChatGPT Search.",
+      impact: "Bing may miss important pages, reducing your AI search coverage.",
+      howToFix: "Create and submit an XML sitemap: 1) Generate sitemap.xml with all important URLs, 2) Submit it in Bing Webmaster Tools, 3) Reference it in robots.txt.",
+      affectedUrls: [url]
+    });
+  }
+  const hasLocalBusinessSchema = bingPlacesDetected;
+  const hasAddressOnPage = $("address").length > 0 || html.toLowerCase().includes("street") || /\d{5}(-\d{4})?/.test(html);
+  if (hasAddressOnPage && !hasLocalBusinessSchema) {
+    detectedIssues.push("Local business may not be on Bing Places");
+    issues.push({
+      code: "BING_PLACES_MISSING",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "Local business not optimized for Bing Places",
+      description: "Your site appears to have a physical location but may not be listed on Bing Places. Bing Places listings appear in Bing Maps and can be referenced by AI assistants.",
+      impact: "Missing local search visibility in Bing and potential AI assistant recommendations for local queries.",
+      howToFix: "Claim your Bing Places listing: 1) Go to bingplaces.com, 2) Claim or add your business, 3) Verify ownership, 4) Add complete business information.",
+      affectedUrls: [url],
+      details: {
+        bingPlacesUrl: "https://www.bingplaces.com/",
+        recommendation: "Also add sameAs link to your Bing Places listing in Organization schema"
+      }
+    });
+  }
+  return {
+    issues,
+    data: {
+      hasBingSiteAuth,
+      hasBingMetaTag,
+      hasBingIndexNowKey,
+      bingPlacesDetected,
+      bingSitemapAccessible,
+      issues: detectedIssues
+    }
+  };
+}
+
+// src/audit/checks/ai-content-structure.ts
+import * as cheerio43 from "https://esm.sh/cheerio@1.0.0";
+function analyzeAIContentStructure(html, url) {
+  const issues = [];
+  const $ = cheerio43.load(html);
+  $("nav, footer, aside, script, style, noscript, header").remove();
+  const tables = $("table");
+  const tableCount = tables.length;
+  let hasComparisonTable = false;
+  let hasDataTable = false;
+  tables.each((_, table) => {
+    const $table = $(table);
+    const headers = $table.find("th").length;
+    const rows = $table.find("tr").length;
+    const cells = $table.find("td").length;
+    if (headers >= 2 && rows >= 3) {
+      hasComparisonTable = true;
+    }
+    const cellTexts = $table.find("td").map((_2, td) => $(td).text()).get();
+    const hasNumbers = cellTexts.some((text) => /\d+/.test(text));
+    if (hasNumbers && cells >= 4) {
+      hasDataTable = true;
+    }
+  });
+  const orderedLists = $("ol").length;
+  const unorderedLists = $("ul").not("nav ul").length;
+  let hasStepByStep = false;
+  $("ol").each((_, ol) => {
+    const items = $(ol).find("> li").length;
+    if (items >= 3) {
+      hasStepByStep = true;
+    }
+  });
+  let hasBulletedFeatures = false;
+  $("ul").not("nav ul").each((_, ul) => {
+    const items = $(ul).find("> li").length;
+    if (items >= 3) {
+      hasBulletedFeatures = true;
+    }
+  });
+  const bodyText = $("body").text().toLowerCase();
+  const headings = $("h1, h2, h3, h4, h5, h6");
+  let questionCount = 0;
+  let hasDirectAnswers = false;
+  headings.each((_, heading) => {
+    const text = $(heading).text();
+    if (text.includes("?") || /^(what|how|why|when|where|who|which|can|does|is|are|should|will)\s/i.test(text)) {
+      questionCount++;
+      const nextP = $(heading).next("p");
+      if (nextP.length) {
+        const answerText = nextP.text();
+        if (answerText.length > 20 && answerText.length < 300) {
+          hasDirectAnswers = true;
+        }
+      }
+    }
+  });
+  const hasExplicitQA = $('[itemtype*="FAQPage"]').length > 0 || $('[itemtype*="Question"]').length > 0 || $('.faq, #faq, [class*="faq"], [id*="faq"]').length > 0 || $("details summary").length >= 2 || $("dt").length >= 2;
+  const paragraphs = $("p");
+  let shortParagraphCount = 0;
+  let totalParagraphs = 0;
+  let hasDefinitions = false;
+  let hasConciseStatements = false;
+  paragraphs.each((_, p) => {
+    const text = $(p).text().trim();
+    if (text.length < 20)
+      return;
+    totalParagraphs++;
+    if (text.length < 150) {
+      shortParagraphCount++;
+    }
+    if (/^[A-Z][^.]+\s+(is|are|refers to|means|describes)\s+/i.test(text)) {
+      hasDefinitions = true;
+    }
+    if (text.length < 200 && (text.includes(":") || /^(The|A|An)\s+\w+/.test(text) || /^\d+\.?\s+/.test(text))) {
+      hasConciseStatements = true;
+    }
+  });
+  const shortParagraphRatio = totalParagraphs > 0 ? shortParagraphCount / totalParagraphs : 0;
+  let structureScore = 50;
+  if (hasComparisonTable)
+    structureScore += 10;
+  if (hasDataTable)
+    structureScore += 5;
+  if (hasStepByStep)
+    structureScore += 10;
+  if (hasBulletedFeatures)
+    structureScore += 5;
+  if (hasExplicitQA)
+    structureScore += 10;
+  if (questionCount >= 3)
+    structureScore += 5;
+  if (hasDirectAnswers)
+    structureScore += 5;
+  if (hasDefinitions)
+    structureScore += 5;
+  if (hasConciseStatements)
+    structureScore += 5;
+  if (shortParagraphRatio > 0.3)
+    structureScore += 5;
+  if (tableCount === 0 && orderedLists === 0 && unorderedLists === 0) {
+    structureScore -= 15;
+  }
+  if (questionCount === 0) {
+    structureScore -= 5;
+  }
+  structureScore = Math.max(0, Math.min(100, structureScore));
+  if (!hasComparisonTable && bodyText.includes("compar") || bodyText.includes("vs") || bodyText.includes("versus")) {
+    issues.push({
+      code: "AI_NO_COMPARISON_TABLE",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "Comparison content without table format",
+      description: "Your content mentions comparisons but doesn't use a table format. AI systems can easily parse and quote table data.",
+      impact: "AI may not accurately extract comparison data, reducing chances of being cited in AI-generated comparisons.",
+      howToFix: "Convert comparison content to HTML tables with clear headers. Example: Feature | Option A | Option B",
+      affectedUrls: [url]
+    });
+  }
+  if (!hasStepByStep && (bodyText.includes("step") || bodyText.includes("how to") || bodyText.includes("guide"))) {
+    issues.push({
+      code: "AI_NO_NUMBERED_STEPS",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "Procedural content without numbered steps",
+      description: "Your content appears to be a guide or how-to but doesn't use numbered lists. AI prefers numbered lists for step-by-step content.",
+      impact: "AI may not accurately quote your steps in order, or may skip your content for better-structured alternatives.",
+      howToFix: "Convert step-by-step instructions to <ol> (ordered list) format with clear, actionable items.",
+      affectedUrls: [url]
+    });
+  }
+  if (!hasExplicitQA && questionCount === 0) {
+    issues.push({
+      code: "AI_NO_QA_FORMAT",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "No question-and-answer format detected",
+      description: "Content lacks explicit Q&A structure. AI systems often look for clear question-answer pairs to provide direct responses.",
+      impact: "Lower chance of being featured in AI direct answers or FAQ-style responses.",
+      howToFix: "Add FAQ section with common questions as headings (H2/H3) followed by concise answers. Implement FAQ schema markup.",
+      affectedUrls: [url],
+      details: {
+        suggestions: [
+          "Use question words in headings (What, How, Why, etc.)",
+          "Follow questions with short, direct answer paragraphs",
+          "Add FAQ schema markup for structured data",
+          "Consider using <details>/<summary> for expandable Q&A"
+        ]
+      }
+    });
+  }
+  if (questionCount >= 2 && !hasDirectAnswers) {
+    issues.push({
+      code: "AI_QUESTIONS_NO_DIRECT_ANSWERS",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "Questions in headings lack direct answers",
+      description: `Found ${questionCount} question-style headings but answers are too long or not immediately following. AI prefers concise answers right after questions.`,
+      impact: "AI may struggle to extract clear answers, reducing citation likelihood.",
+      howToFix: "Start each answer section with a 1-2 sentence direct answer, then expand with details. First sentence should standalone as a complete answer.",
+      affectedUrls: [url]
+    });
+  }
+  if (!hasDefinitions && (bodyText.includes("what is") || bodyText.includes("definition"))) {
+    issues.push({
+      code: "AI_NO_DEFINITIONS",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "Missing clear definitions",
+      description: 'Content discusses concepts but lacks Wikipedia-style definitions. AI loves clear "X is a..." statements.',
+      impact: "Less likely to be cited for definitional queries in AI search.",
+      howToFix: 'Add clear definitions early in content: "[Term] is a [category] that [distinguishing features]." Make first paragraph a complete definition.',
+      affectedUrls: [url]
+    });
+  }
+  if (structureScore < 50) {
+    issues.push({
+      code: "AI_LOW_STRUCTURE_SCORE",
+      severity: "warning",
+      category: "ai-readiness",
+      title: "Content structure not optimized for AI parsing",
+      description: `AI structure score: ${structureScore}/100. Content lacks structured elements that AI can easily parse and quote.`,
+      impact: "Lower likelihood of being cited in AI-generated answers due to poor content structure.",
+      howToFix: "Improve content structure: add tables for data, numbered lists for steps, bullet points for features, Q&A sections for common questions.",
+      affectedUrls: [url],
+      details: {
+        structureScore,
+        hasTable: tableCount > 0,
+        hasOrderedList: orderedLists > 0,
+        hasUnorderedList: unorderedLists > 0,
+        hasQAFormat: hasExplicitQA || questionCount > 0
+      }
+    });
+  }
+  return {
+    issues,
+    data: {
+      tables: {
+        count: tableCount,
+        hasComparisonTable,
+        hasDataTable
+      },
+      lists: {
+        orderedLists,
+        unorderedLists,
+        hasStepByStep,
+        hasBulletedFeatures
+      },
+      qaFormat: {
+        hasExplicitQA,
+        questionCount,
+        hasDirectAnswers
+      },
+      quotability: {
+        hasDefinitions,
+        hasConciseStatements,
+        shortParagraphRatio
+      },
+      structureScore
+    }
+  };
+}
+
+// src/audit/checks/citation-quality.ts
+import * as cheerio44 from "https://esm.sh/cheerio@1.0.0";
+var REPUTABLE_SOURCES = {
+  academic: [
+    "scholar.google.com",
+    "pubmed.ncbi.nlm.nih.gov",
+    "ncbi.nlm.nih.gov",
+    "arxiv.org",
+    "jstor.org",
+    "researchgate.net",
+    "sciencedirect.com",
+    "nature.com",
+    "science.org",
+    "springer.com",
+    "wiley.com"
+  ],
+  government: [
+    "gov",
+    "gov.uk",
+    "europa.eu",
+    "un.org",
+    "who.int",
+    "cdc.gov",
+    "nih.gov",
+    "fda.gov",
+    "epa.gov",
+    "sec.gov",
+    "ftc.gov"
+  ],
+  educational: [
+    ".edu",
+    "mit.edu",
+    "stanford.edu",
+    "harvard.edu",
+    "oxford.ac.uk",
+    "cambridge.org",
+    "coursera.org",
+    "khanacademy.org"
+  ],
+  authoritative: [
+    "wikipedia.org",
+    "britannica.com",
+    "statista.com",
+    "pewresearch.org",
+    "gallup.com",
+    "mckinsey.com",
+    "hbr.org",
+    "forbes.com",
+    "reuters.com",
+    "apnews.com",
+    "bbc.com",
+    "nytimes.com",
+    "wsj.com",
+    "economist.com"
+  ],
+  technical: [
+    "github.com",
+    "stackoverflow.com",
+    "developer.mozilla.org",
+    "w3.org",
+    "ietf.org",
+    "rfc-editor.org",
+    "docs.google.com",
+    "developers.google.com"
+  ]
+};
+function analyzeCitationQuality(html, url) {
+  const issues = [];
+  const $ = cheerio44.load(html);
+  const parsedUrl = new URL(url);
+  const currentDomain = parsedUrl.hostname;
+  const $content = $("body").clone();
+  $content.find("nav, footer, aside, script, style, noscript").remove();
+  const links = $content.find("a[href]");
+  let totalLinks = 0;
+  let externalLinks = 0;
+  let citationLinks = 0;
+  const reputableSources = {
+    academic: [],
+    government: [],
+    educational: [],
+    authoritative: [],
+    technical: []
+  };
+  links.each((_, link) => {
+    const href = $(link).attr("href");
+    if (!href)
+      return;
+    totalLinks++;
+    try {
+      const linkUrl = new URL(href, url);
+      if (linkUrl.hostname === currentDomain || linkUrl.hostname.endsWith(`.${currentDomain}`)) {
+        return;
+      }
+      if (linkUrl.hostname.includes("facebook.com") || linkUrl.hostname.includes("twitter.com") || linkUrl.hostname.includes("instagram.com") || linkUrl.hostname.includes("linkedin.com/share") || linkUrl.hostname.includes("pinterest.com")) {
+        return;
+      }
+      externalLinks++;
+      const hostname = linkUrl.hostname.toLowerCase();
+      for (const source of REPUTABLE_SOURCES.academic) {
+        if (hostname.includes(source)) {
+          reputableSources.academic.push(hostname);
+          citationLinks++;
+          return;
+        }
+      }
+      for (const source of REPUTABLE_SOURCES.government) {
+        if (hostname.endsWith(source) || hostname.includes(`.${source}`)) {
+          reputableSources.government.push(hostname);
+          citationLinks++;
+          return;
+        }
+      }
+      for (const source of REPUTABLE_SOURCES.educational) {
+        if (hostname.endsWith(source) || hostname.includes(source)) {
+          reputableSources.educational.push(hostname);
+          citationLinks++;
+          return;
+        }
+      }
+      for (const source of REPUTABLE_SOURCES.authoritative) {
+        if (hostname.includes(source)) {
+          reputableSources.authoritative.push(hostname);
+          citationLinks++;
+          return;
+        }
+      }
+      for (const source of REPUTABLE_SOURCES.technical) {
+        if (hostname.includes(source)) {
+          reputableSources.technical.push(hostname);
+          citationLinks++;
+          return;
+        }
+      }
+    } catch {
+    }
+  });
+  const bodyText = $content.text();
+  const bodyHtml = $content.html() || "";
+  const hasInlineCitations = /\[\d+\]/.test(bodyText) || /\(Source:/i.test(bodyText) || /\(Citation:/i.test(bodyText) || /according to/i.test(bodyText) || /study (by|from|shows|found)/i.test(bodyText);
+  const hasReferencesSection = /(references|sources|citations|bibliography|works cited)/i.test(
+    $("h2, h3, h4, h5, h6").text()
+  ) || $("#references, .references, #sources, .sources, #citations").length > 0;
+  const statisticPatterns = [
+    /(\d+(?:\.\d+)?)\s*%/g,
+    // Percentages
+    /(\d+(?:,\d{3})*(?:\.\d+)?)\s*(million|billion|trillion)/gi,
+    // Large numbers
+    /\$(\d+(?:,\d{3})*(?:\.\d+)?)/g,
+    // Dollar amounts
+    /(\d+)\s*out of\s*(\d+)/gi,
+    // Ratios
+    /(\d+)x\s/gi
+    // Multipliers
+  ];
+  let statisticsWithSources = 0;
+  let statisticsWithoutSources = 0;
+  $content.find("p").each((_, p) => {
+    const pText = $(p).text();
+    const pHtml = $(p).html() || "";
+    let hasStatistic = false;
+    for (const pattern of statisticPatterns) {
+      if (pattern.test(pText)) {
+        hasStatistic = true;
+        pattern.lastIndex = 0;
+        break;
+      }
+    }
+    if (hasStatistic) {
+      const hasLink = $(p).find("a[href]").length > 0;
+      const hasCitationText = /\(.*\d{4}\)|according to|source:|study/i.test(pText);
+      if (hasLink || hasCitationText) {
+        statisticsWithSources++;
+      } else {
+        statisticsWithoutSources++;
+      }
+    }
+  });
+  const hasStatistics = statisticsWithSources + statisticsWithoutSources > 0;
+  let citationScore = 30;
+  if (reputableSources.academic.length > 0)
+    citationScore += 15;
+  if (reputableSources.government.length > 0)
+    citationScore += 15;
+  if (reputableSources.educational.length > 0)
+    citationScore += 10;
+  if (reputableSources.authoritative.length > 0)
+    citationScore += 10;
+  if (reputableSources.technical.length > 0)
+    citationScore += 5;
+  if (hasInlineCitations)
+    citationScore += 10;
+  if (hasReferencesSection)
+    citationScore += 10;
+  if (hasStatistics) {
+    const citedRatio = statisticsWithSources / (statisticsWithSources + statisticsWithoutSources);
+    if (citedRatio >= 0.8)
+      citationScore += 10;
+    else if (citedRatio >= 0.5)
+      citationScore += 5;
+    else if (citedRatio < 0.3)
+      citationScore -= 10;
+  }
+  if (externalLinks === 0)
+    citationScore -= 20;
+  citationScore = Math.max(0, Math.min(100, citationScore));
+  const totalReputable = Object.values(reputableSources).flat().length;
+  if (totalReputable === 0 && externalLinks > 0) {
+    issues.push({
+      code: "AI_NO_REPUTABLE_CITATIONS",
+      severity: "warning",
+      category: "ai-readiness",
+      title: "No reputable sources cited",
+      description: "Content has external links but none to recognized authoritative sources. AI prioritizes content that cites reputable sources.",
+      impact: "Lower E-E-A-T signals and reduced likelihood of AI citing your content.",
+      howToFix: "Add citations to reputable sources: academic papers, government sites (.gov), educational institutions (.edu), or established publications.",
+      affectedUrls: [url],
+      details: {
+        externalLinks,
+        reputableLinks: 0,
+        suggestedSources: [
+          "Academic: scholar.google.com, pubmed.ncbi.nlm.nih.gov",
+          "Government: .gov, who.int, cdc.gov",
+          "Technical: developer.mozilla.org, w3.org"
+        ]
+      }
+    });
+  }
+  if (externalLinks === 0 && totalLinks > 0) {
+    issues.push({
+      code: "AI_NO_EXTERNAL_CITATIONS",
+      severity: "warning",
+      category: "ai-readiness",
+      title: "No external sources linked",
+      description: "Content has no external links. AI values content that references and links to authoritative sources.",
+      impact: "Appears self-contained without external validation, reducing trust signals for AI.",
+      howToFix: "Add relevant external links to support your claims. Link to studies, official documentation, or authoritative sources.",
+      affectedUrls: [url]
+    });
+  }
+  if (statisticsWithoutSources > 0) {
+    issues.push({
+      code: "AI_UNCITED_STATISTICS",
+      severity: "warning",
+      category: "ai-readiness",
+      title: "Statistics without source citations",
+      description: `Found ${statisticsWithoutSources} statistic(s) without linked sources. AI is trained to prefer claims backed by citations.`,
+      impact: "Uncited statistics reduce content credibility and E-E-A-T signals.",
+      howToFix: 'Add source links or citations for all statistics. Include the source name and year when possible (e.g., "according to [Source, 2024]").',
+      affectedUrls: [url],
+      details: {
+        statisticsWithSources,
+        statisticsWithoutSources,
+        citedRatio: statisticsWithSources / (statisticsWithSources + statisticsWithoutSources)
+      }
+    });
+  }
+  const wordCount = bodyText.split(/\s+/).length;
+  if (wordCount > 1e3 && !hasReferencesSection && citationLinks > 0) {
+    issues.push({
+      code: "AI_NO_REFERENCES_SECTION",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "No dedicated references section",
+      description: "Long-form content with citations but no dedicated references section. A references section signals academic rigor.",
+      impact: "Missing opportunity to demonstrate comprehensive research and boost E-E-A-T.",
+      howToFix: 'Add a "References" or "Sources" section at the end listing all cited sources with full attribution.',
+      affectedUrls: [url]
+    });
+  }
+  if (citationScore < 40) {
+    issues.push({
+      code: "AI_LOW_CITATION_QUALITY",
+      severity: "warning",
+      category: "ai-readiness",
+      title: "Content citation quality needs improvement",
+      description: `Citation quality score: ${citationScore}/100. Well-cited content ranks higher in AI search results.`,
+      impact: "Low citation quality signals reduce E-E-A-T and AI citation likelihood.",
+      howToFix: "Improve citations: 1) Link to reputable sources, 2) Cite statistics with sources, 3) Add a references section, 4) Use inline citations for claims.",
+      affectedUrls: [url],
+      details: {
+        citationScore,
+        externalLinks,
+        reputableSources: totalReputable,
+        statisticsWithSources,
+        statisticsWithoutSources
+      }
+    });
+  }
+  return {
+    issues,
+    data: {
+      totalLinks,
+      externalLinks,
+      citationLinks,
+      reputableSources,
+      citationPatterns: {
+        hasInlineCitations,
+        hasReferencesSection,
+        hasStatistics,
+        statisticsWithSources,
+        statisticsWithoutSources
+      },
+      citationScore
+    }
+  };
+}
+
+// src/audit/checks/answer-conciseness.ts
+import * as cheerio45 from "https://esm.sh/cheerio@1.0.0";
+var IDEAL_ANSWER_LENGTH = { min: 40, max: 150 };
+var MAX_FIRST_SENTENCE = 200;
+function analyzeAnswerConciseness(html, url) {
+  const issues = [];
+  const $ = cheerio45.load(html);
+  $("nav, footer, aside, script, style, noscript, header").remove();
+  const headings = $("h1, h2, h3, h4, h5, h6");
+  let totalHeadings = 0;
+  let questionHeadings = 0;
+  let headingsWithDirectAnswers = 0;
+  const firstSentenceLengths = [];
+  let shortAnswersCount = 0;
+  let longAnswersCount = 0;
+  const quotableAnswers = [];
+  const questionPatterns = [
+    /\?$/,
+    /^(what|how|why|when|where|who|which|can|does|is|are|should|will|would|could)\s/i
+  ];
+  headings.each((_, heading) => {
+    const $heading = $(heading);
+    const headingText2 = $heading.text().trim();
+    totalHeadings++;
+    const isQuestion = questionPatterns.some((p) => p.test(headingText2));
+    if (isQuestion) {
+      questionHeadings++;
+      let $next = $heading.next();
+      let answerText = "";
+      while ($next.length && !$next.is("h1, h2, h3, h4, h5, h6")) {
+        if ($next.is("p")) {
+          answerText += $next.text().trim() + " ";
+        }
+        $next = $next.next();
+      }
+      if (answerText) {
+        const firstSentenceMatch = answerText.match(/^[^.!?]+[.!?]/);
+        const firstSentence = firstSentenceMatch ? firstSentenceMatch[0].trim() : "";
+        if (firstSentence) {
+          firstSentenceLengths.push(firstSentence.length);
+          const isDirectAnswer = firstSentence.length <= MAX_FIRST_SENTENCE && !firstSentence.toLowerCase().startsWith("well,") && !firstSentence.toLowerCase().startsWith("so,") && !firstSentence.toLowerCase().startsWith("basically,") && (/^(yes|no|the|a|an|it|they|this|there|you|we)/i.test(firstSentence) || /^[A-Z][a-z]+\s+(is|are|was|were|can|should|will)/i.test(firstSentence));
+          if (isDirectAnswer) {
+            headingsWithDirectAnswers++;
+            if (firstSentence.length >= IDEAL_ANSWER_LENGTH.min && firstSentence.length <= IDEAL_ANSWER_LENGTH.max) {
+              shortAnswersCount++;
+              quotableAnswers.push(firstSentence);
+            } else if (firstSentence.length > IDEAL_ANSWER_LENGTH.max) {
+              longAnswersCount++;
+            }
+          }
+        }
+      }
+    }
+  });
+  const definitions = [];
+  $("p").each((_, p) => {
+    const text = $(p).text().trim();
+    const defMatch = text.match(/^([A-Z][^.]{0,50})\s+(is|are|refers to|means|describes|represents)\s+([^.]+\.)/);
+    if (defMatch) {
+      definitions.push(defMatch[0]);
+    }
+  });
+  const bodyText = $("body").text().toLowerCase();
+  const headingText = headings.map((_, h) => $(h).text().toLowerCase()).get().join(" ");
+  const hasSummary = headingText.includes("summary") || headingText.includes("conclusion") || headingText.includes("key takeaways") || $('[class*="summary"], [id*="summary"]').length > 0;
+  const hasTLDR = bodyText.includes("tl;dr") || bodyText.includes("tldr") || bodyText.includes("in short") || bodyText.includes("in summary") || headingText.includes("tl;dr");
+  const hasKeyPoints = headingText.includes("key points") || headingText.includes("main points") || headingText.includes("highlights") || $('[class*="key-points"], [class*="highlights"]').length > 0;
+  const averageFirstSentenceLength = firstSentenceLengths.length > 0 ? firstSentenceLengths.reduce((a, b) => a + b, 0) / firstSentenceLengths.length : 0;
+  let concisenessScore = 50;
+  if (questionHeadings > 0) {
+    const answerRatio = headingsWithDirectAnswers / questionHeadings;
+    concisenessScore += answerRatio * 20;
+  }
+  if (shortAnswersCount >= 3)
+    concisenessScore += 15;
+  else if (shortAnswersCount >= 1)
+    concisenessScore += 10;
+  if (longAnswersCount > shortAnswersCount)
+    concisenessScore -= 10;
+  if (definitions.length >= 2)
+    concisenessScore += 10;
+  else if (definitions.length === 1)
+    concisenessScore += 5;
+  if (hasSummary)
+    concisenessScore += 5;
+  if (hasTLDR)
+    concisenessScore += 5;
+  if (hasKeyPoints)
+    concisenessScore += 5;
+  if (averageFirstSentenceLength > 0 && averageFirstSentenceLength <= 150) {
+    concisenessScore += 5;
+  } else if (averageFirstSentenceLength > 200) {
+    concisenessScore -= 10;
+  }
+  concisenessScore = Math.max(0, Math.min(100, concisenessScore));
+  if (questionHeadings > 0 && headingsWithDirectAnswers < questionHeadings * 0.5) {
+    issues.push({
+      code: "AI_INDIRECT_ANSWERS",
+      severity: "warning",
+      category: "ai-readiness",
+      title: "Questions lack direct, quotable answers",
+      description: `${questionHeadings} question headings found but only ${headingsWithDirectAnswers} have direct answers. AI prefers content that answers questions immediately.`,
+      impact: "AI may skip your content for sources with clearer, more direct answers.",
+      howToFix: 'Start answer paragraphs with a direct 1-2 sentence answer. Avoid filler words like "Well," "So," "Basically." Lead with the answer, then explain.',
+      affectedUrls: [url],
+      details: {
+        questionHeadings,
+        directAnswers: headingsWithDirectAnswers,
+        examples: quotableAnswers.slice(0, 3)
+      }
+    });
+  }
+  if (longAnswersCount > 0 && longAnswersCount > shortAnswersCount) {
+    issues.push({
+      code: "AI_VERBOSE_ANSWERS",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "Answer opening sentences are too long",
+      description: `Found ${longAnswersCount} answers with opening sentences over 150 characters. AI quotes shorter, punchier statements.`,
+      impact: "Long opening sentences are less likely to be quoted verbatim by AI.",
+      howToFix: 'Keep first sentences under 150 characters. Move details to subsequent sentences. Think "tweet-length" for opening answers.',
+      affectedUrls: [url],
+      details: {
+        averageLength: Math.round(averageFirstSentenceLength),
+        idealLength: `${IDEAL_ANSWER_LENGTH.min}-${IDEAL_ANSWER_LENGTH.max} characters`
+      }
+    });
+  }
+  const hasDefinitionalQueries = bodyText.includes("what is") || bodyText.includes("what are") || bodyText.includes("definition") || bodyText.includes("meaning of");
+  if (hasDefinitionalQueries && definitions.length === 0) {
+    issues.push({
+      code: "AI_NO_CLEAR_DEFINITIONS",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "Definitional content lacks clear definitions",
+      description: 'Content discusses "what is" topics but lacks Wikipedia-style definitions. AI heavily favors clear "[Term] is a [definition]" patterns.',
+      impact: "Missing out on definitional search citations and AI answer boxes.",
+      howToFix: 'Add clear definitions: "[Term] is a [category] that [key characteristics]." Place definitions early in content or in dedicated sections.',
+      affectedUrls: [url],
+      details: {
+        suggestion: 'Example: "SEO is the practice of optimizing websites to rank higher in search engine results."'
+      }
+    });
+  }
+  const wordCount = $("body").text().split(/\s+/).length;
+  if (wordCount > 1500 && !hasSummary && !hasTLDR && !hasKeyPoints) {
+    issues.push({
+      code: "AI_NO_SUMMARY",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "Long content lacks summary or key takeaways",
+      description: "Content is over 1500 words but has no summary, TL;DR, or key points section. AI often pulls from summary sections.",
+      impact: "Harder for AI to extract key points; may cite competitors with better-structured summaries.",
+      howToFix: 'Add a "Key Takeaways" section at the top or a "Summary" at the bottom. Use bullet points for scannable key points.',
+      affectedUrls: [url]
+    });
+  }
+  if (concisenessScore < 50) {
+    issues.push({
+      code: "AI_LOW_CONCISENESS",
+      severity: "warning",
+      category: "ai-readiness",
+      title: "Content lacks concise, quotable answers",
+      description: `Conciseness score: ${concisenessScore}/100. AI prefers content with clear, succinct answers it can quote directly.`,
+      impact: "Reduced likelihood of AI citing your content in direct answers.",
+      howToFix: "Restructure content: lead with direct answers, add definitions, include TL;DR sections, keep opening sentences short.",
+      affectedUrls: [url],
+      details: {
+        concisenessScore,
+        quotableAnswers: quotableAnswers.length,
+        definitions: definitions.length,
+        hasSummary,
+        hasTLDR
+      }
+    });
+  }
+  return {
+    issues,
+    data: {
+      headings: {
+        total: totalHeadings,
+        questions: questionHeadings,
+        withDirectAnswers: headingsWithDirectAnswers
+      },
+      answers: {
+        averageFirstSentenceLength: Math.round(averageFirstSentenceLength),
+        shortAnswersCount,
+        longAnswersCount,
+        quotableAnswers: quotableAnswers.slice(0, 5)
+      },
+      definitions: {
+        count: definitions.length,
+        examples: definitions.slice(0, 3)
+      },
+      keyTakeaways: {
+        hasSummary,
+        hasTLDR,
+        hasKeyPoints
+      },
+      concisenessScore
+    }
+  };
+}
+
 // src/audit/engine.ts
 async function runFullAudit(options) {
   const { url, checkBrokenLinks = false, checkHreflangUrls = false, checkCanonicalChain = false, cruxApiKey } = options;
@@ -12047,6 +13015,9 @@ async function runFullAudit(options) {
   const navboostResult = analyzeNavBoostSignals(html, url);
   const entityResult = analyzeEntitySEO(html, url);
   const qdfFreshnessResult = analyzeFreshnessSignals(html, url);
+  const aiContentStructureResult = analyzeAIContentStructure(html, url);
+  const citationQualityResult = analyzeCitationQuality(html, url);
+  const answerConcisenessResult = analyzeAnswerConciseness(html, url);
   const paginationResult = analyzePagination(html, url, onPageResult.data.canonical);
   allIssues.push(
     ...onPageResult.issues,
@@ -12080,6 +13051,9 @@ async function runFullAudit(options) {
     ...navboostResult.issues,
     ...entityResult.issues,
     ...qdfFreshnessResult.issues,
+    ...aiContentStructureResult.issues,
+    ...citationQualityResult.issues,
+    ...answerConcisenessResult.issues,
     ...paginationResult.issues
   );
   if (!structuredDataResult.data.hasSchema) {
@@ -12134,6 +13108,7 @@ async function runFullAudit(options) {
     safeAsync("IndexNow", () => analyzeIndexNow(html, url, headers)),
     safeAsync("Site Maturity", () => analyzeSiteMaturity(html, url)),
     safeAsync("Redirect Chain", () => analyzeRedirectChain(url)),
+    safeAsync("Bing Optimization", () => analyzeBingOptimization(html, url)),
     // Core Web Vitals (optional)
     cruxApiKey ? safeAsyncIssues("Core Web Vitals", async () => {
       const cwv = await fetchCoreWebVitals(url, cruxApiKey);
