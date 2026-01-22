@@ -7,6 +7,7 @@ import { SignupPage } from './pages/SignupPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProjectPage } from './pages/ProjectPage';
+import { KeywordsPage } from './pages/KeywordsPage';
 import { AccountPage } from './pages/AccountPage';
 import { BillingPage } from './pages/BillingPage';
 import { GitHubCallbackPage } from './pages/GitHubCallbackPage';
@@ -28,6 +29,7 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/dashboard/github-callback" element={<GitHubCallbackPage />} />
         <Route path="/dashboard/projects/:id" element={<ProjectPage />} />
+        <Route path="/dashboard/projects/:id/keywords" element={<KeywordsPage />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/account/billing" element={<BillingPage />} />
         <Route path="/account/api-keys" element={<AccountPage />} />

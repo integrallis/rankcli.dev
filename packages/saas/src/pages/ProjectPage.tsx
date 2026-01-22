@@ -12,6 +12,7 @@ import {
   RefreshCw,
   ExternalLink,
   Info,
+  Sparkles,
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
@@ -183,6 +184,12 @@ export function ProjectPage() {
           </div>
 
           <div className="flex gap-3">
+            <Button variant="outline" className="gap-2" asChild>
+              <Link to={`/dashboard/projects/${projectId}/keywords`}>
+                <Sparkles className="h-4 w-4" />
+                Keywords
+              </Link>
+            </Button>
             {project.github_repo_url ? (
               <Button variant="outline" className="gap-2" asChild>
                 <a href={project.github_repo_url} target="_blank" rel="noopener noreferrer">
