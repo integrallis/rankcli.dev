@@ -104,7 +104,7 @@ rankcli ci                      # CI/CD mode (for GitHub Actions)
 
 ### Pricing Tiers
 - **Free**: 1 site, 50 checks, manual audits
-- **Solo** ($9/mo): 3 sites, 200+ checks, weekly audits, GitHub connect
+- **Solo** ($9/mo): 3 sites, 50+ checks, weekly audits, GitHub connect
 - **Pro** ($29/mo): 10 sites, daily audits, auto-fix PRs, Slack alerts
 - **Agency** ($99/mo): 50 sites, on-demand audits, white-label, API access
 

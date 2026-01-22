@@ -6,6 +6,8 @@ services:
     volumes:
       - ..:/workspace:cached
       - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "3005:3005"
     command: sleep infinity
     environment:
       - ENVIRONMENT=development
