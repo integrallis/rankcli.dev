@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "@rankcli/agent-runtime": "../../agent-runtime-deno/index.ts",
+    "cheerio": "https://esm.sh/cheerio@1.0.0"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window", "deno.unstable"]
+  }
+}
