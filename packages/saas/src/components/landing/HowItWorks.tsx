@@ -1,4 +1,5 @@
 import { Terminal, GitPullRequest, CheckCircle } from 'lucide-react';
+import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ui/scroll-reveal';
 
 const steps = [
   {
@@ -25,18 +26,18 @@ export function HowItWorks() {
   return (
     <section className="py-24 border-t border-border/40">
       <div className="container">
-        <div className="text-center mb-16">
+        <ScrollReveal className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             How it works
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Three steps to automated SEO. No dashboards to check. No meetings to schedule.
           </p>
-        </div>
+        </ScrollReveal>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <StaggerContainer className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {steps.map((step, index) => (
-            <div key={index} className="relative">
+            <StaggerItem key={index} className="relative">
               {/* Connector line */}
               {index < steps.length - 1 && (
                 <div className="hidden md:block absolute top-10 left-full w-full h-px bg-border/60 -translate-y-1/2 z-0" />
@@ -57,9 +58,9 @@ export function HowItWorks() {
                   {step.code}
                 </code>
               </div>
-            </div>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerContainer>
       </div>
     </section>
   );

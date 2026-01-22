@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Terminal, Github, Twitter } from 'lucide-react';
+import { ScrollReveal } from '@/components/ui/scroll-reveal';
 
 const footerLinks = {
   product: [
@@ -22,7 +23,7 @@ const footerLinks = {
 export function Footer() {
   return (
     <footer className="border-t border-border/40 bg-card/50">
-      <div className="container py-12">
+      <ScrollReveal className="container py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
@@ -110,10 +111,10 @@ export function Footer() {
         {/* Bottom */}
         <div className="mt-12 pt-8 border-t border-border/40">
           <p className="text-sm text-muted-foreground text-center">
-            &copy; {new Date().getFullYear()} RankCLI. All rights reserved.
+            &copy; {new Date().getFullYear()} Integrallis Software, LLC. All rights reserved.
           </p>
         </div>
-      </div>
+      </ScrollReveal>
     </footer>
   );
 }

@@ -9,6 +9,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ProjectPage } from './pages/ProjectPage';
 import { AccountPage } from './pages/AccountPage';
 import { BillingPage } from './pages/BillingPage';
+import { GitHubCallbackPage } from './pages/GitHubCallbackPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
       {/* Protected routes */}
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/dashboard/github-callback" element={<GitHubCallbackPage />} />
         <Route path="/dashboard/projects/:id" element={<ProjectPage />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/account/billing" element={<BillingPage />} />

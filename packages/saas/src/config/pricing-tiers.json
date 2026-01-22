@@ -3,12 +3,19 @@
   "free_tier": {
     "enabled": true,
     "sites_limit": 1,
-    "checks_limit": 50,
+    "checks_limit": 200,
     "keywords_limit": 10,
     "historical_days": 7,
     "features": {
       "manual_audit_only": true,
       "limited_report": true,
+      "ai_analysis": false,
+      "keyword_research": false,
+      "content_optimizer": false,
+      "competitor_intel": false,
+      "backlink_finder": false,
+      "local_seo": false,
+      "tool_opportunities": false,
       "tagline": "Analyze your site for free"
     }
   },
@@ -25,7 +32,9 @@
         "team_members": 1,
         "keywords": 50,
         "api_requests_day": 100,
-        "historical_days": 30
+        "historical_days": 30,
+        "keyword_research_per_month": 5,
+        "content_optimizations_per_month": 3
       },
       "features": {
         "full_audit": true,
@@ -34,13 +43,22 @@
         "github_auto_fix": false,
         "slack_alerts": false,
         "api_access": true,
-        "competitor_tracking": 0
+        "competitor_tracking": 0,
+        "ai_analysis": true,
+        "keyword_research": true,
+        "content_optimizer": true,
+        "competitor_intel": false,
+        "backlink_finder": false,
+        "local_seo": false,
+        "tool_opportunities": false
       },
       "highlights": [
         "200+ SEO checks",
         "3 sites monitored",
         "Weekly automated audits",
-        "GitHub repo connection",
+        "AI-powered analysis",
+        "Keyword research (5/mo)",
+        "Content optimizer (3/mo)",
         "CLI with API key"
       ]
     },
@@ -56,7 +74,11 @@
         "team_members": 5,
         "keywords": 200,
         "api_requests_day": 1000,
-        "historical_days": 90
+        "historical_days": 90,
+        "keyword_research_per_month": 25,
+        "content_optimizations_per_month": 15,
+        "competitor_analyses_per_month": 5,
+        "backlink_reports_per_month": 3
       },
       "features": {
         "full_audit": true,
@@ -65,14 +87,23 @@
         "github_auto_fix": true,
         "slack_alerts": true,
         "api_access": true,
-        "competitor_tracking": 3
+        "competitor_tracking": 3,
+        "ai_analysis": true,
+        "keyword_research": true,
+        "content_optimizer": true,
+        "competitor_intel": true,
+        "backlink_finder": true,
+        "local_seo": true,
+        "tool_opportunities": false
       },
       "highlights": [
         "Everything in Solo",
         "10 sites monitored",
         "Daily automated audits",
         "Auto-fix PRs via GitHub App",
-        "Slack/Discord alerts",
+        "Competitor intelligence",
+        "Backlink opportunity finder",
+        "Local SEO analyzer",
         "Track 3 competitors"
       ]
     },
@@ -88,7 +119,12 @@
         "team_members": null,
         "keywords": 1000,
         "api_requests_day": 10000,
-        "historical_days": 365
+        "historical_days": 365,
+        "keyword_research_per_month": null,
+        "content_optimizations_per_month": null,
+        "competitor_analyses_per_month": null,
+        "backlink_reports_per_month": null,
+        "tool_opportunities_per_month": 10
       },
       "features": {
         "full_audit": true,
@@ -99,16 +135,68 @@
         "api_access": true,
         "competitor_tracking": 10,
         "white_label": true,
-        "priority_support": true
+        "priority_support": true,
+        "ai_analysis": true,
+        "keyword_research": true,
+        "content_optimizer": true,
+        "competitor_intel": true,
+        "backlink_finder": true,
+        "local_seo": true,
+        "tool_opportunities": true,
+        "seo_api_integration": true
       },
       "highlights": [
         "Everything in Pro",
         "50 sites monitored",
         "Unlimited team members",
         "On-demand audits",
+        "Tool opportunity finder",
+        "SEO API integrations",
         "White-label reports",
         "Dedicated support"
       ]
     }
-  ]
+  ],
+  "seo_modules": {
+    "ai_audit": {
+      "name": "AI-Powered Audit",
+      "description": "GPT-4o content analysis, meta optimization, fix prioritization",
+      "tiers": ["solo", "pro", "agency"]
+    },
+    "keyword_research": {
+      "name": "Keyword Research",
+      "description": "KGR calculator, semantic clustering, content briefs",
+      "tiers": ["solo", "pro", "agency"]
+    },
+    "content_optimizer": {
+      "name": "Content Optimizer",
+      "description": "SERP analysis, content gaps, AI optimization suggestions",
+      "tiers": ["solo", "pro", "agency"]
+    },
+    "competitor_intel": {
+      "name": "Competitor Intelligence",
+      "description": "Deep competitor analysis, keyword gaps, strategic recommendations",
+      "tiers": ["pro", "agency"]
+    },
+    "backlink_finder": {
+      "name": "Backlink Opportunity Finder",
+      "description": "Link building opportunities, outreach templates, prioritized plan",
+      "tiers": ["pro", "agency"]
+    },
+    "local_seo": {
+      "name": "Local SEO Analyzer",
+      "description": "NAP consistency, GBP optimization, local keywords, citations",
+      "tiers": ["pro", "agency"]
+    },
+    "tool_opportunities": {
+      "name": "Tool Opportunity Finder",
+      "description": "Engineering as Marketing - find free tool opportunities using Bhanu's method",
+      "tiers": ["agency"]
+    },
+    "seo_api_integration": {
+      "name": "SEO API Integration",
+      "description": "Connect Ahrefs, Semrush, DataForSEO for real keyword data",
+      "tiers": ["agency"]
+    }
+  }
 }

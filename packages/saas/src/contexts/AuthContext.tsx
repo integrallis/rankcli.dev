@@ -67,18 +67,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signup = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { error, data } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `${window.location.origin}/auth/callback?type=email_confirm`,
       },
     });
     if (error) {
       toast.error(error.message);
       throw error;
     }
-    toast.success('Check your email to confirm your account');
+
+    if (!data.user) {
+      toast.error('Unexpected error during sign up.');
+      throw new Error('Signup failed: No user returned');
+    }
+
+    // Check if email confirmation is required
+    // If identities array is empty, email confirmation is pending
+    const needsEmailConfirmation = !data.session && data.user.identities?.length === 0;
+
+    if (needsEmailConfirmation || !data.session) {
+      toast.success('Check your email to confirm your account!', {
+        description: 'We sent a verification link to ' + email,
+        duration: 8000,
+      });
+    } else {
+      toast.success('Account created successfully!');
+    }
   };
 
   const logout = async () => {

@@ -4,6 +4,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { ScrollReveal } from '@/components/ui/scroll-reveal';
 
 const faqs = [
   {
@@ -42,16 +43,16 @@ export function FAQ() {
   return (
     <section className="py-24 bg-muted/30">
       <div className="container">
-        <div className="text-center mb-16">
+        <ScrollReveal className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Frequently asked questions
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Got questions? We have answers.
           </p>
-        </div>
+        </ScrollReveal>
 
-        <div className="max-w-3xl mx-auto">
+        <ScrollReveal delay={0.2} className="max-w-3xl mx-auto">
           <Accordion type="single" collapsible className="w-full">
             {faqs.map((faq, index) => (
               <AccordionItem key={index} value={`item-${index}`}>
@@ -64,7 +65,7 @@ export function FAQ() {
               </AccordionItem>
             ))}
           </Accordion>
-        </div>
+        </ScrollReveal>
       </div>
     </section>
   );

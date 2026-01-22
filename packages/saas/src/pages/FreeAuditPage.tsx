@@ -153,7 +153,7 @@ export function FreeAuditPage() {
                 <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
                 <p className="text-lg font-medium mb-2">Analyzing your site...</p>
                 <p className="text-muted-foreground">
-                  Running 50+ SEO checks. This usually takes 10-30 seconds.
+                  Running 200+ SEO checks. This usually takes 10-30 seconds.
                 </p>
               </CardContent>
             </Card>

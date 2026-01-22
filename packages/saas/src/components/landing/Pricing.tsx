@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import pricingConfig from '@/config/pricing-tiers.json';
+import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ui/scroll-reveal';
 
 interface PricingTier {
   id: string;
@@ -36,19 +37,19 @@ export function Pricing() {
   return (
     <section id="pricing" className="py-24 border-t border-border/40">
       <div className="container">
-        <div className="text-center mb-16">
+        <ScrollReveal className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Simple, transparent pricing
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Start free, upgrade when you need more. No credit card required.
           </p>
-        </div>
+        </ScrollReveal>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <StaggerContainer className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {tiers.map((plan) => (
-            <Card
-              key={plan.id}
+            <StaggerItem key={plan.id}>
+              <Card
               className={cn(
                 'relative flex flex-col',
                 plan.popular && 'border-primary shadow-lg shadow-primary/10'
@@ -93,12 +94,13 @@ export function Pricing() {
                   {plan.id === 'agency' ? 'Contact Sales' : 'Start Free Trial'}
                 </Button>
               </CardFooter>
-            </Card>
+              </Card>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerContainer>
 
         {/* Free tier note */}
-        <div className="text-center mt-12">
+        <ScrollReveal delay={0.3} className="text-center mt-12">
           <p className="text-muted-foreground">
             Looking for a free option?{' '}
             <Link to="/free-audit" className="text-primary hover:underline">
@@ -106,7 +108,7 @@ export function Pricing() {
             </Link>{' '}
             - no signup required.
           </p>
-        </div>
+        </ScrollReveal>
       </div>
     </section>
   );

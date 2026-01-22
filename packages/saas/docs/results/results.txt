@@ -1,0 +1,2822 @@
+## https://www.seobility.net/en/seocheck/check/?url=https%3A%2F%2Fintegrallis.com%2F&mode=standard
+
+On-page score
+Issues:
+2
+Critical
+84%
+On-page score
+Meta data
+100 %
+Page quality
+48 %
+Page structure
+100 %
+Links
+67 %
+Server
+100 %
+External factors
+100 %
+
+HTML page
+Himmelimherzen
+Meta title
+Integrallis | Artificial Intelligence・Applied
+
+Meta description
+Three decades of software craftsmanship. Now building what comes next.
+
+URL
+https://integrallis.com/
+Status code
+200
+Page status
+Follow
+Index
+Language
+EN
+Response time
+0.05 sec
+File size
+12.80 kB
+Word count
+211
+
+To-Do List
+Tasks sorted by priority
+
+To-Do
+
+Importance
+
+Action
+The page title should be better suited to the content of the page.
+Warning
+
+More details
+Words from H1 heading not found in text. Make sure that H1 content matches page content and vice versa.
+Warning
+
+More details
+
+Meta data
+100%
+Title
+
+Learn more
+3/3
+Very important
+Integrallis | Artificial Intelligence・Applied
+The length of the page title is perfect. (360 pixels out of 580 max pixel length)
+There are no duplicate words in the title.
+Meta description
+
+Learn more
+2/2
+Very important
+Three decades of software craftsmanship. Now building what comes next.
+The length of the meta description is perfect. (453 pixels out of 1000 max pixel length)
+Crawlability
+
+Learn more
+1/1
+Very important
+There are no problems in accessing the page.
+Canonical link
+
+Learn more
+1/1
+Important
+The language is not specified in the HTML markup
+Language
+
+Learn more
+4/4
+Low importance
+Language detected in text: en
+Language defined in HTML: en
+Server location: Germany
+The following language is defined in the HTML code: en
+Alternate/hreflang links
+
+Learn more
+1/1
+Low importance
+There are no alternate links specified on this page.
+Other meta tags
+
+Learn more
+2/2
+Low importance
+There is no rel=next meta tag on this page.
+There is no rel=prev meta tag on this page.
+Domain
+
+Learn more
+3/3
+Low importance
+The domain is not a subdomain.
+The domain length works well.
+The domain name does not contain any non-Latin characters.
+Page URL
+
+Learn more
+3/3
+Low importance
+No parameters were found in the URL.
+No session ID was found in the URL.
+The URL does not have too many subdirectories.
+Charset encoding
+
+Learn more
+1/1
+Low importance
+The charset encoding (UTF-8) is set correctly.
+Doctype
+
+Learn more
+2/2
+Nice to have
+The doctype HTML 5 is set correctly.
+The doctype is placed first in the HTML code.
+Favicon
+
+Learn more
+1/1
+Nice to have
+The favicon is linked correctly.
+Page quality
+48%
+Content
+
+Learn more
+Errors
+4/8
+Very important
+There are only 211 words on this page. Use at least 250 words to provide useful information
+Some words from the page title are not used within the pages content
+Words from the H1 heading are not used in the page content.
+The average number of words per sentence of 8.39 words is low.
+25.6% of the text are stop words.
+10 paragraphs (text blocks) were found on this page.
+No placeholder texts or images were found.
+There are no duplicates on the site
+Frames
+
+Learn more
+1/1
+Very important
+This page does not use a frameset.
+Mobile optimization
+
+Learn more
+Warning
+1/2
+Low importance
+No Apple touch icon is specified
+A viewport (width=device-width, initial-scale=1.0) is provided.
+Strong and bold tags
+
+Learn more
+1/1
+Low importance
+The usage of strong and bold tags is perfect. We recommend the use of up to 6 tags for this page.
+Image SEO
+
+Learn more
+1/1
+Low importance
+ALT text (alternative text) is correctly used on all found images.
+Social media
+
+Learn more
+Warning
+0/1
+Nice to have
+There are few social sharing options on the page. Sharing plugins can increase the page's reach on social media.
+Additional markup
+
+Learn more
+1/1
+Nice to have
+No additional page markup was found.
+HTTPS
+
+Learn more
+2/2
+Low importance
+This page uses HTTPS to protect the privacy and integrity of information exchanged.
+All included files are also transferred via HTTPS.
+Others
+100%
+H1 heading
+
+Learn more
+2/2
+Very important
+Putting an end to AI Slop. Enterprise Grade AI.
+The H1 heading is perfect
+Headings
+
+Learn more
+1/1
+Important
+The heading structure is perfect.
+Link structure
+67%
+Internal links
+
+Learn more
+Warning
+3/4
+Important
+There are too few (5) internal links on this page.
+Every link text is unique.
+None of the link texts are too long.
+There are no dynamic parameters used in internal links.
+External links
+
+Learn more
+Warning
+0/1
+Nice to have
+There are no external links on this page.
+Server configuration
+100%
+HTTP redirects
+
+Learn more
+2/2
+Very important
+The checked page does not redirect to another URL.
+The redirect of URLs with www and non-www subdomain is configured correctly.
+HTTP header
+
+Learn more
+2/2
+Important
+No X-Powered HTTP header is sent.
+This page uses compression for data transfer.
+Performance
+
+Learn more
+2/2
+Low importance
+The HTML page response time of 0,05 seconds is below the target of 0.40 seconds.
+The file size of the HTML document is fine. (13 kB)
+External factors
+100%
+Backlinks
+
+Learn more
+4/4
+Very important
+This page has excellent links from other websites.
+This page has backlinks from 161 referring domains.
+This page has 249 backlinks.
+This page has backlinks from 39 different IP addresses.
+
+## https://www.seoptimer.com/integrallis.com
+
+Audit Results for integrallis.com
+Your page could be better
+
+
+On-Page SEO
+
+Links
+
+Usability
+
+Performance
+
+Social
+
+Report Generated: 20 January 3:27AM UTC
+
+Improve Your Site With Our DIY SEO Tool
+Review unlimited pages. Crawl your whole site for problems and get clear, easy to follow recommendations with guides for your CMS. Monitor your keyword rankings and get regular updates on your site's performance.
+
+Helping Business Owners promote their websites the affordable way.
+
+
+Recommendations
+Implement a XML Sitemaps File
+On-Page SEO
+Medium Priority
+Implement a robots.txt File
+On-Page SEO
+Medium Priority
+Increase length of Title Tag
+On-Page SEO
+Medium Priority
+Increase length of Meta Description
+On-Page SEO
+Medium Priority
+Add Canonical Tag
+On-Page SEO
+Medium Priority
+Create and link your Facebook Page
+Social
+Low Priority
+Create and link your X Profile
+Social
+Low Priority
+Use your main keywords across the important HTML Tags
+On-Page SEO
+Low Priority
+Increase Page Text Content
+On-Page SEO
+Low Priority
+Optimize for Mobile PageSpeed Insights
+Usability
+Low Priority
+Add a DMARC Mail Record
+Other
+Low Priority
+Implement an Analytics Tracking Tool
+On-Page SEO
+Low Priority
+Add Schema Markup
+On-Page SEO
+Low Priority
+Add Facebook Open Graph Tags
+Social
+Low Priority
+Add X Cards
+Social
+Low Priority
+Create and link an associated Instagram Profile
+Social
+Low Priority
+Create and link an associated YouTube Channel
+Social
+Low Priority
+Create and link an associated LinkedIn Profile
+Social
+Low Priority
+Add Business Address and Phone Number
+Other
+Low Priority
+Add Local Business Schema
+Other
+Low Priority
+Add Identity Schema
+Other
+Low Priority
+Implement a llms.txt File
+On-Page SEO
+Low Priority
+Install a Facebook Pixel
+Social
+Low Priority
+Remove Clear Text Email Addresses
+Usability
+Low Priority
+On-Page SEO Results
+Your On-Page SEO could be better
+Your page has some level of On-Page SEO optimization but could be improved further. On-Page SEO is important to ensure Search Engines can understand your content appropriately and help it rank for relevant keywords. You should ensure that HTML Tag Content is completed correctly and align text content to target keywords.
+Title Tag
+You have a Title Tag, but ideally it should be between 50 and 60 characters in length (including spaces).
+Integrallis | Artificial Intelligence・Applied
+Length : 45
+Title Tags are very important for search engines to correctly understand and categorize your content.
+Meta Description Tag
+Your page has a Meta Description Tag however, your Meta Description should ideally be between 120 and 160 characters (including spaces).
+Three decades of software craftsmanship. Now building what comes next.
+Length : 70
+A Meta Description is important for search engines to understand the content of your page, and is often shown as the description text blurb in search results.
+SERP Snippet Preview
+This illustrates how your page may appear in Search Results. Note, this is intended as a guide and Search Engines are more frequently generating this content dynamically.
+
+Integrallis
+https://integrallis.com
+Integrallis | Artificial Intelligence・Applied
+Three decades of software craftsmanship. Now building what comes next.
+Hreflang Usage
+Your page is not making use of Hreflang attributes.
+Language
+Your page is using the Lang Attribute.
+Declared: English
+H1 Header Tag Usage
+Your page has a H1 Tag.
+H2-H6 Header Tag Usage
+Your page is making use multiple levels of Header Tags.
+Header Tag	Frequency	
+H2	3	
+H3	6	
+H4	0	
+H5	0	
+H6	0	
+Keyword Consistency
+Your page's main keywords are not distributed well across the important HTML Tags.
+Your page content should be focused around particular keywords you would like to rank for. Ideally these keywords should also be distributed across tags such as the title, meta and header tags.
+Individual Keywords
+Keyword	Title	Meta Description Tag	Headings Tags	Page Frequency	
+research	
+5	
+systems	
+5	
+orchestration	
+4	
+software	
+3	
+architectures	
+3	
+tools	
+3	
+products	
+2	
+coming	
+2	
+Amount of Content
+Your page has a low volume of text content which search engines can interpret as 'thin content'.
+Word Count: 214
+It has been well researched that higher text content volumes are related to better ranking ability in general.
+Image Alt Attributes
+You do not have any images missing Alt Attributes on your page.
+Canonical Tag
+Your page is not using the Canonical Tag.
+The Canonical Tag tells Search Engines the primary URL of a page. Google recommends all pages specify a Canonical.
+Noindex Tag Test
+Your page is not using the Noindex Tag which prevents indexing.
+Noindex Header Test
+Your page is not using the Noindex Header which prevents indexing.
+SSL Enabled
+Your website has SSL enabled.
+HTTPS Redirect
+Your page successfully redirects to a HTTPS (SSL secure) version.
+Robots.txt
+We have not detected or been able to retrieve a robots.txt file successfully.
+A robots.txt file is recommended as it can provide important instructions to a search engine for how to most appropriately crawl your website as well as site areas that should be ignored.
+Blocked by Robots.txt
+Your page does not appear to be blocked by robots.txt.
+Llms.txtNew
+We have not detected or been able to retrieve a llms.txt file successfully.
+XML Sitemaps
+We have not detected or been able to retrieve a XML Sitemaps File successfully.
+Sitemaps are recommended to ensure that search engines can intelligently crawl all of your pages.
+Create it yourself with our free tool:  
+XML Sitemap Generator
+
+Analytics
+We could not detect an analytics tool installed on your page.
+Website analytics tools like Google Analytics assist you in measuring, analyzing and ultimately improving traffic to your page.
+Schema.org Structured Data
+We have not detected any usage of Schema.org on your page.
+Schema.org is a structured data markup for webpages which helps Search Engines understand your site better and provide rich snippets directly in their search results.
+Identity SchemaNew
+No Organization or Person Schema identified on the page.
+The absence of Organization or Person Schema can make it harder for Search Engines and LLMs to identify the ownership of a website and confidently answer brand, company or person queries.
+Rendered Content (LLM Readability)New
+Your page has a low level of rendered content which tends to make it more readable for LLMs.
+Rendering Percentage: 1%
+
+Links
+Backlink Summary
+You have a moderate level of backlink activity to this page.
+Domain
+Strength
+
+Page
+Strength
+
+256
+Total Backlinks
+179
+Referring Domains
+58
+Nofollow Backlinks
+198
+Dofollow Backlinks
+0
+Edu Backlinks
+0
+Gov Backlinks
+68
+IPs
+62
+Subnets
+Top Backlinks
+These are the highest value external pages we have found linking to your site.
+Domain
+strength	Referring Page URL	Referring Page Title	Anchor Text
+97	https://www.slideshare.net/bsbodden	Brian Sam-bodden, Founder and ceo at Integrallis software, llc	www.integrallis.com/blog/
+96	https://myemail.constantcontact.com/Pacific-Southwest-News.html?soid=1107467178965&aid=M3MDCtB8v8E	Pacific Southwest News	Integrallis Software, LLC
+91	http://www.infoq.com/news/2013/09/ios-games-ruby	Developing iOS Games on Ruby	Integrallis
+90	https://forums.macrumors.com/threads/apple-retains-top-spot-as-worlds-most-valuable-brand-in-latest-interbrand-rankings.1798457/page-3	Apple Retains Top Spot as World's Most Valuable Brand in Latest Interbrand Rankings | Page 3 | MacRumors Forums	http://www.integrallis.com/
+90	https://openhub.net/p/integralliss_learning-ruby	The integrallis's learning-ruby Open Source Project on Open Hub	Homepage
+90	https://lists.jboss.org/pipermail/rules-users/2011-February/020104.html	[rules-users] "Rule Engine Development with JBoss Drools" Training in Phoenix, Feb 22-23	http://www.integrallis.com
+89	https://www.rubydoc.info/gems/excemel/frames	RubyDoc.info: File: README – Documentation for excemel (1.1.1) – RubyDoc.info	http://integrallis.com
+88	https://www.artima.com/forums/flat.jsp?forum=261&thread=64028&start=0	Books Forum - Enterprise Java Development on a Budget:	http://www.integrallis.com
+86	https://www.40billion.com/company/935957281	Integrallis Software | 40Billion	Integrallis Software
+83	https://worldwidetopsite.link/website-list-1031/	website list 1031 |	integrallis
+Top Pages by Backlinks
+These are the pages on your site with the most the backlinks from other sites.
+URL	Backlinks	
+https://integrallis.com/	145	
+http://www.integrallis.com/	57	
+http://integrallis.com/	18	
+https://www.integrallis.com/	7	
+http://integrallis.com/en/publications	6	
+http://www.integrallis.com/ourblogs/	5	
+http://www.integrallis.com/J120.html	3	
+http://www.integrallis.com/blog	2	
+http://www.integrallis.com/blog/tag/gorm	2	
+http://integrallis.com/blog/using-groovys-gorm-in-spring	1	
+Top Anchors by Backlinks
+These are the top pieces of Anchor Text we found used to link to your site.
+Anchor	Backlinks	
+integrallis	117	
+integrallis.com	29	
+http://www.integrallis.com	22	
+Brian Sam-Bodden	17	
+Go to Website	10	
+Integrallis	10	
+http://www.integrallis.com/	7	
+this page	6	
+https://www.integrallis.com	6	
+Homepage	4	
+Top Referring Domain Geographies
+These are the Top Geographies we have found linking to your site.
+Top TLDs
+179
+Referring
+Domains
+com
+146
+top
+7
+org
+4
+eu
+2
+Other
+20
+Top Countries
+179
+Referring
+Domains
+DE
+98
+US
+43
+FI
+20
+CO
+9
+Other
+9
+On-Page Link Structure
+We found 0 total links. 0% of your links are external links and are sending authority to other sites. 0% of your links are nofollow links, meaning authority is not being passed to those destination pages.
+Friendly Links
+Your link URLs appear friendly (easily human or search engine readable).
+
+Usability
+Your usability could be better
+Your page is OK but could be more usable across devices. Usability is important to maximize your available audience and minimize user bounce rates (which can indirectly affect your search engine rankings).
+Device Rendering
+This check visually demonstrates how your page renders on different devices. It is important that your page is optimized for mobile and tablet experiences as today the majority of web traffic comes from these sources.
+Google's Core Web Vitals
+Google is indicating that they do not have 'sufficient real-world speed data for this page' in order to make a Core Web Vitals assessment. This can occur for smaller websites or those that are not crawl-able by Google.
+Use of Mobile Viewports
+Your page specifies a Viewport matching the device's size, allowing it to render appropriately across devices.
+Google's PageSpeed Insights - Mobile
+Google is indicating that your page is scoring poorly on their Mobile PageSpeed Insights evaluation.
+
+Note that this evaluation is being performed from US servers and the results may differ slightly from an evaluation carried out from Google's PageSpeed Web Interface as that reporting localizes to the region in which you are running the report.
+Google has indicated that the performance of a webpage is becoming more important from a user and subsequently ranking perspective.
+Lab Data	Value
+First Contentful Paint	2.9 s
+Speed Index	3.2 s
+Largest Contentful Paint	2.9 s
+Time to Interactive	3.7 s
+Total Blocking Time	0.18 s
+Cumulative Layout Shift	0
+Opportunities	Estimated Savings
+Avoid multiple page redirects	0.63 s
+Google's PageSpeed Insights - Desktop
+Google is indicating that your page is scoring well on their Desktop PageSpeed Insights evaluation.
+Lab Data	Value
+First Contentful Paint	0.9 s
+Speed Index	0.9 s
+Largest Contentful Paint	0.9 s
+Time to Interactive	0.9 s
+Total Blocking Time	0 s
+Cumulative Layout Shift	0.004
+Opportunities	Estimated Savings
+Avoid multiple page redirects	0.19 s
+Flash Used?
+No Flash content has been identified on your page.
+iFrames Used?
+There are no iFrames detected on your page.
+Favicon
+Your page has specified a Favicon.
+Email Privacy
+Email addresses have been found in plain text.
+We recommend removing any plain text email addresses and replacing them with images or contact forms. Plain text email addresses can be susceptible to scrapers and email spammers.
+Legible Font Sizes
+The text on your page appears to be legible across devices.
+Tap Target Sizing
+The links and buttons on your page appear to be appropriately sized for a user to easily tap on a touchscreen.
+Performance Results
+Your performance is very good!
+Congratulations, your page has performed very well in our testing meaning it should be reasonably fast and responsive for users. Performance is important to ensure a good user experience, and reduced bounce rates (which can also indirectly affect your search engine rankings). Continue to monitor your performance over time to ensure there are no periodic fluctuations.
+Website Load Speed
+Your page loads in a reasonable amount of time.
+Server Response
+0.1s
+All Page Content Loaded
+0.5s
+All Page Scripts Complete
+0.3s
+Website Download Size
+Your page's file size is reasonably low which is good for Page Load Speed and user experience.
+Download Page Size
+0.12MB
+Download Page Size Breakdown
+0.12MB
+Total
+HTML
+0MB
+CSS
+0MB
+JS
+0MB
+Images
+0.04MB
+Other
+0.07MB
+Compression Usage (Gzip, Deflate, Brotli)
+Your website appears to be using a reasonable level of compression.
+Compression Rate
+23%
+Compression Rates
+HTML
+69% compressed of 0.01MB
+CSS
+83% compressed of 0.03MB
+JS
+72% compressed of 0.01MB
+Images
+0% compressed of 0.04MB
+Other
+0% compressed of 0.07MB
+Total
+23% compressed of 0.16MB
+Resources Breakdown
+This check displays the total number of files that need to be retrieved from web servers to load your page.
+9
+
+Total Objects
+
+2
+
+Number of HTML Pages
+
+1
+
+Number of JS Resources
+
+2
+
+Number of CSS Resources
+
+2
+
+Number of Images
+
+2
+
+Other Resources
+
+Google Accelerated Mobile Pages (AMP)
+This page does not appear to have AMP Enabled.
+JavaScript Errors
+Your page is not reporting any JavaScript errors.
+HTTP2 Usage
+Your website is using the recommended HTTP/2+ Protocol.
+Optimize Images
+All of the images on your page appear to be optimized.
+Minification
+All your JavaScript and CSS files appear to be minified.
+Deprecated HTML
+No deprecated HTML tags have been found within your page.
+Inline Styles
+No Inline Styles have been found within your page's HTML tags.
+Social Results
+Your social needs improvement
+You appear to have a weak social presence or level of social activity (or we may just not be able to see your profiles!). Social activity is important for customer communication, brand awareness and as a marketing channel to bring visitors to your website. We recommend that you list all of your profiles on your page for visibility, and begin to build a following on those networks.
+Facebook Page Linked
+No associated Facebook Page found as a link on your page.
+Facebook Open Graph Tags
+We have not found Facebook Open Graph Tags on your page.
+Facebook Open Graph Tags are a type of structured data that can be placed on your page to control what content is shown when a page is shared on Facebook.
+Facebook Pixel
+We have not detected a Facebook Pixel on your page.
+Facebook's Pixel is a useful piece of analytics code that allows you to retarget visitors if you decide to run Facebook Ads in future.
+X (formerly Twitter) Account Linked
+No associated X Profile found as a link on your page.
+X Cards
+We have not detected X Cards on your page.
+X Cards are a type of structured data that can be placed on your page to control what content is shown when a page is shared on X.
+Instagram Linked
+No associated Instagram Profile found linked on your page
+LinkedIn Page Linked
+No associated LinkedIn Profile found linked on your page.
+YouTube Channel Linked
+No associated YouTube Channel found linked on your page.
+YouTube Channel Activity
+No associated YouTube Channel found linked on your page.
+Want to grow your YouTube Channel? Try our  
+YouTube SEO Tool
+Local SEO
+Address & Phone Shown on Website
+We can't identify one or both of these components on the page. Missing: Phone, Address
+Local Business Schema
+No Local Business Schema identified on the page.
+Google Business Profile Identified
+You can see information about your page's Google Business Profile within this report by signing up to one of our premium plans.
+Want to improve your Local Search Presence? Try our  
+Local SEO Tool
+Technology Results
+Technology List
+These software or coding libraries have been identified on your page.
+Technology	Version
+	Fastly	
+	GitHub Pages	
+	Varnish	
+Server IP Address
+185.199.109.153
+DNS Servers
+ns4.dnsimple-edge.org
+ns1.dnsimple.com
+ns3.dnsimple.com
+ns2.dnsimple-edge.net
+Web Server
+GitHub.com
+Charset
+text/html; charset=utf-8
+DMARC Record
+This site does not appear to have a DMARC record in place.
+DMARC records are important to improve email deliverability and combat spoofing.
+SPF Record
+This site appears to have an SPF record.
+v=spf1 a include:_spf.google.com ~all
+Review Child Pages
+No Sub-Pages Found
+
+## https://website.grader.com/tests/integrallis.com
+
+27/30
+Performance
+Optimizing your website's performance is crucial to increasing traffic, improving conversion rates, generating more leads, and increasing revenue.
+Improve your website performance with a free 15-minute lesson
+Page size
+129KB
+So fast! So light!
+The heavier the site page, the slower the load. For optimal performance, try to keep page size below 3MB.
+Page requests
+10
+You make this look easy.
+The more HTTP requests your website makes, the slower it becomes. Try reducing the number of files your site loads.
+Page speed
+3Sec
+Zoom zoom. Nice work.
+Best-in-class webpages should become interactive within 5.3 seconds. Any slower and visitors will abandon your site, reducing conversions and sales.
+Pass
+Browser caching
+Wowee. Your web caching is world class.
+Browser caching speeds up your website by storing frequently used content in local memory.
+Pass
+Minimal page redirects
+Straight to the point.
+Multiple redirects can make your site load slower. Aim for no more than one redirect.
+Fail
+Image Size
+Out of place.
+Images can take a long time to load. Use responsive images or SVGs to optimize your images for different screen sizes.
+Pass
+Minified JavaScript
+Have you been working out?
+When your JavaScript is properly compressed, it makes your website run much faster.
+Pass
+Minified CSS
+Short and sweet.
+When your CSS is properly compressed, it makes your website run much faster.
+
+30/30
+SEO
+Optimizing your website content for search helps you drive organic traffic to your website. You can do this by providing a great experience for people and web crawlers alike.
+Improve Your SEO Ranking with a free 15-minute Lesson.
+Pass
+Permission To Index
+Granted.
+In order for a page to appear in search results, search engines must have permission to store it in their index. If they can't store it, no other changes matter.
+Pass
+Meta Description
+Look at you go!
+Meta descriptions tell people what your page is about in search results.
+Pass
+Content Plugins
+*Clap, clap, clap* Good job!
+Search engines can't always understand content that relies on browser plugins, such as Flash.
+Pass
+Descriptive Link Text
+Your links make sense.
+Descriptive link text helps visitors know what they'll see if they click the link. "Click here" doesn't cut it.
+
+30/30
+Mobile
+Traffic from mobile devices is growing fast. Optimize your website for mobile or you'll miss out on valuable traffic, leads, and revenue.
+Improve Your Mobile Performance with a free 15-minute Lesson
+
+Pass
+Legible Font Size
+Easy on the eyes.
+Visitors may have difficulty reading small text, especially on mobile devices. We recommend at least 12px.
+Pass
+Tap Targets
+Clicking is so easy!
+Mobile-friendly pages perform better in search results. Make sure interactive elements like buttons and links are not too small or too close together.
+Pass
+Responsive
+Fantastic! You're ready to face the future.
+Responsive design gives you a bump in search rankings for searches on mobile devices.
+
+10/10
+Security
+A secure website equipped with an SSL certificate and free from vulnerabilities is now the standard online. People and search engines love secure websites.
+Improve Your Site Security with a free 15-minute Lesson
+HTTPS
+Secured.
+HTTPS protects websites from attacks and gives visitors confidence that your site is authentic and trustworthy.
+Secure JavaScript libraries
+Protected!
+Intruders can exploit outdated JavaScript libraries. Using the latest version of each library and updating it regularly will help keep you safe.
+What should I do next?
+Performance	Current	Recommendation
+Image Size	No	Yes	
+
+## https://tools.backlinko.com/seo-checker?q=integrallis.com
+
+Your SEO Score
+
+75
+of 100
+Improve My Score
+Score breakdown
+
+This page received an SEO score of 75 out of 100. There are 5 important issues that should be fixed to improve your website's ranking on search engines and enhance its overall performance.
+4 Critical: See step‑by‑step fixes in Semrush Site Audit
+
+1 Warnings
+
+13 Passed
+
+Website screenshot
+Issues Overview
+5 Issues
+XML Sitemaps
+No XML sitemap found. Add sitemap.xml or declare it in robots.txt.
+Robots.TXT
+Missing robots.txt file — search engines won't know which pages they can crawl. Add robots.txt to guide search engines.
+Description
+Meta description is too short (70 characters) — expand to at least 140 characters.
+Canonical
+Missing canonical tag — search engines might index duplicate pages. Add a canonical tag to avoid confusion.
+Title
+Meta title is a bit short (45 characters) — aim for 50-60 characters.
+Semrush Domain Analytics
+Understand your site's competitive position with key metrics like domain authority, ranking keywords, and referring domains.
+Authority Score
+
+4
+
+Ranking Keywords
+
+Referring Domains
+
+261
+
+Organic Traffic
+
+5.6K
+Unlock
+
+Paid Traffic
+
+5.6K
+Unlock
+
+AI Visibility
+Track your brand's presence in AI responses across platforms and prompts. Identify coverage gaps and opportunities. How AI visibility works.
+Box Content CTA screenshot
+Your AI visibility:
+
+Not measured
+
+Measure AI Visibility
+Box Content CTA screenshot
+AI Sentiment
+See if AI systems recommend your brand positively, neutrally, or negatively. Shape your AI reputation. How AI sentiment works.
+Box Content CTA screenshot
+Your AI sentiment score:
+
+Unknown
+
+Reveal AI Insights
+Box Content CTA screenshot
+On-Page SEO Analysis
+9 Checks
+Check if your page titles, descriptions, and content structure follow SEO best practices for better visibility. Get ideas.
+URL
+
+Tips
+URL length is good (15 characters).
+integrallis.com
+
+
+Canonical
+
+Tips
+Missing canonical tag — search engines might index duplicate pages. Add a canonical tag to avoid confusion.
+n/a
+
+
+Title
+
+Tips
+Meta title is a bit short (45 characters) — aim for 50-60 characters. Get title ideas.
+Integrallis | Artificial Intelligence・Applied
+
+
+Description
+
+Tips
+Meta description is too short (70 characters) — expand to at least 140 characters. Get description ideas.
+Three decades of software craftsmanship. Now building what comes next.
+
+
+H1 Heading
+
+Tips
+Single H1 present with optimal length (47 characters).
+Putting an end to AI Slop. Enterprise Grade AI.
+
+
+H1-H6 Structure
+
+Tips
+Your page implements HTML headings (H1 through H3).
+Level	Frequency
+H2	
+3
+H3	
+6
+H4	
+0
+H5	
+0
+H6	
+0
+Level	Value
+H1	Putting an end to AI Slop. Enterprise Grade AI.
+H2	Accountable, Explainable AI
+H2	Forging the future
+H2	Let's connect
+H3	Alternative Architectures
+H3	Agentic Software Engineering
+H3	Knowledge Systems
+H3	Reinforcement Learning
+H3	Developer Tools
+H3	Research Platform
+
+
+Content
+
+Tips
+Healthy text-to-code ratio (86.35%). Open in writing assistant.
+Good content length (1658 words).
+
+
+Image Alt
+
+Tips
+All images have alt text. Audit all site images.
+
+
+Keyword Density
+
+Tips
+Total words: 203
+2-word phrases: 2
+3-word phrases: 0
+4-word phrases: 0
+1 word
+2 words
+3 words
+4 words
+Track these keywords
+Word	Repeats	Density
+systems
+5	46.70%
+research
+5	64.14%
+orchestration
+4	60.47%
+software
+3	48.93%
+tools
+3	28.74%
+architectures
+3	63.05%
+exploring
+2	26.60%
+building
+2	43.10%
+contact
+2	55.91%
+multiagent
+2	38.92%
+coming
+2	59.11%
+agentic
+2	43.60%
+development
+2	43.60%
+products
+2	68.97%
+generation
+2	70.69%
+verification
+2	64.04%
+structured
+2	73.89%
+neural
+2	66.75%
+reliability
+2	80.30%
+
+
+Get SEO insights, fix issues, and grow with a free Semrush account.
+Identify technical SEO issues quickly
+Uncover errors impacting rankings
+Analyze competitors' site health
+Access 55+ more powerful tools
+Create Free Account
+No credit card needed.
+
+Site Compliance
+8 Checks
+Ensure search engines can properly access, crawl, and understand your website's structure and content.
+Robots.TXT
+
+Tips
+Missing robots.txt file — search engines won't know which pages they can crawl. Add robots.txt to guide search engines. Check your robots.txt.
+n/a
+
+
+XML Sitemaps
+
+Tips
+No XML sitemap found. Add sitemap.xml or declare it in robots.txt. Check your sitemap.
+n/a
+
+
+Language
+
+Tips
+Language properly declared.
+en
+
+
+Noindex
+
+Tips
+Page is properly configured for search engine indexing.
+
+
+Doctype
+
+Tips
+Valid DOCTYPE declaration found.
+HTML5
+
+
+Encoding
+
+Tips
+Character encoding properly specified.
+UTF-8
+
+
+Favicon
+
+Tips
+Favicon found and accessible.
+https://integrallis.com/assets/images/favicon-32.png
+
+
+Security
+
+Tips
+Website is properly secured with HTTPS. View HTTPS report.
+
+
+Internal & External Links
+Review your link structure to ensure users can easily navigate and search engines can properly crawl your site. Learn more.
+internal Links (found 6) Check for broken links.
+
+#	Link	Anchor
+1
+https://integrallis.com/#
+[image]
+2
+https://integrallis.com/#research
+research
+3
+https://integrallis.com/#products
+products
+4
+https://integrallis.com/#contact
+contact
+5
+https://integrallis.com/#research
+explore our research
+6
+https://integrallis.com/#contact
+get notified
+View More
+external Links (found 1)
+
+#	Link	Anchor
+1
+mailto:info@integrallis.com
+info@integrallis.com
+Improve Your SEO Strategy
+6 Tasks
+Get your next moves to boost rankings and drive more organic traffic to your site.
+
+Review your content to match audience needs
+Read Guide
+
+Compare your traffic and rankings to competitors
+Read Guide
+
+Analyze your backlinks and find gaps compared to competitors
+Read Guide
+
+Ensure your site is fast, mobile-friendly, and easy to use
+Read Guide
+
+Set SEO goals and create a simple action plan
+Read Guide
+
+Track progress regularly and adjust as needed
+Read Guide
+SEO strategy complete?
+Now optimize for AI search.
+See what users ask AI about your brand
+Track visibility across major AI platforms
+Turn AI blind spots into opportunities
+Benchmark AI presence vs top competitors
+Measure AI Visibility
+Visibility AI CTA image
+See where else your site ranks (free account, no credit card)
+Get 10 free keyword searches daily to discover all your ranking opportunities.
+
+Get Free Account
+Site Ranks CTA image
+Top Backlinks
+These are the highest value external pages we have found linking to your site. Get free backlink report.
+Referring page	AS	Anchor text	Nofollow
+https://seoflox.io/g/dhtur-rank-website-on-first-page/
+36	
+Got low authority? We fixed integrallis.com by using real site links on SeoFlox.com.
+nofollow
+https://redrockpresentsasd.blogspot.com/
+30	
+integrallis.com
+nofollow
+https://lordfilm-wasd.blogspot.com/
+28	
+integrallis.com
+nofollow
+https://konoplyaasd.blogspot.com/
+27	
+integrallis.com
+nofollow
+
+# https://pagespeed.web.dev/analysis/https-integrallis-com/bhaudkczpf?form_factor=desktop
+
+Diagnose performance issues
+99
+Performance
+87
+Accessibility
+100
+Best Practices
+100
+SEO
+99
+FCP
++10
+LCP
++25
+TBT
++30
+CLS
++25
+SI
++10
+Performance
+Values are estimated and may vary. The performance score is calculated directly from these metrics.See calculator.
+0–49
+50–89
+90–100
+Final Screenshot
+
+Metrics
+Expand view
+First Contentful Paint
+0.8 s
+Largest Contentful Paint
+0.8 s
+Total Blocking Time
+0 ms
+Cumulative Layout Shift
+0.004
+Speed Index
+0.9 s
+Captured at Jan 19, 2026, 8:28 PM MST
+Emulated Desktop with Lighthouse 13.0.1
+Single page session
+Initial page load
+Custom throttling
+Using HeadlessChromium 137.0.7151.119 with lr
+View Treemap
+Screenshot
+Screenshot
+Screenshot
+Screenshot
+Screenshot
+Screenshot
+Screenshot
+Screenshot
+Show audits relevant to:
+
+All
+
+FCP
+
+LCP
+
+CLS
+Insights
+Render blocking requests Est savings of 510 ms
+Forced reflow
+LCP request discovery
+Network dependency tree
+Use efficient cache lifetimes Est savings of 48 KiB
+Improve image delivery Est savings of 44 KiB
+Layout shift culprits
+Optimize DOM size
+LCP breakdown
+3rd parties
+These insights are also available in the Chrome DevTools Performance Panel - record a trace to view more detailed information.
+Diagnostics
+Image elements do not have explicit width and height
+Avoid non-composited animations 1 animated element found
+More information about the performance of your application. These numbers don't directly affect the Performance score.
+Passed audits (15)
+Show
+87
+Accessibility
+These checks highlight opportunities to improve the accessibility of your web app. Automatic detection can only detect a subset of issues and does not guarantee the accessibility of your web app, so manual testing is also encouraged.
+Contrast
+Background and foreground colors do not have a sufficient contrast ratio.
+These are opportunities to improve the legibility of your content.
+Best practices
+Document does not have a main landmark.
+These items highlight common accessibility best practices.
+Additional items to manually check (10)
+Show
+These items address areas which an automated testing tool cannot cover. Learn more in our guide on conducting an accessibility review.
+Passed audits (9)
+Show
+Not applicable (49)
+Show
+100
+Best Practices
+Trust and Safety
+Ensure CSP is effective against XSS attacks
+Use a strong HSTS policy
+Ensure proper origin isolation with COOP
+Mitigate clickjacking with XFO or CSP
+Mitigate DOM-based XSS with Trusted Types
+Passed audits (13)
+Show
+Not applicable (2)
+Show
+100
+SEO
+These checks ensure that your page is following basic search engine optimization advice. There are many additional factors Lighthouse does not score here that may affect your search ranking, including performance on Core Web Vitals. Learn more about Google Search Essentials.
+Additional items to manually check (1)
+Hide
+Structured data is valid
+Run these additional validators on your site to check additional SEO best practices.
+Passed audits (8)
+Show
+Not applicable (2)
+
+## https://rankmath.com/tools/seo-analyzer/
+
+70/100
+SEO Score
+19/28
+Passed Tests
+1/28
+Warnings
+8/28
+Failed Tests
+Basic SEO
+Common Keywords ?A list of keywords that appear frequently in the text of your content.	
+Here are the most common keywords we found on the page:
+researchsystemsorchestrationarchitecturessoftwaretoolsagenticbuildingcomingcontact
+SEO Description ?SEO analysis of your page's meta-description.	
+The meta description is 70 characters long, which is good. Three decades of software craftsmanship. Now building what comes next.
+H1 Heading ?SEO Analysis of the H1 Tags on your page.	
+One H1 tag was found on the page.
+Putting an end to AI Slop. Enterprise Grade AI.
+H2 Headings ?SEO analysis of the H2 headings on your page.	
+One or more H2 tags were found on the page.
+Accountable, Explainable AI
+Forging the future
+Let's connect
+Image ALT Attributes ?SEO analysis of the "alt" attribute for image tags.	
+All images on the page have alt attributes.
+Keywords in Title & Description ?SEO analysis of the HTML page's Title and meta description content.	
+How to fixNo common keywords found in the page title.
+Links Ratio ?SEO analysis of the ratio of internal links to external links.	
+How to fixThere are one or more issues with the number of links on this page:
+No internal links found.
+internal: 0
+external: 0
+SEO Title ?SEO analysis of the HTML title of the page.	
+The page title has 45 characters, which is good.
+Integrallis | Artificial Intelligence・Applied
+Create a responsive site ?Our analysis of the use of CSS media queries in your content.	
+The CSS code contains media queries.
+Media query found in http://integrallis.com/assets/css/styles.css.
+Homepage Is Reachable ?Tests if your homepage is reachable by making an HTTP request.	
+Homepage is reachable
+Advanced SEO
+Search Preview	
+Here is how the site may appear in search results:
+Integrallis | Artificial Intelligence・Applied
+http://integrallis.com
+Three decades of software craftsmanship. Now building what comes next.
+Canonical Tag ?Does the content have a "canonical" URL?	
+How to fixNo canonical link tag found on the page.
+null
+Noindex Meta ?Does the content contain a noindex robots meta tag?	
+The page does not contain any index meta tag or header.
+Mobile Search Preview	
+Here is how the site may appear in search results on a mobile device:
+Integrallis | Artificial Intelligence・Applied
+http://integrallis.com
+Three decades of software craftsmanship. Now building what comes next.
+Mobile Snapshot ?A snapshot of how your content appears on a mobile device.	
+
+WWW Canonicalization ?Does the site appear on more than one URL?	
+Both www and non-www versions of the URL are redirected to the same site.
+OpenGraph Meta ?Does your site use OpenGraph meta tags?	
+How to fixSome Opengraph meta tags are missing.
+Schema Meta Data ?Does the content include relevant Schema.org metadata?	
+How to fixNo Schema.org data found on the page.
+Sitemaps ?Does the site use an XML sitemap?	
+How to fixNo sitemaps found.
+Robots.txt ?Does your site have a valid robots.txt file	
+How to fixRobots.txt file is missing or unavailable. Try our free robots.txt editor tool to easily test and validate your robots.txt file.
+Keep your content fresh ?Checks for recent content updates using available signals (XML sitemap, og:updated_time, or Last-Modified header).	
+The content is fresh. Last updated on 2026-01-09 (10 days ago) via Last-Modified header (XML Sitemap and og:updated_time not found).
+Broken Links ?Detects broken or dead links (404/500 errors) in the website that may harm SEO and user trust.	
+No broken links on the page.
+Performance
+Install WP Rocket to get the Performance Boost
+Page Size ?An analysis of the size of your HTML file.	
+The size of the HTML document is 2 Kb, under the average HTML size of 33 Kb.
+Response Time ?How fast does your server respond to requests?	
+The response time is under 0.8 seconds which is great.
+Image Headers Expire ?Do your images use "expires" headers?	
+No local images found on the page
+Minify CSS ?Are your CSS files properly minified?	
+How to fixSome CSS files don't seem to be minified.
+http://integrallis.com/assets/css/styles.css
+Page Objects ?Analysis of the embedded objects in the pages.	
+The page makes 5 requests.
+total: 5
+images: 2
+javascript: 1
+stylesheets: 2
+Minify Javascript ?Does the site use minified JavaScript?	
+How to fixSome Javascript files don't seem to be minified.
+http://integrallis.com/assets/js/scripts.js
+Mobile Speed ?How fast does your website respond to mobile users?	
+The page performance is good across all key metrics.
+Security
+Theme Visibility ?Theme Visibility	
+The theme is not publicly visible, so it is not easily identifiable.
+Visible Plugins ?Visible Plugins	
+Hurray! None of the plugins are publicly visible.
+Directory Listing ?Does your web server list the contents of the directories?	
+Directory Listing seems to be disabled on the server.
+Secure Connection ?Is your content served over a secure connection?	
+The site is using a secure transfer protocol (https).
+
+## 
+
+Overall Site Score
+A very good score is between 60 and 80. For best results, you should strive for 70 and above.
+
+61 / 100
+Very Good
+22
+ of 22
+All Items
+
+7
+ of 22
+Critical Issues
+
+1
+ of 22
+Recommended
+
+14
+ of 22
+Good Results
+
+Basic SEO
+Advanced SEO
+Performance
+Security
+Mobile Snapshot
+
+Search Preview
+Here is how the site may appear in search results:
+
+http://integrallis.com/
+Integrallis | Artificial Intelligence・Applied
+Three decades of software craftsmanship. Now building what comes next.
+Keywords
+Here are the most common keywords we found on the page:
+
+5
+research
+5
+we're
+4
+systems
+3
+ai
+3
+orchestration
+3
+tools
+2
+integrallis
+2
+products
+2
+contact
+2
+coming
+Basic SEO
+The SEO title is set and is 45 characters long.
+
+
+The meta description is set and is 70 characters long.
+
+
+No keywords were found in the meta description.
+
+
+One H1 tag was found on the page.
+
+
+
+
+
+H2 tags were found on the page.
+
+
+
+
+All images on the page have alt attributes.
+
+Too few internal links on the page.
+
+
+
+
+Advanced SEO
+No canonical link tag found on the page.
+
+
+The page does not contain any noindex header or meta tag.
+
+Both the www and non-www versions of the URL are redirected to the same site.
+
+
+
+The robots.txt file is missing or unavailable.
+
+
+
+Some Open Graph meta tags are missing.
+
+
+
+
+
+No Schema.org data was found on your page.
+
+Performance
+The server is not using "expires" headers for the images.
+
+
+All Javascript files appear to be minified.
+
+
+
+Some CSS files don't seem to be minified.
+
+
+
+The page makes 5 requests.
+
+The size of the HTML document is 3 Kb. This is under the average of 33 Kb.
+
+
+
+
+The response time is under 0.2 seconds.
+
+
+Security
+Directory Listing seems to be disabled on the server.
+
+
+Google has not flagged this site for malware.
+
+The site is using a secure transfer protocol (https).
+
+## https://www.semrush.com/siteaudit
+
+Site Audit: Overview (integrallis.com)
+Site Health
+89%0%
+AI Search Health
+89%0%
+Crawled Pages
+Project name: integrallis.com
+Blocked 0% 0
+Redirect 20% 1
+Have issues 20% 1
+Broken 60% 3
+Healthy 0% 0
+Total 5
+Pages Blocked from AI Search
+Project name: integrallis.com
+AI Bots Blocked Pages
+ChatGPT-User0
+OAI-SearchBot0
+Googlebot0
+Google-Extended0
+PerplexityBot0
+Perplexity-User0
+800 BOYLSTON STREET, SUITE 2475, BOSTON, MA 02199
+WWW.SEMRUSH.COM
+Generated on January 20, 2026 The report data is taken from Semrush 3
+AI Bots Blocked Pages
+Claude-User0
+Claude-SearchBot0
+800 BOYLSTON STREET, SUITE 2475, BOSTON, MA 02199
+WWW.SEMRUSH.COM
+Generated on January 20, 2026 The report data is taken from Semrush 4
+Errors
+20
+Warnings
+40
+Top Issues
+Project name: integrallis.com
+Top Issues Status Of Issues Number Of Issues
+2 pages returned 4XX status code Error2
+0
+1 page has a low word count Warning1
+0
+Sitemap.xml not found Warning1
+0
+2 issues with unminified JavaScript and CSS
+files
+Warning2
+0
+Llms.txt not found Notice1
+0
+
+## https://neilpatel.com/seo-analyzer
+
+ 
+You are not using your most popular keywords inside your Title tag (est. 10 min)high
+Title tag
+Title tag: Integrallis | Artificial Intelligence・Applied
+
+Title length: 47
+
+Focus keywords not found:
+enterprise grademulti agentresearch productsproducts contactcontact stealthresearch products contactproducts contact stealthcontact stealth mode・announcementsstealth mode・announcements comingmode・announcements coming putting
+
+Read more about this subject: How to Write Title Tags for SEO
+Your Meta description is too shortYou are not using your most popular keywords inside your Meta description (est. 15 min)medium
+Meta description
+Meta description: Three decades of software craftsmanship. Now building what comes next.
+
+Meta description length: 70
+
+Focus keywords not found:
+enterprise grademulti agentresearch productsproducts contactcontact stealthresearch products contactproducts contact stealthcontact stealth mode・announcementsstealth mode・announcements comingmode・announcements coming putting
+
+Read more about this subject: Meta Tags for SEO: Definition, Examples, & Best Practices
+This table shows your most used keywords.medium
+Keyword density
+Result	Keyword	Keyword type	Frequency	Title	Description	H1
+1	research	One word phrases	5	0	0	0
+2	ai	One word phrases	5	0	0	1
+3	systems	One word phrases	5	0	0	0
+4	orchestration	One word phrases	4	0	0	0
+5	software	One word phrases	3	0	1	0
+1	enterprise grade	Two word phrases	2	0	0	1
+2	multi agent	Two word phrases	2	0	0	0
+3	research products	Two word phrases	1	0	0	0
+4	products contact	Two word phrases	1	0	0	0
+5	contact stealth	Two word phrases	1	0	0	0
+1	research products contact	Three word phrases	1	0	0	0
+2	products contact stealth	Three word phrases	1	0	0	0
+3	contact stealth mode・announcements	Three word phrases	1	0	0	0
+4	stealth mode・announcements coming	Three word phrases	1	0	0	0
+5	mode・announcements coming putting	Three word phrases	1	0	0	0
+Read more about this subject: How to Create the Perfect H1 Tag for SEO
+You should write more copy for this page (est. 2 – 4 hours)high
+Word count
+Corrected word count: 200
+
+Anchor text words: 10
+
+Anchor Percentage: 5
+
+Read more about this subject: How Long Should Your Blog Articles Be?
+210
+Word count total
+You should improve the exposure, your content get’s on social media (est. 2 months)medium
+Social Media authority
+Total Facebook likes & shares: 27
+
+Pinterest Pin count: 0
+
+Read more about this subject: The Complete Guide to Social Media Marketing
+27
+Total share count
+Create an AMP version for this URL, to serve visitors with a faster mobile user experience (est. 8 hours)medium
+AMP
+AMP URL: Not found
+
+Read more about this subject: The Definitive Guide to Accelerated Mobile Pages (AMP) For 2025
+
+## https://seositecheckup.com/seo-audit/integrallis.com
+
+https://integrallis.com
+Your general SEO Checkup Score
+74/100SEO Score
+Average SEO score of top 100 sites: 75%
+This webpage received an SEO score of 74 out of 100, which is below the average score of 75. However, there are 10 SEO issues that need to be fixed to improve your website's ranking on search engines and enhance its overall performance.
+10 Failed
+3 Warnings
+48 Passed
+
+Issues to fix
+HIGH
+To improve the website experience for your visitors, it is recommended to eliminate any render-blocking resources on this webpage.
+HIGH
+To ensure that Search Engines can accurately identify the topic of this webpage, it is important to include the most common keywords in the title tag, meta description, and heading tags.
+HIGH
+Add a sitemap file to help search engine crawlers index content more thoroughly and quickly.
+HIGH
+Add a robots.txt file to properly communicate with web crawlers and prevent unwanted access to sensitive content.
+HIGH
+Using images in a modern format can significantly reduce the file size and improve the loading speed of a webpage, providing a better user experience and potentially increasing engagement.
+MEDIUM
+Serve properly sized images to reduce page loading times and to improve user's experience.
+MEDIUM
+Consider using structured data in your webpage as it can help search engines gain a better understanding of your content.
+MEDIUM
+Add a Google Analytics script to this website to help in diagnosing potential SEO issues by monitoring site visitors and traffic sources.
+MEDIUM
+Using social media meta tags can improve the appearance and content of shared links on social media platforms, potentially increasing click-through rates and engagement with the page.
+LOW
+Consider adding the Strict-Transport-Security header to your webpage to ensure that web traffic is encrypted over HTTPS, mitigating the risk of man-in-the-middle attacks and other security threats.
+Common SEO issues
+Score: 58
+Failed: 6
+Warnings: 1
+Passed: 15
+Meta Title Test
+100% of top 100 sites passed
+This webpage is using a title tag.
+Text: Integrallis | Artificial Intelligence・Applied
+Length: 45 characters
+Meta Description Test
+92% of top 100 sites passed
+This webpage is using a meta description tag with a length of 70 characters. We recommend using well-written and inviting meta descriptions with a length between 150 and 220 characters (spaces included).
+Text: Three decades of software craftsmanship. Now building what comes next.
+Length: 70 characters
+Google Search Results Preview Test
+Desktop version
+https://integrallis.com/
+Integrallis | Artificial Intelligence・Applied
+Three decades of software craftsmanship. Now building what comes next.
+Mobile version
+https://integrallis.com/
+Integrallis | Artificial Intelligence・Applied
+Three decades of software craftsmanship. Now building what comes next.
+Social Media Meta Tags Test
+89% of top 100 sites passed
+This webpage is not using social media meta tags! While this type of meta tags don't affect what people see when they visit the webpage, they exist to provide information about it to search engines and social media platforms.
+Most Common Keywords Test
+There is likely no optimal keyword density (search engine algorithms have evolved beyond keyword density metrics as a significant ranking factor). It can be useful, however, to note which keywords appear most often on your page and if they reflect the intended topic of your page. More importantly, the keywords on your page should appear within natural sounding and grammatically correct copy.
+5research5systems4orchestration3software3architectures
+Keywords Usage Test
+48% of top 100 sites passed
+The most common keywords of this webpage are not distributed across the important HTML tags! Primary keywords should appear in title tag, meta description and heading tags to help Search Engines to properly identify the topic of this webpage.
+Keyword	Title tag	Meta description	Headings
+research			
+systems			
+orchestration			
+software			
+architectures			
+Keywords Cloud Test
+accountableactuallyadvancedagentagenticagentsalternativealternativesanalysisannouncementsapproachesarchitecturesartifactsaugmentedautomationbuildingcodecoherencecollaboratecomingcomplexitycontactdeveloperdevelopersdevelopmentdocumentationdrivenengineeringenterpriseexplainableexploreexploringfeedbackfindingsforgingframeworksfuturegenerationgradegraphgroundedhybridimprovingintegrallisintelligenceintelligentinteractioninvestigatingiterativeknowledgelearnlearningllmslosemeetsmemorymodemodelingmodelsmultinativenetworksneuralnovelorchestrationparadigmproblemproductionproductsputtingreinforcementreliabilityresearchrestoreretrievalrewardrisesrlhfscaleselfsemanticslopsoftwaresolvingsoonspacespecializedstandsstatestealthstructuredsystemstesttoolstransformertransformingvectorverificationverifiedvisual
+Related Keywords Test
+Find the keywords where this URL is listed in the top 20 results of Google's organic listings.
+Get useful insights and detailed metrics for your most important keywords: average position, search volume, CPC, and more.
+
+Register for free and start using today the Top Keywords tool from Seositecheckup Toolbox
+
+Competitor Domains Test
+Understand your competitors' SEO and backlink profile
+Get related competitors and their domain authority score in relation to your domain.
+
+Heading Tags Test
+62% of top 100 sites passed
+This webpage contains headings tags.
+H1 tags
+Putting an end to AI Slop. Enterprise Grade AI.
+H2 tags
+Accountable, Explainable AI
+Forging the future
+Let's connect
+Robots.txt Test
+99% of top 100 sites passed
+This website lacks a "robots.txt" file. This file can protect private content from appearing online, save bandwidth, and lower load time on your server. A missing "robots.txt" file also generates additional errors in your apache log whenever robots request one. Read more about the robots.txt file, and how to create one for your site.
+Sitemap Test
+83% of top 100 sites passed
+This website lacks a sitemap file! Sitemaps can help robots index your content more thoroughly and quickly. Read more on Google's guidelines for implementing the sitemap protocol.
+Image Alt Test
+78% of top 100 sites passed
+All "img" tags from this webpage have the required "alt" attribute.
+Responsive Image Test
+29% of top 100 sites passed
+Not all images in this webpage are properly sized! This webpage is serving images that are larger than needed for the size of the user's viewport.
+See results list
+Image Aspect Ratio Test
+75% of top 100 sites passed
+All image display dimensions match the natural aspect ratio.
+Deprecated HTML Tags Test
+94% of top 100 sites passed
+This webpage does not use HTML deprecated tags.
+Google Analytics Test
+72% of top 100 sites passed
+A Google Analytics script is not detected on this page. While there are several tools available to monitor your site's visitors and traffic sources, Google Analytics is a free, commonly recommended program to help diagnose potential SEO issues.
+Favicon Test
+100% of top 100 sites passed
+favicon
+This website appears to have a favicon.
+Backlinks Test
+Get a full and detailed list of your backlinks!
+To view your total number of backlinks and referring domains, please sign-up for a free trial!
+
+JS Error Test
+83% of top 100 sites passed
+There are no severe JavaScript errors on this webpage.
+Console Errors Test
+27% of top 100 sites passed
+This webpage doesn't have any warnings or errors caught by the Chrome DevTools Console.
+Charset Declaration Test
+96% of top 100 sites passed
+This webpage has a character encoding declaration.
+Content-Type: text/html; charset=utf-8
+Speed optimizations
+Score: 81
+Failed: 2
+Warnings: 1
+Passed: 17
+HTML Page Size Test
+23% of top 100 sites passed
+The size of this webpage's HTML is 3.17 Kb and is under the average webpage's HTML size of 33 Kb. Faster loading websites result in a better user experience, higher conversion rates, and generally better search engine rankings.
+DOM Size Test
+56% of top 100 sites passed
+The Document Object Model (DOM) of this webpage has 98 nodes which is less than the recommended value of 1,500 nodes.
+HTML Compression/GZIP Test
+99% of top 100 sites passed
+This webpage is successfully compressed using gzip compression on your code. The HTML code is compressed from 12.91 Kb to 3.17 Kb (75% size savings). This helps ensure a faster loading webpage and improved user experience.
+Site Loading Speed Test
+71% of top 100 sites passed
+The loading time of this webpage (measured from N. Virginia, US) is around 0.88 seconds and this is under the average loading speed which is 5 seconds.
+Accurate loading speed and website loading speed monitor
+Get detailed and accurate loading speed reports for your websites and see how your pages are being loaded over time.
+
+Register for free and use the Loading Speed Monitor from SEO Site Checkup Toolbox today and get valuable insights on how much time your customers need to wait until they see your page.
+
+JS Execution Time Test
+53% of top 100 sites passed
+The JavaScript code used by this webpage is executed in less than 2 seconds.
+Page Objects Test
+This webpage has less than 20 http requests. A higher number of http requests results in a user's browser needing to request a large number of objects from the server, which will ultimately slow down the loading of your webpage.
+Content size by content type
+Content type	Percent	Size
+font	55.7 %	69.76 Kb
+image	35.8 %	44.84 Kb
+css	3.5 %	4.34 Kb
+html	2.8 %	3.53 Kb
+javascript	2.2 %	2.69 Kb
+other	0.0 %	0 B
+TOTAL	100%	125.16 Kb
+Requests by content type
+Content type	Percent	Requests
+css	25.0 %	2
+image	25.0 %	2
+font	25.0 %	2
+html	12.5 %	1
+javascript	12.5 %	1
+other	0.0 %	0
+TOTAL	100%	8
+Content size by domain
+Domain	Percent	Size
+fonts.gstatic.com	55.7 %	69.76 Kb
+integrallis.com	43.2 %	54.05 Kb
+fonts.googleapis.com	1.1 %	1.35 Kb
+TOTAL	100%	125.16 Kb
+Requests by domain
+Domain	Percent	Requests
+integrallis.com	62.5 %	5
+fonts.gstatic.com	25.0 %	2
+fonts.googleapis.com	12.5 %	1
+TOTAL	100%	8
+CDN Usage Test
+95% of top 100 sites passed
+This webpage is not serving all resources (images, javascript and css) from CDNs!
+See results list
+Modern Image Format Test
+43% of top 100 sites passed
+This webpage is not serving images in a modern format! Image formats like JPEG 2000, JPEG XR, and WebP often provide better compression than PNG or JPEG, which means faster downloads and less data consumption.
+See results list
+Image Metadata Test
+72% of top 100 sites passed
+This webpage is not using images with large metadata.
+Image Caching Test
+95% of top 100 sites passed
+This website is using cache headers for images and the browsers will display these images from the cache.
+JavaScript Caching Test
+96% of top 100 sites passed
+This webpage is using cache headers for all JavaScript resources.
+CSS Caching Test
+98% of top 100 sites passed
+This webpage is using cache headers for all CSS resources.
+JavaScript Minification Test
+98% of top 100 sites passed
+All JavaScript files used by this webpage are minified.
+See results list
+CSS Minification Test
+100% of top 100 sites passed
+All CSS resources used by this webpage are minified.
+See results list
+Render Blocking Resources Test
+15% of top 100 sites passed
+This webpage is using render blocking resources! Eliminating render-blocking resources can help this webpage to load significantly faster and will improve the website experience for your visitors.
+See results list
+URL Redirects Test
+97% of top 100 sites passed
+This URL doesn't have any redirects (which could potentially cause site indexation issues and site loading delays).
+Time To First Byte Test
+99% of top 100 sites passed
+The Time To First Byte value of this webpage is 0.003 seconds. To provide a good user experience, Google recommends that sites should strive to have a TTFB of 0.8 seconds or less.
+0.003 s
+0.8 s1.8 s
+First Contentful Paint Test
+90% of top 100 sites passed
+The First Contentful Paint value of this webpage is 0.656 seconds. To provide a good user experience, Google recommends that sites should strive to have a First Contentful Paint value of 1.8 seconds or less.
+0.656 s
+1.8 s3 s
+Largest Contentful Paint Test
+77% of top 100 sites passed
+The Largest Contentful Paint duration of this webpage is 0.66 seconds. To provide a good user experience, Google recommends that sites should strive to have Largest Contentful Paint of 2.5 seconds or less.
+0.66 s
+2.5 s4 s
+Largest Contentful Paint element within the viewport:
+<img src="assets/images/logo-full-dark.png" alt="Integrallis" class="logo-img">
+Cumulative Layout Shift Test
+91% of top 100 sites passed
+The CLS score of this webpage is 0.0018. To provide a good user experience, Google recommends that sites should strive to have a CLS score of 0.1 or less.
+0.0018
+0.10.25
+DOM element which contributes the most to CLS score:
+Text: Stealth Mode・Announcements Coming Putting an end to AI Slop. Enterprise Grade AI...
+Html: <div class="hero-content">
+Score: 0.0018
+Server and security
+Score: 95
+Failed: 1
+Warnings: 0
+Passed: 6
+URL Canonicalization Test
+93% of top 100 sites passed
+https://integrallis.com/ and https://www.integrallis.com/ resolve to the same URL.
+SSL Checker and HTTPS Test
+100% of top 100 sites passed
+This website is successfully using HTTPS, a secure communication protocol over the Internet.
+The certificate is not used before the activation date.
+The certificate has not expired.
+The hostname "integrallis.com" is correctly listed in the certificate.
+The certificate should be trusted by all major web browsers.
+The certificate was not revoked.
+The certificate was signed with a secure hash.
+Certificate Chain:
+Server certificate	
+Common name	integrallis.com
+Subject Alternative Names (SANs)	integrallis.com, www.integrallis.com
+Not valid before	Tue, January 6o 2026, 2:10:06 pm (z)
+Not valid after	Mon, April 6o 2026, 2:10:05 pm (z)
+Signature algorithm	sha256WithRsaEncryption
+Issuer	R12
+Intermediate certificate	
+Common name	R12
+Organization	Let's Encrypt
+Location	US
+Not valid before	Wed, March 13o 2024, 12:00:00 am (z)
+Not valid after	Fri, March 12o 2027, 11:59:59 pm (z)
+Signature algorithm	sha256WithRsaEncryption
+Issuer	ISRG Root X1
+Root certificate	
+Common name	ISRG Root X1
+Organization	Internet Security Research Group
+Location	US
+Not valid before	Thu, June 4o 2015, 11:04:38 am (z)
+Not valid after	Mon, June 4o 2035, 11:04:38 am (z)
+Signature algorithm	sha256WithRsaEncryption
+Issuer	ISRG Root X1
+Mixed Content Test (HTTP over HTTPS)
+100% of top 100 sites passed
+This webpage does not use mixed content - both the initial HTML and all other resources are loaded over HTTPS.
+HTTP2 Test
+99% of top 100 sites passed
+This webpage is using the HTTP/2 protocol.
+HSTS Test
+84% of top 100 sites passed
+This webpage is not using the Strict-Transport-Security header! This is a security header that was created as a way to force the browser to use secure connections when a site is running over HTTPS.
+Plaintext Emails Test
+97% of top 100 sites passed
+This webpage does not include email addresses in plaintext.
+Unsafe Cross-Origin Links Test
+45% of top 100 sites passed
+This webpage is not using target="_blank" links without rel="noopener" or rel="noreferrer" attribute.
+Mobile usability
+Score: 100
+Failed: 0
+Warnings: 0
+Passed: 3
+Meta Viewport Test
+92% of top 100 sites passed
+This webpage is using a viewport meta tag.
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+Media Query Responsive Test
+98% of top 100 sites passed
+This webpage is using CSS media queries, which is the base for responsive design functionalities.
+Mobile Snapshot Test
+Mobile view
+Advanced SEO
+Score: 74
+Failed: 1
+Warnings: 1
+Passed: 7
+Structured Data Test
+66% of top 100 sites passed
+This webpage doesn't take the advantages of HTML Microdata or JSON-LD specifications in order to use structured data! View Google's guide for getting started with structured data.
+Custom 404 Error Page Test
+80% of top 100 sites passed
+This website is using a custom 404 error page. We recommend to have a custom 404 error page in order to improve the website's user experience by letting users know that only a specific page is missing/broken (and not the entire site), providing them helpful links, the opportunity to report bugs, and potentially track the source of broken links.
+Noindex Tag Test
+99% of top 100 sites passed
+This webpage does not use the noindex meta tag. This means that it can be indexed by search engines.
+Canonical Tag Test
+93% of top 100 sites passed
+This webpage does not use the canonical link tag.
+Nofollow Tag Test
+This webpage does not use the nofollow meta tag. This means that search engines will crawl all links from this webpage.
+Disallow Directive Test
+This website lacks a "robots.txt" file. This file can protect private content from appearing online, save bandwidth, and lower load on your server. A missing "robots.txt" file also generates additional errors in your apache log whenever robots request one.
+Meta Refresh Test
+98% of top 100 sites passed
+This webpage is not using a meta refresh tag.
+SPF Records Test
+94% of top 100 sites passed
+This DNS server is using an SPF record.
+v=spf1 a include:_spf.google.com ~all
+Ads.txt Validation Test
+67% of top 100 sites passed
+This website doesn't use an ads.txt file! Ads.txt is a text file that contains a list of Authorized Digital Sellers. The purpose of ads.txt files is to give advertisers and advertising networks the ability to verify who is allowed to sell advertising on your website.
+https://integrallis.com
+Your general SEO Checkup Score
+74/100SEO Score
+Average SEO score of top 100 sites: 75%
+This webpage received an SEO score of 74 out of 100, which is below the average score of 75. However, there are 10 SEO issues that need to be fixed to improve your website's ranking on search engines and enhance its overall performance.
+10 Failed
+3 Warnings
+48 Passed
+Issues to fix
+HIGH
+To improve the website experience for your visitors, it is recommended to eliminate any render-blocking resources on this webpage.
+HIGH
+To ensure that Search Engines can accurately identify the topic of this webpage, it is important to include the most common keywords in the title tag, meta description, and heading tags.
+HIGH
+Add a sitemap file to help search engine crawlers index content more thoroughly and quickly.
+HIGH
+Add a robots.txt file to properly communicate with web crawlers and prevent unwanted access to sensitive content.
+HIGH
+Using images in a modern format can significantly reduce the file size and improve the loading speed of a webpage, providing a better user experience and potentially increasing engagement.
+MEDIUM
+Serve properly sized images to reduce page loading times and to improve user's experience.
+MEDIUM
+Consider using structured data in your webpage as it can help search engines gain a better understanding of your content.
+MEDIUM
+Add a Google Analytics script to this website to help in diagnosing potential SEO issues by monitoring site visitors and traffic sources.
+MEDIUM
+Using social media meta tags can improve the appearance and content of shared links on social media platforms, potentially increasing click-through rates and engagement with the page.
+LOW
+Consider adding the Strict-Transport-Security header to your webpage to ensure that web traffic is encrypted over HTTPS, mitigating the risk of man-in-the-middle attacks and other security threats.
+
+## https://www.siteimprove.com/toolkit/seo-checker
+
+Your website has several SEO issues that you need to act on. There’s no time to waste. Start fixing to create the best possible website experience for all your customers. You got this!
+
+Screenshot of https://integrallis.com/
+69/100
+Overall page score
+
+https://integrallis.com/ — 2026-01-20, 03:30:59
+Score breakdown
+Your unique SEO score is an overall measure of how well your website performs against the automated Siteimprove SEO checks. Detected issues are split into 4 categories – technical, mobile, content, and user experience.
+
+Technical issues89/100
+You are well on your way, but you still have some critical errors to fix.
+
+Mobile issues43/100
+You have several critical errors on your page that need your attention.
+
+Content issues54/100
+You have several critical errors on your page that need your attention.
+
+Experience issues80/100
+You are well on your way, but you still have some critical errors to fix.
+
+Issues to fix
+We have checked all the different elements on your page, including data markup, mobile-friendliness, images, and links. Below you can see how the checks are categorized by passed and failed occurrences in each category.
+
+Technical issues (4/17)
+Issue	Status
+301 redirects	Fail
+Redirect chains	Pass
+Mixed redirect chains	Pass
+3xx redirects	Pass
+Pages with "noindex" in need of review	Pass
+Missing Open Graph tags	Fail
+HTML pages are too big	Pass
+Pages with frames or iFrames	Pass
+Pages with dynamic URL parameters	Pass
+Pages linking to HTTP content	Pass
+Pages missing structured data markup	Fail
+Pages missing SSL (Secure Socket Layer)	Pass
+Missing robots.txt	Fail
+URLs with underscores	Pass
+Desktop speed	Pass
+Long URLs	Pass
+Page-level nofollow tags	Pass
+Mobile issues (1/4)
+Issue	Status
+Mobile speed	Fail
+Mobile viewport	Pass
+Mobile-friendliness	Pass
+Font Size Legibility	Pass
+Content issues (5/16)
+Issue	Status
+Links to unsafe domains	Pass
+Dead-end pages	Fail
+Empty H1 tag	Pass
+Missing H1 tag	Pass
+Multiple H1 tags on a page	Pass
+Low content word count	Fail
+Empty meta descriptions	Pass
+Meta descriptions are too long	Pass
+Meta descriptions are too short	Fail
+Missing meta descriptions	Pass
+Multiple meta description tags	Pass
+Empty meta titles	Fail
+Meta titles are too long	Pass
+Meta titles are too short	Fail
+Missing meta titles	Pass
+Multiple meta titles tags	Pass
+Experience issues (1/5)
+Issue	Status
+Images missing alt attributes	Pass
+Images with empty alt attributes	Pass
+Images larger than 1MB	Pass
+Images with unspecified width and height attributes	Fail
+Pages with images larger than 1MB	Pass
+
+## https://www.debugbear.com/website-seo-checker
+
+Lighthouse SEO Audit
+100
+SEO
+Additional items to manually check (1)
+Hide
+Structured data is valid
+Run these additional validators on your site to check additional SEO best practices.
+Passed audits (8)
+Hide
+Page isn’t blocked from indexing
+Document has a <title> element
+Document has a meta description
+Page has successful HTTP status code
+Links have descriptive text
+Links are crawlable
+Image elements have [alt] attributes
+Document has a valid hreflang
+Not applicable (2)
+Hide
+robots.txt is valid
+Document has a valid rel=canonical
+Open Graph Data
+No image tag
+?
+No tags found matching og:image.
+Unable to check image dimensions
+?
+1200x630 pixels
+No tags found matching og:image, og:image:width, og:image:height.
+Unable to check file size
+?
+≤ 5MB
+No tags found matching og:image.
+Missing title tag
+?
+≤ 60 characters
+Title (45 characters) - from document title
+Integrallis | Artificial Intelligence・Applied
+Missing description tag
+?
+150-160 characters
+Description (70 characters) - from meta description tag
+Three decades of software craftsmanship. Now building what comes next.
+No type tag
+?
+Open Graph Data Card Preview
+Integrallis | Artificial Intelligence・Applied
+Three decades of software craftsmanship. Now building what comes…
+All Open Graph Tags
+Property
+Content
+No matching items.
+Headings
+10 headings found
+Page has a level 1 heading
+All headings have text content
+All Page Headings
+Putting an end to AI Slop. Enterprise Grade AI.H1
+Accountable, Explainable AIH2
+Alternative ArchitecturesH3
+Agentic Software EngineeringH3
+Knowledge SystemsH3
+Reinforcement LearningH3
+Forging the futureH2
+Developer ToolsH3
+Research PlatformH3
+Let's connectH2
+
+## https://seomator.com/free-seo-audit-tool
+
+Results for https://integrallis.com/
+Export PDF
+Screenshot of https://integrallis.com/
+Report Generated: 19 January 2026 20:31
+
+87
+On-Page Score
+
+100
+Performance
+
+87
+Accessibility
+
+100
+SEO
+
+100
+Best Practices
+
+Onpage Results
+87%
+
+2
+Number of Images
+
+102400
+Images Size
+
+1
+Scripts
+
+10240
+Scripts Size
+
+1575
+Plain Text Size
+
+0.12
+Plain Text Rate
+
+H Tags
+We found #1 h1 tags on this page.
+
+Putting an end to AI Slop. Enterprise Grade AI.
+We found #3 h2 tags on this page.
+
+Accountable, Explainable AI
+Forging the future
+Let's connect
+We found #6 h3 tags on this page.
+
+Alternative Architectures
+Agentic Software Engineering
+Knowledge Systems
+Reinforcement Learning
+Developer Tools
+Research Platform
+Social Media Meta Tags Test
+
+Integrallis | Artificial Intelligence・Applied
+
+Three decades of software craftsmanship. Now building what comes next.
+
+How your website is displayed on search engines & social media.
+
+Accessibility Checks
+Passed Checks
+HTML lang attribute
+The HTML element has a valid lang attribute.
+
+No deprecated elements
+The page does not use deprecated HTML elements like <blink> or <marquee>.
+
+Images have alt text
+All images have alternative text, making them accessible to screen readers.
+
+Links have discernible text
+All links have discernible text, making them accessible to screen readers.
+
+Unique ID attributes
+All ID attribute values are unique within the document.
+
+Document has title
+The document contains a title element, which aids in navigation.
+
+Indexability Checks
+Passed Checks
+No <noscript> tag in <head>
+The <head> section does not contain any <noscript> tags, which is good for indexing.
+
+<head> contains only valid HTML elements
+The <head> section contains only valid HTML elements, which is good for indexing.
+
+No meta robots tag
+The page does not have a meta robots tag, which means default indexing rules apply.
+
+Failed Checks
+Missing canonical link
+The page does not have a canonical link element, which may cause duplicate content issues.
+
+SEO Checks
+Passed Checks
+Title Length
+Your page title has an optimal length (between 10-60 characters).
+
+Description Length
+Your meta description has an optimal length (between 50-160 characters).
+
+H1 Tag
+Your page has exactly one H1 tag, which is optimal for SEO.
+
+Images Have Alt Text
+All images on your page have alt text, which is good for accessibility and SEO.
+
+Favicon Present
+Your page has a favicon, which helps with brand recognition and improves user experience.
+
+No HTTPS to HTTP Links
+Your page does not have any links to HTTP pages, which is good for security.
+
+Good Content Rate
+Your page has a good content-to-HTML ratio, which is favorable for SEO.
+
+Minimal Render Blocking Resources
+Your page has a reasonable number of render blocking resources, which is good for page load speed.
+
+Failed Checks
+Missing Canonical
+Your page does not have a canonical tag. This can lead to duplicate content issues.
+
+Missing Social Media Tags
+Your page does not have Open Graph or Twitter Card tags. These are important for social media sharing.
+
+Missing Structured Data
+Your page does not have structured data. Structured data helps search engines understand your content better.
+
+SEO Details - 100%
+These checks ensure that your page is following basic search engine optimization advice. There are many additional factors Lighthouse does not score here that may affect your search ranking, including performance on Core Web Vitals. Learn more about Google Search Essentials.
+
+Page isn’t blocked from indexing
+Search engines are unable to include your pages in search results if they don't have permission to crawl them. Learn more about crawler directives.
+
+Document has a `<title>` element
+The title gives screen reader users an overview of the page, and search engine users rely on it heavily to determine if a page is relevant to their search. Learn more about document titles.
+
+Document has a meta description
+Meta descriptions may be included in search results to concisely summarize page content. Learn more about the meta description.
+
+Page has successful HTTP status code
+Pages with unsuccessful HTTP status codes may not be indexed properly. Learn more about HTTP status codes.
+
+Links have descriptive text
+Descriptive link text helps search engines understand your content. Learn how to make links more accessible.
+
+Links are crawlable
+Search engines may use href attributes on links to crawl websites. Ensure that the href attribute of anchor elements links to an appropriate destination, so more pages of the site can be discovered. Learn how to make links crawlable
+
+robots.txt is valid
+If your robots.txt file is malformed, crawlers may not be able to understand how you want your website to be crawled or indexed. Learn more about robots.txt.
+
+Image elements have `[alt]` attributes
+Informative elements should aim for short, descriptive alternate text. Decorative elements can be ignored with an empty alt attribute. Learn more about the alt attribute.
+
+Document has a valid `hreflang`
+hreflang links tell search engines what version of a page they should list in search results for a given language or region. Learn more about hreflang.
+
+Document has a valid `rel=canonical`
+Canonical links suggest which URL to show in search results. Learn more about canonical links.
+
+Structured data is valid
+Run the Structured Data Testing Tool to validate structured data. Learn more about Structured Data.
+
+Accessibility Details - 87%
+These checks highlight opportunities to improve the accessibility of your web app. Automatic detection can only detect a subset of issues and does not guarantee the accessibility of your web app, so manual testing is also encouraged.
+
+`[accesskey]` values are unique
+Access keys let users quickly focus a part of the page. For proper navigation, each access key must be unique. Learn more about access keys.
+
+`[aria-*]` attributes match their roles
+Each ARIA role supports a specific subset of aria-* attributes. Mismatching these invalidates the aria-* attributes. Learn how to match ARIA attributes to their roles.
+
+`button`, `link`, and `menuitem` elements have accessible names
+When an element doesn't have an accessible name, screen readers announce it with a generic name, making it unusable for users who rely on screen readers. Learn how to make command elements more accessible.
+
+ARIA attributes are used as specified for the element's role
+Some ARIA attributes are only allowed on an element under certain conditions. Learn more about conditional ARIA attributes.
+
+Deprecated ARIA roles were not used
+Deprecated ARIA roles may not be processed correctly by assistive technology. Learn more about deprecated ARIA roles.
+
+Elements with `role="dialog"` or `role="alertdialog"` have accessible names.
+ARIA dialog elements without accessible names may prevent screen readers users from discerning the purpose of these elements. Learn how to make ARIA dialog elements more accessible.
+
+`[aria-hidden="true"]` is not present on the document `<body>`
+Assistive technologies, like screen readers, work inconsistently when aria-hidden="true" is set on the document <body>. Learn how aria-hidden affects the document body.
+
+`[aria-hidden="true"]` elements do not contain focusable descendents
+Focusable descendents within an [aria-hidden="true"] element prevent those interactive elements from being available to users of assistive technologies like screen readers. Learn how aria-hidden affects focusable elements.
+
+ARIA input fields have accessible names
+When an input field doesn't have an accessible name, screen readers announce it with a generic name, making it unusable for users who rely on screen readers. Learn more about input field labels.
+
+ARIA `meter` elements have accessible names
+When a meter element doesn't have an accessible name, screen readers announce it with a generic name, making it unusable for users who rely on screen readers. Learn how to name meter elements.
+
+ARIA `progressbar` elements have accessible names
+When a progressbar element doesn't have an accessible name, screen readers announce it with a generic name, making it unusable for users who rely on screen readers. Learn how to label progressbar elements.
+
+Elements use only permitted ARIA attributes
+Using ARIA attributes in roles where they are prohibited can mean that important information is not communicated to users of assistive technologies. Learn more about prohibited ARIA roles.
+
+`[role]`s have all required `[aria-*]` attributes
+Some ARIA roles have required attributes that describe the state of the element to screen readers. Learn more about roles and required attributes.
+
+Elements with an ARIA `[role]` that require children to contain a specific `[role]` have all required children.
+Some ARIA parent roles must contain specific child roles to perform their intended accessibility functions. Learn more about roles and required children elements.
+
+`[role]`s are contained by their required parent element
+Some ARIA child roles must be contained by specific parent roles to properly perform their intended accessibility functions. Learn more about ARIA roles and required parent element.
+
+`[role]` values are valid
+ARIA roles must have valid values in order to perform their intended accessibility functions. Learn more about valid ARIA roles.
+
+Elements with the `role=text` attribute do not have focusable descendents.
+Adding role=text around a text node split by markup enables VoiceOver to treat it as one phrase, but the element's focusable descendents will not be announced. Learn more about the role=text attribute.
+
+ARIA toggle fields have accessible names
+When a toggle field doesn't have an accessible name, screen readers announce it with a generic name, making it unusable for users who rely on screen readers. Learn more about toggle fields.
+
+ARIA `tooltip` elements have accessible names
+When a tooltip element doesn't have an accessible name, screen readers announce it with a generic name, making it unusable for users who rely on screen readers. Learn how to name tooltip elements.
+
+ARIA `treeitem` elements have accessible names
+When a treeitem element doesn't have an accessible name, screen readers announce it with a generic name, making it unusable for users who rely on screen readers. Learn more about labeling treeitem elements.
+
+`[aria-*]` attributes have valid values
+Assistive technologies, like screen readers, can't interpret ARIA attributes with invalid values. Learn more about valid values for ARIA attributes.
+
+`[aria-*]` attributes are valid and not misspelled
+Assistive technologies, like screen readers, can't interpret ARIA attributes with invalid names. Learn more about valid ARIA attributes.
+
+Buttons have an accessible name
+When a button doesn't have an accessible name, screen readers announce it as "button", making it unusable for users who rely on screen readers. Learn how to make buttons more accessible.
+
+The page contains a heading, skip link, or landmark region
+Adding ways to bypass repetitive content lets keyboard users navigate the page more efficiently. Learn more about bypass blocks.
+
+Background and foreground colors do not have a sufficient contrast ratio.
+Low-contrast text is difficult or impossible for many users to read. Learn how to provide sufficient color contrast.
+
+`<dl>`'s contain only properly-ordered `<dt>` and `<dd>` groups, `<script>`, `<template>` or `<div>` elements.
+When definition lists are not properly marked up, screen readers may produce confusing or inaccurate output. Learn how to structure definition lists correctly.
+
+Definition list items are wrapped in `<dl>` elements
+Definition list items (<dt> and <dd>) must be wrapped in a parent <dl> element to ensure that screen readers can properly announce them. Learn how to structure definition lists correctly.
+
+Document has a `<title>` element
+The title gives screen reader users an overview of the page, and search engine users rely on it heavily to determine if a page is relevant to their search. Learn more about document titles.
+
+ARIA IDs are unique
+The value of an ARIA ID must be unique to prevent other instances from being overlooked by assistive technologies. Learn how to fix duplicate ARIA IDs.
+
+No form fields have multiple labels
+Form fields with multiple labels can be confusingly announced by assistive technologies like screen readers which use either the first, the last, or all of the labels. Learn how to use form labels.
+
+`<frame>` or `<iframe>` elements have a title
+Screen reader users rely on frame titles to describe the contents of frames. Learn more about frame titles.
+
+Heading elements appear in a sequentially-descending order
+Properly ordered headings that do not skip levels convey the semantic structure of the page, making it easier to navigate and understand when using assistive technologies. Learn more about heading order.
+
+`<html>` element has a `[lang]` attribute
+If a page doesn't specify a lang attribute, a screen reader assumes that the page is in the default language that the user chose when setting up the screen reader. If the page isn't actually in the default language, then the screen reader might not announce the page's text correctly. Learn more about the lang attribute.
+
+`<html>` element has a valid value for its `[lang]` attribute
+Specifying a valid BCP 47 language helps screen readers announce text properly. Learn how to use the lang attribute.
+
+`<html>` element has an `[xml:lang]` attribute with the same base language as the `[lang]` attribute.
+If the webpage does not specify a consistent language, then the screen reader might not announce the page's text correctly. Learn more about the lang attribute.
+
+Image elements have `[alt]` attributes
+Informative elements should aim for short, descriptive alternate text. Decorative elements can be ignored with an empty alt attribute. Learn more about the alt attribute.
+
+Input buttons have discernible text.
+Adding discernable and accessible text to input buttons may help screen reader users understand the purpose of the input button. Learn more about input buttons.
+
+`<input type="image">` elements have `[alt]` text
+When an image is being used as an <input> button, providing alternative text can help screen reader users understand the purpose of the button. Learn about input image alt text.
+
+Form elements have associated labels
+Labels ensure that form controls are announced properly by assistive technologies, like screen readers. Learn more about form element labels.
+
+Links are distinguishable without relying on color.
+Low-contrast text is difficult or impossible for many users to read. Link text that is discernible improves the experience for users with low vision. Learn how to make links distinguishable.
+
+Links have a discernible name
+Link text (and alternate text for images, when used as links) that is discernible, unique, and focusable improves the navigation experience for screen reader users. Learn how to make links accessible.
+
+Lists contain only `<li>` elements and script supporting elements (`<script>` and `<template>`).
+Screen readers have a specific way of announcing lists. Ensuring proper list structure aids screen reader output. Learn more about proper list structure.
+
+List items (`<li>`) are contained within `<ul>`, `<ol>` or `<menu>` parent elements
+Screen readers require list items (<li>) to be contained within a parent <ul>, <ol> or <menu> to be announced properly. Learn more about proper list structure.
+
+The document does not use `<meta http-equiv="refresh">`
+Users do not expect a page to refresh automatically, and doing so will move focus back to the top of the page. This may create a frustrating or confusing experience. Learn more about the refresh meta tag.
+
+`[user-scalable="no"]` is not used in the `<meta name="viewport">` element and the `[maximum-scale]` attribute is not less than 5.
+Disabling zooming is problematic for users with low vision who rely on screen magnification to properly see the contents of a web page. Learn more about the viewport meta tag.
+
+`<object>` elements have alternate text
+Screen readers cannot translate non-text content. Adding alternate text to <object> elements helps screen readers convey meaning to users. Learn more about alt text for object elements.
+
+Select elements have associated label elements.
+Form elements without effective labels can create frustrating experiences for screen reader users. Learn more about the select element.
+
+Skip links are focusable.
+Including a skip link can help users skip to the main content to save time. Learn more about skip links.
+
+No element has a `[tabindex]` value greater than 0
+A value greater than 0 implies an explicit navigation ordering. Although technically valid, this often creates frustrating experiences for users who rely on assistive technologies. Learn more about the tabindex attribute.
+
+Touch targets have sufficient size and spacing.
+Touch targets with sufficient size and spacing help users who may have difficulty targeting small controls to activate the targets. Learn more about touch targets.
+
+Cells in a `<table>` element that use the `[headers]` attribute refer to table cells within the same table.
+Screen readers have features to make navigating tables easier. Ensuring <td> cells using the [headers] attribute only refer to other cells in the same table may improve the experience for screen reader users. Learn more about the headers attribute.
+
+`<th>` elements and elements with `[role="columnheader"/"rowheader"]` have data cells they describe.
+Screen readers have features to make navigating tables easier. Ensuring table headers always refer to some set of cells may improve the experience for screen reader users. Learn more about table headers.
+
+`[lang]` attributes have a valid value
+Specifying a valid BCP 47 language on elements helps ensure that text is pronounced correctly by a screen reader. Learn how to use the lang attribute.
+
+`<video>` elements contain a `<track>` element with `[kind="captions"]`
+When a video provides a caption it is easier for deaf and hearing impaired users to access its information. Learn more about video captions.
+
+Document does not have a main landmark.
+One main landmark helps screen reader users navigate a web page. Learn more about landmarks.
+
+Interactive controls are keyboard focusable
+Custom interactive controls are keyboard focusable and display a focus indicator. Learn how to make custom controls focusable.
+
+Interactive elements indicate their purpose and state
+Interactive elements, such as links and buttons, should indicate their state and be distinguishable from non-interactive elements. Learn how to decorate interactive elements with affordance hints.
+
+The page has a logical tab order
+Tabbing through the page follows the visual layout. Users cannot focus elements that are offscreen. Learn more about logical tab ordering.
+
+Visual order on the page follows DOM order
+DOM order matches the visual order, improving navigation for assistive technology. Learn more about DOM and visual ordering.
+
+User focus is not accidentally trapped in a region
+A user can tab into and out of any control or region without accidentally trapping their focus. Learn how to avoid focus traps.
+
+The user's focus is directed to new content added to the page
+If new content, such as a dialog, is added to the page, the user's focus is directed to it. Learn how to direct focus to new content.
+
+HTML5 landmark elements are used to improve navigation
+Landmark elements (<main>, <nav>, etc.) are used to improve the keyboard navigation of the page for assistive technology. Learn more about landmark elements.
+
+Offscreen content is hidden from assistive technology
+Offscreen content is hidden with display: none or aria-hidden=true. Learn how to properly hide offscreen content.
+
+Custom controls have associated labels
+Custom interactive controls have associated labels, provided by aria-label or aria-labelledby. Learn more about custom controls and labels.
+
+Custom controls have ARIA roles
+Custom interactive controls have appropriate ARIA roles. Learn how to add roles to custom controls.
+
+Tables have different content in the summary attribute and `<caption>`.
+The summary attribute should describe the table structure, while <caption> should have the onscreen title. Accurate table mark-up helps users of screen readers. Learn more about summary and caption.
+
+All heading elements contain content.
+A heading with no content or inaccessible text prevent screen reader users from accessing information on the page's structure. Learn more about headings.
+
+Uses ARIA roles only on compatible elements
+Many HTML elements can only be assigned certain ARIA roles. Using ARIA roles where they are not allowed can interfere with the accessibility of the web page. Learn more about ARIA roles.
+
+Image elements do not have `[alt]` attributes that are redundant text.
+Informative elements should aim for short, descriptive alternative text. Alternative text that is exactly the same as the text adjacent to the link or image is potentially confusing for screen reader users, because the text will be read twice. Learn more about the alt attribute.
+
+Identical links have the same purpose.
+Links with the same destination should have the same description, to help users understand the link's purpose and decide whether to follow it. Learn more about identical links.
+
+Elements with visible text labels have matching accessible names.
+Visible text labels that do not match the accessible name can result in a confusing experience for screen reader users. Learn more about accessible names.
+
+Tables use `<caption>` instead of cells with the `[colspan]` attribute to indicate a caption.
+Screen readers have features to make navigating tables easier. Ensuring that tables use the actual caption element instead of cells with the [colspan] attribute may improve the experience for screen reader users. Learn more about captions.
+
+`<td>` elements in a large `<table>` have one or more table headers.
+Screen readers have features to make navigating tables easier. Ensuring that <td> elements in a large table (3 or more cells in width and height) have an associated table header may improve the experience for screen reader users. Learn more about table headers.
+
+Best Practices Details - 100%
+Uses HTTPS
+All sites should be protected with HTTPS, even ones that don't handle sensitive data. This includes avoiding mixed content, where some resources are loaded over HTTP despite the initial request being served over HTTPS. HTTPS prevents intruders from tampering with or passively listening in on the communications between your app and your users, and is a prerequisite for HTTP/2 and many new web platform APIs. Learn more about HTTPS.
+
+Redirects HTTP traffic to HTTPS
+Make sure that you redirect all HTTP traffic to HTTPS in order to enable secure web features for all your users. Learn more.
+
+Avoids requesting the geolocation permission on page load
+Users are mistrustful of or confused by sites that request their location without context. Consider tying the request to a user action instead. Learn more about the geolocation permission.
+
+Avoids requesting the notification permission on page load
+Users are mistrustful of or confused by sites that request to send notifications without context. Consider tying the request to user gestures instead. Learn more about responsibly getting permission for notifications.
+
+Ensure CSP is effective against XSS attacks
+A strong Content Security Policy (CSP) significantly reduces the risk of cross-site scripting (XSS) attacks. Learn how to use a CSP to prevent XSS
+
+Use a strong HSTS policy
+Deployment of the HSTS header significantly reduces the risk of downgrading HTTP connections and eavesdropping attacks. A rollout in stages, starting with a low max-age is recommended. Learn more about using a strong HSTS policy.
+
+Ensure proper origin isolation with COOP
+The Cross-Origin-Opener-Policy (COOP) can be used to isolate the top-level window from other documents such as pop-ups. Learn more about deploying the COOP header.
+
+Mitigate clickjacking with XFO or CSP
+The X-Frame-Options (XFO) header or the frame-ancestors directive in the Content-Security-Policy (CSP) header control where a page can be embedded. These can mitigate clickjacking attacks by blocking some or all sites from embedding the page. Learn more about mitigating clickjacking.
+
+Mitigate DOM-based XSS with Trusted Types
+The require-trusted-types-for directive in the Content-Security-Policy (CSP) header instructs user agents to control the data passed to DOM XSS sink functions. Learn more about mitigating DOM-based XSS with Trusted Types.
+
+Allows users to paste into input fields
+Preventing input pasting is a bad practice for the UX, and weakens security by blocking password managers.Learn more about user-friendly input fields.
+
+Displays images with correct aspect ratio
+Image display dimensions should match natural aspect ratio. Learn more about image aspect ratio.
+
+Serves images with appropriate resolution
+Image natural dimensions should be proportional to the display size and the pixel ratio to maximize image clarity. Learn how to provide responsive images.
+
+Page has the HTML doctype
+Specifying a doctype prevents the browser from switching to quirks-mode. Learn more about the doctype declaration.
+
+Properly defines charset
+A character encoding declaration is required. It can be done with a <meta> tag in the first 1024 bytes of the HTML or in the Content-Type HTTP response header. Learn more about declaring the character encoding.
+
+Detected JavaScript libraries
+All front-end JavaScript libraries detected on the page. Learn more about this JavaScript library detection diagnostic audit.
+
+Avoids deprecated APIs
+Deprecated APIs will eventually be removed from the browser. Learn more about deprecated APIs.
+
+Avoids third-party cookies
+Third-party cookies may be blocked in some contexts. Learn more about preparing for third-party cookie restrictions.
+
+No browser errors logged to the console
+Errors logged to the console indicate unresolved problems. They can come from network request failures and other browser concerns. Learn more about this errors in console diagnostic audit
+
+Page has valid source maps
+Source maps translate minified code to the original source code. This helps developers debug in production. In addition, Lighthouse is able to provide further insights. Consider deploying source maps to take advantage of these benefits. Learn more about source maps.
+
+No issues in the `Issues` panel in Chrome Devtools
+Issues logged to the Issues panel in Chrome Devtools indicate unresolved problems. They can come from network request failures, insufficient security controls, and other browser concerns. Open up the Issues panel in Chrome DevTools for more details on each issue.
+
+Performance Details - 100%
+First Contentful Paint - 0.7 s
+First Contentful Paint marks the time at which the first text or image is painted. Learn more about the First Contentful Paint metric.
+
+Largest Contentful Paint - 0.7 s
+Largest Contentful Paint marks the time at which the largest text or image is painted. Learn more about the Largest Contentful Paint metric
+
+Total Blocking Time - 0 ms
+Sum of all time periods between FCP and Time to Interactive, when task length exceeded 50ms, expressed in milliseconds. Learn more about the Total Blocking Time metric.
+
+Cumulative Layout Shift - 0
+Cumulative Layout Shift measures the movement of visible elements within the viewport. Learn more about the Cumulative Layout Shift metric.
+
+Speed Index - 0.7 s
+Speed Index shows how quickly the contents of a page are visibly populated. Learn more about the Speed Index metric.
+
+Use efficient cache lifetimes - Est savings of 48 KiB
+A long cache lifetime can speed up repeat visits to your page. Learn more about caching.
+
+Layout shift culprits
+Layout shifts occur when elements move absent any user interaction. Investigate the causes of layout shifts, such as elements being added, removed, or their fonts changing as the page loads.
+
+Document request latency
+Your first network request is the most important. Reduce its latency by avoiding redirects, ensuring a fast server response, and enabling text compression.
+
+Optimize DOM size
+A large DOM can increase the duration of style calculations and layout reflows, impacting page responsiveness. A large DOM will also increase memory usage. Learn how to avoid an excessive DOM size.
+
+Duplicated JavaScript
+Remove large, duplicate JavaScript modules from bundles to reduce unnecessary bytes consumed by network activity.
+
+Font display
+Consider setting font-display to swap or optional to ensure text is consistently visible. swap can be further optimized to mitigate layout shifts with font metric overrides.
+
+Forced reflow
+A forced reflow occurs when JavaScript queries geometric properties (such as offsetWidth) after styles have been invalidated by a change to the DOM state. This can result in poor performance. Learn more about forced reflows and possible mitigations.
+
+Improve image delivery - Est savings of 44 KiB
+Reducing the download time of images can improve the perceived load time of the page and LCP. Learn more about optimizing image size
+
+INP breakdown
+Start investigating how to improve INP by looking at the longest subpart.
+
+LCP breakdown
+Each subpart has specific improvement strategies. Ideally, most of the LCP time should be spent on loading the resources, not within delays.
+
+LCP request discovery
+Optimize LCP by making the LCP image discoverable from the HTML immediately, and avoiding lazy-loading
+
+Legacy JavaScript
+Polyfills and transforms enable older browsers to use new JavaScript features. However, many aren't necessary for modern browsers. Consider modifying your JavaScript build process to not transpile Baseline features, unless you know you must support older browsers. Learn why most sites can deploy ES6+ code without transpiling
+
+Network dependency tree
+Avoid chaining critical requests by reducing the length of chains, reducing the download size of resources, or deferring the download of unnecessary resources to improve page load.
+
+Render blocking requests - Est savings of 350 ms
+Requests are blocking the page's initial render, which may delay LCP. Deferring or inlining can move these network requests out of the critical path.
+
+3rd parties
+3rd party code can significantly impact load performance. Reduce and defer loading of 3rd party code to prioritize your page's content.
+
+Optimize viewport for mobile
+Tap interactions may be delayed by up to 300 ms if the viewport is not optimized for mobile.
+
+Time to Interactive - 0.7 s
+Time to Interactive is the amount of time it takes for the page to become fully interactive. Learn more about the Time to Interactive metric.
+
+Max Potential First Input Delay - 20 ms
+The maximum potential First Input Delay that your users could experience is the duration of the longest task. Learn more about the Maximum Potential First Input Delay metric.
+
+Minify CSS
+Minifying CSS files can reduce network payload sizes. Learn how to minify CSS.
+
+Minify JavaScript
+Minifying JavaScript files can reduce payload sizes and script parse time. Learn how to minify JavaScript.
+
+Reduce unused CSS
+Reduce unused rules from stylesheets and defer CSS not used for above-the-fold content to decrease bytes consumed by network activity. Learn how to reduce unused CSS.
+
+Reduce unused JavaScript
+Reduce unused JavaScript and defer loading scripts until they are required to decrease bytes consumed by network activity. Learn how to reduce unused JavaScript.
+
+Avoids enormous network payloads - Total size was 128 KiB
+Large network payloads cost users real money and are highly correlated with long load times. Learn how to reduce payload sizes.
+
+User Timing marks and measures
+Consider instrumenting your app with the User Timing API to measure your app's real-world performance during key user experiences. Learn more about User Timing marks.
+
+JavaScript execution time - 0.2 s
+Consider reducing the time spent parsing, compiling, and executing JS. You may find delivering smaller JS payloads helps with this. Learn how to reduce Javascript execution time.
+
+Minimizes main-thread work - 1.0 s
+Consider reducing the time spent parsing, compiling and executing JS. You may find delivering smaller JS payloads helps with this. Learn how to minimize main-thread work
+
+Avoid long main-thread tasks - 2 long tasks found
+Lists the longest tasks on the main thread, useful for identifying worst contributors to input delay. Learn how to avoid long main-thread tasks
+
+Avoid non-composited animations - 1 animated element found
+Animations which are not composited can be janky and increase CLS. Learn how to avoid non-composited animations
+
+Image elements do not have explicit `width` and `height`
+Set an explicit width and height on image elements to reduce layout shifts and improve CLS. Learn how to set image dimensions
+
+Network Requests
+Lists the network requests that were made during page load.
+
+Network Round Trip Times - 0 ms
+Network round trip times (RTT) have a large impact on performance. If the RTT to an origin is high, it's an indication that servers closer to the user could improve performance. Learn more about the Round Trip Time.
+
+Server Backend Latencies - 0 ms
+Server latencies can impact web performance. If the server latency of an origin is high, it's an indication the server is overloaded or has poor backend performance. Learn more about server response time.
+
+Tasks
+Lists the toplevel main thread tasks that executed during page load.
+
+Diagnostics
+Collection of useful page vitals.
+
+Metrics
+Collects all available metrics.
+
+Screenshot Thumbnails
+This is what the load of your site looked like.
+
+Script Treemap Data
+Used for treemap app
+
+Resources Summary
+Aggregates all network requests and groups them by type
+
+Avoid multiple page redirects
+Redirects introduce additional delays before the page can be loaded. Learn how to avoid page redirects.
+
+Initial server response time was short - Root document took 0 ms
+Keep the server response time for the main document short because all other requests depend on it. Learn more about the Time to First Byte metric.
+
+Avoid large layout shifts
+These are the largest layout shifts observed on the page. Each table item represents a single layout shift, and shows the element that shifted the most. Below each item are possible root causes that led to the layout shift. Some of these layout shifts may not be included in the CLS metric value due to windowing. Learn how to improve CLS

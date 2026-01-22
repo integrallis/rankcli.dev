@@ -12,6 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+const GITHUB_APP_URL = import.meta.env.VITE_GITHUB_APP_URL;
+
 interface AddProjectModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -202,21 +204,33 @@ export function AddProjectModal({ open, onOpenChange, onSubmit }: AddProjectModa
               <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
                 <Github className="h-5 w-5 text-blue-500" />
                 <div className="flex-1">
-                  <p className="text-sm font-medium">GitHub App not installed?</p>
+                  <p className="text-sm font-medium">Need to install the GitHub App?</p>
                   <p className="text-xs text-muted-foreground">
-                    You can connect later from project settings.
+                    {githubUrl
+                      ? 'Click to install. Your project & repo will be connected automatically.'
+                      : 'Enter repo URL above first, then click to install.'}
                   </p>
                 </div>
-                <Button variant="outline" size="sm" asChild>
-                  <a
-                    href="https://github.com/apps/rankcli"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="gap-1"
-                  >
-                    Install
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    // Save pending project to localStorage before redirecting
+                    const validUrl = validateUrl(url);
+                    if (validUrl) {
+                      localStorage.setItem('pendingProject', JSON.stringify({
+                        name: name.trim(),
+                        url: validUrl,
+                        github_repo_url: githubUrl || undefined,
+                      }));
+                    }
+                    // Redirect to GitHub App install (same window)
+                    window.location.href = GITHUB_APP_URL || '';
+                  }}
+                  className="gap-1"
+                >
+                  Install &amp; Connect
+                  <ExternalLink className="h-3 w-3" />
                 </Button>
               </div>
 

@@ -61,7 +61,7 @@ export function TerminalOutput({
         <div className="terminal-dot terminal-dot-green" />
         <span className="ml-2 text-xs text-muted-foreground">Terminal</span>
       </div>
-      <div className="terminal-body min-h-[200px]">
+      <div className="terminal-body h-[300px] overflow-y-auto">
         {lines.slice(0, visibleLines).map((line, index) => (
           <div key={index} className="terminal-line mb-1">
             {line.type === 'prompt' ? (

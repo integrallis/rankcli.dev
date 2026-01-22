@@ -23,12 +23,12 @@ import type { Project } from '@/integrations/supabase/types';
 import { ConnectGitHubModal } from '@/components/project/ConnectGitHubModal';
 import { ProjectSettingsModal } from '@/components/project/ProjectSettingsModal';
 
-// Check limits per tier
+// Check limits per tier (using full agent-runtime engine)
 const TIER_CHECKS = {
-  free: 50,
-  solo: 200,
-  pro: 200,
-  agency: 200,
+  free: 200,
+  solo: 280,
+  pro: 280,
+  agency: 280,
 };
 
 export function ProjectPage() {
@@ -71,9 +71,9 @@ export function ProjectPage() {
   const latestAudit = audits.find((a) => a.status === 'completed');
   const pendingAudit = audits.find((a) => a.status === 'pending' || a.status === 'running');
 
-  // Get check counts - for now assume full audit (200+ checks)
-  // In a real implementation, this would come from the audit result or subscription tier
-  const checksRun = latestAudit?.issues_found !== undefined ? issues.length + 15 : 0; // Approximate: issues + passed checks
+  // Get check counts from the audit or summary
+  const auditSummary = latestAudit?.summary as { checksRun?: number } | undefined;
+  const checksRun = (latestAudit as { checks_run?: number })?.checks_run || auditSummary?.checksRun || 0;
   const totalChecks = TIER_CHECKS.pro; // TODO: Get from user's subscription tier
 
   const handleRunAudit = async () => {
