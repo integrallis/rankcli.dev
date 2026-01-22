@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-01-22T00:46:53.947Z
+// Generated: 2026-01-22T04:35:49.281Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -12944,6 +12944,858 @@ function analyzeAnswerConciseness(html, url) {
   };
 }
 
+// src/audit/checks/brand-mention-optimization.ts
+import * as cheerio46 from "https://esm.sh/cheerio@1.0.0";
+var BRAND_DEFINITION_PATTERNS = [
+  /(?:we are|we're|is a|is the|is an)\s+(?:leading|premier|top|best|trusted|innovative|professional)/i,
+  /(?:our mission|our vision|we help|we provide|we offer|we specialize)/i,
+  /(?:founded in|established in|since \d{4}|for over \d+)/i
+];
+var USP_PATTERNS = [
+  /(?:only|unique|exclusive|proprietary|patented|first|original)/i,
+  /(?:unlike|different from|better than|compared to)/i,
+  /(?:guarantee|warranty|promise|commitment)/i,
+  /(?:free|no cost|complimentary|included)/i,
+  /(?:\d+%|\d+x|\d+ times|faster|cheaper|easier)/i
+];
+var VALUE_PROP_PATTERNS = [
+  /(?:save|reduce|increase|improve|boost|grow|maximize|minimize)/i,
+  /(?:get|achieve|reach|attain|unlock|discover)/i,
+  /(?:without|no need|don't have to|eliminates|removes)/i
+];
+var REVIEW_PLATFORMS = [
+  "trustpilot.com",
+  "g2.com",
+  "capterra.com",
+  "yelp.com",
+  "bbb.org",
+  "glassdoor.com",
+  "indeed.com",
+  "tripadvisor.com",
+  "angi.com",
+  "homeadvisor.com",
+  "avvo.com",
+  "healthgrades.com",
+  "zocdoc.com",
+  "clutch.co",
+  "producthunt.com",
+  "getapp.com"
+];
+function analyzeBrandMentionOptimization(html, url) {
+  const issues = [];
+  const $ = cheerio46.load(html);
+  const parsedUrl = new URL(url);
+  const $content = $("body").clone();
+  $content.find("nav, footer, script, style, noscript").remove();
+  const bodyText = $content.text();
+  const bodyHtml = $content.html() || "";
+  const domainParts = parsedUrl.hostname.replace("www.", "").split(".");
+  const potentialBrandName = domainParts[0];
+  const title = $("title").text();
+  const ogSiteName = $('meta[property="og:site_name"]').attr("content") || "";
+  const brandNameRegex = new RegExp(potentialBrandName, "gi");
+  const brandMentionCount = (bodyText.match(brandNameRegex) || []).length;
+  let hasBrandDefinition = false;
+  let hasUSP = false;
+  let hasValueProposition = false;
+  let hasBrandStatement = false;
+  const quotableBrandStatements = [];
+  $content.find("p, li, h1, h2, h3").each((_, el) => {
+    const text = $(el).text().trim();
+    if (text.length < 20 || text.length > 300)
+      return;
+    for (const pattern of BRAND_DEFINITION_PATTERNS) {
+      if (pattern.test(text)) {
+        hasBrandDefinition = true;
+        if (text.length <= 200 && quotableBrandStatements.length < 5) {
+          quotableBrandStatements.push(text);
+        }
+        break;
+      }
+    }
+    for (const pattern of USP_PATTERNS) {
+      if (pattern.test(text)) {
+        hasUSP = true;
+        break;
+      }
+    }
+    for (const pattern of VALUE_PROP_PATTERNS) {
+      if (pattern.test(text)) {
+        hasValueProposition = true;
+        break;
+      }
+    }
+  });
+  hasBrandStatement = $('[class*="hero"] p, [class*="about"] p, [id*="hero"] p, [id*="about"] p').length > 0 || $("main > section:first-child p").length > 0;
+  const headingText = $("h1, h2, h3, h4").map((_, h) => $(h).text().toLowerCase()).get().join(" ");
+  const linkText = $("a").map((_, a) => $(a).text().toLowerCase()).get().join(" ");
+  const allLinks = $("a[href]").map((_, a) => $(a).attr("href") || "").get();
+  const hasPricingInfo = headingText.includes("pricing") || headingText.includes("plans") || headingText.includes("cost") || linkText.includes("pricing") || allLinks.some((href) => href.includes("pricing") || href.includes("plans"));
+  const hasAboutSection = headingText.includes("about") || headingText.includes("who we are") || headingText.includes("our story") || allLinks.some((href) => href.includes("about"));
+  const hasFAQSection = headingText.includes("faq") || headingText.includes("frequently asked") || headingText.includes("questions") || $('[itemtype*="FAQPage"]').length > 0 || $("details summary").length >= 2;
+  const hasTestimonials = headingText.includes("testimonial") || headingText.includes("review") || headingText.includes("what our") || headingText.includes("customer") || $('[class*="testimonial"], [class*="review"], [id*="testimonial"]').length > 0 || $("blockquote").length >= 2;
+  const hasProofPoints = headingText.includes("case stud") || headingText.includes("success") || headingText.includes("results") || /\d+\+?\s*(customers|clients|users|companies|businesses)/i.test(bodyText) || /\d+%\s*(increase|decrease|improvement|growth)/i.test(bodyText);
+  const hasConsistentNaming = brandMentionCount >= 3 && ogSiteName.length > 0;
+  const hasContactInfo = $('a[href^="tel:"], a[href^="mailto:"]').length > 0 || /\d{3}[-.\s]?\d{3}[-.\s]?\d{4}/.test(bodyText) || bodyText.toLowerCase().includes("contact");
+  const socialLinks = $('a[href*="facebook.com"], a[href*="twitter.com"], a[href*="linkedin.com"], a[href*="instagram.com"]');
+  const hasSocialLinks = socialLinks.length >= 2;
+  const hasReviewLinks = allLinks.some((href) => {
+    const lowerHref = href.toLowerCase();
+    return REVIEW_PLATFORMS.some((platform) => lowerHref.includes(platform));
+  });
+  let brandScore = 30;
+  if (hasBrandDefinition)
+    brandScore += 15;
+  if (hasUSP)
+    brandScore += 10;
+  if (hasValueProposition)
+    brandScore += 10;
+  if (brandMentionCount >= 5)
+    brandScore += 5;
+  if (hasPricingInfo)
+    brandScore += 5;
+  if (hasAboutSection)
+    brandScore += 5;
+  if (hasFAQSection)
+    brandScore += 5;
+  if (hasTestimonials)
+    brandScore += 10;
+  if (hasProofPoints)
+    brandScore += 10;
+  if (hasConsistentNaming)
+    brandScore += 5;
+  if (hasContactInfo)
+    brandScore += 3;
+  if (hasSocialLinks)
+    brandScore += 3;
+  if (hasReviewLinks)
+    brandScore += 5;
+  brandScore = Math.min(100, Math.max(0, brandScore));
+  if (!hasBrandDefinition) {
+    issues.push({
+      code: "AI_NO_BRAND_DEFINITION",
+      severity: "warning",
+      category: "ai-readiness",
+      title: "No clear brand definition for AI to extract",
+      description: 'AI systems look for clear "Brand X is..." statements to quote when recommending brands. Your page lacks quotable brand definitions.',
+      impact: "AI cannot accurately describe your brand, reducing recommendation likelihood.",
+      howToFix: 'Add a clear brand definition early in your content: "[Brand] is a [category] that [key benefit]." Make it quotable (under 200 characters).',
+      affectedUrls: [url],
+      details: {
+        suggestion: `Example: "${potentialBrandName.charAt(0).toUpperCase() + potentialBrandName.slice(1)} is a [category] that helps [audience] [achieve benefit]."`
+      }
+    });
+  }
+  if (!hasUSP) {
+    issues.push({
+      code: "AI_NO_USP",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "No unique selling proposition (USP) detected",
+      description: "AI needs clear differentiators to recommend your brand over competitors. No USP patterns found.",
+      impact: "AI may not distinguish your brand from competitors when making recommendations.",
+      howToFix: 'Add clear differentiators: "The only...", "Unlike competitors...", "Guaranteed...", specific numbers (e.g., "50% faster").',
+      affectedUrls: [url]
+    });
+  }
+  const missingTopics = [];
+  if (!hasPricingInfo)
+    missingTopics.push("pricing");
+  if (!hasFAQSection)
+    missingTopics.push("FAQ");
+  if (!hasTestimonials)
+    missingTopics.push("testimonials/reviews");
+  if (!hasProofPoints)
+    missingTopics.push("proof points/case studies");
+  if (missingTopics.length >= 2) {
+    issues.push({
+      code: "AI_INCOMPLETE_BRAND_COVERAGE",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "Incomplete brand topic coverage",
+      description: `Missing key brand topics that AI uses to answer queries: ${missingTopics.join(", ")}. AI may rely on third-party sources instead.`,
+      impact: "Third-party sites may define your brand narrative instead of you.",
+      howToFix: "Cover key brand topics on your site: pricing, positioning, proof (testimonials, case studies), and FAQs.",
+      affectedUrls: [url],
+      details: {
+        missingTopics,
+        recommendation: "Control your brand narrative by having authoritative content on these topics on your own site."
+      }
+    });
+  }
+  if (!hasReviewLinks && !hasTestimonials) {
+    issues.push({
+      code: "AI_NO_REVIEW_INTEGRATION",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "No review platform integration",
+      description: "No links to review platforms or testimonial sections found. AI uses review signals from multiple platforms for trust.",
+      impact: "Missing review diversity signals that AI uses for brand trust assessment.",
+      howToFix: "Link to your profiles on relevant review platforms (G2, Capterra, Trustpilot, etc.) and display testimonials with attribution.",
+      affectedUrls: [url],
+      details: {
+        relevantPlatforms: [
+          "B2B SaaS: G2, Capterra, TrustRadius",
+          "Local: Google Business, Yelp, BBB",
+          "Professional: Clutch, UpCity"
+        ]
+      }
+    });
+  }
+  if (brandScore < 50) {
+    issues.push({
+      code: "AI_LOW_BRAND_SCORE",
+      severity: "warning",
+      category: "ai-readiness",
+      title: "Brand is not well-optimized for AI extraction",
+      description: `Brand optimization score: ${brandScore}/100. AI may struggle to accurately describe and recommend your brand.`,
+      impact: "Low likelihood of being recommended in AI answers for brand-related queries.",
+      howToFix: "Improve brand clarity: add quotable definitions, USPs, testimonials, proof points, and link to review platforms.",
+      affectedUrls: [url],
+      details: {
+        brandScore,
+        hasBrandDefinition,
+        hasUSP,
+        hasTestimonials,
+        hasProofPoints,
+        hasReviewLinks,
+        quotableBrandStatements: quotableBrandStatements.slice(0, 3)
+      }
+    });
+  }
+  return {
+    issues,
+    data: {
+      brandSignals: {
+        hasBrandDefinition,
+        hasUSP,
+        hasValueProposition,
+        hasBrandStatement,
+        brandMentionCount
+      },
+      brandCoverage: {
+        hasPricingInfo,
+        hasAboutSection,
+        hasFAQSection,
+        hasTestimonials,
+        hasProofPoints
+      },
+      brandConsistency: {
+        hasConsistentNaming,
+        hasContactInfo,
+        hasSocialLinks,
+        hasReviewLinks
+      },
+      quotableBrandStatements,
+      brandScore
+    }
+  };
+}
+
+// src/audit/checks/ai-citation-worthiness.ts
+import * as cheerio47 from "https://esm.sh/cheerio@1.0.0";
+var ORIGINAL_DATA_PATTERNS = [
+  /(?:our data|our research|our study|our analysis|we found|we discovered)/i,
+  /(?:survey of|surveyed|interviewed|analyzed)\s+\d+/i,
+  /(?:based on|from)\s+\d+[,\d]*\s+(?:data points|samples|responses|users|customers)/i,
+  /(?:internal data|proprietary data|our database)/i
+];
+var EXPERIENCE_PATTERNS = [
+  /(?:in my experience|from my experience|i've found|i've seen|i've learned)/i,
+  /(?:when i|after i|before i|i personally|i tested|i tried|i used)/i,
+  /(?:our team|we tested|we tried|we implemented|we built)/i,
+  /(?:case study|real example|actual example|here's what happened)/i
+];
+var EXPERT_QUOTE_PATTERNS = [
+  /(?:according to|says|said|explains|notes)\s+[A-Z][a-z]+\s+[A-Z][a-z]+/,
+  /"[^"]{20,}"\s*[-–—]\s*[A-Z]/,
+  /[A-Z][a-z]+\s+[A-Z][a-z]+,?\s+(?:CEO|CTO|founder|director|manager|expert|analyst|researcher)/i
+];
+var SPECIFIC_NUMBER_PATTERNS = [
+  /\$[\d,]+(?:\.\d{2})?(?:\s*(?:million|billion|k|m|b))?/i,
+  // Dollar amounts
+  /\d+(?:\.\d+)?%/,
+  // Percentages
+  /\d{1,2}\/\d{1,2}\/\d{2,4}/,
+  // Dates
+  /(?:in|since|from)\s+(?:19|20)\d{2}/,
+  // Years
+  /\d+(?:,\d{3})+/,
+  // Large numbers with commas
+  /(?:increased|decreased|grew|dropped)\s+(?:by\s+)?\d+/i
+];
+var STOCK_IMAGE_DOMAINS = [
+  "unsplash.com",
+  "pexels.com",
+  "shutterstock.com",
+  "istockphoto.com",
+  "gettyimages.com",
+  "stock.adobe.com",
+  "depositphotos.com",
+  "pixabay.com",
+  "freepik.com",
+  "rawpixel.com",
+  "123rf.com",
+  "stocksy.com"
+];
+function analyzeAICitationWorthiness(html, url) {
+  const issues = [];
+  const $ = cheerio47.load(html);
+  const $content = $("body").clone();
+  $content.find("nav, footer, script, style, noscript, aside").remove();
+  const bodyText = $content.text();
+  const aiProofElements = [];
+  let hasOriginalData = false;
+  for (const pattern of ORIGINAL_DATA_PATTERNS) {
+    if (pattern.test(bodyText)) {
+      hasOriginalData = true;
+      aiProofElements.push("Original data/research");
+      break;
+    }
+  }
+  const images = $content.find("img");
+  let hasScreenshots = false;
+  let hasOriginalImages = false;
+  let stockImageCount = 0;
+  let totalImages = 0;
+  images.each((_, img) => {
+    const src = $(img).attr("src") || "";
+    const alt = $(img).attr("alt") || "";
+    const srcLower = src.toLowerCase();
+    const altLower = alt.toLowerCase();
+    totalImages++;
+    if (srcLower.includes("screenshot") || srcLower.includes("screen-") || altLower.includes("screenshot") || srcLower.includes("capture") || /screen[_-]?\d+/i.test(src)) {
+      hasScreenshots = true;
+      aiProofElements.push("Screenshots");
+    }
+    const isStockImage = STOCK_IMAGE_DOMAINS.some((domain) => srcLower.includes(domain));
+    if (isStockImage) {
+      stockImageCount++;
+    }
+  });
+  if (totalImages > 0 && stockImageCount < totalImages * 0.5) {
+    hasOriginalImages = true;
+    if (totalImages >= 3 && stockImageCount === 0) {
+      aiProofElements.push("Original images");
+    }
+  }
+  const datePatterns = [
+    /(?:updated|published|written|posted)\s+(?:on\s+)?(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i,
+    /(?:last updated|originally published):\s*\d/i,
+    /<time[^>]*datetime/i
+  ];
+  const hasDatedContent = datePatterns.some((p) => p.test(html));
+  if (hasDatedContent) {
+    aiProofElements.push("Dated/timestamped content");
+  }
+  let hasFirstPersonExperience = false;
+  for (const pattern of EXPERIENCE_PATTERNS) {
+    if (pattern.test(bodyText)) {
+      hasFirstPersonExperience = true;
+      aiProofElements.push("First-person experience");
+      break;
+    }
+  }
+  const hasAuthorByline = $('[class*="author"], [rel="author"], [itemprop="author"], .byline').length > 0 || /by\s+[A-Z][a-z]+\s+[A-Z][a-z]+/i.test(bodyText);
+  const credentialPatterns = [
+    /(?:PhD|Ph\.D|MD|M\.D|MBA|CPA|JD|J\.D)/,
+    /(?:certified|licensed|accredited)\s+\w+/i,
+    /\d+\+?\s*years?\s+(?:of\s+)?experience/i,
+    /(?:expert|specialist|professional)\s+in/i
+  ];
+  const hasAuthorCredentials = credentialPatterns.some((p) => p.test(bodyText));
+  if (hasAuthorCredentials) {
+    aiProofElements.push("Expert credentials");
+  }
+  let hasExpertQuotes = false;
+  for (const pattern of EXPERT_QUOTE_PATTERNS) {
+    if (pattern.test(bodyText)) {
+      hasExpertQuotes = true;
+      aiProofElements.push("Expert quotes");
+      break;
+    }
+  }
+  const hasMethodology = /(?:methodology|method|approach|how we|our process)/i.test(
+    $("h2, h3, h4").text()
+  ) || /(?:we measured|we calculated|we analyzed|data was collected)/i.test(bodyText);
+  const hasPrimaryResearch = /(?:original research|primary research|we conducted|our study found)/i.test(bodyText) || /(?:sample size|n\s*=\s*\d+|participants|respondents)/i.test(bodyText);
+  if (hasPrimaryResearch) {
+    aiProofElements.push("Primary research");
+  }
+  let specificNumberCount = 0;
+  for (const pattern of SPECIFIC_NUMBER_PATTERNS) {
+    const matches = bodyText.match(pattern);
+    if (matches) {
+      specificNumberCount += matches.length;
+    }
+  }
+  const hasSpecificNumbers = specificNumberCount >= 5;
+  if (hasSpecificNumbers) {
+    aiProofElements.push("Specific data points");
+  }
+  const hasCaseStudies = /(?:case study|case studies|success story|client story)/i.test(bodyText) || $('[class*="case-study"], [id*="case-study"]').length > 0;
+  if (hasCaseStudies) {
+    aiProofElements.push("Case studies");
+  }
+  const hasBeforeAfter = /(?:before and after|before\/after|before vs|the results)/i.test(bodyText) || $('[class*="before-after"], [class*="comparison"]').length > 0;
+  const hasDocumentation = $("pre code, .highlight, .code-block").length > 0 || /```[\s\S]*?```/.test(bodyText) || $('[class*="documentation"]').length > 0;
+  if (hasDocumentation) {
+    aiProofElements.push("Code/documentation");
+  }
+  const hasRealExamples = /(?:for example|here's an example|real example|actual example|let me show)/i.test(bodyText) || /(?:example:|e\.g\.,|such as:)/i.test(bodyText);
+  let citationWorthinessScore = 20;
+  if (hasOriginalData)
+    citationWorthinessScore += 15;
+  if (hasScreenshots)
+    citationWorthinessScore += 5;
+  if (hasOriginalImages)
+    citationWorthinessScore += 5;
+  if (hasDatedContent)
+    citationWorthinessScore += 5;
+  if (hasFirstPersonExperience)
+    citationWorthinessScore += 5;
+  if (hasAuthorByline)
+    citationWorthinessScore += 5;
+  if (hasAuthorCredentials)
+    citationWorthinessScore += 10;
+  if (hasExpertQuotes)
+    citationWorthinessScore += 5;
+  if (hasMethodology)
+    citationWorthinessScore += 5;
+  if (hasPrimaryResearch)
+    citationWorthinessScore += 10;
+  if (hasSpecificNumbers)
+    citationWorthinessScore += 5;
+  if (hasCaseStudies)
+    citationWorthinessScore += 5;
+  if (hasBeforeAfter)
+    citationWorthinessScore += 3;
+  if (hasDocumentation)
+    citationWorthinessScore += 4;
+  if (hasRealExamples)
+    citationWorthinessScore += 3;
+  citationWorthinessScore = Math.min(100, Math.max(0, citationWorthinessScore));
+  if (!hasOriginalData && !hasPrimaryResearch) {
+    issues.push({
+      code: "AI_NO_ORIGINAL_DATA",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "No original data or research signals",
+      description: "Content lacks original data, surveys, or research findings. AI prefers citing sources with unique, first-party data.",
+      impact: "Generic content without original data is less likely to be cited as a source.",
+      howToFix: 'Add original data: survey results, internal analytics, case study numbers, or primary research findings. Use phrases like "Our data shows..." or "We surveyed X users...".',
+      affectedUrls: [url]
+    });
+  }
+  if (!hasFirstPersonExperience && !hasCaseStudies) {
+    issues.push({
+      code: "AI_NO_EXPERIENCE_SIGNALS",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "No first-hand experience signals",
+      description: 'Content reads like it could be AI-generated. No "I tested...", "We implemented...", or case study language found.',
+      impact: "AI may prefer sources that demonstrate real-world experience over generic explanations.",
+      howToFix: `Add personal experience: "In my experience...", "When we tested...", "Here's what happened when...". Include specific scenarios you've encountered.`,
+      affectedUrls: [url]
+    });
+  }
+  if (stockImageCount > 0 && stockImageCount >= totalImages * 0.5) {
+    issues.push({
+      code: "AI_STOCK_IMAGE_HEAVY",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "Heavy use of stock images",
+      description: `${stockImageCount} of ${totalImages} images appear to be from stock photo sites. Original visuals signal authenticity.`,
+      impact: "Stock-heavy content appears less authentic and expert to both users and AI.",
+      howToFix: "Replace stock photos with original screenshots, diagrams, photos, or custom graphics that AI cannot easily replicate.",
+      affectedUrls: [url],
+      details: {
+        stockImageCount,
+        totalImages
+      }
+    });
+  }
+  if (!hasAuthorByline && !hasAuthorCredentials) {
+    issues.push({
+      code: "AI_NO_AUTHOR_EXPERTISE",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "No author expertise signals",
+      description: "No author byline or credentials found. AI values content from identifiable experts.",
+      impact: "Anonymous content is less trustworthy for AI citation purposes.",
+      howToFix: "Add author byline with credentials: name, title, years of experience, certifications, or relevant expertise.",
+      affectedUrls: [url]
+    });
+  }
+  if (citationWorthinessScore < 40) {
+    issues.push({
+      code: "AI_LOW_CITATION_WORTHINESS",
+      severity: "warning",
+      category: "ai-readiness",
+      title: "Content lacks AI-proof originality signals",
+      description: `Citation worthiness score: ${citationWorthinessScore}/100. Content appears generic and could be easily replicated by AI.`,
+      impact: "AI may not cite this content as it lacks unique value that AI cannot generate itself.",
+      howToFix: "Add what AI can't fake: original data, real screenshots, dated experiences, expert quotes, case studies, and specific proof points.",
+      affectedUrls: [url],
+      details: {
+        citationWorthinessScore,
+        aiProofElements: aiProofElements.length > 0 ? aiProofElements : ["None detected"],
+        missing: [
+          !hasOriginalData && "Original data/research",
+          !hasFirstPersonExperience && "First-person experience",
+          !hasAuthorCredentials && "Expert credentials",
+          !hasSpecificNumbers && "Specific data points"
+        ].filter(Boolean)
+      }
+    });
+  }
+  return {
+    issues,
+    data: {
+      originalitySignals: {
+        hasOriginalData,
+        hasScreenshots,
+        hasOriginalImages,
+        hasDatedContent,
+        hasFirstPersonExperience
+      },
+      expertiseSignals: {
+        hasAuthorByline,
+        hasAuthorCredentials,
+        hasExpertQuotes,
+        hasMethodology,
+        hasPrimaryResearch
+      },
+      proofSignals: {
+        hasSpecificNumbers,
+        hasCaseStudies,
+        hasBeforeAfter,
+        hasDocumentation,
+        hasRealExamples
+      },
+      citationWorthinessScore,
+      aiProofElements
+    }
+  };
+}
+
+// src/audit/checks/review-ecosystem.ts
+import * as cheerio48 from "https://esm.sh/cheerio@1.0.0";
+var REVIEW_PLATFORMS2 = {
+  general: [
+    { name: "Google Business", domain: "google.com/maps", aliases: ["goo.gl/maps", "maps.google"] },
+    { name: "Trustpilot", domain: "trustpilot.com", aliases: [] },
+    { name: "BBB", domain: "bbb.org", aliases: [] },
+    { name: "Yelp", domain: "yelp.com", aliases: [] }
+  ],
+  saas: [
+    { name: "G2", domain: "g2.com", aliases: ["g2crowd.com"] },
+    { name: "Capterra", domain: "capterra.com", aliases: [] },
+    { name: "TrustRadius", domain: "trustradius.com", aliases: [] },
+    { name: "GetApp", domain: "getapp.com", aliases: [] },
+    { name: "Software Advice", domain: "softwareadvice.com", aliases: [] },
+    { name: "Product Hunt", domain: "producthunt.com", aliases: [] }
+  ],
+  professional: [
+    { name: "Clutch", domain: "clutch.co", aliases: [] },
+    { name: "UpCity", domain: "upcity.com", aliases: [] },
+    { name: "GoodFirms", domain: "goodfirms.co", aliases: [] },
+    { name: "Expertise", domain: "expertise.com", aliases: [] }
+  ],
+  local: [
+    { name: "Angi", domain: "angi.com", aliases: ["angieslist.com"] },
+    { name: "HomeAdvisor", domain: "homeadvisor.com", aliases: [] },
+    { name: "Thumbtack", domain: "thumbtack.com", aliases: [] },
+    { name: "Houzz", domain: "houzz.com", aliases: [] }
+  ],
+  healthcare: [
+    { name: "Healthgrades", domain: "healthgrades.com", aliases: [] },
+    { name: "Zocdoc", domain: "zocdoc.com", aliases: [] },
+    { name: "Vitals", domain: "vitals.com", aliases: [] },
+    { name: "WebMD", domain: "webmd.com", aliases: [] }
+  ],
+  legal: [
+    { name: "Avvo", domain: "avvo.com", aliases: [] },
+    { name: "Martindale", domain: "martindale.com", aliases: [] },
+    { name: "FindLaw", domain: "findlaw.com", aliases: [] },
+    { name: "Justia", domain: "justia.com", aliases: [] }
+  ],
+  hospitality: [
+    { name: "TripAdvisor", domain: "tripadvisor.com", aliases: [] },
+    { name: "Booking.com", domain: "booking.com", aliases: [] },
+    { name: "OpenTable", domain: "opentable.com", aliases: [] },
+    { name: "Zomato", domain: "zomato.com", aliases: [] }
+  ],
+  ecommerce: [
+    { name: "Amazon", domain: "amazon.com", aliases: [] },
+    { name: "Shopify Reviews", domain: "apps.shopify.com", aliases: [] },
+    { name: "Yotpo", domain: "yotpo.com", aliases: [] },
+    { name: "Judge.me", domain: "judge.me", aliases: [] }
+  ]
+};
+var TRUST_BADGE_PATTERNS2 = [
+  /ssl|secure|verified|certified|accredited|licensed/i,
+  /money.back|guarantee|satisfaction/i,
+  /bbb|iso|soc\s*2|hipaa|gdpr|pci/i
+];
+function analyzeReviewEcosystem(html, url) {
+  const issues = [];
+  const $ = cheerio48.load(html);
+  const allLinks = $("a[href]").map((_, a) => $(a).attr("href") || "").get();
+  const allLinksLower = allLinks.map((l) => l.toLowerCase());
+  const linkedPlatforms = [];
+  const allPlatforms = Object.values(REVIEW_PLATFORMS2).flat();
+  for (const platform of allPlatforms) {
+    const isLinked = allLinksLower.some(
+      (href) => href.includes(platform.domain) || platform.aliases.some((alias) => href.includes(alias))
+    );
+    if (isLinked) {
+      linkedPlatforms.push(platform.name);
+    }
+  }
+  const embeddedPlatforms = [];
+  const embedPatterns = [
+    { name: "Trustpilot", pattern: /trustpilot/i },
+    { name: "G2", pattern: /g2\.com|g2crowd/i },
+    { name: "Yotpo", pattern: /yotpo/i },
+    { name: "Judge.me", pattern: /judgeme|judge\.me/i },
+    { name: "Google Reviews", pattern: /google.*review|elfsight/i }
+  ];
+  const htmlLower = html.toLowerCase();
+  for (const { name, pattern } of embedPatterns) {
+    if (pattern.test(htmlLower) && !linkedPlatforms.includes(name)) {
+      embeddedPlatforms.push(name);
+    }
+  }
+  const sameAsLinks = [];
+  const scripts = $('script[type="application/ld+json"]');
+  scripts.each((_, script) => {
+    try {
+      const json = JSON.parse($(script).html() || "{}");
+      const sameAs = json.sameAs || json["@graph"] && json["@graph"][0]?.sameAs;
+      if (Array.isArray(sameAs)) {
+        for (const link of sameAs) {
+          if (typeof link === "string") {
+            for (const platform of allPlatforms) {
+              if (link.toLowerCase().includes(platform.domain)) {
+                sameAsLinks.push(platform.name);
+              }
+            }
+          }
+        }
+      }
+    } catch {
+    }
+  });
+  const testimonialSelectors = [
+    '[class*="testimonial"]',
+    '[class*="review"]',
+    '[class*="quote"]',
+    '[id*="testimonial"]',
+    "blockquote"
+  ];
+  let testimonialCount = 0;
+  let hasAttribution = false;
+  let hasPhotos = false;
+  let hasCompanyNames = false;
+  for (const selector of testimonialSelectors) {
+    const elements = $(selector);
+    elements.each((_, el) => {
+      const text = $(el).text();
+      if (text.length > 50 && text.length < 1e3) {
+        testimonialCount++;
+        if (/[-–—]\s*[A-Z][a-z]+\s+[A-Z]/.test(text) || $(el).find('[class*="name"], [class*="author"]').length > 0) {
+          hasAttribution = true;
+        }
+        if ($(el).find("img").length > 0 || $(el).siblings("img").length > 0) {
+          hasPhotos = true;
+        }
+        if (/(?:CEO|CTO|founder|director|manager)\s+(?:at|of)\s+[A-Z]/i.test(text) || $(el).find('[class*="company"], [class*="title"]').length > 0) {
+          hasCompanyNames = true;
+        }
+      }
+    });
+  }
+  let hasAggregateRating = false;
+  let hasReviewSchema = false;
+  let ratingValue;
+  let reviewCount;
+  scripts.each((_, script) => {
+    try {
+      const json = JSON.parse($(script).html() || "{}");
+      const checkSchema = (obj) => {
+        if (obj["@type"] === "AggregateRating" || obj.aggregateRating) {
+          hasAggregateRating = true;
+          const rating = obj.aggregateRating || obj;
+          if (typeof rating === "object" && rating !== null) {
+            const r = rating;
+            ratingValue = parseFloat(String(r.ratingValue)) || void 0;
+            reviewCount = parseInt(String(r.reviewCount || r.ratingCount)) || void 0;
+          }
+        }
+        if (obj["@type"] === "Review" || Array.isArray(obj.review)) {
+          hasReviewSchema = true;
+        }
+      };
+      checkSchema(json);
+      if (json["@graph"] && Array.isArray(json["@graph"])) {
+        for (const item of json["@graph"]) {
+          checkSchema(item);
+        }
+      }
+    } catch {
+    }
+  });
+  const bodyText = $("body").text();
+  const imgAlts = $("img").map((_, img) => $(img).attr("alt") || "").get().join(" ");
+  const allText = bodyText + " " + imgAlts;
+  const hasTrustBadges = TRUST_BADGE_PATTERNS2.some((p) => p.test(allText)) || $('[class*="trust"], [class*="badge"], [class*="seal"]').length > 0;
+  const hasCertifications = /(?:certified|certification|accredited|compliance)/i.test(allText) || $('[class*="certification"], [class*="accredit"]').length > 0;
+  const hasAwards = /(?:award|winner|recognized|featured in|as seen)/i.test(allText) || $('[class*="award"], [class*="recognition"], [class*="featured"]').length > 0;
+  const hasMediaMentions = /(?:featured in|as seen in|mentioned in|press|media)/i.test(allText) || $('[class*="press"], [class*="media"], [class*="featured"]').length > 0;
+  let reviewEcosystemScore = 20;
+  if (linkedPlatforms.length >= 3)
+    reviewEcosystemScore += 15;
+  else if (linkedPlatforms.length >= 1)
+    reviewEcosystemScore += 10;
+  if (embeddedPlatforms.length > 0)
+    reviewEcosystemScore += 10;
+  if (sameAsLinks.length > 0)
+    reviewEcosystemScore += 5;
+  if (testimonialCount >= 5)
+    reviewEcosystemScore += 10;
+  else if (testimonialCount >= 2)
+    reviewEcosystemScore += 5;
+  if (hasAttribution)
+    reviewEcosystemScore += 5;
+  if (hasPhotos)
+    reviewEcosystemScore += 5;
+  if (hasCompanyNames)
+    reviewEcosystemScore += 5;
+  if (hasAggregateRating)
+    reviewEcosystemScore += 10;
+  if (hasReviewSchema)
+    reviewEcosystemScore += 5;
+  if (hasTrustBadges)
+    reviewEcosystemScore += 3;
+  if (hasCertifications)
+    reviewEcosystemScore += 3;
+  if (hasAwards)
+    reviewEcosystemScore += 2;
+  if (hasMediaMentions)
+    reviewEcosystemScore += 2;
+  reviewEcosystemScore = Math.min(100, Math.max(0, reviewEcosystemScore));
+  if (linkedPlatforms.length === 0 && embeddedPlatforms.length === 0) {
+    issues.push({
+      code: "AI_NO_REVIEW_PLATFORMS",
+      severity: "warning",
+      category: "ai-readiness",
+      title: "No review platform integration",
+      description: "No links or embeds from review platforms detected. AI uses review signals from multiple platforms to assess brand trust.",
+      impact: "Missing review diversity signals that AI uses when recommending brands.",
+      howToFix: "Link to your profiles on 2-3 relevant review platforms. Consider embedding review widgets for social proof.",
+      affectedUrls: [url],
+      details: {
+        suggestedPlatforms: {
+          "All businesses": ["Google Business", "Trustpilot", "BBB"],
+          "SaaS/Software": ["G2", "Capterra", "Product Hunt"],
+          "Professional services": ["Clutch", "UpCity"],
+          "Local services": ["Angi", "HomeAdvisor", "Yelp"]
+        }
+      }
+    });
+  }
+  if (testimonialCount === 0) {
+    issues.push({
+      code: "AI_NO_TESTIMONIALS",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "No testimonials or reviews on page",
+      description: "No customer testimonials found on the page. AI looks for social proof when evaluating brand trustworthiness.",
+      impact: "Missing on-page social proof that strengthens brand authority.",
+      howToFix: "Add customer testimonials with: name attribution, company/title, and optionally photos. Use blockquote elements for semantic markup.",
+      affectedUrls: [url]
+    });
+  }
+  if (testimonialCount > 0 && !hasAttribution) {
+    issues.push({
+      code: "AI_UNATTRIBUTED_TESTIMONIALS",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "Testimonials lack proper attribution",
+      description: "Testimonials found but missing name attribution. Anonymous testimonials have less trust weight.",
+      impact: "Unattributed reviews are less credible for AI trust assessment.",
+      howToFix: 'Add author names to testimonials: "Great service! - John Smith, CEO at Acme Corp"',
+      affectedUrls: [url],
+      details: {
+        testimonialCount,
+        hasAttribution,
+        hasPhotos,
+        hasCompanyNames
+      }
+    });
+  }
+  if (!hasAggregateRating && testimonialCount > 0) {
+    issues.push({
+      code: "AI_NO_REVIEW_SCHEMA",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "Missing review/rating schema markup",
+      description: "Page has testimonials but no AggregateRating or Review schema. Structured data helps AI understand review context.",
+      impact: "Missing rich snippet opportunity and AI-readable review data.",
+      howToFix: "Add AggregateRating schema with ratingValue, ratingCount, and bestRating. This enables star ratings in search results.",
+      affectedUrls: [url]
+    });
+  }
+  if (reviewEcosystemScore < 40) {
+    issues.push({
+      code: "AI_WEAK_REVIEW_ECOSYSTEM",
+      severity: "warning",
+      category: "ai-readiness",
+      title: "Weak review ecosystem integration",
+      description: `Review ecosystem score: ${reviewEcosystemScore}/100. AI uses review diversity across platforms to assess brand trust.`,
+      impact: "Low review presence may result in AI recommending better-reviewed competitors.",
+      howToFix: "Build review diversity: 1) Link to review platforms, 2) Add testimonials with attribution, 3) Implement review schema, 4) Display trust badges.",
+      affectedUrls: [url],
+      details: {
+        reviewEcosystemScore,
+        linkedPlatforms,
+        testimonialCount,
+        hasAggregateRating
+      }
+    });
+  }
+  return {
+    issues,
+    data: {
+      reviewPlatforms: {
+        linked: linkedPlatforms,
+        embedded: embeddedPlatforms,
+        sameAsLinks: [...new Set(sameAsLinks)]
+      },
+      testimonials: {
+        count: testimonialCount,
+        hasAttribution,
+        hasPhotos,
+        hasCompanyNames
+      },
+      reviewSchema: {
+        hasAggregateRating,
+        hasReviewSchema,
+        ratingValue,
+        reviewCount
+      },
+      trustSignals: {
+        hasTrustBadges,
+        hasCertifications,
+        hasAwards,
+        hasMediaMentions
+      },
+      reviewEcosystemScore
+    }
+  };
+}
+
 // src/audit/engine.ts
 async function runFullAudit(options) {
   const { url, checkBrokenLinks = false, checkHreflangUrls = false, checkCanonicalChain = false, cruxApiKey } = options;
@@ -13018,6 +13870,9 @@ async function runFullAudit(options) {
   const aiContentStructureResult = analyzeAIContentStructure(html, url);
   const citationQualityResult = analyzeCitationQuality(html, url);
   const answerConcisenessResult = analyzeAnswerConciseness(html, url);
+  const brandMentionResult = analyzeBrandMentionOptimization(html, url);
+  const citationWorthinessResult = analyzeAICitationWorthiness(html, url);
+  const reviewEcosystemResult = analyzeReviewEcosystem(html, url);
   const paginationResult = analyzePagination(html, url, onPageResult.data.canonical);
   allIssues.push(
     ...onPageResult.issues,
@@ -13054,6 +13909,9 @@ async function runFullAudit(options) {
     ...aiContentStructureResult.issues,
     ...citationQualityResult.issues,
     ...answerConcisenessResult.issues,
+    ...brandMentionResult.issues,
+    ...citationWorthinessResult.issues,
+    ...reviewEcosystemResult.issues,
     ...paginationResult.issues
   );
   if (!structuredDataResult.data.hasSchema) {
