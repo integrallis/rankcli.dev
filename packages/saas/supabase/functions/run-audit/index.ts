@@ -1,18 +1,71 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { DOMParser } from 'https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts';
+
+// Import the shared audit engine (280+ checks)
+import { runFullAudit, formatReport } from '../_shared/audit/index.ts';
+import type { AuditReport, AuditIssue as EngineIssue } from '../_shared/audit/index.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const openaiApiKey = Deno.env.get('OPENAI_API_KEY') || '';
+
+// AI Analysis Types
+interface AIContentAnalysis {
+  overallScore: number;
+  searchIntentMatch: number;
+  contentDepth: 'shallow' | 'moderate' | 'comprehensive';
+  keywordNaturalness: number;
+  eeatSignals: {
+    experience: string[];
+    expertise: string[];
+    authority: string[];
+    trust: string[];
+  };
+  improvements: { priority: number; suggestion: string; impact: string }[];
+  uniqueValue: string;
+  missingTopics: string[];
+  targetKeyword?: string;
+}
+
+interface AIMetaAnalysis {
+  titleAnalysis: {
+    effectiveness: number;
+    clickPotential: number;
+    suggestions: string[];
+  };
+  descriptionAnalysis: {
+    effectiveness: number;
+    suggestions: string[];
+  };
+  serpPrediction: {
+    predictedCTR: number;
+    improvements: string[];
+  };
+}
+
+interface AIFixPrioritization {
+  prioritizedIssues: {
+    issueCode: string;
+    impactScore: number;
+    effortScore: number;
+    roiScore: number;
+    rationale: string;
+  }[];
+  fixBatches: {
+    batch: number;
+    theme: string;
+    estimatedImpact: string;
+    issueCodes: string[];
+  }[];
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const USER_AGENT = 'RankCLI/1.0 (+https://rankcli.dev)';
-
-interface AuditIssue {
+// Database issue format
+interface DbAuditIssue {
   code: string;
   severity: 'error' | 'warning' | 'notice';
   category: string;
@@ -31,9 +84,28 @@ interface HealthScores {
   performance: number;
   security: number;
   socialMeta: number;
+  aiReadiness: number;
+  mobile: number;
+}
+
+// Convert engine issues to database format
+function convertIssue(issue: EngineIssue): DbAuditIssue {
+  return {
+    code: issue.code,
+    severity: issue.severity,
+    category: issue.category,
+    title: issue.title,
+    description: issue.description || null,
+    impact: issue.impact || null,
+    how_to_fix: issue.howToFix || null,
+    affected_urls: issue.affectedUrls || [],
+    details: issue.details || null,
+  };
 }
 
 serve(async (req) => {
+  console.log('[AUDIT] Function invoked at:', new Date().toISOString());
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -127,297 +199,161 @@ serve(async (req) => {
       .eq('id', audit.id);
 
     const startTime = Date.now();
-    const issues: AuditIssue[] = [];
 
     try {
-      // ========== FETCH PAGE ==========
-      const response = await fetch(project.url, {
-        headers: { 'User-Agent': USER_AGENT },
-      });
+      // ========== RUN FULL AUDIT ENGINE (280+ CHECKS) ==========
+      console.log(`[AUDIT] Starting full audit on ${project.url}...`);
+      console.log(`[AUDIT] Timestamp: ${new Date().toISOString()}`);
 
-      if (!response.ok) {
-        issues.push({
-          code: 'FETCH_ERROR',
-          severity: 'error',
-          category: 'crawlability',
-          title: `HTTP Error ${response.status}`,
-          description: `The page returned status ${response.status}`,
-          impact: 'Page may not be accessible to search engines.',
-          how_to_fix: 'Ensure the URL returns a 200 OK status.',
-          affected_urls: [project.url],
-          details: null,
-        });
-      }
-
-      const html = await response.text();
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-
-      if (!doc) {
-        throw new Error('Failed to parse HTML');
-      }
-
-      // ========== ON-PAGE CHECKS ==========
-
-      // Title check
-      const title = doc.querySelector('title')?.textContent;
-      if (!title) {
-        issues.push({
-          code: 'TITLE_MISSING',
-          severity: 'error',
-          category: 'on-page',
-          title: 'Missing title tag',
-          description: 'The page does not have a title tag.',
-          impact: 'Title tags are a major ranking factor and affect click-through rates.',
-          how_to_fix: 'Add a unique, descriptive title tag between 50-60 characters.',
-          affected_urls: [project.url],
-          details: null,
-        });
-      } else if (title.length > 60) {
-        issues.push({
-          code: 'TITLE_TOO_LONG',
-          severity: 'warning',
-          category: 'on-page',
-          title: `Title too long (${title.length} chars)`,
-          description: 'Title tag exceeds the recommended 60 character limit.',
-          impact: 'Title may be truncated in search results.',
-          how_to_fix: 'Shorten the title to under 60 characters.',
-          affected_urls: [project.url],
-          details: { title, length: title.length },
-        });
-      }
-
-      // Meta description check
-      const metaDesc = doc.querySelector('meta[name="description"]')?.getAttribute('content');
-      if (!metaDesc) {
-        issues.push({
-          code: 'META_DESC_MISSING',
-          severity: 'error',
-          category: 'on-page',
-          title: 'Missing meta description',
-          description: 'The page does not have a meta description.',
-          impact: 'Meta descriptions affect click-through rates in search results.',
-          how_to_fix: 'Add a compelling meta description between 120-160 characters.',
-          affected_urls: [project.url],
-          details: null,
-        });
-      } else if (metaDesc.length > 160) {
-        issues.push({
-          code: 'META_DESC_TOO_LONG',
-          severity: 'warning',
-          category: 'on-page',
-          title: `Meta description too long (${metaDesc.length} chars)`,
-          description: 'Meta description exceeds the recommended 160 character limit.',
-          impact: 'Description may be truncated in search results.',
-          how_to_fix: 'Shorten the meta description to under 160 characters.',
-          affected_urls: [project.url],
-          details: { description: metaDesc, length: metaDesc.length },
-        });
-      }
-
-      // H1 check
-      const h1s = doc.querySelectorAll('h1');
-      if (h1s.length === 0) {
-        issues.push({
-          code: 'H1_MISSING',
-          severity: 'error',
-          category: 'on-page',
-          title: 'Missing H1 tag',
-          description: 'The page does not have an H1 heading.',
-          impact: 'H1 tags help search engines understand page structure.',
-          how_to_fix: 'Add exactly one H1 tag that describes the main content.',
-          affected_urls: [project.url],
-          details: null,
-        });
-      } else if (h1s.length > 1) {
-        issues.push({
-          code: 'H1_MULTIPLE',
-          severity: 'warning',
-          category: 'on-page',
-          title: `Multiple H1 tags (${h1s.length} found)`,
-          description: 'The page has more than one H1 tag.',
-          impact: 'Multiple H1s can confuse search engines about page topic.',
-          how_to_fix: 'Use only one H1 tag per page.',
-          affected_urls: [project.url],
-          details: { count: h1s.length },
-        });
-      }
-
-      // Canonical check
-      const canonical = doc.querySelector('link[rel="canonical"]')?.getAttribute('href');
-      if (!canonical) {
-        issues.push({
-          code: 'CANONICAL_MISSING',
-          severity: 'warning',
-          category: 'on-page',
-          title: 'Missing canonical tag',
-          description: 'The page does not have a canonical URL specified.',
-          impact: 'Without a canonical, duplicate content may cause ranking issues.',
-          how_to_fix: 'Add a canonical link tag pointing to the preferred URL.',
-          affected_urls: [project.url],
-          details: null,
-        });
-      }
-
-      // ========== SOCIAL META CHECKS ==========
-
-      // Open Graph
-      const ogTitle = doc.querySelector('meta[property="og:title"]')?.getAttribute('content');
-      const ogDesc = doc.querySelector('meta[property="og:description"]')?.getAttribute('content');
-      const ogImage = doc.querySelector('meta[property="og:image"]')?.getAttribute('content');
-
-      if (!ogTitle) {
-        issues.push({
-          code: 'OG_TITLE_MISSING',
-          severity: 'warning',
-          category: 'social-meta',
-          title: 'Missing Open Graph title',
-          description: 'No og:title meta tag found.',
-          impact: 'Social shares may not display correctly on Facebook/LinkedIn.',
-          how_to_fix: 'Add <meta property="og:title" content="Your Title" />',
-          affected_urls: [project.url],
-          details: null,
-        });
-      }
-
-      if (!ogImage) {
-        issues.push({
-          code: 'OG_IMAGE_MISSING',
-          severity: 'warning',
-          category: 'social-meta',
-          title: 'Missing Open Graph image',
-          description: 'No og:image meta tag found.',
-          impact: 'Social shares will not have a preview image.',
-          how_to_fix: 'Add <meta property="og:image" content="https://..." /> (1200x630px recommended)',
-          affected_urls: [project.url],
-          details: null,
-        });
-      }
-
-      // Twitter Card
-      const twitterCard = doc.querySelector('meta[name="twitter:card"]')?.getAttribute('content');
-      if (!twitterCard) {
-        issues.push({
-          code: 'TWITTER_CARD_MISSING',
-          severity: 'notice',
-          category: 'social-meta',
-          title: 'Missing Twitter Card',
-          description: 'No twitter:card meta tag found.',
-          impact: 'Twitter shares may not display rich previews.',
-          how_to_fix: 'Add <meta name="twitter:card" content="summary_large_image" />',
-          affected_urls: [project.url],
-          details: null,
-        });
-      }
-
-      // ========== CRAWLABILITY CHECKS ==========
-
-      // Check robots.txt
+      let auditReport;
       try {
-        const robotsUrl = new URL('/robots.txt', project.url).toString();
-        const robotsRes = await fetch(robotsUrl, { headers: { 'User-Agent': USER_AGENT } });
-        if (!robotsRes.ok) {
-          issues.push({
-            code: 'ROBOTS_TXT_MISSING',
-            severity: 'warning',
-            category: 'crawlability',
-            title: 'Missing robots.txt',
-            description: 'No robots.txt file found at the root.',
-            impact: 'Search engines may not know crawl preferences.',
-            how_to_fix: 'Create a robots.txt file in the root directory.',
-            affected_urls: [robotsUrl],
-            details: null,
-          });
-        }
-      } catch {
-        // Ignore fetch errors for robots.txt
-      }
-
-      // Check sitemap
-      try {
-        const sitemapUrl = new URL('/sitemap.xml', project.url).toString();
-        const sitemapRes = await fetch(sitemapUrl, { headers: { 'User-Agent': USER_AGENT } });
-        if (!sitemapRes.ok) {
-          issues.push({
-            code: 'SITEMAP_MISSING',
-            severity: 'warning',
-            category: 'crawlability',
-            title: 'Missing sitemap.xml',
-            description: 'No sitemap.xml file found at the root.',
-            impact: 'Search engines may miss some pages.',
-            how_to_fix: 'Create an XML sitemap and submit to search engines.',
-            affected_urls: [sitemapUrl],
-            details: null,
-          });
-        }
-      } catch {
-        // Ignore fetch errors for sitemap
-      }
-
-      // ========== IMAGE CHECKS ==========
-      const images = doc.querySelectorAll('img');
-      const imagesWithoutAlt: string[] = [];
-
-      images.forEach((img) => {
-        const alt = img.getAttribute('alt');
-        const src = img.getAttribute('src');
-        if (!alt && src) {
-          imagesWithoutAlt.push(src);
-        }
-      });
-
-      if (imagesWithoutAlt.length > 0) {
-        issues.push({
-          code: 'IMG_ALT_MISSING',
-          severity: 'warning',
-          category: 'images',
-          title: `${imagesWithoutAlt.length} image${imagesWithoutAlt.length > 1 ? 's' : ''} missing alt text`,
-          description: 'Images without alt text are not accessible and less SEO-friendly.',
-          impact: 'Missing alt text hurts accessibility and image SEO.',
-          how_to_fix: 'Add descriptive alt attributes to all images.',
-          affected_urls: [project.url],
-          details: { images: imagesWithoutAlt.slice(0, 10) },
+        // Call runFullAudit with options object (correct signature)
+        auditReport = await runFullAudit({
+          url: project.url,
+          maxPages: 1,
         });
+        console.log(`[AUDIT] runFullAudit completed successfully`);
+      } catch (auditEngineError) {
+        console.error(`[AUDIT] runFullAudit FAILED:`, auditEngineError);
+        console.error(`[AUDIT] Error name: ${auditEngineError?.name}`);
+        console.error(`[AUDIT] Error message: ${auditEngineError?.message}`);
+        console.error(`[AUDIT] Error stack: ${auditEngineError?.stack}`);
+        throw auditEngineError;
       }
 
-      // ========== SECURITY CHECKS ==========
-      const url = new URL(project.url);
-      if (url.protocol !== 'https:') {
-        issues.push({
-          code: 'NOT_HTTPS',
-          severity: 'error',
-          category: 'security',
-          title: 'Site not using HTTPS',
-          description: 'The site is not served over HTTPS.',
-          impact: 'HTTPS is a ranking factor and affects user trust.',
-          how_to_fix: 'Install an SSL certificate and redirect HTTP to HTTPS.',
-          affected_urls: [project.url],
-          details: null,
-        });
+      // Get checks run from summary.passed + issues count
+      const checksRun = auditReport.summary.passed + auditReport.summary.errors + auditReport.summary.warnings;
+      console.log(`[AUDIT] Complete: ${auditReport.issues.length} issues found from ${checksRun} checks`);
+
+      // Convert engine issues to database format
+      const issues: DbAuditIssue[] = auditReport.issues.map(convertIssue);
+
+      // ========== AI ANALYSIS (Optional) ==========
+      let aiContentAnalysis: AIContentAnalysis | null = null;
+      let aiMetaAnalysis: AIMetaAnalysis | null = null;
+      let aiFixPrioritization: AIFixPrioritization | null = null;
+
+      if (openaiApiKey && auditReport.pages[0]) {
+        const page = auditReport.pages[0];
+        console.log('Running AI-powered analysis...');
+
+        // Extract data for AI analysis from the audit report
+        const pageData = {
+          url: project.url,
+          title: page.title || undefined,
+          metaDescription: page.description || undefined,
+          h1: Array.isArray(page.h1) ? page.h1[0] : page.h1 || undefined,
+          wordCount: page.wordCount || 0,
+          textContent: '', // Not available in report, but AI can work without it
+        };
+
+        const [contentResult, metaResult] = await Promise.allSettled([
+          runAIContentAnalysis(pageData),
+          runAIMetaAnalysis(pageData),
+        ]);
+
+        if (contentResult.status === 'fulfilled') {
+          aiContentAnalysis = contentResult.value;
+        }
+        if (metaResult.status === 'fulfilled') {
+          aiMetaAnalysis = metaResult.value;
+        }
+
+        // Run fix prioritization
+        const issuesForPrioritization = issues.map(i => ({
+          code: i.code,
+          severity: i.severity,
+          title: i.title,
+          category: i.category,
+        }));
+
+        aiFixPrioritization = await runAIFixPrioritization(
+          issuesForPrioritization,
+          project.url,
+          undefined
+        );
+
+        // Add AI-generated improvement suggestions
+        if (aiContentAnalysis?.improvements) {
+          const topImprovements = aiContentAnalysis.improvements
+            .filter(i => i.priority <= 2)
+            .slice(0, 3);
+
+          for (const improvement of topImprovements) {
+            issues.push({
+              code: 'AI_CONTENT_SUGGESTION',
+              severity: 'notice',
+              category: 'content',
+              title: `AI Suggestion: ${improvement.suggestion.substring(0, 60)}${improvement.suggestion.length > 60 ? '...' : ''}`,
+              description: improvement.suggestion,
+              impact: improvement.impact,
+              how_to_fix: improvement.suggestion,
+              affected_urls: [project.url],
+              details: { aiGenerated: true, priority: improvement.priority },
+            });
+          }
+        }
+
+        // Add AI meta tag suggestions
+        if (aiMetaAnalysis?.titleAnalysis?.suggestions?.[0]) {
+          const titleEffectiveness = aiMetaAnalysis.titleAnalysis.effectiveness;
+          if (!pageData.title || titleEffectiveness < 70) {
+            issues.push({
+              code: 'AI_TITLE_SUGGESTION',
+              severity: 'notice',
+              category: 'on-page',
+              title: 'AI-Suggested Title Improvement',
+              description: `Suggested: "${aiMetaAnalysis.titleAnalysis.suggestions[0]}"`,
+              impact: `Current title effectiveness: ${titleEffectiveness}%`,
+              how_to_fix: `Consider: ${aiMetaAnalysis.titleAnalysis.suggestions.slice(0, 2).join(' OR ')}`,
+              affected_urls: [project.url],
+              details: {
+                aiGenerated: true,
+                suggestions: aiMetaAnalysis.titleAnalysis.suggestions,
+                clickPotential: aiMetaAnalysis.titleAnalysis.clickPotential,
+              },
+            });
+          }
+        }
+
+        console.log('AI analysis complete.');
       }
 
-      // ========== CALCULATE SCORES ==========
-      const healthScores = calculateHealthScores(issues);
-      const overallScore = Math.round(
-        (healthScores.crawlability * 0.2 +
-          healthScores.onPage * 0.25 +
-          healthScores.content * 0.15 +
-          healthScores.performance * 0.15 +
-          healthScores.security * 0.15 +
-          healthScores.socialMeta * 0.1)
-      );
+      // ========== USE HEALTH SCORES FROM ENGINE ==========
+      const healthScores: HealthScores = {
+        crawlability: auditReport.healthScore?.crawlability ?? 100,
+        onPage: auditReport.healthScore?.onPage ?? 100,
+        content: auditReport.healthScore?.content ?? 100,
+        performance: auditReport.healthScore?.performance ?? 100,
+        security: auditReport.healthScore?.security ?? 100,
+        socialMeta: auditReport.healthScore?.social ?? 100,
+        aiReadiness: auditReport.healthScore?.aiReadiness ?? 100,
+        mobile: 100, // Not in HealthScore interface, default to 100
+      };
+
+      // Use overall score from engine
+      let overallScore = auditReport.healthScore?.overall ?? 85;
+
+      // Apply AI boost if available
+      if (aiContentAnalysis?.overallScore) {
+        const aiBoost = (aiContentAnalysis.overallScore - 70) * 0.05;
+        overallScore = Math.min(100, Math.max(0, Math.round(overallScore + aiBoost)));
+      }
 
       const duration = Date.now() - startTime;
 
       // ========== SAVE RESULTS ==========
+      console.log(`[AUDIT] Saving results for audit ${audit.id}...`);
 
-      // Update audit
-      await supabase
+      // Update audit with results
+      const { error: updateError } = await supabase
         .from('audits')
         .update({
           status: 'completed',
           score: overallScore,
-          pages_crawled: 1,
+          pages_crawled: auditReport.pages.length,
           issues_found: issues.length,
+          checks_run: checksRun,
           health_scores: healthScores,
           completed_at: new Date().toISOString(),
           duration_ms: duration,
@@ -425,12 +361,27 @@ serve(async (req) => {
             errors: issues.filter(i => i.severity === 'error').length,
             warnings: issues.filter(i => i.severity === 'warning').length,
             notices: issues.filter(i => i.severity === 'notice').length,
+            checksRun,
+            aiAnalyzed: !!aiContentAnalysis,
           },
+          ai_analysis: aiContentAnalysis || aiMetaAnalysis || aiFixPrioritization ? {
+            content: aiContentAnalysis,
+            meta: aiMetaAnalysis,
+            fixPrioritization: aiFixPrioritization,
+            analyzedAt: new Date().toISOString(),
+          } : null,
         })
         .eq('id', audit.id);
 
+      if (updateError) {
+        console.error(`[AUDIT] Failed to update audit: ${updateError.message}`);
+        throw new Error(`Failed to update audit: ${updateError.message}`);
+      }
+      console.log(`[AUDIT] Audit record updated successfully`);
+
       // Save issues
       if (issues.length > 0) {
+        console.log(`[AUDIT] Saving ${issues.length} issues...`);
         const issueRecords = issues.map(issue => ({
           audit_id: audit.id,
           project_id: project.id,
@@ -446,11 +397,16 @@ serve(async (req) => {
           status: 'open',
         }));
 
-        await supabase.from('audit_issues').insert(issueRecords);
+        const { error: issuesError } = await supabase.from('audit_issues').insert(issueRecords);
+        if (issuesError) {
+          console.error(`[AUDIT] Failed to save issues: ${issuesError.message}`);
+        } else {
+          console.log(`[AUDIT] Issues saved successfully`);
+        }
       }
 
       // Update project
-      await supabase
+      const { error: projectError } = await supabase
         .from('projects')
         .update({
           last_audit_at: new Date().toISOString(),
@@ -458,11 +414,18 @@ serve(async (req) => {
         })
         .eq('id', project.id);
 
+      if (projectError) {
+        console.error(`[AUDIT] Failed to update project: ${projectError.message}`);
+      } else {
+        console.log(`[AUDIT] Project updated successfully`);
+      }
+
       return new Response(JSON.stringify({
         success: true,
         auditId: audit.id,
         score: overallScore,
         issuesFound: issues.length,
+        checksRun,
         duration,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -482,38 +445,220 @@ serve(async (req) => {
     }
 
   } catch (error) {
-    console.error('Error running audit:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('[AUDIT] Top-level error:', error);
+    console.error('[AUDIT] Error name:', error?.name);
+    console.error('[AUDIT] Error message:', error?.message);
+    console.error('[AUDIT] Error stack:', error?.stack);
+    return new Response(JSON.stringify({
+      error: error?.message || 'Unknown error',
+      errorName: error?.name,
+      errorStack: error?.stack?.substring(0, 500),
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
 
-function calculateHealthScores(issues: AuditIssue[]): HealthScores {
-  const deductions: Record<string, number> = {
-    crawlability: 0,
-    'on-page': 0,
-    content: 0,
-    performance: 0,
-    security: 0,
-    'social-meta': 0,
-    images: 0,
-  };
+// ========== AI ANALYSIS FUNCTIONS ==========
 
-  const weights = { error: 15, warning: 5, notice: 1 };
+async function runAIContentAnalysis(context: {
+  url: string;
+  title?: string;
+  h1?: string;
+  metaDescription?: string;
+  textContent?: string;
+  wordCount?: number;
+}): Promise<AIContentAnalysis | null> {
+  if (!openaiApiKey) return null;
 
-  for (const issue of issues) {
-    const deduction = weights[issue.severity];
-    deductions[issue.category] = (deductions[issue.category] || 0) + deduction;
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openaiApiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert SEO analyst. Analyze webpage content and provide actionable insights. Always respond with valid JSON.`
+          },
+          {
+            role: 'user',
+            content: `Analyze this webpage for SEO quality:
+
+URL: ${context.url}
+Title: ${context.title || 'Not found'}
+H1: ${context.h1 || 'Not found'}
+Meta Description: ${context.metaDescription || 'Not found'}
+Word Count: ${context.wordCount || 'Unknown'}
+
+Return JSON with this structure:
+{
+  "overallScore": <0-100>,
+  "searchIntentMatch": <0-100>,
+  "contentDepth": "<shallow|moderate|comprehensive>",
+  "keywordNaturalness": <0-100>,
+  "eeatSignals": {
+    "experience": [<strings>],
+    "expertise": [<strings>],
+    "authority": [<strings>],
+    "trust": [<strings>]
+  },
+  "improvements": [{"priority": <1-5>, "suggestion": "<string>", "impact": "<string>"}],
+  "uniqueValue": "<string>",
+  "missingTopics": [<strings>],
+  "targetKeyword": "<detected primary keyword>"
+}`
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0.3,
+        response_format: { type: 'json_object' },
+      }),
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) return null;
+
+    return JSON.parse(content) as AIContentAnalysis;
+  } catch (error) {
+    console.error('AI content analysis error:', error);
+    return null;
   }
+}
 
-  return {
-    crawlability: Math.max(0, 100 - deductions.crawlability),
-    onPage: Math.max(0, 100 - deductions['on-page']),
-    content: Math.max(0, 100 - deductions.content - deductions.images),
-    performance: Math.max(0, 100 - deductions.performance),
-    security: Math.max(0, 100 - deductions.security),
-    socialMeta: Math.max(0, 100 - deductions['social-meta']),
-  };
+async function runAIMetaAnalysis(context: {
+  url: string;
+  title?: string;
+  metaDescription?: string;
+  h1?: string;
+}): Promise<AIMetaAnalysis | null> {
+  if (!openaiApiKey) return null;
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openaiApiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert SEO copywriter specializing in meta tags. Generate compelling alternatives. Always respond with valid JSON.`
+          },
+          {
+            role: 'user',
+            content: `Analyze these meta tags and suggest improvements:
+
+URL: ${context.url}
+Current Title: ${context.title || 'Missing'}
+Current Description: ${context.metaDescription || 'Missing'}
+H1: ${context.h1 || 'Not found'}
+
+Return JSON with this structure:
+{
+  "titleAnalysis": {
+    "effectiveness": <0-100>,
+    "clickPotential": <0-100>,
+    "suggestions": [<3-5 better title suggestions>]
+  },
+  "descriptionAnalysis": {
+    "effectiveness": <0-100>,
+    "suggestions": [<3-5 better description suggestions>]
+  },
+  "serpPrediction": {
+    "predictedCTR": <percentage>,
+    "improvements": [<specific CTR improvements>]
+  }
+}`
+          }
+        ],
+        max_tokens: 1500,
+        temperature: 0.5,
+        response_format: { type: 'json_object' },
+      }),
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) return null;
+
+    return JSON.parse(content) as AIMetaAnalysis;
+  } catch (error) {
+    console.error('AI meta analysis error:', error);
+    return null;
+  }
+}
+
+async function runAIFixPrioritization(
+  issues: { code: string; severity: string; title: string; category: string }[],
+  url: string,
+  framework?: string
+): Promise<AIFixPrioritization | null> {
+  if (!openaiApiKey || issues.length === 0) return null;
+
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${openaiApiKey}`,
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an SEO strategist who prioritizes fixes by impact and effort. Always respond with valid JSON.`
+          },
+          {
+            role: 'user',
+            content: `Prioritize these SEO issues:
+
+URL: ${url}
+Framework: ${framework || 'Unknown'}
+
+Issues:
+${issues.map(i => `- [${i.severity.toUpperCase()}] ${i.code}: ${i.title} (${i.category})`).join('\n')}
+
+Return JSON with:
+{
+  "prioritizedIssues": [
+    {"issueCode": "<code>", "impactScore": <0-100>, "effortScore": <0-100>, "roiScore": <calculated>, "rationale": "<why>"}
+  ],
+  "fixBatches": [
+    {"batch": <1,2,3...>, "theme": "<batch theme>", "estimatedImpact": "<description>", "issueCodes": [<codes>]}
+  ]
+}`
+          }
+        ],
+        max_tokens: 2000,
+        temperature: 0.3,
+        response_format: { type: 'json_object' },
+      }),
+    });
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) return null;
+
+    return JSON.parse(content) as AIFixPrioritization;
+  } catch (error) {
+    console.error('AI prioritization error:', error);
+    return null;
+  }
 }

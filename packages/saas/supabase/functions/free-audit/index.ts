@@ -1,6 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { DOMParser } from 'https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts';
+
+// Import the shared audit engine (280+ checks)
+import { runFullAudit } from '../_shared/audit/index.ts';
+import type { AuditReport, AuditIssue as EngineIssue } from '../_shared/audit/index.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -10,17 +13,31 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const USER_AGENT = 'RankCLI/1.0 (+https://rankcli.dev)';
-
 // Rate limit: 10 requests per IP per hour
 const RATE_LIMIT = 10;
 const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
-interface AuditIssue {
+// Free tier limits - show a subset of issues to encourage signup
+const FREE_TIER_MAX_ISSUES = 10;
+const FREE_TIER_CHECKS_SHOWN = 50;
+
+interface FreeAuditIssue {
   code: string;
   severity: 'error' | 'warning' | 'notice';
   title: string;
   category: string;
+  description?: string;
+}
+
+// Convert engine issues to free audit format
+function convertToFreeIssue(issue: EngineIssue): FreeAuditIssue {
+  return {
+    code: issue.code,
+    severity: issue.severity,
+    title: issue.title,
+    category: issue.category,
+    description: issue.description || undefined,
+  };
 }
 
 serve(async (req) => {
@@ -77,182 +94,29 @@ serve(async (req) => {
       });
     }
 
-    // Run the audit
-    const issues: AuditIssue[] = [];
+    // ========== RUN FULL AUDIT ENGINE (280+ CHECKS) ==========
+    console.log(`Running free audit on ${targetUrl}...`);
+
+    let auditReport: AuditReport;
+    let allIssues: FreeAuditIssue[] = [];
 
     try {
-      const response = await fetch(targetUrl, {
-        headers: { 'User-Agent': USER_AGENT },
+      // Call runFullAudit with options object (correct signature)
+      auditReport = await runFullAudit({
+        url: targetUrl,
+        maxPages: 1,
       });
 
-      if (!response.ok) {
-        issues.push({
-          code: 'FETCH_ERROR',
-          severity: 'error',
-          title: `HTTP Error ${response.status}`,
-          category: 'Crawlability',
-        });
-      }
+      // Convert all issues
+      allIssues = auditReport.issues.map(convertToFreeIssue);
 
-      const html = await response.text();
-      const doc = new DOMParser().parseFromString(html, 'text/html');
-
-      if (!doc) {
-        throw new Error('Failed to parse HTML');
-      }
-
-      // Title check
-      const title = doc.querySelector('title')?.textContent;
-      if (!title) {
-        issues.push({
-          code: 'TITLE_MISSING',
-          severity: 'error',
-          title: 'Missing title tag',
-          category: 'On-Page',
-        });
-      } else if (title.length > 60) {
-        issues.push({
-          code: 'TITLE_TOO_LONG',
-          severity: 'warning',
-          title: `Title too long (${title.length} chars)`,
-          category: 'On-Page',
-        });
-      }
-
-      // Meta description check
-      const metaDesc = doc.querySelector('meta[name="description"]')?.getAttribute('content');
-      if (!metaDesc) {
-        issues.push({
-          code: 'META_DESC_MISSING',
-          severity: 'error',
-          title: 'Missing meta description',
-          category: 'On-Page',
-        });
-      } else if (metaDesc.length > 160) {
-        issues.push({
-          code: 'META_DESC_TOO_LONG',
-          severity: 'warning',
-          title: `Meta description too long (${metaDesc.length} chars)`,
-          category: 'On-Page',
-        });
-      }
-
-      // H1 check
-      const h1s = doc.querySelectorAll('h1');
-      if (h1s.length === 0) {
-        issues.push({
-          code: 'H1_MISSING',
-          severity: 'error',
-          title: 'Missing H1 tag',
-          category: 'On-Page',
-        });
-      } else if (h1s.length > 1) {
-        issues.push({
-          code: 'H1_MULTIPLE',
-          severity: 'warning',
-          title: `Multiple H1 tags (${h1s.length})`,
-          category: 'On-Page',
-        });
-      }
-
-      // Open Graph checks
-      if (!doc.querySelector('meta[property="og:title"]')) {
-        issues.push({
-          code: 'OG_TITLE_MISSING',
-          severity: 'warning',
-          title: 'Missing Open Graph title',
-          category: 'Social Meta',
-        });
-      }
-      if (!doc.querySelector('meta[property="og:image"]')) {
-        issues.push({
-          code: 'OG_IMAGE_MISSING',
-          severity: 'warning',
-          title: 'Missing Open Graph image',
-          category: 'Social Meta',
-        });
-      }
-
-      // Twitter Card check
-      if (!doc.querySelector('meta[name="twitter:card"]')) {
-        issues.push({
-          code: 'TWITTER_CARD_MISSING',
-          severity: 'warning',
-          title: 'Missing Twitter Card',
-          category: 'Social Meta',
-        });
-      }
-
-      // Canonical check
-      if (!doc.querySelector('link[rel="canonical"]')) {
-        issues.push({
-          code: 'CANONICAL_MISSING',
-          severity: 'warning',
-          title: 'Missing canonical tag',
-          category: 'On-Page',
-        });
-      }
-
-      // Image alt check (limited)
-      const images = doc.querySelectorAll('img');
-      let missingAlt = 0;
-      images.forEach((img) => {
-        if (!img.getAttribute('alt')) missingAlt++;
-      });
-      if (missingAlt > 0) {
-        issues.push({
-          code: 'IMG_ALT_MISSING',
-          severity: 'warning',
-          title: `${missingAlt} images missing alt text`,
-          category: 'Images',
-        });
-      }
-
-      // robots.txt check
-      try {
-        const robotsUrl = new URL('/robots.txt', targetUrl).toString();
-        const robotsRes = await fetch(robotsUrl, { headers: { 'User-Agent': USER_AGENT } });
-        if (!robotsRes.ok) {
-          issues.push({
-            code: 'ROBOTS_TXT_MISSING',
-            severity: 'warning',
-            title: 'Missing robots.txt',
-            category: 'Crawlability',
-          });
-        }
-      } catch {
-        // Ignore
-      }
-
-      // sitemap.xml check
-      try {
-        const sitemapUrl = new URL('/sitemap.xml', targetUrl).toString();
-        const sitemapRes = await fetch(sitemapUrl, { headers: { 'User-Agent': USER_AGENT } });
-        if (!sitemapRes.ok) {
-          issues.push({
-            code: 'SITEMAP_MISSING',
-            severity: 'warning',
-            title: 'Missing sitemap.xml',
-            category: 'Crawlability',
-          });
-        }
-      } catch {
-        // Ignore
-      }
-
-      // HTTPS check
-      const parsedUrl = new URL(targetUrl);
-      if (parsedUrl.protocol !== 'https:') {
-        issues.push({
-          code: 'NOT_HTTPS',
-          severity: 'error',
-          title: 'Site not using HTTPS',
-          category: 'Security',
-        });
-      }
+      // Get checks run from summary
+      const checksFromSummary = auditReport.summary.passed + auditReport.summary.errors + auditReport.summary.warnings;
+      console.log(`Audit complete: ${auditReport.issues.length} issues found from ${checksFromSummary} checks`);
 
     } catch (err) {
-      issues.push({
+      // If audit fails, add a fetch error
+      allIssues.push({
         code: 'FETCH_ERROR',
         severity: 'error',
         title: `Failed to fetch page: ${err.message}`,
@@ -260,19 +124,38 @@ serve(async (req) => {
       });
     }
 
-    // Calculate score
-    const errors = issues.filter(i => i.severity === 'error').length;
-    const warnings = issues.filter(i => i.severity === 'warning').length;
-    const score = Math.max(0, 100 - (errors * 15) - (warnings * 5));
+    // Priority order for showing issues (most impactful first)
+    const priorityOrder = ['error', 'warning', 'notice'];
+    const sortedIssues = [...allIssues].sort((a, b) => {
+      return priorityOrder.indexOf(a.severity) - priorityOrder.indexOf(b.severity);
+    });
 
-    // Calculate category scores
+    // Limit issues shown for free tier
+    const displayedIssues = sortedIssues.slice(0, FREE_TIER_MAX_ISSUES);
+    const hiddenIssueCount = Math.max(0, allIssues.length - FREE_TIER_MAX_ISSUES);
+
+    // Calculate category scores using engine's health scores
     const categories = {
-      crawlability: 100 - issues.filter(i => i.category === 'Crawlability').reduce((sum, i) => sum + (i.severity === 'error' ? 20 : 10), 0),
-      onPage: 100 - issues.filter(i => i.category === 'On-Page').reduce((sum, i) => sum + (i.severity === 'error' ? 15 : 5), 0),
-      content: 85, // Placeholder for free tier
-      performance: 80, // Placeholder for free tier
-      security: issues.some(i => i.code === 'NOT_HTTPS') ? 50 : 100,
+      crawlability: auditReport?.healthScore?.crawlability ?? 100,
+      onPage: auditReport?.healthScore?.onPage ?? 100,
+      content: auditReport?.healthScore?.content ?? 100,
+      performance: auditReport?.healthScore?.performance ?? 100,
+      security: auditReport?.healthScore?.security ?? 100,
+      socialMeta: auditReport?.healthScore?.social ?? 100,
+      aiReadiness: auditReport?.healthScore?.aiReadiness ?? 100,
+      mobile: 100, // Not in HealthScore interface
     };
+
+    // Use overall score from engine
+    const score = auditReport?.healthScore?.overall ?? 85;
+
+    // Summary counts from all issues
+    const errors = allIssues.filter(i => i.severity === 'error').length;
+    const warnings = allIssues.filter(i => i.severity === 'warning').length;
+    const notices = allIssues.filter(i => i.severity === 'notice').length;
+    const totalChecksRun = auditReport?.summary
+      ? auditReport.summary.passed + auditReport.summary.errors + auditReport.summary.warnings
+      : 280;
 
     // Save to database for lead tracking
     const domain = new URL(targetUrl).hostname;
@@ -283,24 +166,37 @@ serve(async (req) => {
       issues_summary: {
         errors,
         warnings,
-        notices: 0,
+        notices,
+        total: allIssues.length,
+        displayed: displayedIssues.length,
       },
-      top_issues: issues.slice(0, 5),
+      top_issues: displayedIssues,
       email: email || null,
       ip_hash: ipHash,
       user_agent: req.headers.get('user-agent'),
       referrer: req.headers.get('referer'),
     });
 
+    // Determine upsell message based on results
+    let message: string;
+    if (hiddenIssueCount > 0) {
+      message = `Found ${allIssues.length} issues using ${totalChecksRun} checks. Sign up to see all issues and get detailed fix recommendations.`;
+    } else if (allIssues.length > 0) {
+      message = `Found ${allIssues.length} issues. Sign up to track improvements and get auto-fix PRs.`;
+    } else {
+      message = 'Great job! Sign up to monitor your site and track improvements over time.';
+    }
+
     return new Response(JSON.stringify({
       score,
-      issues,
+      issues: displayedIssues,
       categories,
-      checksRun: 50, // Free tier limit
-      totalChecks: 200, // Full version
-      message: issues.length > 0
-        ? 'Sign up to see all 200+ checks and get detailed fix recommendations.'
-        : 'Great job! Sign up to monitor your site and track improvements.',
+      checksRun: totalChecksRun,
+      totalChecks: totalChecksRun, // Full engine check count
+      totalIssues: allIssues.length,
+      displayedIssues: displayedIssues.length,
+      hiddenIssues: hiddenIssueCount,
+      message,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
