@@ -33,6 +33,7 @@ interface RepoContext {
   indexHtml: string | null;
   framework: string;
   files: string[];
+  appRoot: string; // Root path of the app (e.g., 'ui/', 'web/', or '')
 }
 
 // Convert PKCS#1 PEM to PKCS#8 PEM format
@@ -162,7 +163,7 @@ async function fetchFileContent(token: string, owner: string, repo: string, path
   }
 }
 
-// Get repository file tree
+// Get repository file tree (returns ALL files for accurate detection)
 async function getRepoTree(token: string, owner: string, repo: string): Promise<string[]> {
   try {
     const response = await fetch(
@@ -178,34 +179,68 @@ async function getRepoTree(token: string, owner: string, repo: string): Promise<
     if (!response.ok) return [];
 
     const data = await response.json();
+    // Return all files - don't limit here, we'll limit when passing to AI
     return data.tree
       ?.filter((item: { type: string }) => item.type === 'blob')
-      ?.map((item: { path: string }) => item.path)
-      ?.slice(0, 100) || []; // Limit to 100 files for context
+      ?.map((item: { path: string }) => item.path) || [];
   } catch {
     return [];
   }
 }
 
-// Detect framework from package.json and file structure
-function detectFramework(packageJson: string | null, files: string[]): string {
-  if (!packageJson) return 'unknown';
+// Find the app root directory (for monorepos)
+function findAppRoot(files: string[]): string {
+  // Common frontend app directory names
+  const appDirs = ['ui', 'web', 'frontend', 'client', 'app', 'packages/web', 'packages/app'];
 
-  const pkg = JSON.parse(packageJson);
-  const deps = { ...pkg.dependencies, ...pkg.devDependencies };
-
-  if (deps['next']) return 'nextjs';
-  if (deps['@astrojs/astro'] || deps['astro']) return 'astro';
-  if (deps['nuxt']) return 'nuxt';
-  if (deps['vue']) return 'vue';
-  if (deps['svelte'] || deps['@sveltejs/kit']) return 'svelte';
-  if (deps['react']) {
-    if (files.some(f => f.includes('vite.config'))) return 'react-vite';
-    if (files.some(f => f.includes('gatsby'))) return 'gatsby';
-    return 'react';
+  for (const dir of appDirs) {
+    // Check if there's a package.json in this directory
+    if (files.some(f => f === `${dir}/package.json`)) {
+      return `${dir}/`;
+    }
   }
 
-  return 'unknown';
+  // Check if package.json exists at root
+  if (files.some(f => f === 'package.json')) {
+    return '';
+  }
+
+  // Fallback: look for index.html location
+  const indexHtml = files.find(f => f.endsWith('index.html') && !f.includes('node_modules'));
+  if (indexHtml) {
+    const parts = indexHtml.split('/');
+    if (parts.length > 1) {
+      // Return the directory containing index.html's parent (e.g., ui/ from ui/index.html)
+      return parts.slice(0, -1).join('/') + '/';
+    }
+  }
+
+  return '';
+}
+
+// Detect framework from package.json and file structure
+function detectFramework(packageJson: string | null, files: string[], appRoot: string): string {
+  if (!packageJson) return 'unknown';
+
+  try {
+    const pkg = JSON.parse(packageJson);
+    const deps = { ...pkg.dependencies, ...pkg.devDependencies };
+
+    if (deps['next']) return 'nextjs';
+    if (deps['@astrojs/astro'] || deps['astro']) return 'astro';
+    if (deps['nuxt']) return 'nuxt';
+    if (deps['vue']) return 'vue';
+    if (deps['svelte'] || deps['@sveltejs/kit']) return 'svelte';
+    if (deps['react']) {
+      if (files.some(f => f.startsWith(appRoot) && f.includes('vite.config'))) return 'react-vite';
+      if (files.some(f => f.includes('gatsby'))) return 'gatsby';
+      return 'react';
+    }
+
+    return 'unknown';
+  } catch {
+    return 'unknown';
+  }
 }
 
 // Use OpenAI to generate intelligent fixes
@@ -217,32 +252,88 @@ async function generateAIFixes(
   projectName: string,
   aiSuggestions?: { titles?: string[]; descriptions?: string[] }
 ): Promise<{ files: FileChange[]; summary: string }> {
+  const appRoot = repoContext.appRoot || '';
+  const isReactVite = repoContext.framework === 'react-vite' || repoContext.framework === 'react';
+  const isNextjs = repoContext.framework === 'nextjs';
+
+  const frameworkInstructions = isReactVite ? `
+REACT/VITE SPECIFIC RULES (VERY IMPORTANT):
+- The app is in the "${appRoot}" directory - ALL file paths must start with "${appRoot}"
+- DO NOT create a new index.html - modify the EXISTING "${appRoot}index.html" in the <head> section only
+- For dynamic meta tags, create a React component using react-helmet-async or modify existing SEO component
+- Static files (robots.txt, sitemap.xml, _headers) go in "${appRoot}public/"
+- The index.html already has a <div id="root"></div> - DO NOT remove or modify the body content
+- Add meta tags, preconnect links, and JSON-LD scripts to the <head> section of the existing index.html
+- If the index.html already has meta tags, UPDATE them, don't duplicate
+` : isNextjs ? `
+NEXT.JS SPECIFIC RULES:
+- Use the app/ or pages/ directory structure
+- Create or modify app/layout.tsx for metadata
+- Use Next.js Metadata API for SEO tags
+- Static files go in public/
+` : `
+STATIC SITE RULES:
+- Modify index.html directly
+- Static files go in public/ or root
+`;
+
   const systemPrompt = `You are an expert SEO engineer. Your task is to generate code changes to fix SEO issues.
 
 You are working with a ${repoContext.framework} project.
+${repoContext.appRoot ? `The app is located in the "${repoContext.appRoot}" subdirectory (monorepo structure).` : ''}
 
-RULES:
-1. Generate ONLY the files that need to be created or modified
+${frameworkInstructions}
+
+GENERAL RULES:
+1. Generate ONE file change per issue where possible - each fix should be a separate commit
 2. Match the existing code style and patterns from the repository
-3. For React/Vue apps, prefer creating reusable SEO components
-4. For static sites, modify index.html directly
-5. Always use proper TypeScript if the project uses TypeScript
-6. Include clear comments explaining what each fix does
-7. Make minimal, focused changes - don't over-engineer
-8. If AI-suggested titles or descriptions are provided, prefer using those
+3. Always use proper TypeScript if the project uses TypeScript
+4. Include clear comments explaining what each fix does
+5. Make minimal, focused changes - don't over-engineer
+6. If AI-suggested titles or descriptions are provided, prefer using those
+7. For issues that require the same file, you may combine them but use separate commit messages
+8. IMPORTANT: Try to fix AS MANY issues as possible, not just the obvious ones
+9. CRITICAL: All file paths must be correct for the project structure
+
+ISSUE CATEGORIES TO FIX:
+- Meta tags (title, description, OG, Twitter cards) -> modify existing index.html <head> section
+- robots.txt issues -> create/modify ${appRoot}public/robots.txt
+- sitemap issues -> create ${appRoot}public/sitemap.xml
+- llms.txt issues -> create/modify ${appRoot}public/llms.txt
+- Schema/structured data -> add JSON-LD scripts to index.html <head>
+- Security headers -> create ${appRoot}public/_headers or ${appRoot}vercel.json
+- Preconnect/preload -> add link tags to index.html <head>
 
 OUTPUT FORMAT:
 Return a JSON object with this structure:
 {
   "files": [
     {
-      "path": "relative/path/to/file.tsx",
+      "path": "${appRoot}path/to/file.tsx",
       "content": "full file content here",
-      "message": "commit message for this change"
+      "message": "fix(seo): add meta tags and structured data (3 fixes)\\n\\nIssues fixed:\\n- META_DESCRIPTION_MISSING\\n- OG_TAGS_MISSING\\n- TWITTER_CARDS_MISSING"
     }
   ],
   "summary": "brief summary of all changes"
-}`;
+}
+
+COMMIT MESSAGE FORMAT (Conventional Commits):
+The subject line should be readable and include the count of fixes. Issue codes go in the commit body.
+
+Examples:
+- Subject: "fix(seo): add robots.txt with proper crawl rules (1 fix)"
+  Body: "Issues fixed:\\n- ROBOTS_TXT_MISSING"
+
+- Subject: "fix(seo): add meta tags and Open Graph for social sharing (4 fixes)"
+  Body: "Issues fixed:\\n- META_DESCRIPTION_MISSING\\n- OG_IMAGE_MISSING\\n- OG_TITLE_MISSING\\n- OG_DESCRIPTION_MISSING"
+
+- Subject: "fix(seo): add JSON-LD structured data schemas (2 fixes)"
+  Body: "Issues fixed:\\n- ORGANIZATION_SCHEMA_MISSING\\n- WEBSITE_SCHEMA_MISSING"
+
+- Subject: "fix(seo): add security headers via _headers file (3 fixes)"
+  Body: "Issues fixed:\\n- CSP_MISSING\\n- X_FRAME_OPTIONS_MISSING\\n- HSTS_MISSING"
+
+Format each message as: "subject line (N fixes)\\n\\nIssues fixed:\\n- ISSUE_CODE_1\\n- ISSUE_CODE_2"`;
 
   // Include AI suggestions if available
   const suggestionContext = aiSuggestions ? `
@@ -252,29 +343,81 @@ ${aiSuggestions.titles ? `Suggested Titles:\n${aiSuggestions.titles.map((t, i) =
 ${aiSuggestions.descriptions ? `Suggested Descriptions:\n${aiSuggestions.descriptions.map((d, i) => `${i + 1}. "${d}"`).join('\n')}` : ''}
 ` : '';
 
-  const userPrompt = `Fix these SEO issues for ${projectName} (${siteUrl}):
+  const userPrompt = `Fix ALL these SEO issues for ${projectName} (${siteUrl}):
 ${suggestionContext}
 
-ISSUES TO FIX:
-${issues.map(i => `- ${i.code}: ${i.title}${i.how_to_fix ? ` (${i.how_to_fix})` : ''}`).join('\n')}
+ISSUES TO FIX (${issues.length} total - fix as many as possible):
+${issues.map(i => `- ${i.code}: ${i.title}${i.how_to_fix ? ` (Fix: ${i.how_to_fix})` : ''}${i.description ? ` - ${i.description}` : ''}`).join('\n')}
 
 REPOSITORY CONTEXT:
 Framework: ${repoContext.framework}
+App Root Directory: ${repoContext.appRoot || '(root)'}
+${repoContext.appRoot ? `IMPORTANT: All file paths MUST start with "${repoContext.appRoot}"` : ''}
 
-package.json:
+package.json (${repoContext.appRoot}package.json):
 \`\`\`json
 ${repoContext.packageJson || 'Not found'}
 \`\`\`
 
-index.html:
+index.html (${repoContext.appRoot}index.html):
 \`\`\`html
 ${repoContext.indexHtml || 'Not found'}
 \`\`\`
 
 Files in repo (sample):
-${repoContext.files.slice(0, 50).join('\n')}
+${repoContext.files.filter(f => f.startsWith(repoContext.appRoot)).slice(0, 50).join('\n')}
 
-Generate the necessary file changes to fix these SEO issues. For meta tags and structured data, create appropriate components or modify index.html based on the framework.`;
+CRITICAL INSTRUCTIONS:
+1. All file paths MUST start with "${repoContext.appRoot}" (e.g., "${repoContext.appRoot}public/robots.txt")
+2. For the existing index.html, ONLY modify the <head> section - DO NOT replace the entire file
+3. Preserve the existing <div id="root"></div> and body content
+4. Each commit message should have: subject line with fix count, then body with issue codes (e.g., "fix(seo): add meta tags (3 fixes)\\n\\nIssues fixed:\\n- CODE1\\n- CODE2")
+
+For this project, you should:
+1. Create/update ${repoContext.appRoot}public/robots.txt with proper rules
+2. Create ${repoContext.appRoot}public/sitemap.xml with the site URL
+3. Update ${repoContext.appRoot}index.html <head> section with all missing meta tags, OG tags, Twitter cards (DO NOT replace body!)
+4. Add JSON-LD structured data to ${repoContext.appRoot}index.html <head>
+5. Create ${repoContext.appRoot}public/_headers or ${repoContext.appRoot}vercel.json for security headers
+6. Add preconnect/preload hints to ${repoContext.appRoot}index.html <head>
+7. Fix any other issues that can be addressed with code changes
+
+EXAMPLE for React/Vite - modifying index.html <head>:
+If the current index.html is:
+\`\`\`html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + React</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+\`\`\`
+
+You should output the COMPLETE file with additions in <head>, keeping body unchanged:
+\`\`\`html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>My App - Brief description</title>
+    <meta name="description" content="Full description here" />
+    <!-- Add OG, Twitter, JSON-LD etc here -->
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+\`\`\``;
 
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -289,8 +432,8 @@ Generate the necessary file changes to fix these SEO issues. For meta tags and s
         { role: 'user', content: userPrompt },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.2,
-      max_tokens: 4000,
+      temperature: 0.3,
+      max_tokens: 16000,
     }),
   });
 
@@ -581,27 +724,29 @@ serve(async (req) => {
       });
     }
 
-    // Auto-fixable issue codes
-    const AUTO_FIXABLE_CODES = [
-      'ROBOTS_TXT_MISSING', 'SITEMAP_MISSING', 'LLMS_TXT_MISSING',
-      'CANONICAL_MISSING', 'META_DESC_MISSING', 'TITLE_MISSING',
-      'OG_TITLE_MISSING', 'OG_DESC_MISSING', 'OG_IMAGE_MISSING', 'OG_URL_MISSING', 'OG_TYPE_MISSING',
-      'TWITTER_CARD_MISSING', 'TWITTER_IMAGE_MISSING',
-      'SCHEMA_MISSING', 'VIEWPORT_MISSING', 'HTML_LANG_MISSING',
-      'H1_MISSING', 'FAVICON_MISSING',
-      // AI-generated suggestions are also auto-fixable
-      'AI_TITLE_SUGGESTION', 'AI_DESC_SUGGESTION', 'AI_CONTENT_SUGGESTION',
+    // Issues that CANNOT be auto-fixed (require manual intervention or architectural changes)
+    const NON_FIXABLE_CODES = [
+      // These require SSR/architectural changes
+      'CLIENT_SIDE_RENDERING', 'EMPTY_BODY_CONTENT', 'HIGH_JS_RENDERING_RATIO',
+      // These require actual content writing
+      'THIN_CONTENT', 'LOW_TEXT_HTML_RATIO', 'LOW_CONTENT_ENTROPY',
+      // These are informational/external
+      'BING_NOT_VERIFIED', 'NEW_SITE_STRATEGY', 'DMARC_MISSING',
+      // These need user decision
+      'CANONICAL_WWW_DUPLICATE',
     ];
 
-    // Get auto-fixable issues
+    // Get ALL issues except those that can't be auto-fixed
     const { data: rawIssues } = await supabase
       .from('audit_issues')
       .select('code, severity, category, title, description, how_to_fix, details')
       .eq('audit_id', targetAuditId)
-      .eq('status', 'open')
-      .in('code', AUTO_FIXABLE_CODES);
+      .eq('status', 'open');
 
-    if (!rawIssues || rawIssues.length === 0) {
+    // Filter out non-fixable issues
+    const fixableIssues = rawIssues?.filter(i => !NON_FIXABLE_CODES.includes(i.code)) || [];
+
+    if (!fixableIssues || fixableIssues.length === 0) {
       return new Response(JSON.stringify({
         success: true,
         message: 'No auto-fixable issues found',
@@ -612,7 +757,7 @@ serve(async (req) => {
     }
 
     // Apply AI prioritization if available
-    let issues = rawIssues;
+    let issues = fixableIssues;
     if (aiFixPrioritization?.prioritizedIssues?.length > 0) {
       console.log('Applying AI fix prioritization...');
 
@@ -640,13 +785,20 @@ serve(async (req) => {
 
     // Fetch repository context
     console.log('Fetching repository context...');
-    const [packageJson, indexHtml, files] = await Promise.all([
-      fetchFileContent(token, owner, repoName, 'package.json'),
-      fetchFileContent(token, owner, repoName, 'index.html').then(r => r || fetchFileContent(token, owner, repoName, 'public/index.html')),
-      getRepoTree(token, owner, repoName),
+
+    // First get file tree to detect monorepo structure
+    const files = await getRepoTree(token, owner, repoName);
+    const appRoot = findAppRoot(files);
+    console.log(`Detected app root: ${appRoot || '(root)'}`);
+
+    // Fetch package.json and index.html from the correct location
+    const [packageJson, indexHtml] = await Promise.all([
+      fetchFileContent(token, owner, repoName, `${appRoot}package.json`),
+      fetchFileContent(token, owner, repoName, `${appRoot}index.html`)
+        .then(r => r || fetchFileContent(token, owner, repoName, `${appRoot}public/index.html`)),
     ]);
 
-    const framework = detectFramework(packageJson, files);
+    const framework = detectFramework(packageJson, files, appRoot);
     console.log(`Detected framework: ${framework}`);
 
     const repoContext: RepoContext = {
@@ -654,6 +806,7 @@ serve(async (req) => {
       indexHtml,
       framework,
       files,
+      appRoot,
     };
 
     // Extract AI-generated suggestions to include in fix generation

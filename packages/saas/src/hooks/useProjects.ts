@@ -216,6 +216,16 @@ export function useProjects(): UseProjectsReturn {
   };
 }
 
+// PR creation result type
+interface CreatePRResult {
+  success: boolean;
+  prUrl?: string;
+  prNumber?: number;
+  filesChanged?: number;
+  issuesFixed?: number;
+  error?: string;
+}
+
 // Hook for single project with full details
 interface UseProjectReturn {
   project: Project | null;
@@ -225,6 +235,9 @@ interface UseProjectReturn {
   error: string | null;
   refetch: () => Promise<void>;
   runAudit: () => Promise<Audit | null>;
+  createFixPR: (auditId: string) => Promise<CreatePRResult>;
+  deleteAudit: (auditId: string) => Promise<boolean>;
+  deleteOldAudits: (keepCount?: number) => Promise<number>;
   updateProject: (updates: Partial<Project>) => Promise<boolean>;
   deleteProject: () => Promise<boolean>;
   connectGitHub: (repoUrl: string) => Promise<boolean>;
@@ -352,6 +365,53 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
     }
   };
 
+  const createFixPR = async (auditId: string): Promise<CreatePRResult> => {
+    if (!user || !projectId) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const token = session?.session?.access_token;
+
+      if (!token) {
+        return { success: false, error: 'No auth token available' };
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-seo-pr`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ auditId }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        return { success: false, error: result.error || 'Failed to create PR' };
+      }
+
+      if (result.prCreated) {
+        // Refresh to update any PR-related data
+        await fetchProject();
+        return {
+          success: true,
+          prUrl: result.prUrl,
+          prNumber: result.prNumber,
+          filesChanged: result.filesChanged,
+          issuesFixed: result.issuesFixed,
+        };
+      } else {
+        return { success: false, error: result.message || 'PR not created' };
+      }
+    } catch (err) {
+      console.error('Error creating fix PR:', err);
+      return { success: false, error: err instanceof Error ? err.message : 'Failed to create PR' };
+    }
+  };
+
   const updateProject = async (updates: Partial<Project>): Promise<boolean> => {
     if (!user || !projectId) return false;
 
@@ -456,6 +516,108 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
     }
   };
 
+  const deleteAudit = async (auditId: string): Promise<boolean> => {
+    if (!user || !projectId) {
+      console.error('deleteAudit: No user or projectId', { user: !!user, projectId });
+      return false;
+    }
+
+    try {
+      // Delete in order: github_prs -> audit_issues -> audits (due to foreign key constraints)
+
+      // 1. Delete associated github_prs
+      const { error: prsError } = await supabase
+        .from('github_prs')
+        .delete()
+        .eq('audit_id', auditId);
+
+      if (prsError) throw new Error(`Failed to delete PRs: ${prsError.message}`);
+
+      // 2. Delete associated issues
+      const { error: issuesError } = await supabase
+        .from('audit_issues')
+        .delete()
+        .eq('audit_id', auditId);
+
+      if (issuesError) throw new Error(`Failed to delete issues: ${issuesError.message}`);
+
+      // 3. Delete the audit
+      const { data: deletedAudit, error: auditError } = await supabase
+        .from('audits')
+        .delete()
+        .eq('id', auditId)
+        .eq('project_id', projectId)
+        .select();
+
+      if (auditError) throw new Error(`Failed to delete audit: ${auditError.message}`);
+
+      // Check if RLS blocked the delete (empty result = no rows deleted)
+      if (!deletedAudit || deletedAudit.length === 0) {
+        throw new Error('Audit not found or no permission to delete');
+      }
+
+      await fetchProject();
+      return true;
+    } catch (err) {
+      console.error('Error deleting audit:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete audit');
+      return false;
+    }
+  };
+
+  const deleteOldAudits = async (keepCount: number = 5): Promise<number> => {
+    if (!user || !projectId) return 0;
+
+    try {
+      // Get all audits sorted by date
+      const { data: allAudits, error: fetchError } = await supabase
+        .from('audits')
+        .select('id')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+      if (!allAudits || allAudits.length <= keepCount) return 0;
+
+      // Get IDs of audits to delete (all except the most recent keepCount)
+      const auditsToDelete = allAudits.slice(keepCount);
+      const idsToDelete = auditsToDelete.map(a => a.id);
+
+      // Delete in order: github_prs -> audit_issues -> audits (due to foreign key constraints)
+
+      // 1. Delete associated github_prs
+      const { error: prsError } = await supabase
+        .from('github_prs')
+        .delete()
+        .in('audit_id', idsToDelete);
+
+      if (prsError) throw prsError;
+
+      // 2. Delete associated issues
+      const { error: issuesError } = await supabase
+        .from('audit_issues')
+        .delete()
+        .in('audit_id', idsToDelete);
+
+      if (issuesError) throw issuesError;
+
+      // 3. Delete the audits
+      const { error: auditsError } = await supabase
+        .from('audits')
+        .delete()
+        .in('id', idsToDelete);
+
+      if (auditsError) throw auditsError;
+
+      await fetchProject();
+      return idsToDelete.length;
+    } catch (err) {
+      console.error('Error deleting old audits:', err);
+      setError(err instanceof Error ? err.message : 'Failed to delete old audits');
+      return 0;
+    }
+  };
+
   return {
     project,
     audits,
@@ -464,6 +626,9 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
     error,
     refetch: fetchProject,
     runAudit,
+    createFixPR,
+    deleteAudit,
+    deleteOldAudits,
     updateProject,
     deleteProject,
     connectGitHub,

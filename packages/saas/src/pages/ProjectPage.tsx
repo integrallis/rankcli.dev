@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -13,6 +13,9 @@ import {
   ExternalLink,
   Info,
   Sparkles,
+  Trash2,
+  GitPullRequest,
+  X,
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
@@ -42,6 +45,9 @@ export function ProjectPage() {
     isLoading,
     error,
     runAudit,
+    createFixPR,
+    deleteAudit,
+    deleteOldAudits,
     updateProject,
     deleteProject,
     connectGitHub,
@@ -50,6 +56,22 @@ export function ProjectPage() {
 
   const [showGitHubModal, setShowGitHubModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [deletingAuditId, setDeletingAuditId] = useState<string | null>(null);
+  const [isDeletingOldAudits, setIsDeletingOldAudits] = useState(false);
+  const [isCreatingPR, setIsCreatingPR] = useState(false);
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error';
+    message: string;
+    prUrl?: string;
+  } | null>(null);
+
+  // Auto-dismiss notification after 10 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   const getScoreColor = (score: number | null) => {
     if (score === null) return 'text-muted-foreground';
@@ -85,21 +107,54 @@ export function ProjectPage() {
     await connectGitHub(repoUrl);
   };
 
-  const handleUpdateProject = async (updates: Partial<Project>) => {
+  const handleUpdateProject = async (updates: Partial<Project>): Promise<boolean> => {
     if (project) {
-      await updateProject(updates);
+      return await updateProject(updates);
     }
+    return false;
   };
 
-  const handleDeleteProject = async () => {
+  const handleDeleteProject = async (): Promise<boolean> => {
     const success = await deleteProject();
     if (success) {
       navigate('/dashboard');
     }
+    return success;
   };
 
-  const handleDisconnectGitHub = async () => {
-    await disconnectGitHub();
+  const handleDisconnectGitHub = async (): Promise<boolean> => {
+    return await disconnectGitHub();
+  };
+
+  const handleCreateFixPR = async () => {
+    if (!latestAudit || isCreatingPR) return;
+
+    setIsCreatingPR(true);
+    setNotification(null);
+
+    try {
+      const result = await createFixPR(latestAudit.id);
+
+      if (result.success && result.prUrl) {
+        setNotification({
+          type: 'success',
+          message: `PR #${result.prNumber} created with ${result.filesChanged} files changed, fixing ${result.issuesFixed} issues`,
+          prUrl: result.prUrl,
+        });
+      } else {
+        setNotification({
+          type: 'error',
+          message: result.error || 'Failed to create PR',
+        });
+      }
+    } catch (err) {
+      setNotification({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Failed to create PR',
+      });
+    } finally {
+      setIsCreatingPR(false);
+    }
   };
 
   if (isLoading) {
@@ -152,6 +207,43 @@ export function ProjectPage() {
       <Navbar />
 
       <main className="container py-8">
+        {/* Notification Banner */}
+        {notification && (
+          <div
+            className={cn(
+              'mb-6 p-4 rounded-lg flex items-center justify-between',
+              notification.type === 'success'
+                ? 'bg-green-500/10 border border-green-500/30 text-green-600'
+                : 'bg-red-500/10 border border-red-500/30 text-red-600'
+            )}
+          >
+            <div className="flex items-center gap-3">
+              {notification.type === 'success' ? (
+                <GitPullRequest className="h-5 w-5" />
+              ) : (
+                <XCircle className="h-5 w-5" />
+              )}
+              <span>{notification.message}</span>
+              {notification.prUrl && (
+                <a
+                  href={notification.prUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 underline font-medium hover:no-underline"
+                >
+                  View PR →
+                </a>
+              )}
+            </div>
+            <button
+              onClick={() => setNotification(null)}
+              className="p-1 hover:bg-black/10 rounded"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         {/* Breadcrumb */}
         <div className="mb-6">
           <Link
@@ -345,13 +437,36 @@ export function ProjectPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Issues Found</CardTitle>
-                <div className="flex gap-2">
-                  <Badge variant="destructive">
-                    {issues.filter((i) => i.severity === 'error').length} errors
-                  </Badge>
-                  <Badge variant="outline" className="border-yellow-500/50 text-yellow-600">
-                    {issues.filter((i) => i.severity === 'warning').length} warnings
-                  </Badge>
+                <div className="flex items-center gap-3">
+                  {project.github_repo_url && project.github_installation_id && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={handleCreateFixPR}
+                      disabled={isCreatingPR}
+                    >
+                      {isCreatingPR ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Creating PR...
+                        </>
+                      ) : (
+                        <>
+                          <GitPullRequest className="h-4 w-4" />
+                          Create Fix PR
+                        </>
+                      )}
+                    </Button>
+                  )}
+                  <div className="flex gap-2">
+                    <Badge variant="destructive">
+                      {issues.filter((i) => i.severity === 'error').length} errors
+                    </Badge>
+                    <Badge variant="outline" className="border-yellow-500/50 text-yellow-600">
+                      {issues.filter((i) => i.severity === 'warning').length} warnings
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </CardHeader>
@@ -442,22 +557,53 @@ export function ProjectPage() {
         )}
 
         {/* Audit History */}
-        {audits.length > 1 && (
+        {audits.length > 0 && (
           <Card className="mt-8">
             <CardHeader>
-              <CardTitle>Audit History</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Audit History</CardTitle>
+                {audits.length > 5 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-muted-foreground"
+                    disabled={isDeletingOldAudits}
+                    onClick={async () => {
+                      setIsDeletingOldAudits(true);
+                      try {
+                        const deleted = await deleteOldAudits(5);
+                        if (deleted > 0) {
+                          console.log(`Deleted ${deleted} old audits`);
+                        }
+                      } catch (err) {
+                        console.error('Delete old audits error:', err);
+                        alert(`Failed to delete old audits: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                      } finally {
+                        setIsDeletingOldAudits(false);
+                      }
+                    }}
+                  >
+                    {isDeletingOldAudits ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 mr-2" />
+                    )}
+                    Delete Old Audits
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {audits.slice(0, 5).map((audit) => (
+                {audits.slice(0, 10).map((audit) => (
                   <div
                     key={audit.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 group"
                   >
                     <div className="flex items-center gap-3">
                       <div
                         className={cn(
-                          'font-bold',
+                          'font-bold w-8',
                           getScoreColor(audit.score)
                         )}
                       >
@@ -473,17 +619,48 @@ export function ProjectPage() {
                         </p>
                       </div>
                     </div>
-                    <Badge
-                      variant={
-                        audit.status === 'completed'
-                          ? 'secondary'
-                          : audit.status === 'failed'
-                          ? 'destructive'
-                          : 'outline'
-                      }
-                    >
-                      {audit.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={
+                          audit.status === 'completed'
+                            ? 'secondary'
+                            : audit.status === 'failed'
+                            ? 'destructive'
+                            : 'outline'
+                        }
+                      >
+                        {audit.status}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        disabled={deletingAuditId === audit.id}
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (deletingAuditId) return;
+                          setDeletingAuditId(audit.id);
+                          try {
+                            const success = await deleteAudit(audit.id);
+                            if (!success) {
+                              alert('Failed to delete audit. Check console for details.');
+                            }
+                          } catch (err) {
+                            console.error('Delete error:', err);
+                            alert(`Failed to delete audit: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                          } finally {
+                            setDeletingAuditId(null);
+                          }
+                        }}
+                      >
+                        {deletingAuditId === audit.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
