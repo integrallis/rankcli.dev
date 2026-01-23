@@ -5,8 +5,6 @@ import {
   Play,
   Settings,
   Github,
-  AlertCircle,
-  XCircle,
   CheckCircle,
   Loader2,
   RefreshCw,
@@ -16,6 +14,7 @@ import {
   Trash2,
   GitPullRequest,
   X,
+  XCircle,
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
@@ -26,6 +25,7 @@ import { cn } from '@/lib/utils';
 import type { Project } from '@/integrations/supabase/types';
 import { ConnectGitHubModal } from '@/components/project/ConnectGitHubModal';
 import { ProjectSettingsModal } from '@/components/project/ProjectSettingsModal';
+import { IssuesList } from '@/components/project/IssuesList';
 
 // Check limits per tier (using full agent-runtime engine)
 const TIER_CHECKS = {
@@ -78,17 +78,6 @@ export function ProjectPage() {
     if (score >= 80) return 'text-green-400';
     if (score >= 60) return 'text-yellow-400';
     return 'text-red-400';
-  };
-
-  const getSeverityIcon = (severity: string) => {
-    switch (severity) {
-      case 'error':
-        return <XCircle className="h-5 w-5 text-red-500" />;
-      case 'warning':
-        return <AlertCircle className="h-5 w-5 text-yellow-500" />;
-      default:
-        return <CheckCircle className="h-5 w-5 text-blue-500" />;
-    }
   };
 
   const latestAudit = audits.find((a) => a.status === 'completed');
@@ -433,112 +422,14 @@ export function ProjectPage() {
 
         {/* Issues */}
         {latestAudit && issues.length > 0 && (
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Issues Found</CardTitle>
-                <div className="flex items-center gap-3">
-                  {project.github_repo_url && project.github_installation_id && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      onClick={handleCreateFixPR}
-                      disabled={isCreatingPR}
-                    >
-                      {isCreatingPR ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          Creating PR...
-                        </>
-                      ) : (
-                        <>
-                          <GitPullRequest className="h-4 w-4" />
-                          Create Fix PR
-                        </>
-                      )}
-                    </Button>
-                  )}
-                  <div className="flex gap-2">
-                    <Badge variant="destructive">
-                      {issues.filter((i) => i.severity === 'error').length} errors
-                    </Badge>
-                    <Badge variant="outline" className="border-yellow-500/50 text-yellow-600">
-                      {issues.filter((i) => i.severity === 'warning').length} warnings
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {issues.map((issue) => (
-                  <div
-                    key={issue.id}
-                    className="flex items-start gap-4 p-4 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors"
-                  >
-                    {getSeverityIcon(issue.severity)}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <h3 className="font-medium">{issue.title}</h3>
-                          {issue.description && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {issue.description}
-                            </p>
-                          )}
-                          {issue.affected_urls && issue.affected_urls.length > 0 && (
-                            <div className="mt-2">
-                              <p className="text-xs text-muted-foreground mb-1">
-                                Affected pages:
-                              </p>
-                              <div className="flex flex-wrap gap-2">
-                                {issue.affected_urls.slice(0, 3).map((url) => (
-                                  <code
-                                    key={url}
-                                    className="text-xs px-2 py-1 bg-background rounded"
-                                  >
-                                    {(() => {
-                                      try {
-                                        return new URL(url).pathname;
-                                      } catch {
-                                        return url;
-                                      }
-                                    })()}
-                                  </code>
-                                ))}
-                                {issue.affected_urls.length > 3 && (
-                                  <span className="text-xs text-muted-foreground">
-                                    +{issue.affected_urls.length - 3} more
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        <Badge
-                          variant={
-                            issue.severity === 'error'
-                              ? 'destructive'
-                              : issue.severity === 'warning'
-                              ? 'outline'
-                              : 'secondary'
-                          }
-                          className={
-                            issue.severity === 'warning'
-                              ? 'border-yellow-500/50 text-yellow-600'
-                              : undefined
-                          }
-                        >
-                          {issue.category}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <IssuesList
+            issues={issues}
+            projectName={project.name}
+            projectUrl={project.url}
+            onCreateFixPR={handleCreateFixPR}
+            isCreatingPR={isCreatingPR}
+            hasGitHub={!!(project.github_repo_url && project.github_installation_id)}
+          />
         )}
 
         {/* No Issues State */}
