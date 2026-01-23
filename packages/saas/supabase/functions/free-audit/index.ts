@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // Import the shared audit engine (280+ checks)
-import { runFullAudit } from '../_shared/audit/index.ts';
+import { runFullAudit, urlSafetyDatabase } from '../_shared/audit/index.ts';
 import type { AuditReport, AuditIssue as EngineIssue } from '../_shared/audit/index.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -12,6 +12,33 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Flag to track if threat hashes have been loaded this session
+let threatHashesLoaded = false;
+
+/**
+ * Load threat hashes from Supabase (domain hashes only for performance)
+ */
+async function loadThreatHashes(supabase: ReturnType<typeof createClient>): Promise<number> {
+  if (threatHashesLoaded && urlSafetyDatabase.isPopulated()) {
+    return 0;
+  }
+
+  const { data: hashes, error } = await supabase
+    .from('threat_hashes')
+    .select('hash_prefix, hash_type')
+    .eq('is_active', true)
+    .eq('hash_type', 'domain')
+    .limit(10000);
+
+  if (error || !hashes || hashes.length === 0) {
+    return 0;
+  }
+
+  const count = urlSafetyDatabase.loadHashPrefixes(hashes);
+  threatHashesLoaded = true;
+  return count;
+}
 
 // Rate limit: 10 requests per IP per hour
 const RATE_LIMIT = 10;
@@ -93,6 +120,11 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // ========== LOAD THREAT HASHES FOR URL SAFETY (with timeout) ==========
+    const threatHashPromise = loadThreatHashes(supabase).catch(() => 0);
+    const timeoutPromise = new Promise<number>(resolve => setTimeout(() => resolve(0), 3000));
+    await Promise.race([threatHashPromise, timeoutPromise]);
 
     // ========== RUN FULL AUDIT ENGINE (280+ CHECKS) ==========
     console.log(`Running free audit on ${targetUrl}...`);

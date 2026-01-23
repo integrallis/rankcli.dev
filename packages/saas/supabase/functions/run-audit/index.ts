@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // Import the shared audit engine (280+ checks)
-import { runFullAudit, formatReport } from '../_shared/audit/index.ts';
+import { runFullAudit, formatReport, urlSafetyDatabase } from '../_shared/audit/index.ts';
 import type { AuditReport, AuditIssue as EngineIssue } from '../_shared/audit/index.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -63,6 +63,41 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Flag to track if threat hashes have been loaded this session
+let threatHashesLoaded = false;
+
+/**
+ * Load threat hashes from Supabase into the URL safety database
+ * This only needs to be done once per function instance
+ * Uses a small subset for performance - pattern detection handles the rest
+ */
+async function loadThreatHashes(supabase: ReturnType<typeof createClient>): Promise<number> {
+  if (threatHashesLoaded && urlSafetyDatabase.isPopulated()) {
+    return 0;
+  }
+
+  const startTime = Date.now();
+
+  // Query only domain hashes (smaller set, more impactful)
+  // URL hashes are too numerous - pattern detection handles most cases
+  const { data: hashes, error } = await supabase
+    .from('threat_hashes')
+    .select('hash_prefix, hash_type')
+    .eq('is_active', true)
+    .eq('hash_type', 'domain')
+    .limit(10000);
+
+  if (error || !hashes || hashes.length === 0) {
+    return 0;
+  }
+
+  const count = urlSafetyDatabase.loadHashPrefixes(hashes);
+  threatHashesLoaded = true;
+
+  console.log(`[AUDIT] Loaded ${count} domain hashes in ${Date.now() - startTime}ms`);
+  return count;
+}
 
 // Database issue format
 interface DbAuditIssue {
@@ -201,17 +236,28 @@ serve(async (req) => {
     const startTime = Date.now();
 
     try {
+      // ========== LOAD THREAT HASHES FOR URL SAFETY (with timeout) ==========
+      const threatHashPromise = loadThreatHashes(supabase).catch(() => 0);
+      const timeoutPromise = new Promise<number>(resolve => setTimeout(() => resolve(0), 3000));
+      await Promise.race([threatHashPromise, timeoutPromise]);
+
       // ========== RUN FULL AUDIT ENGINE (280+ CHECKS) ==========
       console.log(`[AUDIT] Starting full audit on ${project.url}...`);
       console.log(`[AUDIT] Timestamp: ${new Date().toISOString()}`);
 
       let auditReport;
       try {
-        // Call runFullAudit with options object (correct signature)
-        auditReport = await runFullAudit({
+        // Call runFullAudit with options object and 45-second timeout
+        // Edge functions have 60s max, so we timeout at 45s to leave room for cleanup
+        const auditPromise = runFullAudit({
           url: project.url,
           maxPages: 1,
         });
+        const timeoutPromise = new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Audit timed out after 45 seconds')), 45000)
+        );
+
+        auditReport = await Promise.race([auditPromise, timeoutPromise]);
         console.log(`[AUDIT] runFullAudit completed successfully`);
       } catch (auditEngineError) {
         console.error(`[AUDIT] runFullAudit FAILED:`, auditEngineError);

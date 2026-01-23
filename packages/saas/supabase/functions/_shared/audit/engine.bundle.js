@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-01-22T04:35:49.281Z
+// Generated: 2026-01-23T04:39:48.007Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -231,6 +231,15 @@ var ISSUE_DEFINITIONS = {
     description: "Heading hierarchy skips levels (e.g., H1 to H3).",
     impact: "May confuse screen readers and reduce content structure clarity.",
     howToFix: "Maintain proper heading hierarchy (H1 > H2 > H3, etc.)."
+  },
+  H2_MISSING: {
+    code: "H2_MISSING",
+    severity: "warning",
+    category: "on-page",
+    title: "No H2 headings found",
+    description: "No H2 tags were found on the page.",
+    impact: "H2 headings help structure content and are important for SEO and readability.",
+    howToFix: "Break your content into sections using H2 headings with relevant keywords."
   },
   // ==================== CONTENT ====================
   THIN_CONTENT: {
@@ -1572,6 +1581,164 @@ var ISSUE_DEFINITIONS = {
     description: "The title tag and H1 heading have no overlapping keywords.",
     impact: "Search engines may be confused about the primary topic of the page.",
     howToFix: "Align title and H1 to target the same primary keyword or topic."
+  },
+  // ==================== ASSET MINIFICATION ====================
+  CSS_NOT_MINIFIED: {
+    code: "CSS_NOT_MINIFIED",
+    severity: "warning",
+    category: "performance",
+    title: "CSS files not minified",
+    description: "CSS files contain unnecessary whitespace, comments, or unoptimized code.",
+    impact: "Unminified CSS increases file size and page load time.",
+    howToFix: "Use a CSS minifier (cssnano, clean-css) or ensure build tools minify CSS in production."
+  },
+  JS_NOT_MINIFIED: {
+    code: "JS_NOT_MINIFIED",
+    severity: "warning",
+    category: "performance",
+    title: "JavaScript files not minified",
+    description: "JavaScript files contain unnecessary whitespace, comments, or long variable names.",
+    impact: "Unminified JavaScript increases file size, parse time, and page load time.",
+    howToFix: "Use a JS minifier (Terser, UglifyJS) or ensure build tools minify JS in production."
+  },
+  // ==================== PAGE RESOURCES ====================
+  PAGE_RESOURCES_EXCESSIVE: {
+    code: "PAGE_RESOURCES_EXCESSIVE",
+    severity: "error",
+    category: "performance",
+    title: "Excessive number of page resources",
+    description: "Page makes over 100 HTTP requests for resources.",
+    impact: "Too many HTTP requests cause slow page loads due to connection overhead and browser limits.",
+    howToFix: "Combine CSS/JS files, use image sprites, lazy-load resources, remove unused dependencies."
+  },
+  PAGE_RESOURCES_HIGH: {
+    code: "PAGE_RESOURCES_HIGH",
+    severity: "warning",
+    category: "performance",
+    title: "High number of page resources",
+    description: "Page makes over 50 HTTP requests for resources.",
+    impact: "Many HTTP requests increase page load time, especially on mobile networks.",
+    howToFix: "Bundle CSS/JS files, lazy-load images below the fold, consider critical CSS inlining."
+  },
+  PAGE_RESOURCES_THIRD_PARTY_HIGH: {
+    code: "PAGE_RESOURCES_THIRD_PARTY_HIGH",
+    severity: "warning",
+    category: "performance",
+    title: "Many third-party resources",
+    description: "Page loads many resources from third-party domains.",
+    impact: "Third-party resources add latency and are outside your control.",
+    howToFix: "Self-host critical third-party resources when possible. Use preconnect hints for remaining."
+  },
+  PAGE_RESOURCES_MANY_IFRAMES: {
+    code: "PAGE_RESOURCES_MANY_IFRAMES",
+    severity: "warning",
+    category: "performance",
+    title: "Multiple iframes detected",
+    description: "Page contains multiple iframes, each loading its own document.",
+    impact: "Iframes significantly increase page weight and can block the main thread.",
+    howToFix: "Lazy-load iframes below the fold. Consider native embeds or facade patterns."
+  },
+  // ==================== RESPONSIVE CSS ====================
+  RESPONSIVE_NO_VIEWPORT: {
+    code: "RESPONSIVE_NO_VIEWPORT",
+    severity: "error",
+    category: "mobile",
+    title: "Missing viewport meta tag",
+    description: "No viewport meta tag found for responsive design.",
+    impact: "Without viewport meta, mobile browsers render at desktop width and scale down.",
+    howToFix: 'Add <meta name="viewport" content="width=device-width, initial-scale=1"> to <head>.'
+  },
+  RESPONSIVE_NO_MEDIA_QUERIES: {
+    code: "RESPONSIVE_NO_MEDIA_QUERIES",
+    severity: "warning",
+    category: "mobile",
+    title: "No CSS media queries detected",
+    description: "No @media queries found in stylesheets.",
+    impact: "Without media queries, the site uses fixed layouts that do not adapt to screen sizes.",
+    howToFix: "Add CSS media queries for different screen sizes. Use mobile-first approach."
+  },
+  RESPONSIVE_NO_MOBILE_BREAKPOINT: {
+    code: "RESPONSIVE_NO_MOBILE_BREAKPOINT",
+    severity: "warning",
+    category: "mobile",
+    title: "No mobile breakpoints detected",
+    description: "Media queries exist but none target mobile screen sizes.",
+    impact: "Site may not be optimized for mobile devices, hurting majority of traffic.",
+    howToFix: "Add media queries for mobile: @media (max-width: 768px) { ... }"
+  },
+  // ==================== LINKS RATIO ====================
+  LINKS_NO_INTERNAL: {
+    code: "LINKS_NO_INTERNAL",
+    severity: "warning",
+    category: "links",
+    title: "No internal links found",
+    description: "Page has no internal links to other pages on the site.",
+    impact: "Internal links help search engines discover pages and distribute link equity.",
+    howToFix: "Add relevant internal links to related content or navigation."
+  },
+  LINKS_NO_EXTERNAL: {
+    code: "LINKS_NO_EXTERNAL",
+    severity: "notice",
+    category: "links",
+    title: "No external links found",
+    description: "Page has no links to external websites.",
+    impact: "Linking to authoritative sources improves credibility and content context.",
+    howToFix: "Add links to high-quality external sources that support your content."
+  },
+  LINKS_RATIO_POOR: {
+    code: "LINKS_RATIO_POOR",
+    severity: "warning",
+    category: "links",
+    title: "Poor internal-to-external link ratio",
+    description: "Page has more external links than internal links.",
+    impact: "Too many external links can dilute page authority and may look spammy.",
+    howToFix: "Add more internal links. Aim for at least 2 internal links per external link."
+  },
+  // ==================== URL SAFETY (Local Hash Database) ====================
+  URL_SAFETY_KNOWN_THREAT: {
+    code: "URL_SAFETY_KNOWN_THREAT",
+    severity: "error",
+    category: "security",
+    title: "Website URL matches known threat database",
+    description: "Your website URL matches entries in the local threat database.",
+    impact: "Browsers and security tools may block access to your site. Search engines may remove you from results.",
+    howToFix: "Scan your site for malware, remove any malicious content, and request removal from threat databases."
+  },
+  URL_SAFETY_EXTERNAL_THREAT: {
+    code: "URL_SAFETY_EXTERNAL_THREAT",
+    severity: "error",
+    category: "security",
+    title: "External links to known malicious URLs",
+    description: "External links point to URLs flagged in threat databases.",
+    impact: "Linking to malicious sites harms visitors and damages your reputation and rankings.",
+    howToFix: "Remove all links to flagged URLs immediately."
+  },
+  URL_SAFETY_SUSPICIOUS_DOMAIN: {
+    code: "URL_SAFETY_SUSPICIOUS_DOMAIN",
+    severity: "warning",
+    category: "security",
+    title: "Website URL has suspicious characteristics",
+    description: "Your URL shows patterns commonly associated with phishing or malicious sites.",
+    impact: "Users and security tools may distrust your site.",
+    howToFix: "Use a trustworthy domain structure. Avoid patterns that mimic other brands or use suspicious TLDs."
+  },
+  URL_SAFETY_SUSPICIOUS_EXTERNAL: {
+    code: "URL_SAFETY_SUSPICIOUS_EXTERNAL",
+    severity: "warning",
+    category: "security",
+    title: "External links with suspicious characteristics",
+    description: "External links show patterns associated with phishing or malicious sites.",
+    impact: "Linking to suspicious sites can harm visitors and rankings.",
+    howToFix: "Review and remove or replace suspicious external links."
+  },
+  URL_SAFETY_SHORTENERS: {
+    code: "URL_SAFETY_SHORTENERS",
+    severity: "notice",
+    category: "security",
+    title: "External links use URL shorteners",
+    description: "External links use URL shorteners, hiding the actual destination.",
+    impact: "URL shorteners reduce trust and SEO link value.",
+    howToFix: "Replace shortened URLs with direct links to the destination."
   }
 };
 
@@ -2022,6 +2189,19 @@ function analyzeOnPage(html, url) {
       details: { h1: h1s[0], title }
     });
   }
+  const h2Count = headings.filter((h) => h.level === 2).length;
+  if (h2Count === 0 && wordCount > 100) {
+    issues.push({
+      code: "H2_MISSING",
+      severity: "warning",
+      category: "on-page",
+      title: "No H2 headings found",
+      description: "No H2 tags were found on the page. H2 headings help structure content and improve readability.",
+      impact: "Without H2 headings, search engines and users may find it harder to understand content structure. H2s are important for featuring in search results.",
+      howToFix: "Break your content into logical sections using H2 headings. Include relevant keywords naturally in your H2 tags.",
+      affectedUrls: [url]
+    });
+  }
   let previousLevel = 0;
   for (const heading of headings) {
     if (heading.level > previousLevel + 1 && previousLevel > 0) {
@@ -2096,11 +2276,58 @@ async function analyzeLinks(html, baseUrl, checkBroken = false) {
     }
   });
   const totalLinks = internal.length + external.length;
+  const internalCount = internal.length;
+  const externalCount = external.length;
+  const internalToExternalRatio = externalCount > 0 ? internalCount / externalCount : null;
   if (totalLinks > 100) {
     issues.push({
       ...ISSUE_DEFINITIONS.TOO_MANY_LINKS,
       affectedUrls: [baseUrl],
-      details: { totalLinks, internal: internal.length, external: external.length }
+      details: { totalLinks, internal: internalCount, external: externalCount }
+    });
+  }
+  if (internalCount === 0 && totalLinks > 0) {
+    issues.push({
+      code: "LINKS_NO_INTERNAL",
+      severity: "warning",
+      category: "links",
+      title: "No internal links found",
+      description: "This page has no internal links to other pages on your site.",
+      impact: "Internal links are crucial for SEO. They help search engines discover pages and distribute link equity throughout your site.",
+      howToFix: "Add relevant internal links to related content, navigation, or related articles section.",
+      affectedUrls: [baseUrl],
+      details: { totalLinks, external: externalCount }
+    });
+  }
+  if (externalCount === 0 && totalLinks > 5) {
+    issues.push({
+      code: "LINKS_NO_EXTERNAL",
+      severity: "notice",
+      category: "links",
+      title: "No external links found",
+      description: "This page has no links to external websites.",
+      impact: "Linking to high-quality external sources can improve credibility and help search engines understand your content context.",
+      howToFix: "Add links to authoritative external sources that support your content. This builds trust and provides value to readers.",
+      affectedUrls: [baseUrl],
+      details: { totalLinks, internal: internalCount }
+    });
+  }
+  if (externalCount > internalCount && externalCount > 5 && internalCount < 3) {
+    issues.push({
+      code: "LINKS_RATIO_POOR",
+      severity: "warning",
+      category: "links",
+      title: "Poor internal-to-external link ratio",
+      description: `Page has ${externalCount} external links but only ${internalCount} internal links.`,
+      impact: "A healthy page should have more internal links than external links. Too many external links can dilute page authority and may look spammy.",
+      howToFix: "Add more relevant internal links to balance the ratio. Aim for at least 2-3 internal links for every external link.",
+      affectedUrls: [baseUrl],
+      details: {
+        internal: internalCount,
+        external: externalCount,
+        ratio: internalToExternalRatio ? `1:${(1 / internalToExternalRatio).toFixed(1)}` : "N/A",
+        recommendation: "Aim for a ratio of at least 2:1 (internal:external)"
+      }
     });
   }
   if (checkBroken) {
@@ -2155,7 +2382,12 @@ async function analyzeLinks(html, baseUrl, checkBroken = false) {
       external,
       totalLinks,
       brokenInternal,
-      brokenExternal
+      brokenExternal,
+      ratio: {
+        internal: internalCount,
+        external: externalCount,
+        internalToExternalRatio
+      }
     }
   };
 }
@@ -13796,6 +14028,2725 @@ function analyzeReviewEcosystem(html, url) {
   };
 }
 
+// src/audit/checks/robots-validation.ts
+var STANDARD_DIRECTIVES = [
+  "user-agent",
+  "disallow",
+  "allow",
+  "sitemap"
+];
+var EXTENDED_DIRECTIVES = [
+  "crawl-delay",
+  "host",
+  "clean-param",
+  // Yandex
+  "request-rate"
+  // Some crawlers
+];
+var ALL_DIRECTIVES = [...STANDARD_DIRECTIVES, ...EXTENDED_DIRECTIVES];
+async function validateRobotsTxt(url) {
+  const issues = [];
+  const parsedUrl = new URL(url);
+  const robotsUrl = new URL("/robots.txt", parsedUrl.origin).href;
+  try {
+    const response = await httpGet(robotsUrl, {
+      timeout: 1e4,
+      validateStatus: () => true
+    });
+    if (response.status === 404) {
+      return {
+        issues,
+        data: {
+          exists: false,
+          isValid: true,
+          // Missing is not invalid
+          lineCount: 0,
+          errors: [],
+          warnings: [],
+          directives: {
+            userAgents: [],
+            sitemaps: [],
+            hasWildcardAgent: false,
+            hasCrawlDelay: false
+          }
+        }
+      };
+    }
+    const content = response.data;
+    const validation = parseAndValidate(content);
+    if (validation.errors.length > 0) {
+      issues.push({
+        code: "ROBOTS_TXT_INVALID_SYNTAX",
+        severity: "warning",
+        category: "crawlability",
+        title: "robots.txt contains syntax errors",
+        description: `Found ${validation.errors.length} syntax error(s) in robots.txt. Invalid syntax may cause crawlers to misinterpret your rules.`,
+        impact: "Search engines may not properly understand your crawling rules, potentially blocking or allowing unintended pages.",
+        howToFix: 'Fix the syntax errors in robots.txt. Each directive should be on its own line with format "Directive: value".',
+        affectedUrls: [robotsUrl],
+        details: {
+          errors: validation.errors.map((e) => ({
+            line: e.line,
+            content: e.content,
+            message: e.message
+          }))
+        }
+      });
+    }
+    if (validation.warnings.length > 0) {
+      issues.push({
+        code: "ROBOTS_TXT_WARNINGS",
+        severity: "notice",
+        category: "crawlability",
+        title: "robots.txt has potential issues",
+        description: `Found ${validation.warnings.length} warning(s) in robots.txt.`,
+        impact: "Some crawlers may not recognize non-standard directives.",
+        howToFix: "Review the warnings and update if needed.",
+        affectedUrls: [robotsUrl],
+        details: {
+          warnings: validation.warnings.map((w) => ({
+            line: w.line,
+            content: w.content,
+            message: w.message
+          }))
+        }
+      });
+    }
+    return {
+      issues,
+      data: {
+        exists: true,
+        isValid: validation.errors.length === 0,
+        lineCount: content.split("\n").length,
+        errors: validation.errors,
+        warnings: validation.warnings,
+        directives: validation.directives
+      }
+    };
+  } catch (error) {
+    return {
+      issues,
+      data: {
+        exists: false,
+        isValid: true,
+        lineCount: 0,
+        errors: [],
+        warnings: [],
+        directives: {
+          userAgents: [],
+          sitemaps: [],
+          hasWildcardAgent: false,
+          hasCrawlDelay: false
+        }
+      }
+    };
+  }
+}
+function parseAndValidate(content) {
+  const errors = [];
+  const warnings = [];
+  const userAgents = [];
+  const sitemaps = [];
+  let hasWildcardAgent = false;
+  let hasCrawlDelay = false;
+  const lines = content.split("\n");
+  let currentUserAgent = null;
+  let hasDirectiveAfterUserAgent = false;
+  for (let i = 0; i < lines.length; i++) {
+    const lineNum = i + 1;
+    const rawLine = lines[i];
+    const line = rawLine.trim();
+    if (line === "") {
+      continue;
+    }
+    if (line.startsWith("#")) {
+      continue;
+    }
+    const commentIndex = line.indexOf("#");
+    const effectiveLine = commentIndex > 0 ? line.substring(0, commentIndex).trim() : line;
+    if (effectiveLine === "") {
+      continue;
+    }
+    const colonIndex = effectiveLine.indexOf(":");
+    if (colonIndex === -1) {
+      errors.push({
+        line: lineNum,
+        content: rawLine,
+        message: 'Missing colon separator. Format should be "Directive: value"'
+      });
+      continue;
+    }
+    const directive = effectiveLine.substring(0, colonIndex).trim().toLowerCase();
+    const value = effectiveLine.substring(colonIndex + 1).trim();
+    if (!ALL_DIRECTIVES.includes(directive)) {
+      errors.push({
+        line: lineNum,
+        content: rawLine,
+        message: `Unknown directive "${directive}". Valid directives: User-agent, Disallow, Allow, Sitemap`
+      });
+      continue;
+    }
+    if (EXTENDED_DIRECTIVES.includes(directive) && !STANDARD_DIRECTIVES.includes(directive)) {
+      warnings.push({
+        line: lineNum,
+        content: rawLine,
+        message: `"${directive}" is a non-standard directive. Not all crawlers support it.`
+      });
+    }
+    switch (directive) {
+      case "user-agent":
+        if (value === "") {
+          errors.push({
+            line: lineNum,
+            content: rawLine,
+            message: "User-agent value cannot be empty"
+          });
+        } else {
+          currentUserAgent = value;
+          hasDirectiveAfterUserAgent = false;
+          if (!userAgents.includes(value)) {
+            userAgents.push(value);
+          }
+          if (value === "*") {
+            hasWildcardAgent = true;
+          }
+        }
+        break;
+      case "disallow":
+      case "allow":
+        if (currentUserAgent === null) {
+          errors.push({
+            line: lineNum,
+            content: rawLine,
+            message: `${directive} must come after a User-agent directive`
+          });
+        } else {
+          hasDirectiveAfterUserAgent = true;
+          if (value && !isValidPath(value)) {
+            warnings.push({
+              line: lineNum,
+              content: rawLine,
+              message: `Path "${value}" contains unusual characters`
+            });
+          }
+        }
+        break;
+      case "sitemap":
+        if (value === "") {
+          errors.push({
+            line: lineNum,
+            content: rawLine,
+            message: "Sitemap URL cannot be empty"
+          });
+        } else if (!isValidUrl(value)) {
+          errors.push({
+            line: lineNum,
+            content: rawLine,
+            message: `Invalid sitemap URL: "${value}"`
+          });
+        } else {
+          sitemaps.push(value);
+        }
+        break;
+      case "crawl-delay":
+        hasCrawlDelay = true;
+        if (currentUserAgent === null) {
+          warnings.push({
+            line: lineNum,
+            content: rawLine,
+            message: "Crawl-delay should come after a User-agent directive"
+          });
+        }
+        if (value === "" || isNaN(parseFloat(value))) {
+          errors.push({
+            line: lineNum,
+            content: rawLine,
+            message: "Crawl-delay must be a number"
+          });
+        }
+        break;
+      case "host":
+        if (value === "") {
+          errors.push({
+            line: lineNum,
+            content: rawLine,
+            message: "Host value cannot be empty"
+          });
+        }
+        break;
+    }
+  }
+  return {
+    errors,
+    warnings,
+    directives: {
+      userAgents,
+      sitemaps,
+      hasWildcardAgent,
+      hasCrawlDelay
+    }
+  };
+}
+function isValidPath(path) {
+  if (path === "" || path === "*" || path === "$") {
+    return true;
+  }
+  if (!path.startsWith("/") && !path.startsWith("*")) {
+    return false;
+  }
+  if (/[\x00-\x1f]/.test(path)) {
+    return false;
+  }
+  return true;
+}
+function isValidUrl(url) {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// src/audit/checks/llms-txt.ts
+async function analyzeLlmsTxt(url) {
+  const issues = [];
+  const parsedUrl = new URL(url);
+  const baseUrl = parsedUrl.origin;
+  const llmsTxtUrl = new URL("/llms.txt", baseUrl).href;
+  const llmsFullUrl = new URL("/llms-full.txt", baseUrl).href;
+  let exists = false;
+  let fullVersionExists = false;
+  let content;
+  let structure = {
+    hasTitle: false,
+    hasDescription: false,
+    hasSections: false,
+    hasLinks: false,
+    linkCount: 0
+  };
+  let contentLength = 0;
+  try {
+    const response = await httpGet(llmsTxtUrl, {
+      timeout: 1e4,
+      validateStatus: () => true
+    });
+    if (response.status === 200) {
+      exists = true;
+      content = response.data;
+      contentLength = content.length;
+      structure = analyzeStructure(content);
+    }
+    const fullResponse = await httpGet(llmsFullUrl, {
+      timeout: 1e4,
+      validateStatus: () => true
+    });
+    if (fullResponse.status === 200) {
+      fullVersionExists = true;
+    }
+  } catch {
+  }
+  if (!exists) {
+    issues.push({
+      code: "AI_NO_LLMS_TXT",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "No llms.txt file found",
+      description: "llms.txt is a proposed standard for providing context to LLMs about your website. Having one helps AI systems better understand and represent your site.",
+      impact: "AI systems may have less context about your site, potentially leading to less accurate representations.",
+      howToFix: "Create an /llms.txt file with a Markdown description of your site. Include: site name, brief description, and links to key pages. See https://llmstxt.org/ for the specification.",
+      affectedUrls: [llmsTxtUrl],
+      details: {
+        specification: "https://llmstxt.org/",
+        exampleFormat: `# Site Name
+
+> Brief description of your site
+
+## About
+- [About Us](/about): Learn more about our company
+
+## Products
+- [Product A](/products/a): Description of product A
+- [Product B](/products/b): Description of product B
+
+## Documentation
+- [Docs](/docs): Full documentation`
+      }
+    });
+  } else {
+    if (!structure.hasTitle) {
+      issues.push({
+        code: "AI_LLMS_TXT_NO_TITLE",
+        severity: "notice",
+        category: "ai-readiness",
+        title: "llms.txt missing title heading",
+        description: "Your llms.txt file should start with a # heading containing your site/organization name.",
+        impact: "LLMs may not properly identify your site.",
+        howToFix: "Add a title heading at the top: # Your Site Name",
+        affectedUrls: [llmsTxtUrl]
+      });
+    }
+    if (!structure.hasDescription) {
+      issues.push({
+        code: "AI_LLMS_TXT_NO_DESCRIPTION",
+        severity: "notice",
+        category: "ai-readiness",
+        title: "llms.txt missing description",
+        description: "Your llms.txt should include a brief description (blockquote starting with >) explaining what your site/organization does.",
+        impact: "LLMs may not understand your site's purpose.",
+        howToFix: "Add a description blockquote after the title: > Brief description of your site",
+        affectedUrls: [llmsTxtUrl]
+      });
+    }
+    if (!structure.hasLinks || structure.linkCount < 3) {
+      issues.push({
+        code: "AI_LLMS_TXT_FEW_LINKS",
+        severity: "notice",
+        category: "ai-readiness",
+        title: "llms.txt has few navigation links",
+        description: `Your llms.txt only has ${structure.linkCount} link(s). Include links to your most important pages to help LLMs navigate your content.`,
+        impact: "LLMs may miss important content on your site.",
+        howToFix: "Add more links in Markdown format: - [Page Title](/path): Brief description",
+        affectedUrls: [llmsTxtUrl]
+      });
+    }
+    if (contentLength < 200) {
+      issues.push({
+        code: "AI_LLMS_TXT_TOO_SHORT",
+        severity: "notice",
+        category: "ai-readiness",
+        title: "llms.txt content is very short",
+        description: `Your llms.txt is only ${contentLength} characters. Consider adding more context about your site.`,
+        impact: "LLMs may not have enough context to properly represent your site.",
+        howToFix: "Expand your llms.txt with more sections, descriptions, and links to key content.",
+        affectedUrls: [llmsTxtUrl]
+      });
+    }
+  }
+  return {
+    issues,
+    data: {
+      exists,
+      fullVersionExists,
+      content: content?.substring(0, 1e3),
+      // Truncate for data
+      structure,
+      contentLength
+    }
+  };
+}
+function analyzeStructure(content) {
+  const lines = content.split("\n");
+  let hasTitle = false;
+  let hasDescription = false;
+  let hasSections = false;
+  let hasLinks = false;
+  let linkCount = 0;
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("# ") && !trimmed.startsWith("## ")) {
+      hasTitle = true;
+    }
+    if (trimmed.startsWith(">")) {
+      hasDescription = true;
+    }
+    if (trimmed.startsWith("## ")) {
+      hasSections = true;
+    }
+    const linkMatches = trimmed.match(/\[([^\]]+)\]\(([^)]+)\)/g);
+    if (linkMatches) {
+      hasLinks = true;
+      linkCount += linkMatches.length;
+    }
+  }
+  return {
+    hasTitle,
+    hasDescription,
+    hasSections,
+    hasLinks,
+    linkCount
+  };
+}
+
+// src/audit/checks/html-compliance.ts
+import * as cheerio49 from "https://esm.sh/cheerio@1.0.0";
+async function analyzeHtmlCompliance(html, url, headers) {
+  const issues = [];
+  const $ = cheerio49.load(html, { decodeEntities: false });
+  const parsedUrl = new URL(url);
+  const doctypeMatch = html.match(/<!DOCTYPE\s+([^>]+)>/i);
+  const hasDoctype = doctypeMatch !== null;
+  const doctypeValue = doctypeMatch ? doctypeMatch[0] : void 0;
+  const isHtml5 = hasDoctype && /<!DOCTYPE\s+html\s*>/i.test(html);
+  if (!hasDoctype) {
+    issues.push({
+      code: "HTML_NO_DOCTYPE",
+      severity: "warning",
+      category: "on-page",
+      title: "Missing DOCTYPE declaration",
+      description: "Page is missing a DOCTYPE declaration. This puts browsers in quirks mode and may cause rendering issues.",
+      impact: "Browsers may render the page inconsistently. Search engines expect valid HTML.",
+      howToFix: "Add <!DOCTYPE html> as the very first line of your HTML document.",
+      affectedUrls: [url]
+    });
+  } else if (!isHtml5) {
+    issues.push({
+      code: "HTML_OLD_DOCTYPE",
+      severity: "notice",
+      category: "on-page",
+      title: "Using older DOCTYPE",
+      description: `Page uses "${doctypeValue}" instead of HTML5 DOCTYPE. HTML5 is the current standard.`,
+      impact: "Older doctypes may limit modern HTML features.",
+      howToFix: "Change your DOCTYPE to the HTML5 declaration: <!DOCTYPE html>",
+      affectedUrls: [url]
+    });
+  }
+  let charsetPresent = false;
+  let charsetValue;
+  let charsetSource = "none";
+  const metaCharset = $("meta[charset]").attr("charset");
+  const metaContentType = $('meta[http-equiv="Content-Type"]').attr("content");
+  if (metaCharset) {
+    charsetPresent = true;
+    charsetValue = metaCharset;
+    charsetSource = "meta";
+  } else if (metaContentType) {
+    const charsetMatch = metaContentType.match(/charset=([^\s;]+)/i);
+    if (charsetMatch) {
+      charsetPresent = true;
+      charsetValue = charsetMatch[1];
+      charsetSource = "meta";
+    }
+  }
+  if (!charsetPresent && headers) {
+    const contentType = headers["content-type"] || headers["Content-Type"];
+    if (contentType) {
+      const charsetMatch = contentType.match(/charset=([^\s;]+)/i);
+      if (charsetMatch) {
+        charsetPresent = true;
+        charsetValue = charsetMatch[1];
+        charsetSource = "header";
+      }
+    }
+  }
+  const isUtf8 = charsetValue?.toLowerCase().replace("-", "") === "utf8";
+  if (!charsetPresent) {
+    issues.push({
+      code: "HTML_NO_CHARSET",
+      severity: "warning",
+      category: "on-page",
+      title: "Missing character encoding declaration",
+      description: "Page does not specify character encoding. This can cause text display issues.",
+      impact: "Characters may display incorrectly. Search engines may misinterpret content.",
+      howToFix: 'Add <meta charset="UTF-8"> in the <head> section, before any other elements.',
+      affectedUrls: [url]
+    });
+  } else if (!isUtf8) {
+    issues.push({
+      code: "HTML_NOT_UTF8",
+      severity: "notice",
+      category: "on-page",
+      title: "Not using UTF-8 encoding",
+      description: `Page uses "${charsetValue}" encoding. UTF-8 is recommended for universal character support.`,
+      impact: "Some characters may not display correctly. UTF-8 is the web standard.",
+      howToFix: 'Change your charset to UTF-8: <meta charset="UTF-8">',
+      affectedUrls: [url]
+    });
+  }
+  const faviconLocations = [];
+  const faviconFormats = [];
+  let hasAppleTouchIcon = false;
+  $('link[rel*="icon"]').each((_, el) => {
+    const href = $(el).attr("href");
+    const rel = $(el).attr("rel") || "";
+    const type = $(el).attr("type") || "";
+    if (href) {
+      faviconLocations.push(href);
+      if (href.endsWith(".ico"))
+        faviconFormats.push("ico");
+      else if (href.endsWith(".png"))
+        faviconFormats.push("png");
+      else if (href.endsWith(".svg"))
+        faviconFormats.push("svg");
+      else if (type)
+        faviconFormats.push(type);
+    }
+    if (rel.includes("apple-touch-icon")) {
+      hasAppleTouchIcon = true;
+    }
+  });
+  if ($('link[rel="apple-touch-icon"], link[rel="apple-touch-icon-precomposed"]').length > 0) {
+    hasAppleTouchIcon = true;
+  }
+  const hasFavicon = faviconLocations.length > 0;
+  if (!hasFavicon) {
+    try {
+      const faviconUrl = new URL("/favicon.ico", parsedUrl.origin).href;
+      const response = await httpGet(faviconUrl, {
+        timeout: 5e3,
+        validateStatus: () => true
+      });
+      if (response.status === 200) {
+        faviconLocations.push("/favicon.ico");
+        faviconFormats.push("ico");
+      }
+    } catch {
+    }
+  }
+  if (faviconLocations.length === 0) {
+    issues.push({
+      code: "HTML_NO_FAVICON",
+      severity: "notice",
+      category: "on-page",
+      title: "No favicon found",
+      description: "Page does not have a favicon defined. Favicons help with brand recognition and browser tab identification.",
+      impact: "Missing favicon affects brand visibility in browser tabs, bookmarks, and search results.",
+      howToFix: 'Add a favicon link in <head>: <link rel="icon" href="/favicon.ico"> and consider adding multiple sizes.',
+      affectedUrls: [url],
+      details: {
+        recommendation: "Include multiple formats: ICO for legacy browsers, PNG for modern browsers, and SVG for scalability."
+      }
+    });
+  }
+  if (!hasAppleTouchIcon && faviconLocations.length > 0) {
+    issues.push({
+      code: "HTML_NO_APPLE_TOUCH_ICON",
+      severity: "notice",
+      category: "mobile",
+      title: "No Apple Touch Icon",
+      description: "Page does not define an Apple Touch Icon. This icon is used when users add your site to their iOS home screen.",
+      impact: "iOS users who bookmark your site won't see a proper app icon.",
+      howToFix: 'Add: <link rel="apple-touch-icon" href="/apple-touch-icon.png"> with a 180x180 PNG image.',
+      affectedUrls: [url]
+    });
+  }
+  const htmlLang = $("html").attr("lang");
+  const langPresent = Boolean(htmlLang);
+  if (!langPresent) {
+    issues.push({
+      code: "HTML_NO_LANG",
+      severity: "warning",
+      category: "on-page",
+      title: "Missing language attribute",
+      description: "The <html> element does not have a lang attribute. This helps search engines and screen readers.",
+      impact: "Search engines may not properly identify the page language. Accessibility is reduced.",
+      howToFix: 'Add lang attribute to <html>: <html lang="en"> (use appropriate language code).',
+      affectedUrls: [url]
+    });
+  }
+  const viewportMeta = $('meta[name="viewport"]').attr("content");
+  const hasViewport = Boolean(viewportMeta);
+  const isResponsive = viewportMeta?.includes("width=device-width") || false;
+  if (!hasViewport) {
+    issues.push({
+      code: "HTML_NO_VIEWPORT",
+      severity: "warning",
+      category: "mobile",
+      title: "Missing viewport meta tag",
+      description: "Page does not have a viewport meta tag. This is required for proper mobile rendering.",
+      impact: "Page will not render correctly on mobile devices. Fails mobile-friendliness test.",
+      howToFix: 'Add: <meta name="viewport" content="width=device-width, initial-scale=1">',
+      affectedUrls: [url]
+    });
+  } else if (!isResponsive) {
+    issues.push({
+      code: "HTML_FIXED_VIEWPORT",
+      severity: "notice",
+      category: "mobile",
+      title: "Viewport not responsive",
+      description: `Viewport is set to "${viewportMeta}" but doesn't include width=device-width for responsive design.`,
+      impact: "Page may not scale properly on different screen sizes.",
+      howToFix: 'Update viewport to: <meta name="viewport" content="width=device-width, initial-scale=1">',
+      affectedUrls: [url]
+    });
+  }
+  return {
+    issues,
+    data: {
+      doctype: {
+        present: hasDoctype,
+        isHtml5,
+        value: doctypeValue
+      },
+      charset: {
+        present: charsetPresent,
+        isUtf8,
+        value: charsetValue,
+        source: charsetSource
+      },
+      favicon: {
+        present: faviconLocations.length > 0,
+        locations: faviconLocations,
+        hasAppleTouchIcon,
+        formats: [...new Set(faviconFormats)]
+      },
+      language: {
+        present: langPresent,
+        value: htmlLang
+      },
+      viewport: {
+        present: hasViewport,
+        value: viewportMeta,
+        isResponsive
+      }
+    }
+  };
+}
+
+// src/audit/checks/canonical-domain.ts
+async function analyzeCanonicalDomain(url) {
+  const issues = [];
+  const parsedUrl = new URL(url);
+  const hostname = parsedUrl.hostname;
+  const isWww = hostname.startsWith("www.");
+  const wwwHostname = isWww ? hostname : `www.${hostname}`;
+  const nonWwwHostname = isWww ? hostname.substring(4) : hostname;
+  const parts = nonWwwHostname.split(".");
+  if (parts.length > 2 && !nonWwwHostname.match(/\.(co|com|org|net|gov)\.[a-z]{2}$/i)) {
+    return {
+      issues: [],
+      data: {
+        primaryDomain: hostname,
+        wwwVersion: { url: "", status: null, accessible: false },
+        nonWwwVersion: { url: "", status: null, accessible: false },
+        hasProperRedirect: true,
+        // N/A for subdomains
+        preferredVersion: "unknown",
+        httpsRedirect: { httpToHttps: false, httpsStatus: null }
+      }
+    };
+  }
+  const wwwUrl = `https://${wwwHostname}${parsedUrl.pathname}`;
+  const nonWwwUrl = `https://${nonWwwHostname}${parsedUrl.pathname}`;
+  const [wwwResult, nonWwwResult] = await Promise.all([
+    testUrl(wwwUrl),
+    testUrl(nonWwwUrl)
+  ]);
+  let hasProperRedirect = false;
+  let preferredVersion = "unknown";
+  if (wwwResult.status && wwwResult.status >= 300 && wwwResult.status < 400) {
+    if (wwwResult.redirectsTo?.includes(nonWwwHostname)) {
+      hasProperRedirect = true;
+      preferredVersion = "non-www";
+    }
+  }
+  if (nonWwwResult.status && nonWwwResult.status >= 300 && nonWwwResult.status < 400) {
+    if (nonWwwResult.redirectsTo?.includes(wwwHostname)) {
+      hasProperRedirect = true;
+      preferredVersion = "www";
+    }
+  }
+  const bothAccessible = wwwResult.accessible && nonWwwResult.accessible && wwwResult.status === 200 && nonWwwResult.status === 200;
+  if (bothAccessible && !hasProperRedirect) {
+    issues.push({
+      code: "CANONICAL_WWW_DUPLICATE",
+      severity: "warning",
+      category: "crawlability",
+      title: "Both www and non-www versions accessible",
+      description: `Both ${wwwUrl} and ${nonWwwUrl} return 200 OK. This creates duplicate content.`,
+      impact: "Search engines may index both versions, diluting page authority and causing ranking issues.",
+      howToFix: "Set up a 301 redirect from one version to the other. Most sites prefer non-www, but either works. Configure at server/CDN level.",
+      affectedUrls: [wwwUrl, nonWwwUrl],
+      details: {
+        wwwStatus: wwwResult.status,
+        nonWwwStatus: nonWwwResult.status,
+        recommendation: "Choose one version as canonical and 301 redirect the other."
+      }
+    });
+  }
+  const httpUrl = `http://${hostname}${parsedUrl.pathname}`;
+  const httpResult = await testUrl(httpUrl);
+  let httpToHttps = false;
+  if (httpResult.status && httpResult.status >= 300 && httpResult.status < 400) {
+    if (httpResult.redirectsTo?.startsWith("https://")) {
+      httpToHttps = true;
+    }
+  }
+  if (!httpToHttps && httpResult.accessible && httpResult.status === 200) {
+    issues.push({
+      code: "CANONICAL_NO_HTTPS_REDIRECT",
+      severity: "warning",
+      category: "security",
+      title: "HTTP does not redirect to HTTPS",
+      description: "The HTTP version of the site is accessible without redirecting to HTTPS.",
+      impact: "Duplicate content issues and security concerns. Users may access insecure version.",
+      howToFix: "Configure a 301 redirect from HTTP to HTTPS at the server or CDN level.",
+      affectedUrls: [httpUrl]
+    });
+  }
+  return {
+    issues,
+    data: {
+      primaryDomain: hostname,
+      wwwVersion: {
+        url: wwwUrl,
+        status: wwwResult.status,
+        redirectsTo: wwwResult.redirectsTo,
+        accessible: wwwResult.accessible
+      },
+      nonWwwVersion: {
+        url: nonWwwUrl,
+        status: nonWwwResult.status,
+        redirectsTo: nonWwwResult.redirectsTo,
+        accessible: nonWwwResult.accessible
+      },
+      hasProperRedirect,
+      preferredVersion,
+      httpsRedirect: {
+        httpToHttps,
+        httpsStatus: httpResult.status
+      }
+    }
+  };
+}
+async function testUrl(url) {
+  try {
+    const response = await httpGet(url, {
+      timeout: 1e4,
+      maxRedirects: 0,
+      // Don't follow redirects
+      validateStatus: () => true
+    });
+    const status = response.status;
+    const location = response.headers.location || response.headers.Location;
+    return {
+      status,
+      redirectsTo: location,
+      accessible: status !== null && status < 500
+    };
+  } catch (error) {
+    return {
+      status: null,
+      accessible: false
+    };
+  }
+}
+
+// src/audit/checks/caching-headers.ts
+var CACHE_RECOMMENDATIONS = {
+  html: 0,
+  // HTML should generally not be cached or have short TTL
+  css: 31536e3,
+  // 1 year for versioned assets
+  js: 31536e3,
+  images: 31536e3,
+  fonts: 31536e3,
+  minimum: 86400
+  // 1 day minimum for static assets
+};
+async function analyzeCachingHeaders(url, headers) {
+  const issues = [];
+  let htmlHeaders = headers;
+  if (!htmlHeaders) {
+    try {
+      const response = await httpGet(url, {
+        timeout: 1e4,
+        validateStatus: () => true
+      });
+      htmlHeaders = response.headers;
+    } catch {
+      htmlHeaders = {};
+    }
+  }
+  const htmlCaching = parseCacheHeaders(htmlHeaders);
+  if (htmlCaching.maxAge && htmlCaching.maxAge > 3600) {
+    issues.push({
+      code: "CACHING_HTML_TOO_LONG",
+      severity: "notice",
+      category: "performance",
+      title: "HTML page has long cache duration",
+      description: `HTML page has Cache-Control max-age of ${htmlCaching.maxAge} seconds (${Math.round(htmlCaching.maxAge / 3600)} hours). HTML content changes frequently.`,
+      impact: "Users may see stale content. Content updates may not appear immediately.",
+      howToFix: "Set shorter cache duration for HTML: Cache-Control: no-cache or max-age=0, must-revalidate",
+      affectedUrls: [url]
+    });
+  }
+  const staticAssets = [];
+  const assetUrls = await getStaticAssetUrls(url);
+  let noCaching = 0;
+  let shortTtl = 0;
+  let properlyConfigured = 0;
+  const assetsToCheck = assetUrls.slice(0, 5);
+  for (const assetUrl of assetsToCheck) {
+    try {
+      const assetResponse = await httpGet(assetUrl, {
+        timeout: 5e3,
+        validateStatus: () => true
+      });
+      const assetCaching = parseCacheHeaders(assetResponse.headers);
+      const type = getAssetType(assetUrl);
+      const assetInfo = {
+        url: assetUrl,
+        type,
+        cacheControl: assetCaching.cacheControl,
+        maxAge: assetCaching.maxAge,
+        hasCaching: Boolean(assetCaching.cacheControl || assetCaching.expires)
+      };
+      staticAssets.push(assetInfo);
+      if (!assetInfo.hasCaching) {
+        noCaching++;
+      } else if (assetCaching.maxAge && assetCaching.maxAge < CACHE_RECOMMENDATIONS.minimum) {
+        shortTtl++;
+      } else {
+        properlyConfigured++;
+      }
+    } catch {
+    }
+  }
+  if (noCaching > 0) {
+    issues.push({
+      code: "CACHING_STATIC_NO_CACHE",
+      severity: "warning",
+      category: "performance",
+      title: "Static assets missing cache headers",
+      description: `${noCaching} static asset(s) have no Cache-Control header. This forces browsers to re-download on every visit.`,
+      impact: "Slower page loads for repeat visitors. Increased bandwidth usage.",
+      howToFix: "Add Cache-Control headers to static assets. For versioned files (with hash in filename), use: Cache-Control: public, max-age=31536000, immutable",
+      affectedUrls: staticAssets.filter((a) => !a.hasCaching).map((a) => a.url),
+      details: {
+        recommendation: {
+          "versioned assets (with hash)": "Cache-Control: public, max-age=31536000, immutable",
+          "non-versioned assets": "Cache-Control: public, max-age=86400"
+        }
+      }
+    });
+  }
+  if (shortTtl > 0) {
+    issues.push({
+      code: "CACHING_STATIC_SHORT_TTL",
+      severity: "notice",
+      category: "performance",
+      title: "Static assets have short cache duration",
+      description: `${shortTtl} static asset(s) have cache duration under 1 day. Consider longer caching for better performance.`,
+      impact: "Assets are re-downloaded more often than necessary.",
+      howToFix: "Increase max-age for static assets. Use versioned filenames (hash in filename) to enable long-term caching.",
+      affectedUrls: staticAssets.filter((a) => a.maxAge && a.maxAge < CACHE_RECOMMENDATIONS.minimum).map((a) => a.url)
+    });
+  }
+  if (!htmlCaching.etag && !htmlCaching.lastModified) {
+    issues.push({
+      code: "CACHING_NO_VALIDATORS",
+      severity: "notice",
+      category: "performance",
+      title: "Missing cache validators (ETag/Last-Modified)",
+      description: "Page is missing both ETag and Last-Modified headers. These allow efficient cache validation.",
+      impact: "Browsers cannot efficiently validate if cached content is still fresh.",
+      howToFix: "Configure your server to send ETag or Last-Modified headers. Most web servers do this automatically for static files.",
+      affectedUrls: [url]
+    });
+  }
+  return {
+    issues,
+    data: {
+      htmlCaching,
+      staticAssets,
+      issues: {
+        noCaching,
+        shortTtl,
+        properlyConfigured
+      }
+    }
+  };
+}
+function parseCacheHeaders(headers) {
+  const cacheControl = headers["cache-control"] || headers["Cache-Control"];
+  const expires = headers["expires"] || headers["Expires"];
+  const etag = headers["etag"] || headers["ETag"];
+  const lastModified = headers["last-modified"] || headers["Last-Modified"];
+  let maxAge;
+  let isPublic = false;
+  let isPrivate = false;
+  let noStore = false;
+  let noCache = false;
+  if (cacheControl) {
+    const maxAgeMatch = cacheControl.match(/max-age=(\d+)/i);
+    if (maxAgeMatch) {
+      maxAge = parseInt(maxAgeMatch[1], 10);
+    }
+    const lowerCC = cacheControl.toLowerCase();
+    isPublic = lowerCC.includes("public");
+    isPrivate = lowerCC.includes("private");
+    noStore = lowerCC.includes("no-store");
+    noCache = lowerCC.includes("no-cache");
+  }
+  return {
+    cacheControl,
+    expires,
+    etag,
+    lastModified,
+    maxAge,
+    isPublic,
+    isPrivate,
+    noStore,
+    noCache
+  };
+}
+async function getStaticAssetUrls(pageUrl) {
+  const assets = [];
+  try {
+    const response = await httpGet(pageUrl, {
+      timeout: 1e4,
+      validateStatus: () => true
+    });
+    const html = response.data;
+    const baseUrl = new URL(pageUrl);
+    const cssMatches = html.match(/href="([^"]+\.css[^"]*)"/gi);
+    if (cssMatches) {
+      for (const match of cssMatches.slice(0, 2)) {
+        const href = match.match(/href="([^"]+)"/)?.[1];
+        if (href) {
+          try {
+            assets.push(new URL(href, baseUrl).href);
+          } catch {
+          }
+        }
+      }
+    }
+    const jsMatches = html.match(/src="([^"]+\.js[^"]*)"/gi);
+    if (jsMatches) {
+      for (const match of jsMatches.slice(0, 2)) {
+        const src = match.match(/src="([^"]+)"/)?.[1];
+        if (src) {
+          try {
+            assets.push(new URL(src, baseUrl).href);
+          } catch {
+          }
+        }
+      }
+    }
+    const imgMatches = html.match(/src="([^"]+\.(png|jpg|jpeg|gif|webp|svg)[^"]*)"/gi);
+    if (imgMatches) {
+      for (const match of imgMatches.slice(0, 1)) {
+        const src = match.match(/src="([^"]+)"/)?.[1];
+        if (src) {
+          try {
+            assets.push(new URL(src, baseUrl).href);
+          } catch {
+          }
+        }
+      }
+    }
+  } catch {
+  }
+  return assets;
+}
+function getAssetType(url) {
+  const lowerUrl = url.toLowerCase();
+  if (lowerUrl.includes(".css"))
+    return "css";
+  if (lowerUrl.includes(".js"))
+    return "javascript";
+  if (lowerUrl.match(/\.(png|jpg|jpeg|gif|webp|svg|ico)/))
+    return "image";
+  if (lowerUrl.match(/\.(woff|woff2|ttf|otf|eot)/))
+    return "font";
+  return "other";
+}
+
+// src/audit/checks/dom-size.ts
+import * as cheerio50 from "https://esm.sh/cheerio@1.0.0";
+var THRESHOLDS = {
+  totalElements: {
+    warning: 1500,
+    error: 3e3
+  },
+  maxDepth: {
+    warning: 32,
+    error: 64
+  },
+  maxChildren: {
+    warning: 60,
+    error: 120
+  }
+};
+function analyzeDomSize(html, url) {
+  const issues = [];
+  const $ = cheerio50.load(html);
+  const allElements = $("*");
+  const totalElements = allElements.length;
+  let maxDepth = 0;
+  let deepestPath = [];
+  function getDepth(element, path) {
+    const children = element.children();
+    if (children.length === 0) {
+      if (path.length > maxDepth) {
+        maxDepth = path.length;
+        deepestPath = [...path];
+      }
+      return path.length;
+    }
+    let maxChildDepth = path.length;
+    children.each((_, child) => {
+      const $child = $(child);
+      const tagName = child.type === "tag" ? child.name : "";
+      if (tagName) {
+        const childPath = [...path, tagName];
+        const childDepth = getDepth($child, childPath);
+        if (childDepth > maxChildDepth) {
+          maxChildDepth = childDepth;
+        }
+      }
+    });
+    return maxChildDepth;
+  }
+  const $body = $("body");
+  if ($body.length > 0) {
+    getDepth($body, ["body"]);
+  }
+  let maxChildren = 0;
+  let widestSelector = "";
+  allElements.each((_, element) => {
+    const $el = $(element);
+    const directChildren = $el.children().length;
+    if (directChildren > maxChildren) {
+      maxChildren = directChildren;
+      const tagName = element.type === "tag" ? element.name : "";
+      const id = $el.attr("id");
+      const className = $el.attr("class")?.split(" ")[0];
+      widestSelector = id ? `#${id}` : className ? `${tagName}.${className}` : tagName;
+    }
+  });
+  const elementBreakdown = {
+    divs: $("div").length,
+    spans: $("span").length,
+    tables: $("table").length,
+    lists: $("ul, ol, li").length,
+    forms: $("form").length,
+    inputs: $("input, select, textarea").length,
+    images: $("img").length,
+    scripts: $("script").length,
+    svgs: $("svg").length
+  };
+  if (totalElements > THRESHOLDS.totalElements.error) {
+    issues.push({
+      code: "DOM_SIZE_EXCESSIVE",
+      severity: "error",
+      category: "performance",
+      title: "Excessive DOM size",
+      description: `Page has ${totalElements.toLocaleString()} DOM elements (threshold: ${THRESHOLDS.totalElements.error.toLocaleString()}). This severely impacts performance.`,
+      impact: "Significantly slower rendering, increased memory usage, and degraded interactivity. Users on low-end devices will experience major lag.",
+      howToFix: "Reduce DOM complexity: virtualize long lists, lazy-load content, remove unnecessary wrapper elements, use CSS instead of extra markup.",
+      affectedUrls: [url],
+      details: {
+        totalElements,
+        breakdown: elementBreakdown,
+        suggestions: getDomReductionSuggestions(elementBreakdown)
+      }
+    });
+  } else if (totalElements > THRESHOLDS.totalElements.warning) {
+    issues.push({
+      code: "DOM_SIZE_LARGE",
+      severity: "warning",
+      category: "performance",
+      title: "Large DOM size",
+      description: `Page has ${totalElements.toLocaleString()} DOM elements (recommended: <${THRESHOLDS.totalElements.warning.toLocaleString()}).`,
+      impact: "Slower style calculations, layout operations, and JavaScript performance.",
+      howToFix: "Consider reducing DOM size: remove unnecessary elements, lazy-load off-screen content, virtualize long lists.",
+      affectedUrls: [url],
+      details: {
+        totalElements,
+        threshold: THRESHOLDS.totalElements.warning
+      }
+    });
+  }
+  if (maxDepth > THRESHOLDS.maxDepth.warning) {
+    issues.push({
+      code: "DOM_DEPTH_EXCESSIVE",
+      severity: maxDepth > THRESHOLDS.maxDepth.error ? "error" : "warning",
+      category: "performance",
+      title: "Excessive DOM depth",
+      description: `Maximum DOM depth is ${maxDepth} levels (recommended: <${THRESHOLDS.maxDepth.warning}).`,
+      impact: "Deep nesting increases style calculation time and can cause stack overflow in some browsers.",
+      howToFix: "Flatten your HTML structure. Remove unnecessary wrapper divs. Use CSS flexbox/grid instead of nested containers.",
+      affectedUrls: [url],
+      details: {
+        maxDepth,
+        deepestPath: deepestPath.slice(0, 10).join(" > ") + (deepestPath.length > 10 ? "..." : "")
+      }
+    });
+  }
+  if (maxChildren > THRESHOLDS.maxChildren.warning) {
+    issues.push({
+      code: "DOM_CHILDREN_EXCESSIVE",
+      severity: maxChildren > THRESHOLDS.maxChildren.error ? "error" : "warning",
+      category: "performance",
+      title: "Element has too many children",
+      description: `An element has ${maxChildren} direct children (recommended: <${THRESHOLDS.maxChildren.warning}).`,
+      impact: "Adding/removing children triggers expensive layout recalculations.",
+      howToFix: "Break large lists into smaller chunks. Use virtual scrolling for long lists. Group items into sections.",
+      affectedUrls: [url],
+      details: {
+        maxChildren,
+        element: widestSelector
+      }
+    });
+  }
+  return {
+    issues,
+    data: {
+      totalElements,
+      maxDepth,
+      maxChildren,
+      deepestPath,
+      widestElement: {
+        selector: widestSelector,
+        childCount: maxChildren
+      },
+      elementBreakdown
+    }
+  };
+}
+function getDomReductionSuggestions(breakdown) {
+  const suggestions = [];
+  if (breakdown.divs > 500) {
+    suggestions.push(`High div count (${breakdown.divs}): Review wrapper divs that may be unnecessary`);
+  }
+  if (breakdown.spans > 200) {
+    suggestions.push(`High span count (${breakdown.spans}): Consider if all spans are needed for styling`);
+  }
+  if (breakdown.tables > 10) {
+    suggestions.push(`Multiple tables (${breakdown.tables}): Consider CSS grid/flexbox for layouts`);
+  }
+  if (breakdown.lists > 100) {
+    suggestions.push(`Many list items (${breakdown.lists}): Consider virtualizing long lists`);
+  }
+  if (breakdown.svgs > 50) {
+    suggestions.push(`Many SVGs (${breakdown.svgs}): Consider SVG sprites or icon fonts`);
+  }
+  return suggestions;
+}
+
+// src/audit/checks/image-dimensions.ts
+import * as cheerio51 from "https://esm.sh/cheerio@1.0.0";
+function analyzeImageDimensions(html, url) {
+  const issues = [];
+  const $ = cheerio51.load(html);
+  const images = $("img");
+  const totalImages = images.length;
+  let withDimensions = 0;
+  let withoutDimensions = 0;
+  let aspectRatioSet = 0;
+  const missingDimensions = [];
+  images.each((_, img) => {
+    const $img = $(img);
+    const src = $img.attr("src") || $img.attr("data-src") || "";
+    const widthAttr = $img.attr("width");
+    const heightAttr = $img.attr("height");
+    const style = $img.attr("style") || "";
+    const hasWidthAttr = Boolean(widthAttr);
+    const hasHeightAttr = Boolean(heightAttr);
+    const hasStyleWidth = /width\s*:/i.test(style);
+    const hasStyleHeight = /height\s*:/i.test(style);
+    const hasAspectRatio = /aspect-ratio\s*:/i.test(style);
+    const className = $img.attr("class") || "";
+    const hasWidth = hasWidthAttr || hasStyleWidth;
+    const hasHeight = hasHeightAttr || hasStyleHeight;
+    const hasBothDimensions = hasWidth && hasHeight || hasAspectRatio;
+    if (hasBothDimensions) {
+      withDimensions++;
+      if (hasAspectRatio) {
+        aspectRatioSet++;
+      }
+    } else {
+      withoutDimensions++;
+      if (src && !src.includes("data:image/") && !src.includes("placeholder")) {
+        const parent = $img.parent();
+        const parentTag = parent.length > 0 ? parent[0].name || "" : "";
+        const parentClass = parent.attr("class")?.split(" ")[0] || "";
+        const context = parentClass ? `${parentTag}.${parentClass}` : parentTag;
+        missingDimensions.push({
+          src: truncateSrc(src),
+          hasWidth,
+          hasHeight,
+          hasAspectRatio,
+          context
+        });
+      }
+    }
+  });
+  if (withoutDimensions > 0) {
+    const percentage = Math.round(withoutDimensions / totalImages * 100);
+    if (percentage > 50) {
+      issues.push({
+        code: "IMAGES_MANY_MISSING_DIMENSIONS",
+        severity: "warning",
+        category: "performance",
+        title: "Most images missing explicit dimensions",
+        description: `${withoutDimensions} of ${totalImages} images (${percentage}%) don't have width and height attributes. This causes layout shifts.`,
+        impact: "High Cumulative Layout Shift (CLS). Content jumps around as images load, frustrating users.",
+        howToFix: 'Add width and height attributes to all <img> tags. Use CSS aspect-ratio for responsive images. Example: <img src="..." width="800" height="600">',
+        affectedUrls: [url],
+        details: {
+          totalImages,
+          withDimensions,
+          withoutDimensions,
+          examples: missingDimensions.slice(0, 5)
+        }
+      });
+    } else if (withoutDimensions > 0) {
+      issues.push({
+        code: "IMAGES_MISSING_DIMENSIONS",
+        severity: "notice",
+        category: "performance",
+        title: "Some images missing explicit dimensions",
+        description: `${withoutDimensions} of ${totalImages} image(s) don't have width and height attributes.`,
+        impact: "May cause layout shifts when images load, affecting CLS score.",
+        howToFix: 'Add width and height attributes: <img src="..." width="800" height="600">. For responsive images, also use CSS: img { max-width: 100%; height: auto; }',
+        affectedUrls: [url],
+        details: {
+          images: missingDimensions.slice(0, 10)
+        }
+      });
+    }
+  }
+  if (withDimensions > 0 && aspectRatioSet === 0) {
+    issues.push({
+      code: "IMAGES_NO_ASPECT_RATIO",
+      severity: "notice",
+      category: "performance",
+      title: "Consider using CSS aspect-ratio for images",
+      description: "Images have width/height but no CSS aspect-ratio. The aspect-ratio property provides better responsive behavior.",
+      impact: "Minor - existing dimensions prevent CLS, but aspect-ratio offers better control.",
+      howToFix: "Add CSS aspect-ratio for responsive images: img { aspect-ratio: 16/9; width: 100%; height: auto; }",
+      affectedUrls: [url]
+    });
+  }
+  return {
+    issues,
+    data: {
+      totalImages,
+      withDimensions,
+      withoutDimensions,
+      missingDimensions: missingDimensions.slice(0, 20),
+      aspectRatioSet
+    }
+  };
+}
+function truncateSrc(src) {
+  const cleanSrc = src.split("?")[0];
+  if (cleanSrc.length > 60) {
+    return cleanSrc.substring(0, 30) + "..." + cleanSrc.substring(cleanSrc.length - 25);
+  }
+  return cleanSrc;
+}
+
+// src/audit/checks/color-contrast.ts
+import * as cheerio52 from "https://esm.sh/cheerio@1.0.0";
+var KNOWN_LOW_CONTRAST_PAIRS = [
+  { fg: "#999999", bg: "#ffffff", ratio: 2.85 },
+  { fg: "#888888", bg: "#ffffff", ratio: 3.54 },
+  { fg: "#aaaaaa", bg: "#ffffff", ratio: 2.32 },
+  { fg: "#cccccc", bg: "#ffffff", ratio: 1.61 },
+  { fg: "#666666", bg: "#000000", ratio: 5.74 },
+  { fg: "#777777", bg: "#000000", ratio: 4.48 },
+  { fg: "gray", bg: "white", ratio: 3.95 },
+  { fg: "silver", bg: "white", ratio: 1.77 },
+  { fg: "lightgray", bg: "white", ratio: 1.46 }
+];
+var NAMED_COLORS = {
+  black: [0, 0, 0],
+  white: [255, 255, 255],
+  red: [255, 0, 0],
+  green: [0, 128, 0],
+  blue: [0, 0, 255],
+  gray: [128, 128, 128],
+  grey: [128, 128, 128],
+  silver: [192, 192, 192],
+  navy: [0, 0, 128],
+  yellow: [255, 255, 0],
+  orange: [255, 165, 0],
+  purple: [128, 0, 128],
+  pink: [255, 192, 203],
+  lightgray: [211, 211, 211],
+  lightgrey: [211, 211, 211],
+  darkgray: [169, 169, 169],
+  darkgrey: [169, 169, 169],
+  transparent: [255, 255, 255]
+  // Treat as white for calculation
+};
+function analyzeColorContrast(html, url) {
+  const issues = [];
+  const $ = cheerio52.load(html);
+  const potentialIssues = [];
+  let elementsAnalyzed = 0;
+  let passedChecks = 0;
+  let failedChecks = 0;
+  let cannotDetermine = 0;
+  const textElements = $("p, span, a, button, h1, h2, h3, h4, h5, h6, li, td, th, label, div");
+  textElements.each((_, element) => {
+    const $el = $(element);
+    const style = $el.attr("style") || "";
+    if (!style) {
+      cannotDetermine++;
+      return;
+    }
+    elementsAnalyzed++;
+    const colorMatch = style.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i);
+    const bgMatch = style.match(/(?:^|;)\s*background(?:-color)?\s*:\s*([^;]+)/i);
+    const foreground = colorMatch ? colorMatch[1].trim() : null;
+    const background = bgMatch ? bgMatch[1].trim() : null;
+    if (!foreground) {
+      cannotDetermine++;
+      return;
+    }
+    const bgColor = background || "white";
+    const fgRgb = parseColor(foreground);
+    const bgRgb = parseColor(bgColor);
+    if (!fgRgb || !bgRgb) {
+      cannotDetermine++;
+      return;
+    }
+    const ratio = calculateContrastRatio(fgRgb, bgRgb);
+    const fontSize = style.match(/font-size\s*:\s*(\d+)(?:px|pt)?/i);
+    const fontWeight = style.match(/font-weight\s*:\s*(\d+|bold)/i);
+    const isLargeText = fontSize && parseInt(fontSize[1]) >= 18 || fontSize && parseInt(fontSize[1]) >= 14 && fontWeight && (fontWeight[1] === "bold" || parseInt(fontWeight[1]) >= 700);
+    const aaThreshold = isLargeText ? 3 : 4.5;
+    const aaaThreshold = isLargeText ? 4.5 : 7;
+    let wcagLevel = "none";
+    if (ratio >= aaaThreshold) {
+      wcagLevel = "AAA";
+      passedChecks++;
+    } else if (ratio >= aaThreshold) {
+      wcagLevel = "AA";
+      passedChecks++;
+    } else {
+      failedChecks++;
+      const tagName = element.name;
+      const id = $el.attr("id");
+      const className = $el.attr("class")?.split(" ")[0];
+      const selector = id ? `#${id}` : className ? `${tagName}.${className}` : tagName;
+      potentialIssues.push({
+        selector,
+        foreground,
+        background: bgColor,
+        contrastRatio: Math.round(ratio * 100) / 100,
+        wcagLevel,
+        isLargeText: isLargeText || false
+      });
+    }
+  });
+  const styleTag = $("style").text();
+  for (const pair of KNOWN_LOW_CONTRAST_PAIRS) {
+    if (styleTag.includes(pair.fg) && styleTag.includes(pair.bg)) {
+    }
+  }
+  if (potentialIssues.length > 0) {
+    const criticalIssues = potentialIssues.filter((i) => i.contrastRatio < 3);
+    const moderateIssues = potentialIssues.filter((i) => i.contrastRatio >= 3 && i.contrastRatio < 4.5);
+    if (criticalIssues.length > 0) {
+      issues.push({
+        code: "A11Y_CONTRAST_CRITICAL",
+        severity: "error",
+        category: "accessibility",
+        title: "Critical color contrast issues",
+        description: `Found ${criticalIssues.length} element(s) with very low contrast (below 3:1). This text may be unreadable for many users.`,
+        impact: "Users with low vision or color blindness cannot read this content. Fails WCAG accessibility requirements.",
+        howToFix: "Increase contrast by using darker text on light backgrounds or lighter text on dark backgrounds. Use a contrast checker tool to verify 4.5:1 ratio minimum.",
+        affectedUrls: [url],
+        details: {
+          issues: criticalIssues.slice(0, 5),
+          recommendation: "WCAG AA requires 4.5:1 contrast for normal text, 3:1 for large text."
+        }
+      });
+    }
+    if (moderateIssues.length > 0) {
+      issues.push({
+        code: "A11Y_CONTRAST_LOW",
+        severity: "warning",
+        category: "accessibility",
+        title: "Low color contrast detected",
+        description: `Found ${moderateIssues.length} element(s) with contrast below WCAG AA standard (4.5:1).`,
+        impact: "May be difficult to read for users with visual impairments.",
+        howToFix: "Adjust colors to achieve at least 4.5:1 contrast ratio for normal text.",
+        affectedUrls: [url],
+        details: {
+          issues: moderateIssues.slice(0, 5)
+        }
+      });
+    }
+  }
+  if (cannotDetermine > elementsAnalyzed * 0.8) {
+    issues.push({
+      code: "A11Y_CONTRAST_UNDETERMINED",
+      severity: "notice",
+      category: "accessibility",
+      title: "Color contrast could not be fully analyzed",
+      description: "Most text colors are set via CSS stylesheets rather than inline styles. Full contrast checking requires browser rendering.",
+      impact: "Potential contrast issues may exist that were not detected.",
+      howToFix: "Use browser DevTools (Lighthouse accessibility audit) or dedicated tools like axe-core for comprehensive contrast checking.",
+      affectedUrls: [url],
+      details: {
+        elementsAnalyzed,
+        cannotDetermine,
+        recommendation: "Run Lighthouse accessibility audit for complete contrast analysis."
+      }
+    });
+  }
+  return {
+    issues,
+    data: {
+      elementsAnalyzed,
+      potentialIssues,
+      passedChecks,
+      failedChecks,
+      cannotDetermine
+    }
+  };
+}
+function parseColor(color) {
+  const trimmed = color.trim().toLowerCase();
+  if (NAMED_COLORS[trimmed]) {
+    return NAMED_COLORS[trimmed];
+  }
+  const hexMatch = trimmed.match(/^#?([a-f0-9]{3}|[a-f0-9]{6})$/i);
+  if (hexMatch) {
+    let hex = hexMatch[1];
+    if (hex.length === 3) {
+      hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
+    }
+    return [
+      parseInt(hex.slice(0, 2), 16),
+      parseInt(hex.slice(2, 4), 16),
+      parseInt(hex.slice(4, 6), 16)
+    ];
+  }
+  const rgbMatch = trimmed.match(/rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+  if (rgbMatch) {
+    return [
+      parseInt(rgbMatch[1]),
+      parseInt(rgbMatch[2]),
+      parseInt(rgbMatch[3])
+    ];
+  }
+  const hslMatch = trimmed.match(/hsla?\s*\(\s*(\d+)\s*,\s*(\d+)%\s*,\s*(\d+)%/i);
+  if (hslMatch) {
+    const h = parseInt(hslMatch[1]) / 360;
+    const s = parseInt(hslMatch[2]) / 100;
+    const l = parseInt(hslMatch[3]) / 100;
+    return hslToRgb(h, s, l);
+  }
+  return null;
+}
+function hslToRgb(h, s, l) {
+  let r, g, b;
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p2, q2, t) => {
+      if (t < 0)
+        t += 1;
+      if (t > 1)
+        t -= 1;
+      if (t < 1 / 6)
+        return p2 + (q2 - p2) * 6 * t;
+      if (t < 1 / 2)
+        return q2;
+      if (t < 2 / 3)
+        return p2 + (q2 - p2) * (2 / 3 - t) * 6;
+      return p2;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
+  }
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+function getRelativeLuminance(rgb) {
+  const [r, g, b] = rgb.map((c) => {
+    const sRGB = c / 255;
+    return sRGB <= 0.03928 ? sRGB / 12.92 : Math.pow((sRGB + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+function calculateContrastRatio(fg, bg) {
+  const l1 = getRelativeLuminance(fg);
+  const l2 = getRelativeLuminance(bg);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+// src/audit/checks/asset-minification.ts
+import * as cheerio53 from "https://esm.sh/cheerio@1.0.0";
+function isMinified(content, type) {
+  const lines = content.split("\n");
+  const totalLines = lines.length;
+  const avgLineLength = totalLines > 0 ? content.length / totalLines : 0;
+  const whitespaceCount = (content.match(/\s/g) || []).length;
+  const whitespaceRatio = content.length > 0 ? whitespaceCount / content.length : 0;
+  let hasComments = false;
+  if (type === "css") {
+    hasComments = /\/\*[\s\S]*?\*\//.test(content);
+  } else {
+    hasComments = /\/\/[^\n]*|\/\*[\s\S]*?\*\//.test(content);
+  }
+  const isMinifiedByLineLength = avgLineLength > 500;
+  const isMinifiedByWhitespace = whitespaceRatio < 0.1;
+  const isMinifiedByComments = !hasComments;
+  const score = (isMinifiedByLineLength ? 1 : 0) + (isMinifiedByWhitespace ? 1 : 0) + (isMinifiedByComments ? 1 : 0);
+  const isSingleLineMinified = totalLines <= 2 && avgLineLength > 100;
+  return {
+    isMinified: score >= 2 || isSingleLineMinified,
+    indicators: {
+      avgLineLength: Math.round(avgLineLength),
+      whitespaceRatio: Math.round(whitespaceRatio * 100) / 100,
+      hasComments
+    }
+  };
+}
+function extractAssetUrls(html, baseUrl) {
+  const $ = cheerio53.load(html);
+  const base = new URL(baseUrl);
+  const css = [];
+  const js = [];
+  $('link[rel="stylesheet"][href]').each((_, el) => {
+    const href = $(el).attr("href");
+    if (href && !href.startsWith("data:")) {
+      try {
+        const fullUrl = new URL(href, base).href;
+        if (new URL(fullUrl).hostname === base.hostname) {
+          css.push(fullUrl);
+        }
+      } catch {
+      }
+    }
+  });
+  $("script[src]").each((_, el) => {
+    const src = $(el).attr("src");
+    if (src && !src.startsWith("data:")) {
+      try {
+        const fullUrl = new URL(src, base).href;
+        if (new URL(fullUrl).hostname === base.hostname) {
+          js.push(fullUrl);
+        }
+      } catch {
+      }
+    }
+  });
+  return { css, js };
+}
+async function analyzeAssetMinification(html, url) {
+  const issues = [];
+  const assetUrls = extractAssetUrls(html, url);
+  const cssFiles = [];
+  const jsFiles = [];
+  const cssToCheck = assetUrls.css.slice(0, 3);
+  const cssPromises = cssToCheck.map(async (cssUrl) => {
+    try {
+      const response = await httpGet(cssUrl, {
+        timeout: 3e3,
+        // Reduced timeout
+        validateStatus: () => true
+      });
+      if (response.status === 200 && typeof response.data === "string") {
+        const content = response.data;
+        const { isMinified: minified, indicators } = isMinified(content, "css");
+        cssFiles.push({
+          url: cssUrl,
+          size: content.length,
+          isMinified: minified,
+          indicators
+        });
+      }
+    } catch {
+    }
+  });
+  const jsToCheck = assetUrls.js.slice(0, 3);
+  const jsPromises = jsToCheck.map(async (jsUrl) => {
+    try {
+      const response = await httpGet(jsUrl, {
+        timeout: 3e3,
+        // Reduced timeout
+        validateStatus: () => true
+      });
+      if (response.status === 200 && typeof response.data === "string") {
+        const content = response.data;
+        const { isMinified: minified, indicators } = isMinified(content, "js");
+        jsFiles.push({
+          url: jsUrl,
+          size: content.length,
+          isMinified: minified,
+          indicators
+        });
+      }
+    } catch {
+    }
+  });
+  await Promise.race([
+    Promise.all([...cssPromises, ...jsPromises]),
+    new Promise((resolve) => setTimeout(resolve, 8e3))
+    // 8s overall timeout
+  ]);
+  const unminifiedCss = cssFiles.filter((f) => !f.isMinified);
+  const unminifiedJs = jsFiles.filter((f) => !f.isMinified);
+  const cssSavings = unminifiedCss.reduce((sum, f) => sum + Math.round(f.size * 0.4), 0);
+  const jsSavings = unminifiedJs.reduce((sum, f) => sum + Math.round(f.size * 0.4), 0);
+  if (unminifiedCss.length > 0) {
+    issues.push({
+      code: "CSS_NOT_MINIFIED",
+      severity: "warning",
+      category: "performance",
+      title: "CSS files not minified",
+      description: `${unminifiedCss.length} CSS file(s) appear to not be minified. Minification removes whitespace and comments to reduce file size.`,
+      impact: `Unminified CSS increases page load time. Potential savings: ~${Math.round(cssSavings / 1024)}KB.`,
+      howToFix: "Use a CSS minifier like cssnano, clean-css, or build tools (Vite, Webpack) to minify CSS files. Most bundlers do this automatically in production builds.",
+      affectedUrls: unminifiedCss.map((f) => f.url),
+      details: {
+        files: unminifiedCss.map((f) => ({
+          url: f.url,
+          size: `${Math.round(f.size / 1024)}KB`,
+          avgLineLength: f.indicators.avgLineLength,
+          whitespaceRatio: `${Math.round(f.indicators.whitespaceRatio * 100)}%`,
+          hasComments: f.indicators.hasComments
+        }))
+      }
+    });
+  }
+  if (unminifiedJs.length > 0) {
+    issues.push({
+      code: "JS_NOT_MINIFIED",
+      severity: "warning",
+      category: "performance",
+      title: "JavaScript files not minified",
+      description: `${unminifiedJs.length} JavaScript file(s) appear to not be minified. Minification removes whitespace, comments, and shortens variable names.`,
+      impact: `Unminified JavaScript increases page load time and parsing time. Potential savings: ~${Math.round(jsSavings / 1024)}KB.`,
+      howToFix: "Use a JS minifier like Terser, UglifyJS, or build tools (Vite, Webpack, esbuild) to minify JavaScript. Most bundlers do this automatically in production builds.",
+      affectedUrls: unminifiedJs.map((f) => f.url),
+      details: {
+        files: unminifiedJs.map((f) => ({
+          url: f.url,
+          size: `${Math.round(f.size / 1024)}KB`,
+          avgLineLength: f.indicators.avgLineLength,
+          whitespaceRatio: `${Math.round(f.indicators.whitespaceRatio * 100)}%`,
+          hasComments: f.indicators.hasComments
+        }))
+      }
+    });
+  }
+  return {
+    issues,
+    data: {
+      cssFiles,
+      jsFiles,
+      totalCssFiles: assetUrls.css.length,
+      totalJsFiles: assetUrls.js.length,
+      unminifiedCss: unminifiedCss.length,
+      unminifiedJs: unminifiedJs.length,
+      potentialSavings: {
+        css: cssSavings,
+        js: jsSavings
+      }
+    }
+  };
+}
+
+// src/audit/checks/page-resources.ts
+import * as cheerio54 from "https://esm.sh/cheerio@1.0.0";
+function analyzePageResources(html, url) {
+  const issues = [];
+  const $ = cheerio54.load(html);
+  const baseUrl = new URL(url);
+  const baseHostname = baseUrl.hostname;
+  const stylesheets = [];
+  const scripts = [];
+  const images = [];
+  const fonts = [];
+  const iframes = [];
+  const thirdPartyDomains = /* @__PURE__ */ new Set();
+  let firstParty = 0;
+  let thirdParty = 0;
+  function isFirstParty(resourceUrl) {
+    try {
+      const resourceHostname = new URL(resourceUrl, url).hostname;
+      return resourceHostname === baseHostname || resourceHostname.endsWith(`.${baseHostname}`);
+    } catch {
+      return true;
+    }
+  }
+  function trackOrigin(resourceUrl) {
+    if (isFirstParty(resourceUrl)) {
+      firstParty++;
+    } else {
+      thirdParty++;
+      try {
+        const domain = new URL(resourceUrl, url).hostname;
+        thirdPartyDomains.add(domain);
+      } catch {
+      }
+    }
+  }
+  $('link[rel="stylesheet"][href]').each((_, el) => {
+    const href = $(el).attr("href");
+    if (href && !href.startsWith("data:")) {
+      stylesheets.push(href);
+      trackOrigin(href);
+    }
+  });
+  $("script[src]").each((_, el) => {
+    const src = $(el).attr("src");
+    if (src && !src.startsWith("data:")) {
+      scripts.push(src);
+      trackOrigin(src);
+    }
+  });
+  $("img[src]").each((_, el) => {
+    const src = $(el).attr("src");
+    if (src && !src.startsWith("data:")) {
+      images.push(src);
+      trackOrigin(src);
+    }
+  });
+  $("img[srcset], source[srcset]").each((_, el) => {
+    const srcset = $(el).attr("srcset");
+    if (srcset) {
+      const urls = srcset.split(",").map((s) => s.trim().split(/\s+/)[0]);
+      for (const srcUrl of urls) {
+        if (srcUrl && !srcUrl.startsWith("data:") && !images.includes(srcUrl)) {
+          images.push(srcUrl);
+          trackOrigin(srcUrl);
+        }
+      }
+    }
+  });
+  $('link[rel="preload"][as="font"], link[href*=".woff"], link[href*=".woff2"], link[href*=".ttf"], link[href*=".otf"]').each(
+    (_, el) => {
+      const href = $(el).attr("href");
+      if (href && !href.startsWith("data:")) {
+        fonts.push(href);
+        trackOrigin(href);
+      }
+    }
+  );
+  $("iframe[src]").each((_, el) => {
+    const src = $(el).attr("src");
+    if (src && !src.startsWith("about:") && !src.startsWith("javascript:")) {
+      iframes.push(src);
+      trackOrigin(src);
+    }
+  });
+  let other = 0;
+  $('link[rel="preload"], link[rel="prefetch"], link[rel="modulepreload"]').each((_, el) => {
+    const href = $(el).attr("href");
+    const as = $(el).attr("as");
+    if (href && !href.startsWith("data:")) {
+      if (as !== "font" && as !== "style" && !stylesheets.includes(href) && !fonts.includes(href)) {
+        other++;
+        trackOrigin(href);
+      }
+    }
+  });
+  const total = stylesheets.length + scripts.length + images.length + fonts.length + iframes.length + other;
+  if (total > 100) {
+    issues.push({
+      code: "PAGE_RESOURCES_EXCESSIVE",
+      severity: "error",
+      category: "performance",
+      title: "Excessive number of page resources",
+      description: `Page requests ${total} resources. This significantly impacts load time due to connection overhead and browser limits.`,
+      impact: "Too many HTTP requests cause slow page loads, poor Core Web Vitals, and high bounce rates. Each request has DNS, TCP, and TLS overhead.",
+      howToFix: "Combine CSS/JS files, use image sprites or inline small images, lazy-load non-critical resources, remove unused dependencies.",
+      affectedUrls: [url],
+      details: {
+        total,
+        breakdown: {
+          stylesheets: stylesheets.length,
+          scripts: scripts.length,
+          images: images.length,
+          fonts: fonts.length,
+          iframes: iframes.length,
+          other
+        },
+        recommendation: "Aim for under 50 total requests for optimal performance."
+      }
+    });
+  } else if (total > 50) {
+    issues.push({
+      code: "PAGE_RESOURCES_HIGH",
+      severity: "warning",
+      category: "performance",
+      title: "High number of page resources",
+      description: `Page requests ${total} resources. Consider reducing for better performance.`,
+      impact: "Many HTTP requests increase page load time, especially on mobile networks.",
+      howToFix: "Bundle CSS/JS files, lazy-load images below the fold, consider critical CSS inlining.",
+      affectedUrls: [url],
+      details: {
+        total,
+        breakdown: {
+          stylesheets: stylesheets.length,
+          scripts: scripts.length,
+          images: images.length,
+          fonts: fonts.length,
+          iframes: iframes.length,
+          other
+        }
+      }
+    });
+  }
+  if (thirdParty > 20) {
+    issues.push({
+      code: "PAGE_RESOURCES_THIRD_PARTY_HIGH",
+      severity: "warning",
+      category: "performance",
+      title: "Many third-party resources",
+      description: `Page loads ${thirdParty} resources from ${thirdPartyDomains.size} third-party domains.`,
+      impact: "Third-party resources are outside your control and add latency. They can also be a privacy/security concern.",
+      howToFix: "Self-host critical third-party resources when possible. Use preconnect hints for remaining third-party origins.",
+      affectedUrls: [url],
+      details: {
+        thirdPartyCount: thirdParty,
+        domains: Array.from(thirdPartyDomains).slice(0, 10)
+      }
+    });
+  }
+  if (iframes.length > 3) {
+    issues.push({
+      code: "PAGE_RESOURCES_MANY_IFRAMES",
+      severity: "warning",
+      category: "performance",
+      title: "Multiple iframes detected",
+      description: `Page contains ${iframes.length} iframes. Each iframe loads its own document and resources.`,
+      impact: "Iframes significantly increase page weight and can block the main thread.",
+      howToFix: "Lazy-load iframes that are below the fold. Consider native embeds or facade patterns for video/widget iframes.",
+      affectedUrls: [url],
+      details: {
+        iframeCount: iframes.length,
+        iframes: iframes.slice(0, 5)
+      }
+    });
+  }
+  return {
+    issues,
+    data: {
+      total,
+      byType: {
+        stylesheets: stylesheets.length,
+        scripts: scripts.length,
+        images: images.length,
+        fonts: fonts.length,
+        iframes: iframes.length,
+        other
+      },
+      byOrigin: {
+        firstParty,
+        thirdParty
+      },
+      thirdPartyDomains: Array.from(thirdPartyDomains),
+      details: {
+        stylesheets,
+        scripts,
+        images: images.slice(0, 20),
+        // Limit for data size
+        fonts,
+        iframes
+      }
+    }
+  };
+}
+
+// src/audit/checks/responsive-css.ts
+import * as cheerio55 from "https://esm.sh/cheerio@1.0.0";
+function extractMediaQueries(css) {
+  const mediaQueries = [];
+  const regex = /@media\s*([^{]+)/g;
+  let match;
+  while ((match = regex.exec(css)) !== null) {
+    mediaQueries.push(match[1].trim());
+  }
+  return mediaQueries;
+}
+function classifyBreakpoints(mediaQueries) {
+  const breakpoints = /* @__PURE__ */ new Set();
+  let hasMobile = false;
+  let hasTablet = false;
+  let hasDesktop = false;
+  for (const query of mediaQueries) {
+    const widthMatches = query.match(/(?:min|max)-width\s*:\s*(\d+)(?:px|em|rem)?/gi);
+    if (widthMatches) {
+      for (const match of widthMatches) {
+        const valueMatch = match.match(/(\d+)/);
+        if (valueMatch) {
+          const value = parseInt(valueMatch[1], 10);
+          breakpoints.add(`${value}px`);
+          if (value <= 480) {
+            hasMobile = true;
+          } else if (value <= 768) {
+            hasMobile = true;
+          } else if (value <= 1024) {
+            hasTablet = true;
+          } else {
+            hasDesktop = true;
+          }
+        }
+      }
+    }
+    if (/screen\s+and/i.test(query)) {
+    }
+    if (/print/i.test(query)) {
+      continue;
+    }
+  }
+  return {
+    hasMobile,
+    hasTablet,
+    hasDesktop,
+    breakpoints: Array.from(breakpoints).sort((a, b) => parseInt(a) - parseInt(b))
+  };
+}
+async function analyzeResponsiveCss(html, url) {
+  const issues = [];
+  const $ = cheerio55.load(html);
+  const baseUrl = new URL(url);
+  const viewportMeta = $('meta[name="viewport"]').attr("content");
+  const hasViewport = !!viewportMeta;
+  const allMediaQueries = [];
+  const externalSources = [];
+  let inlineCount = 0;
+  $("style").each((_, el) => {
+    const css = $(el).text();
+    const queries = extractMediaQueries(css);
+    if (queries.length > 0) {
+      allMediaQueries.push(...queries);
+      inlineCount += queries.length;
+    }
+  });
+  const cssLinks = $('link[rel="stylesheet"][href]').toArray().slice(0, 3).map((el) => $(el).attr("href")).filter((href) => {
+    if (!href || href.startsWith("data:"))
+      return false;
+    try {
+      const cssHostname = new URL(href, url).hostname;
+      return cssHostname === baseUrl.hostname;
+    } catch {
+      return false;
+    }
+  });
+  const cssPromises = cssLinks.map(async (cssUrl) => {
+    try {
+      const fullUrl = new URL(cssUrl, url).href;
+      const response = await httpGet(fullUrl, {
+        timeout: 3e3,
+        // Reduced timeout
+        validateStatus: () => true
+      });
+      if (response.status === 200 && typeof response.data === "string") {
+        const queries = extractMediaQueries(response.data);
+        if (queries.length > 0) {
+          allMediaQueries.push(...queries);
+          externalSources.push(cssUrl);
+        }
+      }
+    } catch {
+    }
+  });
+  await Promise.race([
+    Promise.all(cssPromises),
+    new Promise((resolve) => setTimeout(resolve, 6e3))
+    // 6s overall timeout
+  ]);
+  const hasMediaQueries = allMediaQueries.length > 0;
+  const { hasMobile, hasTablet, hasDesktop, breakpoints } = classifyBreakpoints(allMediaQueries);
+  if (!hasViewport) {
+    issues.push({
+      code: "RESPONSIVE_NO_VIEWPORT",
+      severity: "error",
+      category: "mobile",
+      title: "Missing viewport meta tag",
+      description: "No viewport meta tag found. This is required for responsive design to work properly.",
+      impact: "Without a viewport meta tag, mobile browsers will render the page at desktop width and scale down, making it unusable.",
+      howToFix: 'Add <meta name="viewport" content="width=device-width, initial-scale=1"> to the <head> section.',
+      affectedUrls: [url]
+    });
+  }
+  if (!hasMediaQueries) {
+    issues.push({
+      code: "RESPONSIVE_NO_MEDIA_QUERIES",
+      severity: "warning",
+      category: "mobile",
+      title: "No CSS media queries detected",
+      description: "No @media queries found in inline styles or first-party stylesheets.",
+      impact: "Without media queries, the site likely uses fixed layouts that do not adapt to different screen sizes. This hurts mobile usability and SEO.",
+      howToFix: "Add CSS media queries to adapt layout for different screen sizes. Consider using a mobile-first approach with min-width breakpoints.",
+      affectedUrls: [url],
+      details: {
+        suggestion: "Common breakpoints: 480px (mobile), 768px (tablet), 1024px (desktop)"
+      }
+    });
+  } else if (!hasMobile && !hasTablet) {
+    issues.push({
+      code: "RESPONSIVE_NO_MOBILE_BREAKPOINT",
+      severity: "warning",
+      category: "mobile",
+      title: "No mobile breakpoints detected",
+      description: `Found ${allMediaQueries.length} media queries but none target mobile screen sizes (\u2264768px).`,
+      impact: "Site may not be optimized for mobile devices, which affects majority of web traffic and Google mobile-first indexing.",
+      howToFix: "Add media queries for mobile devices. Example: @media (max-width: 768px) { ... } or use min-width for mobile-first.",
+      affectedUrls: [url],
+      details: {
+        detectedBreakpoints: breakpoints
+      }
+    });
+  }
+  return {
+    issues,
+    data: {
+      hasViewport,
+      viewportContent: viewportMeta,
+      hasMediaQueries,
+      mediaQueryCount: allMediaQueries.length,
+      mediaQuerySources: {
+        inline: inlineCount,
+        external: externalSources
+      },
+      breakpoints,
+      hasMobileBreakpoint: hasMobile,
+      hasTabletBreakpoint: hasTablet,
+      hasDesktopBreakpoint: hasDesktop
+    }
+  };
+}
+
+// src/audit/checks/directory-listing.ts
+var COMMON_DIRECTORIES = [
+  "/images/",
+  "/img/",
+  "/assets/",
+  "/static/",
+  "/uploads/",
+  "/files/",
+  "/media/",
+  "/css/",
+  "/js/",
+  "/scripts/",
+  "/fonts/",
+  "/backup/",
+  "/temp/",
+  "/tmp/"
+];
+var DIRECTORY_LISTING_PATTERNS = [
+  // Apache
+  /<title>Index of/i,
+  /Parent Directory/i,
+  /<h1>Index of/i,
+  /\[DIR\]/i,
+  /\[PARENTDIR\]/i,
+  // Nginx
+  /<title>Index of.*<\/title>/i,
+  /autoindex/i,
+  // IIS
+  /\[To Parent Directory\]/i,
+  /<title>.*- \/<\/title>/i,
+  // Generic
+  /Directory listing for/i,
+  /<pre>.*<a href="[^"]*">[^<]*<\/a>.*<\/pre>/is
+];
+function isDirectoryListing(html) {
+  return DIRECTORY_LISTING_PATTERNS.some((pattern) => pattern.test(html));
+}
+function detectServerType(headers) {
+  const server = headers.server || headers.Server;
+  if (server) {
+    if (/apache/i.test(server))
+      return "Apache";
+    if (/nginx/i.test(server))
+      return "Nginx";
+    if (/iis/i.test(server))
+      return "IIS";
+    if (/cloudflare/i.test(server))
+      return "Cloudflare";
+    return server;
+  }
+  return void 0;
+}
+async function analyzeDirectoryListing(url) {
+  const issues = [];
+  const baseUrl = new URL(url);
+  const baseOrigin = baseUrl.origin;
+  const vulnerableDirectories = [];
+  const checkedDirectories = [];
+  let serverType;
+  const directoriesToCheck = COMMON_DIRECTORIES.slice(0, 6);
+  const checkPromises = directoriesToCheck.map(async (dir) => {
+    const dirUrl = `${baseOrigin}${dir}`;
+    checkedDirectories.push(dir);
+    try {
+      const response = await httpGet(dirUrl, {
+        timeout: 3e3,
+        // Reduced timeout
+        validateStatus: () => true
+      });
+      if (response.headers) {
+        const detectedServer = detectServerType(response.headers);
+        if (detectedServer && !serverType) {
+          serverType = detectedServer;
+        }
+      }
+      if (response.status === 200 && typeof response.data === "string") {
+        if (isDirectoryListing(response.data)) {
+          vulnerableDirectories.push(dir);
+        }
+      }
+    } catch {
+    }
+  });
+  await Promise.race([
+    Promise.all(checkPromises),
+    new Promise((resolve) => setTimeout(resolve, 8e3))
+    // 8s overall timeout
+  ]);
+  const directoryListingEnabled = vulnerableDirectories.length > 0;
+  if (directoryListingEnabled) {
+    issues.push({
+      code: "DIRECTORY_LISTING_ENABLED",
+      severity: "warning",
+      category: "security",
+      title: "Directory listing enabled",
+      description: `${vulnerableDirectories.length} director${vulnerableDirectories.length === 1 ? "y" : "ies"} expose file listings. This reveals your site structure and potentially sensitive files.`,
+      impact: "Attackers can discover backup files, configuration files, or hidden content. This is a security vulnerability and information disclosure risk.",
+      howToFix: serverType === "Apache" ? 'Add "Options -Indexes" to your .htaccess file or Apache configuration.' : serverType === "Nginx" ? 'Remove or set "autoindex off" in your Nginx configuration.' : "Disable directory listing in your web server configuration. Add index files to directories.",
+      affectedUrls: vulnerableDirectories.map((dir) => `${baseOrigin}${dir}`),
+      details: {
+        vulnerableDirectories,
+        serverType,
+        checkedCount: checkedDirectories.length,
+        recommendation: "Ensure all directories have an index.html or index.php, or disable directory listing at the server level."
+      }
+    });
+  }
+  return {
+    issues,
+    data: {
+      directoryListingEnabled,
+      vulnerableDirectories,
+      checkedDirectories,
+      serverType
+    }
+  };
+}
+
+// src/audit/checks/url-safety.ts
+function fnv1aHash(str) {
+  let hash = 2166136261;
+  const FNV_PRIME = 16777619;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = Math.imul(hash, FNV_PRIME);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+var ThreatDatabase = class {
+  hashPrefixes = /* @__PURE__ */ new Set();
+  domainPrefixes = /* @__PURE__ */ new Set();
+  lastUpdated = (/* @__PURE__ */ new Date()).toISOString();
+  sources = ["builtin-patterns"];
+  constructor() {
+    this.initializeBuiltinData();
+  }
+  /**
+   * Initialize with built-in threat patterns
+   * These are hashes of known malicious URL patterns
+   */
+  initializeBuiltinData() {
+    const knownBadPatterns = [
+      // Example pattern hashes - in production, load from file or Supabase
+      // Format: FNV-1a hash prefix of canonical URL
+    ];
+    for (const prefix of knownBadPatterns) {
+      this.hashPrefixes.add(prefix);
+    }
+  }
+  /**
+   * Compute canonical form of URL (similar to Google Safe Browsing)
+   * - Lowercase hostname
+   * - Remove default ports
+   * - Normalize path
+   * - Remove fragments
+   */
+  canonicalizeUrl(urlString) {
+    try {
+      const url = new URL(urlString);
+      let canonical = url.protocol + "//" + url.hostname.toLowerCase();
+      if (url.port && !(url.protocol === "http:" && url.port === "80" || url.protocol === "https:" && url.port === "443")) {
+        canonical += ":" + url.port;
+      }
+      let path = url.pathname;
+      if (path === "/") {
+        canonical += "/";
+      } else {
+        path = path.replace(/\/+/g, "/");
+        canonical += path;
+      }
+      if (url.search) {
+        canonical += url.search;
+      }
+      return canonical;
+    } catch {
+      return null;
+    }
+  }
+  /**
+   * Compute hash of URL and return prefix
+   * Uses FNV-1a for cross-platform compatibility (Node.js, Deno, browser)
+   */
+  computeHashPrefix(url) {
+    return fnv1aHash(url);
+  }
+  /**
+   * Compute hash prefix for domain only
+   */
+  computeDomainHashPrefix(hostname) {
+    return fnv1aHash(hostname.toLowerCase());
+  }
+  /**
+   * Check if URL matches any hash in the database
+   */
+  checkUrl(urlString) {
+    const canonical = this.canonicalizeUrl(urlString);
+    if (!canonical) {
+      return { matched: false };
+    }
+    const urlPrefix = this.computeHashPrefix(canonical);
+    if (this.hashPrefixes.has(urlPrefix)) {
+      return { matched: true, prefix: urlPrefix, matchType: "exact" };
+    }
+    try {
+      const url = new URL(urlString);
+      const domainPrefix = this.computeDomainHashPrefix(url.hostname);
+      if (this.domainPrefixes.has(domainPrefix)) {
+        return { matched: true, prefix: domainPrefix, matchType: "domain" };
+      }
+    } catch {
+    }
+    return { matched: false };
+  }
+  /**
+   * Add hashes from URLhaus CSV data
+   * Format: id,dateadded,url,url_status,last_online,threat,tags,urlhaus_link,reporter
+   */
+  loadFromUrlhausCsv(csvData) {
+    const lines = csvData.split("\n");
+    let added = 0;
+    for (const line of lines) {
+      if (line.startsWith("#") || line.startsWith("id,"))
+        continue;
+      const parts = line.split(",");
+      if (parts.length >= 3) {
+        const url = parts[2].replace(/"/g, "");
+        const canonical = this.canonicalizeUrl(url);
+        if (canonical) {
+          const prefix = this.computeHashPrefix(canonical);
+          this.hashPrefixes.add(prefix);
+          added++;
+        }
+      }
+    }
+    this.lastUpdated = (/* @__PURE__ */ new Date()).toISOString();
+    if (!this.sources.includes("urlhaus")) {
+      this.sources.push("urlhaus");
+    }
+    return added;
+  }
+  /**
+   * Add a list of URLs to the database
+   */
+  addUrls(urls) {
+    let added = 0;
+    for (const url of urls) {
+      const canonical = this.canonicalizeUrl(url);
+      if (canonical) {
+        const prefix = this.computeHashPrefix(canonical);
+        if (!this.hashPrefixes.has(prefix)) {
+          this.hashPrefixes.add(prefix);
+          added++;
+        }
+      }
+    }
+    return added;
+  }
+  /**
+   * Add domains to the blocklist
+   */
+  addDomains(domains) {
+    let added = 0;
+    for (const domain of domains) {
+      const prefix = this.computeDomainHashPrefix(domain);
+      if (!this.domainPrefixes.has(prefix)) {
+        this.domainPrefixes.add(prefix);
+        added++;
+      }
+    }
+    return added;
+  }
+  /**
+   * Bulk load hash prefixes directly (for Supabase integration)
+   * This is used when loading from the threat_hashes table
+   */
+  loadHashPrefixes(hashes) {
+    let added = 0;
+    for (const hash of hashes) {
+      if (hash.hash_type === "url") {
+        if (!this.hashPrefixes.has(hash.hash_prefix)) {
+          this.hashPrefixes.add(hash.hash_prefix);
+          added++;
+        }
+      } else if (hash.hash_type === "domain") {
+        if (!this.domainPrefixes.has(hash.hash_prefix)) {
+          this.domainPrefixes.add(hash.hash_prefix);
+          added++;
+        }
+      }
+    }
+    this.lastUpdated = (/* @__PURE__ */ new Date()).toISOString();
+    if (!this.sources.includes("supabase")) {
+      this.sources.push("supabase");
+    }
+    return added;
+  }
+  /**
+   * Clear all hashes (useful before reloading)
+   */
+  clear() {
+    this.hashPrefixes.clear();
+    this.domainPrefixes.clear();
+    this.sources = [];
+  }
+  /**
+   * Check if database has been populated
+   */
+  isPopulated() {
+    return this.hashPrefixes.size > 0 || this.domainPrefixes.size > 0;
+  }
+  /**
+   * Get database statistics
+   */
+  getStats() {
+    return {
+      prefixCount: this.hashPrefixes.size + this.domainPrefixes.size,
+      lastUpdated: this.lastUpdated,
+      sources: this.sources
+    };
+  }
+};
+var threatDb = new ThreatDatabase();
+var POPULAR_DOMAINS = [
+  "google",
+  "facebook",
+  "amazon",
+  "apple",
+  "microsoft",
+  "paypal",
+  "netflix",
+  "instagram",
+  "twitter",
+  "linkedin",
+  "youtube",
+  "github",
+  "dropbox",
+  "adobe",
+  "salesforce",
+  "stripe",
+  "shopify",
+  "wordpress",
+  "cloudflare",
+  "aws",
+  "azure",
+  "slack",
+  "zoom",
+  "docusign"
+];
+var SUSPICIOUS_TLDS = [
+  ".tk",
+  ".ml",
+  ".ga",
+  ".cf",
+  ".gq",
+  // Free TLDs abused for phishing
+  ".xyz",
+  ".top",
+  ".work",
+  ".click",
+  ".link",
+  ".download",
+  ".zip",
+  ".mov"
+  // New TLDs that can be confusing
+];
+var SUSPICIOUS_EXTENSIONS = [
+  ".exe",
+  ".msi",
+  ".bat",
+  ".cmd",
+  ".ps1",
+  ".vbs",
+  ".jar",
+  ".scr",
+  ".pif",
+  ".application",
+  ".hta",
+  ".cpl",
+  ".msc",
+  ".wsf"
+];
+var HOMOGRAPH_CHARS = {
+  "a": ["\u0430", "\u0251", "\u03B1"],
+  // Cyrillic а, Latin alpha
+  "c": ["\u0441", "\u03F2"],
+  // Cyrillic с
+  "e": ["\u0435", "\u0451"],
+  // Cyrillic е
+  "o": ["\u043E", "\u03BF"],
+  // Cyrillic о, Greek omicron
+  "p": ["\u0440"],
+  // Cyrillic р
+  "x": ["\u0445"],
+  // Cyrillic х
+  "y": ["\u0443"]
+  // Cyrillic у
+};
+function containsHomographs(str) {
+  for (const [_, lookalikes] of Object.entries(HOMOGRAPH_CHARS)) {
+    for (const char of lookalikes) {
+      if (str.includes(char))
+        return true;
+    }
+  }
+  return false;
+}
+function levenshteinDistance(a, b) {
+  if (a.length === 0)
+    return b.length;
+  if (b.length === 0)
+    return a.length;
+  const matrix = [];
+  for (let i = 0; i <= b.length; i++)
+    matrix[i] = [i];
+  for (let j = 0; j <= a.length; j++)
+    matrix[0][j] = j;
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+}
+function checkTyposquatting(hostname) {
+  const parts = hostname.toLowerCase().split(".");
+  const mainDomain = parts.length >= 2 ? parts[parts.length - 2] : parts[0];
+  for (const popular of POPULAR_DOMAINS) {
+    if (mainDomain === popular)
+      continue;
+    const distance = levenshteinDistance(mainDomain, popular);
+    if (distance > 0 && distance <= 2) {
+      return `Possible typosquat of "${popular}"`;
+    }
+    if (mainDomain.includes(popular) && mainDomain !== popular) {
+      if (mainDomain.includes("-") || mainDomain.includes("secure") || mainDomain.includes("login") || mainDomain.includes("account")) {
+        return `Suspicious variation of "${popular}"`;
+      }
+    }
+  }
+  return null;
+}
+function analyzeUrlPatterns(urlString) {
+  const reasons = [];
+  try {
+    const url = new URL(urlString);
+    const hostname = url.hostname.toLowerCase();
+    const pathname = url.pathname.toLowerCase();
+    if (/^(\d{1,3}\.){3}\d{1,3}$/.test(hostname)) {
+      reasons.push("Uses IP address instead of domain");
+    }
+    for (const tld of SUSPICIOUS_TLDS) {
+      if (hostname.endsWith(tld)) {
+        reasons.push(`Suspicious TLD: ${tld}`);
+        break;
+      }
+    }
+    if (hostname.split(".").length > 4) {
+      reasons.push("Excessive subdomains");
+    }
+    const typosquat = checkTyposquatting(hostname);
+    if (typosquat)
+      reasons.push(typosquat);
+    if (containsHomographs(hostname)) {
+      reasons.push("Contains look-alike Unicode characters");
+    }
+    for (const ext of SUSPICIOUS_EXTENSIONS) {
+      if (pathname.endsWith(ext)) {
+        reasons.push(`Dangerous file type: ${ext}`);
+        break;
+      }
+    }
+    if (urlString.includes("@")) {
+      reasons.push("Contains @ symbol (may obscure destination)");
+    }
+    const shorteners = ["bit.ly", "tinyurl.com", "t.co", "goo.gl", "ow.ly", "is.gd"];
+    if (shorteners.some((s) => hostname === s || hostname.endsWith("." + s))) {
+      reasons.push("URL shortener (destination hidden)");
+    }
+  } catch {
+    reasons.push("Malformed URL");
+  }
+  if (reasons.length === 0)
+    return null;
+  let riskLevel = "medium";
+  const highRisk = ["homograph", "IP address", "typosquat", "Dangerous file"];
+  if (reasons.some((r) => highRisk.some((h) => r.toLowerCase().includes(h.toLowerCase())))) {
+    riskLevel = "high";
+  }
+  if (reasons.length >= 3)
+    riskLevel = "high";
+  return { url: urlString, reasons, riskLevel };
+}
+function analyzeUrlSafety(url, externalLinks = []) {
+  const issues = [];
+  const matchedUrls = [];
+  const patternMatches = [];
+  const allUrls = [url, ...externalLinks];
+  for (const checkUrl of allUrls) {
+    const hashResult = threatDb.checkUrl(checkUrl);
+    if (hashResult.matched) {
+      matchedUrls.push({
+        url: checkUrl,
+        hashPrefix: hashResult.prefix,
+        matchType: hashResult.matchType
+      });
+    }
+    const patternResult = analyzeUrlPatterns(checkUrl);
+    if (patternResult) {
+      patternMatches.push(patternResult);
+    }
+  }
+  if (matchedUrls.length > 0) {
+    const mainSiteMatched = matchedUrls.some((m) => m.url === url);
+    if (mainSiteMatched) {
+      issues.push({
+        code: "URL_SAFETY_KNOWN_THREAT",
+        severity: "error",
+        category: "security",
+        title: "Website URL matches known threat database",
+        description: "Your website URL matches entries in the threat database. This indicates your site may have been compromised or flagged.",
+        impact: "Browsers and security tools will block access to your site. Search engines will remove you from results.",
+        howToFix: "Scan your site for malware, remove any malicious content, and request removal from threat databases.",
+        affectedUrls: [url],
+        details: {
+          matchedHash: matchedUrls.find((m) => m.url === url)?.hashPrefix
+        }
+      });
+    }
+    const externalMatches = matchedUrls.filter((m) => m.url !== url);
+    if (externalMatches.length > 0) {
+      issues.push({
+        code: "URL_SAFETY_EXTERNAL_THREAT",
+        severity: "error",
+        category: "security",
+        title: "External links to known malicious URLs",
+        description: `${externalMatches.length} external link(s) point to URLs in the threat database.`,
+        impact: "Linking to malicious sites harms visitors and damages your reputation and rankings.",
+        howToFix: "Remove all links to flagged URLs immediately.",
+        affectedUrls: externalMatches.map((m) => m.url)
+      });
+    }
+  }
+  const highRiskPatterns = patternMatches.filter((p) => p.riskLevel === "high");
+  if (highRiskPatterns.some((p) => p.url === url)) {
+    const mainPattern = highRiskPatterns.find((p) => p.url === url);
+    issues.push({
+      code: "URL_SAFETY_SUSPICIOUS_DOMAIN",
+      severity: "warning",
+      category: "security",
+      title: "Website URL has suspicious characteristics",
+      description: `Your URL shows patterns associated with malicious sites: ${mainPattern.reasons.join("; ")}`,
+      impact: "Users and security tools may distrust your site.",
+      howToFix: "Use a trustworthy domain structure. Avoid patterns that mimic other brands.",
+      affectedUrls: [url],
+      details: { reasons: mainPattern.reasons }
+    });
+  }
+  const suspiciousExternal = highRiskPatterns.filter((p) => p.url !== url);
+  if (suspiciousExternal.length > 0) {
+    issues.push({
+      code: "URL_SAFETY_SUSPICIOUS_EXTERNAL",
+      severity: "warning",
+      category: "security",
+      title: "External links with suspicious characteristics",
+      description: `${suspiciousExternal.length} external link(s) show suspicious patterns.`,
+      impact: "Linking to suspicious sites can harm visitors and rankings.",
+      howToFix: "Review and remove or replace suspicious external links.",
+      affectedUrls: suspiciousExternal.map((p) => p.url),
+      details: {
+        suspiciousLinks: suspiciousExternal.map((p) => ({
+          url: p.url,
+          reasons: p.reasons
+        }))
+      }
+    });
+  }
+  const shortenerMatches = patternMatches.filter(
+    (p) => p.reasons.some((r) => r.includes("shortener"))
+  );
+  if (shortenerMatches.length > 0) {
+    issues.push({
+      code: "URL_SAFETY_SHORTENERS",
+      severity: "notice",
+      category: "security",
+      title: "External links use URL shorteners",
+      description: `${shortenerMatches.length} link(s) use URL shorteners, hiding destinations.`,
+      impact: "URL shorteners reduce trust and SEO link value.",
+      howToFix: "Replace shortened URLs with direct links.",
+      affectedUrls: shortenerMatches.map((p) => p.url)
+    });
+  }
+  return {
+    issues,
+    data: {
+      checkedUrls: allUrls.length,
+      matchedUrls,
+      databaseInfo: threatDb.getStats(),
+      patternMatches
+    }
+  };
+}
+var urlSafetyDatabase = {
+  /**
+   * Load URLs from URLhaus CSV format
+   */
+  loadFromUrlhausCsv: (csv) => threatDb.loadFromUrlhausCsv(csv),
+  /**
+   * Add URLs to the blocklist
+   */
+  addUrls: (urls) => threatDb.addUrls(urls),
+  /**
+   * Add domains to the blocklist
+   */
+  addDomains: (domains) => threatDb.addDomains(domains),
+  /**
+   * Bulk load hash prefixes (for Supabase integration)
+   * Call this with data from: SELECT hash_prefix, hash_type FROM threat_hashes WHERE is_active = TRUE
+   */
+  loadHashPrefixes: (hashes) => threatDb.loadHashPrefixes(hashes),
+  /**
+   * Clear all hashes (useful before reloading from fresh data)
+   */
+  clear: () => threatDb.clear(),
+  /**
+   * Check if database has been populated with threat data
+   */
+  isPopulated: () => threatDb.isPopulated(),
+  /**
+   * Get database statistics
+   */
+  getStats: () => threatDb.getStats()
+};
+
 // src/audit/engine.ts
 async function runFullAudit(options) {
   const { url, checkBrokenLinks = false, checkHreflangUrls = false, checkCanonicalChain = false, cruxApiKey } = options;
@@ -13873,6 +16824,11 @@ async function runFullAudit(options) {
   const brandMentionResult = analyzeBrandMentionOptimization(html, url);
   const citationWorthinessResult = analyzeAICitationWorthiness(html, url);
   const reviewEcosystemResult = analyzeReviewEcosystem(html, url);
+  const domSizeResult = analyzeDomSize(html, url);
+  const imageDimensionsResult = analyzeImageDimensions(html, url);
+  const colorContrastResult = analyzeColorContrast(html, url);
+  const pageResourcesResult = analyzePageResources(html, url);
+  const urlSafetyResult = analyzeUrlSafety(url);
   const paginationResult = analyzePagination(html, url, onPageResult.data.canonical);
   allIssues.push(
     ...onPageResult.issues,
@@ -13912,6 +16868,11 @@ async function runFullAudit(options) {
     ...brandMentionResult.issues,
     ...citationWorthinessResult.issues,
     ...reviewEcosystemResult.issues,
+    ...domSizeResult.issues,
+    ...imageDimensionsResult.issues,
+    ...colorContrastResult.issues,
+    ...pageResourcesResult.issues,
+    ...urlSafetyResult.issues,
     ...paginationResult.issues
   );
   if (!structuredDataResult.data.hasSchema) {
@@ -13925,18 +16886,26 @@ async function runFullAudit(options) {
     }
   }
   console.log("\u{1F517} Phase 3: Running async checks (parallel)...");
-  const safeAsync = async (name, fn) => {
+  const safeAsync = async (name, fn, timeoutMs = 1e4) => {
     try {
-      const result = await fn();
+      const resultPromise = fn();
+      const timeoutPromise = new Promise(
+        (_, reject) => setTimeout(() => reject(new Error(`${name} timed out`)), timeoutMs)
+      );
+      const result = await Promise.race([resultPromise, timeoutPromise]);
       return result.issues;
     } catch (err) {
       console.error(`${name} failed:`, err);
       return [];
     }
   };
-  const safeAsyncIssues = async (name, fn) => {
+  const safeAsyncIssues = async (name, fn, timeoutMs = 1e4) => {
     try {
-      return await fn();
+      const resultPromise = fn();
+      const timeoutPromise = new Promise(
+        (_, reject) => setTimeout(() => reject(new Error(`${name} timed out`)), timeoutMs)
+      );
+      return await Promise.race([resultPromise, timeoutPromise]);
     } catch (err) {
       console.error(`${name} failed:`, err);
       return [];
@@ -13967,6 +16936,16 @@ async function runFullAudit(options) {
     safeAsync("Site Maturity", () => analyzeSiteMaturity(html, url)),
     safeAsync("Redirect Chain", () => analyzeRedirectChain(url)),
     safeAsync("Bing Optimization", () => analyzeBingOptimization(html, url)),
+    // Competitor-parity checks (async)
+    safeAsync("Robots Validation", () => validateRobotsTxt(url)),
+    safeAsync("LLMs.txt", () => analyzeLlmsTxt(url)),
+    safeAsync("Canonical Domain", () => analyzeCanonicalDomain(url)),
+    safeAsync("Caching Headers", () => analyzeCachingHeaders(url, headers)),
+    safeAsync("HTML Compliance", () => analyzeHtmlCompliance(html, url, headers)),
+    // New Rank Math parity checks (async)
+    safeAsync("Asset Minification", () => analyzeAssetMinification(html, url)),
+    safeAsync("Responsive CSS", () => analyzeResponsiveCss(html, url)),
+    safeAsync("Directory Listing", () => analyzeDirectoryListing(url)),
     // Core Web Vitals (optional)
     cruxApiKey ? safeAsyncIssues("Core Web Vitals", async () => {
       const cwv = await fetchCoreWebVitals(url, cruxApiKey);
@@ -14024,7 +17003,7 @@ function createReport(url, domain, issues, pages) {
   const errors = issues.filter((i) => i.severity === "error").length;
   const warnings = issues.filter((i) => i.severity === "warning").length;
   const notices = issues.filter((i) => i.severity === "notice").length;
-  const totalPossibleChecks = 280;
+  const totalPossibleChecks = 310;
   const passed = Math.max(0, totalPossibleChecks - errors - warnings);
   return {
     url,
@@ -14064,7 +17043,8 @@ function calculateHealthScore(issues) {
     international: 0,
     "ai-readiness": 0,
     "social": 0,
-    "local-seo": 0
+    "local-seo": 0,
+    "accessibility": 0
   };
   for (const issue of issues) {
     const deduction = weights[issue.severity];
@@ -14080,8 +17060,9 @@ function calculateHealthScore(issues) {
   const aiReadiness = Math.max(0, 100 - categoryDeductions["ai-readiness"] * 3);
   const social = Math.max(0, 100 - categoryDeductions.social * 2);
   const localSeo = Math.max(0, 100 - categoryDeductions["local-seo"] * 2);
+  const accessibility = Math.max(0, 100 - categoryDeductions.accessibility * 4);
   const overall = Math.round(
-    crawlability * 0.12 + indexability * 0.12 + onPage * 0.18 + content * 0.08 + links * 0.08 + performance * 0.12 + security * 0.12 + aiReadiness * 0.06 + social * 0.06 + localSeo * 0.06
+    crawlability * 0.11 + indexability * 0.11 + onPage * 0.16 + content * 0.07 + links * 0.07 + performance * 0.11 + security * 0.11 + aiReadiness * 0.06 + social * 0.05 + localSeo * 0.05 + accessibility * 0.1
   );
   return {
     overall,
@@ -14094,7 +17075,8 @@ function calculateHealthScore(issues) {
     security,
     aiReadiness,
     social,
-    localSeo
+    localSeo,
+    accessibility
   };
 }
 function formatReport(report) {
@@ -14123,6 +17105,7 @@ function formatReport(report) {
   lines.push(`    AI Readiness:  ${report.healthScore.aiReadiness}/100`);
   lines.push(`    Social:        ${report.healthScore.social}/100`);
   lines.push(`    Local SEO:     ${report.healthScore.localSeo}/100`);
+  lines.push(`    Accessibility: ${report.healthScore.accessibility}/100`);
   lines.push("");
   lines.push("\u{1F4CB} SUMMARY");
   lines.push("\u2500".repeat(70));
@@ -14210,6 +17193,7 @@ export {
   analyzeStructuredData,
   analyzeTopicalClusters,
   analyzeTrackerBloat,
+  analyzeUrlSafety,
   checkAIBotBlocking,
   checkCertificate,
   checkLlmsTxt,
@@ -14223,5 +17207,6 @@ export {
   runAIReadinessChecks,
   runCrawlabilityChecks,
   runFullAudit,
-  suggestSchemaTypes
+  suggestSchemaTypes,
+  urlSafetyDatabase
 };
