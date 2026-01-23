@@ -74,3 +74,8 @@ references/open-source-tools/*
 !references/open-source-tools/.gitkeep
 
 test_repos/
+
+# Research notes and competitor analysis
+docs/*.txt
+docs/*.pdf
+packages/saas/docs/results/
