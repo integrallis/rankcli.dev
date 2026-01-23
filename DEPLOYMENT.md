@@ -12,7 +12,8 @@ This guide covers everything needed to deploy RankCLI for both development and p
 2. [Manual Setup Steps](#manual-setup-steps)
 3. [Development Deployment](#development-deployment)
 4. [Production Deployment](#production-deployment)
-5. [Troubleshooting](#troubleshooting)
+5. [Threat Intelligence Updates](#threat-intelligence-updates)
+6. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -305,6 +306,105 @@ curl https://your-domain.com
 |----------|-------------|----------|
 | `SUPABASE_ACCESS_TOKEN` | Supabase CLI access token | For CLI |
 | `SUPABASE_JWT_SECRET` | JWT secret for token verification | For CLI |
+
+---
+
+## Threat Intelligence Updates
+
+RankCLI includes a URL safety check powered by a local threat hash database, similar to Google Safe Browsing. This database is populated from [URLhaus](https://urlhaus.abuse.ch/) by abuse.ch.
+
+### How It Works
+
+1. **Hash Database**: Stores FNV-1a hash prefixes of malicious URLs/domains
+2. **Local Lookup**: All checks happen locally - no external API calls during audits
+3. **Weekly Updates**: GitHub Action automatically refreshes the data
+
+### Database Schema
+
+```sql
+-- Threat hash prefixes (in threat_hashes table)
+hash_prefix VARCHAR(16)   -- 8-char hex FNV-1a hash
+hash_type VARCHAR(20)     -- 'url' or 'domain'
+threat_type VARCHAR(50)   -- 'malware', 'phishing', etc.
+source VARCHAR(50)        -- 'urlhaus'
+tags TEXT[]               -- e.g., ['botnet', 'c2', 'ransomware']
+is_active BOOLEAN
+```
+
+### Automatic Updates (GitHub Action)
+
+The `update-threat-hashes.yml` workflow runs **every Sunday at 3:00 AM UTC**.
+
+**What it does**:
+1. Downloads fresh URLhaus CSV (~20K+ malicious URLs)
+2. Generates hash prefixes using FNV-1a algorithm
+3. Updates `015_threat_hashes_seed.sql` migration file
+4. Commits changes if data changed
+5. Deploys to Supabase
+6. Calls sync function for live refresh
+
+**Required GitHub Secrets**:
+
+| Secret | Description |
+|--------|-------------|
+| `SUPABASE_ACCESS_TOKEN` | Supabase CLI token ([get here](https://supabase.com/dashboard/account/tokens)) |
+| `SUPABASE_PROJECT_ID` | Project reference ID (Settings → General) |
+| `SUPABASE_URL` | Project URL (Settings → API) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key (Settings → API) |
+
+**Manual trigger**:
+```bash
+# Via GitHub CLI
+gh workflow run update-threat-hashes.yml
+
+# Via GitHub UI
+# Go to Actions → Update Threat Hashes → Run workflow
+```
+
+### Manual Updates
+
+**Option 1: Regenerate seed file locally**
+```bash
+cd packages/saas
+npx tsx scripts/generate-threat-seed.ts
+supabase db push
+```
+
+**Option 2: Call sync Edge Function**
+```bash
+curl -X POST "https://<project>.supabase.co/functions/v1/sync-threat-hashes" \
+  -H "Authorization: Bearer <service_role_key>"
+```
+
+### Checking Statistics
+
+```sql
+-- View threat hash stats by source and type
+SELECT * FROM get_threat_hash_stats();
+
+-- Recent sync operations
+SELECT source, status, records_processed, completed_at
+FROM threat_sync_log
+ORDER BY started_at DESC
+LIMIT 5;
+
+-- Count active hashes
+SELECT hash_type, COUNT(*)
+FROM threat_hashes
+WHERE is_active = TRUE
+GROUP BY hash_type;
+```
+
+### Files
+
+| File | Description |
+|------|-------------|
+| `packages/saas/supabase/migrations/014_add_threat_hashes.sql` | Creates tables and RLS policies |
+| `packages/saas/supabase/migrations/015_threat_hashes_seed.sql` | Initial ~30K threat hashes |
+| `packages/saas/supabase/functions/sync-threat-hashes/index.ts` | Edge function to sync from URLhaus |
+| `packages/saas/scripts/generate-threat-seed.ts` | Script to generate seed SQL |
+| `.github/workflows/update-threat-hashes.yml` | Weekly auto-update workflow |
+| `packages/agent-runtime/src/audit/checks/url-safety.ts` | URL safety check implementation |
 
 ---
 

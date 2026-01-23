@@ -37,6 +37,12 @@ pnpm-debug.log*
 # Testing
 coverage/
 .nyc_output/
+test-results/
+e2e-screenshots/
+playwright-report/
+
+# Build artifacts
+*.tsbuildinfo
 
 # Python
 __pycache__/
