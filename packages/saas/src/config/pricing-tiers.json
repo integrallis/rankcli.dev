@@ -1,29 +1,24 @@
 {
   "default_view": "subscriptions",
-  "free_tier": {
+  "free_audit": {
     "enabled": true,
-    "sites_limit": 1,
-    "checks_limit": 200,
-    "keywords_limit": 10,
-    "historical_days": 7,
-    "features": {
-      "manual_audit_only": true,
-      "limited_report": true,
-      "ai_analysis": false,
-      "keyword_research": false,
-      "content_optimizer": false,
-      "competitor_intel": false,
-      "backlink_finder": false,
-      "local_seo": false,
-      "tool_opportunities": false,
-      "tagline": "Analyze your site for free"
-    }
+    "checks_limit": 50,
+    "description": "One-time audit, no signup required",
+    "tagline": "Analyze your site for free"
+  },
+  "trial": {
+    "enabled": true,
+    "duration_days": 14,
+    "plan_access": "pro",
+    "credit_card_required": false,
+    "description": "Full Pro access for 14 days"
   },
   "subscriptions": [
     {
       "id": "solo",
       "name": "Solo",
-      "price_cents": 900,
+      "price_cents": 700,
+      "price_cents_annual": 5600,
       "billing_period": "month",
       "tagline": "For indie developers",
       "popular": false,
@@ -53,19 +48,19 @@
         "tool_opportunities": false
       },
       "highlights": [
-        "200+ SEO checks",
         "3 sites monitored",
+        "200+ SEO checks",
         "Weekly automated audits",
+        "GitHub integration",
         "AI-powered analysis",
-        "Keyword research (5/mo)",
-        "Content optimizer (3/mo)",
-        "CLI with API key"
+        "CLI + API access"
       ]
     },
     {
       "id": "pro",
       "name": "Pro",
       "price_cents": 2900,
+      "price_cents_annual": 23200,
       "billing_period": "month",
       "tagline": "For teams & startups",
       "popular": true,
@@ -97,20 +92,19 @@
         "tool_opportunities": false
       },
       "highlights": [
-        "Everything in Solo",
         "10 sites monitored",
         "Daily automated audits",
-        "Auto-fix PRs via GitHub App",
+        "Auto-fix PRs via GitHub",
+        "Slack/Discord alerts",
         "Competitor intelligence",
-        "Backlink opportunity finder",
-        "Local SEO analyzer",
-        "Track 3 competitors"
+        "5 team members"
       ]
     },
     {
       "id": "agency",
       "name": "Agency",
       "price_cents": 9900,
+      "price_cents_annual": 79200,
       "billing_period": "month",
       "tagline": "For agencies & enterprises",
       "popular": false,
@@ -146,17 +140,22 @@
         "seo_api_integration": true
       },
       "highlights": [
-        "Everything in Pro",
         "50 sites monitored",
         "Unlimited team members",
         "On-demand audits",
-        "Tool opportunity finder",
-        "SEO API integrations",
         "White-label reports",
-        "Dedicated support"
+        "Priority support",
+        "API integrations"
       ]
     }
   ],
+  "lifetime_deal": {
+    "enabled": true,
+    "price_cents": 9900,
+    "plan_access": "pro",
+    "limit": 500,
+    "description": "Lifetime Pro access - limited to 500 licenses"
+  },
   "seo_modules": {
     "ai_audit": {
       "name": "AI-Powered Audit",
@@ -190,7 +189,7 @@
     },
     "tool_opportunities": {
       "name": "Tool Opportunity Finder",
-      "description": "Engineering as Marketing - find free tool opportunities using Bhanu's method",
+      "description": "Engineering as Marketing - find free tool opportunities",
       "tiers": ["agency"]
     },
     "seo_api_integration": {

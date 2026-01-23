@@ -27,7 +27,6 @@ export function GitHubCallbackPage() {
   const [message, setMessage] = useState('Processing GitHub installation...');
 
   const installationId = searchParams.get('installation_id');
-  const setupAction = searchParams.get('setup_action');
 
   useEffect(() => {
     async function handleCallback() {

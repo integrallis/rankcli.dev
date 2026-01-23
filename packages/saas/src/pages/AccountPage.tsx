@@ -30,7 +30,7 @@ interface UserSubscription {
     plan_id: string;
     name: string;
     price_cents: number;
-  } | null;
+  }[] | null;
 }
 
 const tabs = [
@@ -108,23 +108,22 @@ export function AccountPage() {
     }
   }, [showSuccessMessage]);
 
-  // Get current subscription info
-  const currentPlanId = subscription?.plan?.plan_id || 'free';
+  // Get current subscription info (plan is an array from Supabase join)
+  const planData = subscription?.plan?.[0];
+  const currentPlanId = planData?.plan_id || 'free';
   const subscriptionStatus = subscription?.status || 'active';
   const isFreeTier = !subscription?.plan_id || currentPlanId === 'free';
 
   // Get plan details - either from joined data or default to free
-  const planDetails = subscription?.plan
-    ? { name: subscription.plan.name, price_cents: subscription.plan.price_cents }
+  const planDetails = planData
+    ? { name: planData.name, price_cents: planData.price_cents }
     : { name: 'Free', price_cents: 0 };
 
   // Find full plan config for limits
   const subscriptionPlan = pricingTiers.subscriptions.find(s => s.id === currentPlanId);
 
   const sitesUsed = 1; // TODO: Get from actual usage data
-  const sitesLimit = isFreeTier
-    ? pricingTiers.free_tier.sites_limit
-    : (subscriptionPlan?.limits.sites || 1);
+  const sitesLimit = subscriptionPlan?.limits.sites || 1;
 
   const handleSaveProfile = async () => {
     setIsLoading(true);

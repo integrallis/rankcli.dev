@@ -2,13 +2,10 @@ import {
   Search,
   GitPullRequest,
   BarChart3,
-  Bell,
-  Key,
   Zap,
   Shield,
   Globe,
 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ui/scroll-reveal';
 
 const features = [
@@ -16,7 +13,7 @@ const features = [
     icon: Search,
     title: '200+ SEO Checks',
     description:
-      'Ahrefs-level technical audits. Meta tags, schema, performance, security, and more.',
+      'Technical audits covering meta tags, schema, Core Web Vitals, security, and more.',
   },
   {
     icon: GitPullRequest,
@@ -29,18 +26,6 @@ const features = [
     title: 'Keyword Tracking',
     description:
       'Track rankings over time. Get alerts when positions change significantly.',
-  },
-  {
-    icon: Bell,
-    title: 'Slack Alerts',
-    description:
-      'Get notified when audits complete or rankings drop. Integrate with your workflow.',
-  },
-  {
-    icon: Key,
-    title: 'API Access',
-    description:
-      'Full REST API for automation. Integrate with CI/CD pipelines and custom tools.',
   },
   {
     icon: Zap,
@@ -64,31 +49,31 @@ const features = [
 
 export function Features() {
   return (
-    <section className="py-24 bg-muted/30">
+    <section className="py-24 border-t border-border">
       <div className="container">
         <ScrollReveal className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+          <h2 className="text-2xl md:text-3xl font-semibold tracking-tighter mb-4">
             Everything you need for SEO
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-muted-foreground max-w-xl mx-auto">
             Built by developers, for developers. No fluff, just the tools you need.
           </p>
         </ScrollReveal>
 
-        <StaggerContainer className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StaggerContainer className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10 max-w-4xl mx-auto">
           {features.map((feature, index) => (
             <StaggerItem key={index}>
-              <Card className="bg-card/50 hover:bg-card transition-colors h-full">
-              <CardContent className="pt-6">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <feature.icon className="h-6 w-6 text-primary" />
+              <div className="flex gap-4">
+                <div className="flex-shrink-0">
+                  <feature.icon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
                 </div>
-                <h3 className="font-semibold mb-2">{feature.title}</h3>
-                <p className="text-sm text-muted-foreground">
-                  {feature.description}
-                </p>
-              </CardContent>
-              </Card>
+                <div>
+                  <h3 className="font-medium mb-1 tracking-tight">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {feature.description}
+                  </p>
+                </div>
+              </div>
             </StaggerItem>
           ))}
         </StaggerContainer>

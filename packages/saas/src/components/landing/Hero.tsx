@@ -7,41 +7,40 @@ import { ScrollReveal } from '@/components/ui/scroll-reveal';
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden">
-      {/* Background pattern */}
-      <div className="absolute inset-0 bg-grid-pattern opacity-5" />
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background to-background" />
-
-      <div className="container relative py-24 md:py-32">
+    <section className="relative">
+      <div className="container py-12 md:py-16">
         <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
           {/* Badge */}
           <ScrollReveal variant="fadeDown">
-            <Badge variant="outline" className="mb-6">
+            <Badge variant="outline" className="mb-4">
               <span className="text-primary">New</span>
-              <span className="mx-2">·</span>
-              200+ SEO checks, Ahrefs-level audits
+              <span className="mx-2 text-muted-foreground">·</span>
+              200+ SEO checks
             </Badge>
           </ScrollReveal>
 
           {/* Headline */}
           <ScrollReveal delay={0.1}>
-            <h1 className="text-4xl md:text-6xl font-bold tracking-tight mb-6">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tighter mb-4">
               Ship code,{' '}
-              <span className="gradient-text">get ranked.</span>
+              <span className="text-primary">get ranked.</span>
             </h1>
           </ScrollReveal>
 
           {/* Subheadline */}
           <ScrollReveal delay={0.2}>
-            <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl">
-              SEO meets CI/CD. 200+ automated checks. Auto-fix PRs. GitHub integration.
-              Engineering as marketing.
+            <p className="text-lg text-muted-foreground mb-3 max-w-2xl leading-relaxed">
+              SEO meets CI/CD. 200+ automated checks. Auto-fix PRs. GitHub integration. Engineering as marketing.
+            </p>
+            {/* Brand definition for AI extraction */}
+            <p className="text-sm text-muted-foreground/80 mb-6 max-w-2xl leading-relaxed">
+              RankCLI is a developer-first SEO automation tool that runs 200+ checks and creates auto-fix pull requests via GitHub. Unlike traditional SEO tools, RankCLI integrates directly into your CI/CD pipeline.
             </p>
           </ScrollReveal>
 
           {/* CTA Buttons */}
           <ScrollReveal delay={0.3}>
-            <div className="flex flex-col sm:flex-row gap-4 mb-12">
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <Link to="/free-audit">
                 <Button size="lg" className="gap-2">
                   Try Free Audit
@@ -55,7 +54,7 @@ export function Hero() {
               >
                 <Button size="lg" variant="outline" className="gap-2">
                   <Github className="h-4 w-4" />
-                  View on GitHub
+                  GitHub
                 </Button>
               </a>
             </div>
@@ -67,12 +66,12 @@ export function Hero() {
           </ScrollReveal>
 
           {/* Install command */}
-          <ScrollReveal delay={0.5} className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
-            <code className="px-3 py-1.5 bg-muted rounded-md font-mono">
+          <ScrollReveal delay={0.5} className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+            <code className="px-3 py-2 bg-card border border-border rounded-md font-mono text-foreground">
               npm install -g @rankcli/cli
             </code>
             <button
-              className="p-1.5 hover:bg-muted rounded-md transition-colors"
+              className="p-2 hover:bg-card rounded-md transition-colors border border-transparent hover:border-border"
               onClick={() => navigator.clipboard.writeText('npm install -g @rankcli/cli')}
               title="Copy to clipboard"
             >

@@ -75,9 +75,9 @@ export function ProjectPage() {
 
   const getScoreColor = (score: number | null) => {
     if (score === null) return 'text-muted-foreground';
-    if (score >= 80) return 'text-green-500';
-    if (score >= 60) return 'text-yellow-500';
-    return 'text-red-500';
+    if (score >= 80) return 'text-green-400';
+    if (score >= 60) return 'text-yellow-400';
+    return 'text-red-400';
   };
 
   const getSeverityIcon = (severity: string) => {
@@ -327,20 +327,20 @@ export function ProjectPage() {
         </div>
 
         {/* Score Card */}
-        <Card className="mb-8">
-          <CardContent className="py-6">
-            <div className="grid md:grid-cols-6 gap-8">
+        <Card className="mb-6">
+          <CardContent className="py-5">
+            <div className="grid md:grid-cols-6 gap-6">
               {/* Main Score */}
-              <div className="md:col-span-1 text-center">
+              <div className="md:col-span-1 text-center md:border-r md:border-border">
                 <div
                   className={cn(
-                    'text-5xl font-bold mb-2',
+                    'text-4xl font-semibold tracking-tight tabular-nums',
                     getScoreColor(project.last_audit_score)
                   )}
                 >
                   {project.last_audit_score ?? '-'}
                 </div>
-                <p className="text-sm text-muted-foreground">Overall Score</p>
+                <p className="text-xs text-muted-foreground mt-1">Overall</p>
               </div>
 
               {/* Category Scores */}
@@ -355,7 +355,7 @@ export function ProjectPage() {
                   <div key={key} className="text-center">
                     <div
                       className={cn(
-                        'text-2xl font-semibold',
+                        'text-xl font-medium tabular-nums',
                         getScoreColor(healthScores[key] ?? null)
                       )}
                     >

@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite --port 3005 --host 0.0.0.0",
     "build": "tsc -b && vite build",
+    "postbuild": "react-snap",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest run",
@@ -50,7 +51,15 @@
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7"
   },
+  "reactSnap": {
+    "source": "dist",
+    "inlineCss": true,
+    "puppeteerArgs": ["--no-sandbox", "--disable-setuid-sandbox"],
+    "skipThirdPartyRequests": true
+  },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "react-snap": "^1.23.0",
     "@resvg/resvg-js": "^2.6.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

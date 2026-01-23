@@ -1,5 +1,5 @@
 import { motion, Variants } from "framer-motion";
-import { ReactNode } from "react";
+import { CSSProperties, ReactNode } from "react";
 
 type AnimationVariant = "fadeUp" | "fadeDown" | "fadeLeft" | "fadeRight" | "fade" | "scale";
 
@@ -69,6 +69,7 @@ export function ScrollReveal({
 interface StaggerContainerProps {
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
   staggerDelay?: number;
   once?: boolean;
 }
@@ -88,6 +89,7 @@ const itemVariants: Variants = {
 export function StaggerContainer({
   children,
   className = "",
+  style,
   staggerDelay = 0.1,
   once = true,
 }: StaggerContainerProps) {
@@ -106,6 +108,7 @@ export function StaggerContainer({
         },
       }}
       className={className}
+      style={style}
     >
       {children}
     </motion.div>
@@ -115,12 +118,14 @@ export function StaggerContainer({
 export function StaggerItem({
   children,
   className = "",
+  style,
 }: {
   children: ReactNode;
   className?: string;
+  style?: CSSProperties;
 }) {
   return (
-    <motion.div variants={itemVariants} className={className}>
+    <motion.div variants={itemVariants} className={className} style={style}>
       {children}
     </motion.div>
   );

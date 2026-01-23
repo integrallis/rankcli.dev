@@ -18,10 +18,10 @@ export function DashboardPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const getScoreColor = (score: number | null) => {
-    if (score === null) return 'text-muted-foreground border-muted bg-muted/50';
-    if (score >= 80) return 'text-green-500 border-green-500/20 bg-green-500/10';
-    if (score >= 60) return 'text-yellow-500 border-yellow-500/20 bg-yellow-500/10';
-    return 'text-red-500 border-red-500/20 bg-red-500/10';
+    if (score === null) return 'text-muted-foreground';
+    if (score >= 80) return 'text-green-400';
+    if (score >= 60) return 'text-yellow-400';
+    return 'text-red-400';
   };
 
   const formatLastAudit = (date: string | null) => {
@@ -64,10 +64,10 @@ export function DashboardPage() {
 
       <main className="container py-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
+            <p className="text-sm text-muted-foreground">
               Welcome back, {user?.email?.split('@')[0] || 'Developer'}
             </p>
           </div>
@@ -90,60 +90,52 @@ export function DashboardPage() {
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-primary/10">
-                  <Globe className="h-6 w-6 text-primary" />
-                </div>
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <Globe className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                 <div>
-                  <p className="text-2xl font-bold">{projects.length}</p>
-                  <p className="text-sm text-muted-foreground">Active Sites</p>
+                  <p className="text-2xl font-semibold tracking-tight">{projects.length}</p>
+                  <p className="text-xs text-muted-foreground">Active Sites</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-red-500/10">
-                  <AlertTriangle className="h-6 w-6 text-red-500" />
-                </div>
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                 <div>
-                  <p className="text-2xl font-bold">{totalErrors}</p>
-                  <p className="text-sm text-muted-foreground">Critical Issues</p>
+                  <p className="text-2xl font-semibold tracking-tight text-red-400">{totalErrors}</p>
+                  <p className="text-xs text-muted-foreground">Critical Issues</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-green-500/10">
-                  <CheckCircle className="h-6 w-6 text-green-500" />
-                </div>
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                 <div>
-                  <p className="text-2xl font-bold">{avgScore || '-'}</p>
-                  <p className="text-sm text-muted-foreground">Avg. Score</p>
+                  <p className="text-2xl font-semibold tracking-tight text-green-400">{avgScore || '-'}</p>
+                  <p className="text-xs text-muted-foreground">Avg. Score</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 rounded-lg bg-blue-500/10">
-                  <Clock className="h-6 w-6 text-blue-500" />
-                </div>
+            <CardContent className="pt-4">
+              <div className="flex items-center gap-3">
+                <Clock className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
                 <div>
-                  <p className="text-2xl font-bold">
+                  <p className="text-2xl font-semibold tracking-tight">
                     {projects.filter((p) => p.last_audit_at).length}
                   </p>
-                  <p className="text-sm text-muted-foreground">Audited Sites</p>
+                  <p className="text-xs text-muted-foreground">Audited Sites</p>
                 </div>
               </div>
             </CardContent>
@@ -169,17 +161,15 @@ export function DashboardPage() {
         {/* Empty State */}
         {!isLoading && !error && projects.length === 0 && (
           <Card className="border-dashed">
-            <CardContent className="py-12 text-center">
-              <div className="p-4 rounded-full bg-muted inline-block mb-4">
-                <Globe className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
-              <p className="text-muted-foreground mb-4">
+            <CardContent className="py-16 text-center">
+              <Globe className="h-8 w-8 text-muted-foreground mx-auto mb-4" strokeWidth={1.5} />
+              <h3 className="font-medium mb-2">No projects yet</h3>
+              <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
                 Add your first website to start monitoring its SEO health.
               </p>
               <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
                 <Plus className="h-4 w-4" />
-                Add Your First Project
+                Add Project
               </Button>
             </CardContent>
           </Card>
@@ -187,56 +177,51 @@ export function DashboardPage() {
 
         {/* Projects Grid */}
         {!isLoading && !error && filteredProjects.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredProjects.map((project) => (
               <Link key={project.id} to={`/dashboard/projects/${project.id}`}>
-                <Card className="hover:border-primary/50 transition-colors cursor-pointer h-full">
-                  <CardHeader className="pb-4">
+                <Card className="hover:border-foreground/20 transition-colors cursor-pointer h-full">
+                  <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="min-w-0 flex-1">
-                        <CardTitle className="text-lg truncate">{project.name}</CardTitle>
-                        <CardDescription className="truncate">{project.url}</CardDescription>
+                        <CardTitle className="text-base truncate">{project.name}</CardTitle>
+                        <CardDescription className="truncate text-xs">{project.url}</CardDescription>
                       </div>
-                      <div
+                      <span
                         className={cn(
-                          'px-3 py-1.5 rounded-lg border font-bold text-lg ml-4',
+                          'font-semibold text-xl tabular-nums ml-4',
                           getScoreColor(project.last_audit_score)
                         )}
                       >
                         {project.last_audit_score ?? '-'}
-                      </div>
+                      </span>
                     </div>
                   </CardHeader>
 
                   <CardContent>
-                    <div className="flex items-center gap-2 mb-4 flex-wrap">
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
                       {project.issues_count.errors > 0 && (
-                        <Badge variant="destructive" className="gap-1">
+                        <Badge variant="destructive">
                           {project.issues_count.errors} error{project.issues_count.errors !== 1 ? 's' : ''}
                         </Badge>
                       )}
                       {project.issues_count.warnings > 0 && (
-                        <Badge variant="outline" className="gap-1 border-yellow-500/50 text-yellow-600">
+                        <Badge variant="warning">
                           {project.issues_count.warnings} warning{project.issues_count.warnings !== 1 ? 's' : ''}
                         </Badge>
                       )}
                       {project.issues_count.errors === 0 && project.issues_count.warnings === 0 && project.last_audit_at && (
-                        <Badge variant="outline" className="gap-1 border-green-500/50 text-green-600">
+                        <Badge variant="success">
                           All clear
                         </Badge>
                       )}
                       {!project.last_audit_at && (
-                        <Badge variant="outline">Not audited</Badge>
+                        <Badge variant="secondary">Not audited</Badge>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <span>Last audit: {formatLastAudit(project.last_audit_at)}</span>
-                      {project.framework && (
-                        <Badge variant="secondary" className="text-xs">
-                          {project.framework}
-                        </Badge>
-                      )}
+                    <div className="text-xs text-muted-foreground">
+                      Last audit: {formatLastAudit(project.last_audit_at)}
                     </div>
                   </CardContent>
                 </Card>
@@ -245,15 +230,13 @@ export function DashboardPage() {
 
             {/* Add Project Card */}
             <Card
-              className="border-dashed hover:border-primary/50 transition-colors cursor-pointer flex items-center justify-center min-h-[200px]"
+              className="border-dashed hover:border-foreground/20 transition-colors cursor-pointer flex items-center justify-center min-h-[180px]"
               onClick={() => setIsAddModalOpen(true)}
             >
-              <CardContent className="text-center py-8">
-                <div className="p-4 rounded-full bg-muted inline-block mb-4">
-                  <Plus className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <p className="font-medium">Add New Project</p>
-                <p className="text-sm text-muted-foreground">Monitor a new website</p>
+              <CardContent className="text-center py-6">
+                <Plus className="h-6 w-6 text-muted-foreground mx-auto mb-3" strokeWidth={1.5} />
+                <p className="font-medium text-sm">Add Project</p>
+                <p className="text-xs text-muted-foreground">Monitor a new website</p>
               </CardContent>
             </Card>
           </div>

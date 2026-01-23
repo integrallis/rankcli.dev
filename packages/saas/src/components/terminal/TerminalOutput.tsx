@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 
 interface TerminalLine {
@@ -22,6 +22,14 @@ export function TerminalOutput({
 }: TerminalOutputProps) {
   const [visibleLines, setVisibleLines] = useState<number>(0);
   const [isTyping, setIsTyping] = useState(false);
+  const terminalBodyRef = useRef<HTMLDivElement>(null);
+
+  // Autoscroll to bottom when new lines appear
+  useEffect(() => {
+    if (terminalBodyRef.current) {
+      terminalBodyRef.current.scrollTop = terminalBodyRef.current.scrollHeight;
+    }
+  }, [visibleLines]);
 
   useEffect(() => {
     if (!autoPlay) {
@@ -61,9 +69,9 @@ export function TerminalOutput({
         <div className="terminal-dot terminal-dot-green" />
         <span className="ml-2 text-xs text-muted-foreground">Terminal</span>
       </div>
-      <div className="terminal-body h-[300px] overflow-y-auto">
+      <div ref={terminalBodyRef} className="terminal-body h-[176px] overflow-y-auto">
         {lines.slice(0, visibleLines).map((line, index) => (
-          <div key={index} className="terminal-line mb-1">
+          <div key={index} className="terminal-line mb-0.5">
             {line.type === 'prompt' ? (
               <>
                 <span className="terminal-prompt">$</span>
@@ -91,27 +99,23 @@ export function TerminalOutput({
   );
 }
 
-// Pre-built demo for landing page
+// Pre-built demo for landing page - uses real CLI output format
 export function LandingTerminalDemo() {
   const demoLines: TerminalLine[] = [
-    { type: 'prompt', content: 'rankcli audit https://myapp.com', delay: 1500 },
-    { type: 'output', content: '', delay: 300 },
-    { type: 'output', content: 'Scanning... 47 pages crawled in 12s', delay: 800 },
+    { type: 'prompt', content: 'rankcli audit https://myapp.com', delay: 1200 },
+    { type: 'output', content: '🔍 Running comprehensive SEO audit...', delay: 600 },
+    { type: 'output', content: '📋 Phase 1: Crawlability checks', delay: 400 },
+    { type: 'output', content: '📝 Phase 2: On-page analysis', delay: 400 },
+    { type: 'output', content: '🔗 Phase 3: Link validation', delay: 400 },
+    { type: 'success', content: '✅ Audit complete!', delay: 500 },
     { type: 'output', content: '', delay: 200 },
-    { type: 'output', content: 'Score: 72/100', delay: 500 },
-    { type: 'output', content: '', delay: 200 },
-    { type: 'error', content: 'Critical (3):', delay: 400 },
-    { type: 'error', content: '  ❌ Missing meta descriptions (8 pages)', delay: 300 },
-    { type: 'error', content: '  ❌ No sitemap.xml', delay: 300 },
-    { type: 'error', content: '  ❌ Images missing alt text (24 images)', delay: 300 },
-    { type: 'output', content: '', delay: 800 },
-    { type: 'prompt', content: 'rankcli fix --auto', delay: 1500 },
-    { type: 'output', content: '', delay: 300 },
-    { type: 'output', content: 'Generating fixes...', delay: 1000 },
-    { type: 'output', content: 'Creating branch: rankcli/auto-fix-2024', delay: 500 },
-    { type: 'success', content: '✓ PR #47 created with 12 fixes', delay: 500 },
-    { type: 'success', content: '  https://github.com/you/app/pull/47', delay: 500 },
+    { type: 'output', content: '📊 Score: 54/100 🟠 Needs Work', delay: 600 },
+    { type: 'output', content: '❌ Errors: 2  ⚠️ Warnings: 36  ✅ Passed: 272', delay: 400 },
+    { type: 'output', content: '', delay: 600 },
+    { type: 'prompt', content: 'rankcli fix --auto', delay: 1200 },
+    { type: 'output', content: 'Creating branch rankcli/seo-fixes...', delay: 500 },
+    { type: 'success', content: '✓ PR #127 created with 14 fixes', delay: 400 },
   ];
 
-  return <TerminalOutput lines={demoLines} className="w-full max-w-2xl" />;
+  return <TerminalOutput lines={demoLines} className="w-full" />;
 }

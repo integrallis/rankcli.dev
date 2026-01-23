@@ -65,8 +65,15 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Geist', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+      },
+      fontSize: {
+        base: ['15px', { lineHeight: '1.6' }],  /* Relaxed body text */
+      },
+      letterSpacing: {
+        tighter: '-0.025em',  /* For headings */
+        tight: '-0.015em',
       },
       keyframes: {
         'accordion-down': {

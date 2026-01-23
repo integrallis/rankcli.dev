@@ -1,4 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* Geist font - Vercel's crisp sans-serif */
+@font-face {
+  font-family: 'Geist';
+  src: url('https://cdn.jsdelivr.net/npm/geist@1.2.0/dist/fonts/geist-sans/Geist-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('https://cdn.jsdelivr.net/npm/geist@1.2.0/dist/fonts/geist-sans/Geist-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('https://cdn.jsdelivr.net/npm/geist@1.2.0/dist/fonts/geist-sans/Geist-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
 
 @tailwind base;
 @tailwind components;
@@ -33,31 +58,31 @@
     --radius: 0.5rem;
   }
 
-  /* Dark theme (default for developer tool) */
+  /* Dark theme (default for developer tool) - Perplexity-inspired warm tones */
   .dark {
-    --background: 224 71% 4%;
-    --foreground: 213 31% 91%;
-    --card: 224 71% 6%;
-    --card-foreground: 213 31% 91%;
-    --popover: 224 71% 6%;
-    --popover-foreground: 213 31% 91%;
-    --primary: 142 76% 46%;
+    --background: 210 23% 8%;        /* Offblack #0F1419 */
+    --foreground: 210 9% 91%;        /* Paper #E7E9EA */
+    --card: 210 32% 13%;             /* Subtle dark #16202A */
+    --card-foreground: 210 9% 91%;
+    --popover: 210 32% 13%;
+    --popover-foreground: 210 9% 91%;
+    --primary: 142 71% 45%;          /* Refined green #22C55E */
     --primary-foreground: 144 100% 10%;
-    --secondary: 215 28% 17%;
-    --secondary-foreground: 213 31% 91%;
-    --muted: 215 28% 17%;
-    --muted-foreground: 217 10% 60%;
-    --accent: 215 28% 17%;
-    --accent-foreground: 213 31% 91%;
+    --secondary: 210 12% 16%;
+    --secondary-foreground: 210 9% 91%;
+    --muted: 210 12% 16%;
+    --muted-foreground: 210 4% 46%;  /* Warm gray #71767B */
+    --accent: 160 84% 39%;           /* Emerald #10B981 */
+    --accent-foreground: 210 9% 91%;
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 85% 97%;
-    --success: 142 76% 46%;
+    --success: 142 71% 45%;
     --success-foreground: 144 100% 10%;
     --warning: 38 92% 50%;
     --warning-foreground: 48 96% 10%;
-    --border: 215 28% 17%;
-    --input: 215 28% 17%;
-    --ring: 142 76% 46%;
+    --border: 210 8% 20%;            /* Warm neutral #2F3336 */
+    --input: 210 8% 20%;
+    --ring: 142 71% 45%;
   }
 }
 
@@ -73,65 +98,65 @@
   }
 }
 
-/* Terminal styling */
+/* Terminal styling - warm, minimal, JetBrains Mono Medium */
 .terminal {
-  @apply bg-[#0d1117] rounded-lg border border-[#30363d] font-mono text-sm;
+  @apply bg-card rounded-lg border border-border font-mono text-xs font-medium;
 }
 
 .terminal-header {
-  @apply flex items-center gap-2 px-4 py-3 border-b border-[#30363d];
+  @apply flex items-center gap-2 px-4 py-2.5 border-b border-border;
 }
 
 .terminal-dot {
-  @apply w-3 h-3 rounded-full;
+  @apply w-2.5 h-2.5 rounded-full;
 }
 
 .terminal-dot-red {
-  @apply bg-[#ff5f56];
+  @apply bg-red-400/80;
 }
 
 .terminal-dot-yellow {
-  @apply bg-[#ffbd2e];
+  @apply bg-yellow-400/80;
 }
 
 .terminal-dot-green {
-  @apply bg-[#27c93f];
+  @apply bg-green-400/80;
 }
 
 .terminal-body {
-  @apply p-4 overflow-x-auto;
+  @apply p-3 overflow-x-auto;
 }
 
 .terminal-line {
-  @apply flex items-start gap-2 leading-relaxed;
+  @apply flex items-start gap-2 leading-snug;
 }
 
 .terminal-prompt {
-  @apply text-[#7ee787] select-none;
+  @apply text-primary select-none;
 }
 
 .terminal-command {
-  @apply text-[#c9d1d9];
+  @apply text-foreground;
 }
 
 .terminal-output {
-  @apply text-[#8b949e] pl-4;
+  @apply text-muted-foreground pl-4;
 }
 
 .terminal-success {
-  @apply text-[#7ee787];
+  @apply text-green-400;
 }
 
 .terminal-error {
-  @apply text-[#f85149];
+  @apply text-red-400;
 }
 
 .terminal-warning {
-  @apply text-[#d29922];
+  @apply text-yellow-400;
 }
 
 .terminal-cursor {
-  @apply inline-block w-2 h-4 bg-[#c9d1d9] animate-terminal-blink ml-1;
+  @apply inline-block w-2 h-4 bg-foreground animate-terminal-blink ml-1;
 }
 
 /* Code styling */
@@ -143,31 +168,20 @@ pre {
   @apply font-mono text-sm;
 }
 
-/* Score badges */
+/* Score colors - text only, no backgrounds */
 .score-excellent {
-  @apply bg-green-500/10 text-green-500 border-green-500/20;
+  @apply text-green-400;
 }
 
 .score-good {
-  @apply bg-yellow-500/10 text-yellow-500 border-yellow-500/20;
+  @apply text-yellow-400;
 }
 
 .score-poor {
-  @apply bg-red-500/10 text-red-500 border-red-500/20;
+  @apply text-red-400;
 }
 
-/* Gradient backgrounds */
-.gradient-primary {
-  @apply bg-gradient-to-r from-primary to-emerald-400;
-}
-
+/* Utility classes - minimal, let content speak */
 .gradient-text {
-  @apply bg-gradient-to-r from-primary to-emerald-400 bg-clip-text text-transparent;
-}
-
-/* Grid pattern background */
-.bg-grid-pattern {
-  background-image: linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
-    linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px);
-  background-size: 24px 24px;
+  @apply text-primary;
 }
