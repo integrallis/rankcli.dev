@@ -65,6 +65,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -fsSL https://get.docker.com | sh && \
   usermod -aG docker vscode
 
+# Install Rust toolchain and wasm-pack for CLI native WASM builds
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+  . /root/.cargo/env && \
+  curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
 # Install uv (fast Python package manager)
 RUN pip install --no-cache-dir uv
 
