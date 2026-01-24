@@ -24,6 +24,8 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+.env.prod
+.env.staging
 *.env
 
 # Logs
@@ -43,6 +45,11 @@ playwright-report/
 
 # Build artifacts
 *.tsbuildinfo
+
+# Rust
+**/target/
+Cargo.lock
+!packages/cli/native/Cargo.lock
 
 # Python
 __pycache__/
