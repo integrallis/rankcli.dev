@@ -27,6 +27,12 @@ import type { Project } from '@/integrations/supabase/types';
 import { ConnectGitHubModal } from '@/components/project/ConnectGitHubModal';
 import { ProjectSettingsModal } from '@/components/project/ProjectSettingsModal';
 import { IssuesList } from '@/components/project/IssuesList';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 
 export function ProjectPage() {
@@ -566,35 +572,53 @@ export function ProjectPage() {
                       >
                         {audit.status}
                       </Badge>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                        disabled={deletingAuditId === audit.id}
-                        onClick={async (e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (deletingAuditId) return;
-                          setDeletingAuditId(audit.id);
-                          try {
-                            const success = await deleteAudit(audit.id);
-                            if (!success) {
-                              alert('Failed to delete audit. Check console for details.');
-                            }
-                          } catch (err) {
-                            console.error('Delete error:', err);
-                            alert(`Failed to delete audit: ${err instanceof Error ? err.message : 'Unknown error'}`);
-                          } finally {
-                            setDeletingAuditId(null);
-                          }
-                        }}
-                      >
-                        {deletingAuditId === audit.id ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className={cn(
+                                  'h-8 w-8',
+                                  audits.length === 1
+                                    ? 'text-muted-foreground/50 cursor-not-allowed'
+                                    : 'text-muted-foreground hover:text-destructive hover:bg-destructive/10'
+                                )}
+                                disabled={deletingAuditId === audit.id || audits.length === 1}
+                                onClick={async (e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  if (deletingAuditId || audits.length === 1) return;
+                                  setDeletingAuditId(audit.id);
+                                  try {
+                                    const success = await deleteAudit(audit.id);
+                                    if (!success) {
+                                      alert('Failed to delete audit. Check console for details.');
+                                    }
+                                  } catch (err) {
+                                    console.error('Delete error:', err);
+                                    alert(`Failed to delete audit: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                                  } finally {
+                                    setDeletingAuditId(null);
+                                  }
+                                }}
+                              >
+                                {deletingAuditId === audit.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </span>
+                          </TooltipTrigger>
+                          {audits.length === 1 && (
+                            <TooltipContent>
+                              <p>Cannot delete the only audit. Run a new audit first.</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </div>
                 ))}

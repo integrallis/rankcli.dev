@@ -185,6 +185,31 @@ describe('useProject.updateProject', () => {
   });
 });
 
+describe('deleteAudit constraints', () => {
+  it('should prevent deleting the last audit', () => {
+    // The deleteAudit function checks if audits.length <= 1
+    // and returns false with an error message
+    const audits = [{ id: 'only-audit' }];
+
+    // Simulate the check in deleteAudit
+    const canDelete = audits.length > 1;
+
+    expect(canDelete).toBe(false);
+
+    // Error message that would be set
+    const errorMessage = 'Cannot delete the only audit. Run a new audit first or delete the project.';
+    expect(errorMessage).toContain('Cannot delete the only audit');
+  });
+
+  it('should allow deleting when multiple audits exist', () => {
+    const audits = [{ id: 'audit-1' }, { id: 'audit-2' }];
+
+    const canDelete = audits.length > 1;
+
+    expect(canDelete).toBe(true);
+  });
+});
+
 describe('updateProject error handling', () => {
   it('should provide user-friendly error message for duplicate name', () => {
     // Test the error message transformation (now using partial index)

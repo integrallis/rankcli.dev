@@ -570,6 +570,12 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
       return false;
     }
 
+    // Prevent deleting the last audit to maintain score consistency
+    if (audits.length <= 1) {
+      setError('Cannot delete the only audit. Run a new audit first or delete the project.');
+      return false;
+    }
+
     try {
       // Delete in order: github_prs -> audit_issues -> audits (due to foreign key constraints)
 
