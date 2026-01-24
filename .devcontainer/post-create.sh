@@ -53,11 +53,16 @@ if [ -f "package.json" ]; then
 fi
 
 # ===========================================
-# Build Deno Bundle for Edge Functions
+# Build Agent Runtime and Audit Worker
 # ===========================================
-echo "Building Deno bundle for Edge Functions..."
+echo "Building agent-runtime..."
 cd /workspace/packages/agent-runtime
-pnpm build:deno 2>/dev/null || echo "Deno bundle build skipped (will build on first dev run)"
+pnpm build 2>/dev/null || echo "agent-runtime build skipped"
+cd /workspace
+
+echo "Building audit-worker..."
+cd /workspace/packages/audit-worker
+pnpm build 2>/dev/null || echo "audit-worker build skipped"
 cd /workspace
 
 # ===========================================
@@ -131,6 +136,13 @@ echo "Commands:"
 echo "  claude              # Claude with full permissions"
 echo "  pnpm cli            # Run CLI commands"
 echo "  supabase db push    # Push migrations to Supabase"
+echo ""
+echo "Local Development:"
+echo "  pnpm saas dev       # Start SaaS frontend on :3005"
+echo "  pnpm worker:dev     # Start audit worker on :8080"
+echo ""
+echo "Or start both at once:"
+echo "  ./scripts/dev-start.sh"
 echo ""
 echo "Ready! Say 'go' to start building."
 echo ""

@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
 const navLinks = [
+  { href: '/docs', label: 'Docs' },
   { href: '/free-audit', label: 'Free Audit' },
   { href: '/pricing', label: 'Pricing' },
   { href: 'https://github.com/rankcli/rankcli', label: 'GitHub', external: true },

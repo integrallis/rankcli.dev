@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, Copy, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import type { AuditIssue } from '@/integrations/supabase/types';
 
@@ -28,9 +29,20 @@ interface IssueItemProps {
   isExpanded: boolean;
   onToggle: () => void;
   projectUrl: string;
+  isSelected?: boolean;
+  onSelectChange?: (selected: boolean) => void;
+  showCheckbox?: boolean;
 }
 
-export function IssueItem({ issue, isExpanded, onToggle, projectUrl }: IssueItemProps) {
+export function IssueItem({
+  issue,
+  isExpanded,
+  onToggle,
+  projectUrl,
+  isSelected = false,
+  onSelectChange,
+  showCheckbox = false,
+}: IssueItemProps) {
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
   const [showAllUrls, setShowAllUrls] = useState(false);
 
@@ -66,6 +78,10 @@ export function IssueItem({ issue, isExpanded, onToggle, projectUrl }: IssueItem
     setTimeout(() => setCopiedUrl(null), 2000);
   };
 
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   const affectedUrls = issue.affected_urls || [];
   const displayedUrls = showAllUrls ? affectedUrls : affectedUrls.slice(0, 5);
   const hasMoreUrls = affectedUrls.length > 5;
@@ -77,6 +93,17 @@ export function IssueItem({ issue, isExpanded, onToggle, projectUrl }: IssueItem
         onClick={onToggle}
         className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted/50 transition-colors"
       >
+        {/* Checkbox */}
+        {showCheckbox && (
+          <div onClick={handleCheckboxClick}>
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(checked) => onSelectChange?.(checked === true)}
+              className="shrink-0"
+            />
+          </div>
+        )}
+
         {/* Severity Dot */}
         <span
           className={cn('h-2.5 w-2.5 rounded-full shrink-0', severityColor)}

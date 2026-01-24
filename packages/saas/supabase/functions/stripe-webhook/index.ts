@@ -43,18 +43,22 @@ serve(async (req) => {
             .eq('plan_id', planId)
             .single();
 
-          // Update user subscription
-          await supabase
+          // Upsert user subscription (INSERT if not exists, UPDATE if exists)
+          const { error: upsertError } = await supabase
             .from('user_subscriptions')
-            .update({
+            .upsert({
+              user_id: userId,
               plan_id: plan?.id,
               status: 'active',
               stripe_subscription_id: subscription.id,
               stripe_customer_id: session.customer as string,
               current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
               current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-            })
-            .eq('user_id', userId);
+            }, { onConflict: 'user_id' });
+
+          if (upsertError) {
+            console.error('Failed to upsert subscription:', upsertError);
+          }
 
           console.log(`Subscription activated for user ${userId}, plan ${planId}`);
         }

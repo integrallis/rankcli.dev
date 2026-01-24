@@ -59,17 +59,17 @@
     "CLAUDE_CONFIG_DIR": "/home/vscode/.claude"
   },
   "forwardPorts": [
-    3000,
-    8000,
+    3005,
+    8080,
     4000,
     9000
   ],
   "portsAttributes": {
-    "3000": { "label": "Next.js Web" },
-    "8000": { "label": "FastAPI Backend" },
+    "3005": { "label": "SaaS Frontend" },
+    "8080": { "label": "Audit Worker" },
     "4000": { "label": "CLI Dev Server" },
     "9000": { "label": "animerm.ai (test)" }
   },
   "postCreateCommand": "/workspace/.devcontainer/post-create.sh",
-  "postStartCommand": "sudo chmod 666 /var/run/docker.sock 2>/dev/null || true"
+  "postStartCommand": "/workspace/.devcontainer/post-start.sh"
 }

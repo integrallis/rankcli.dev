@@ -1,7 +1,8 @@
 # =============================================================================
 # Main Deployment Workflow
 # =============================================================================
-# Deploys frontend to Cloudflare Pages and runs Supabase migrations
+# Deploys frontend to Cloudflare Pages, audit worker to Fly.io,
+# and runs Supabase migrations
 # Triggered on release creation or manual dispatch
 #
 # Required Secrets (set in GitHub repo Settings > Secrets):
@@ -13,6 +14,9 @@
 # - SUPABASE_DB_PASSWORD
 # - STRIPE_SECRET_KEY
 # - STRIPE_WEBHOOK_SECRET
+# - FLY_API_TOKEN
+# - AUDIT_WORKER_SECRET
+# - OPENAI_API_KEY
 
 name: Deploy
 
@@ -23,6 +27,10 @@ on:
     inputs:
       deploy_frontend:
         description: 'Deploy frontend'
+        type: boolean
+        default: true
+      deploy_worker:
+        description: 'Deploy audit worker (Fly.io)'
         type: boolean
         default: true
       run_migrations:
@@ -54,6 +62,7 @@ jobs:
           if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then MISSING="$MISSING CLOUDFLARE_API_TOKEN"; fi
           if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then MISSING="$MISSING CLOUDFLARE_ACCOUNT_ID"; fi
           if [ -z "${{ secrets.SUPABASE_ACCESS_TOKEN }}" ]; then MISSING="$MISSING SUPABASE_ACCESS_TOKEN"; fi
+          if [ -z "${{ secrets.FLY_API_TOKEN }}" ]; then MISSING="$MISSING FLY_API_TOKEN"; fi
 
           if [ -n "$MISSING" ]; then
             echo "## ⏭️ Deployment Skipped" >> $GITHUB_STEP_SUMMARY
@@ -80,6 +89,7 @@ jobs:
       frontend: ${{ steps.filter.outputs.frontend }}
       migrations: ${{ steps.filter.outputs.migrations }}
       pricing: ${{ steps.filter.outputs.pricing }}
+      worker: ${{ steps.filter.outputs.worker }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -92,6 +102,9 @@ jobs:
               - 'packages/saas/supabase/migrations/**'
             pricing:
               - 'packages/saas/src/config/pricing-tiers.json'
+            worker:
+              - 'packages/audit-worker/**'
+              - 'packages/agent-runtime/**'
 
   # ---------------------------------------------------------------------------
   # Deploy Frontend to Cloudflare Pages
@@ -138,6 +151,73 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy packages/saas/dist --project-name=${{ env.CLOUDFLARE_PROJECT_NAME }} --branch=main
+
+  # ---------------------------------------------------------------------------
+  # Deploy Audit Worker to Fly.io
+  # ---------------------------------------------------------------------------
+  deploy-worker:
+    name: Deploy Audit Worker
+    runs-on: ubuntu-latest
+    needs: [preflight, changes]
+    if: |
+      needs.preflight.outputs.ready == 'true' && (
+        github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_worker == 'true' ||
+        github.event_name == 'release' ||
+        needs.changes.outputs.worker == 'true'
+      )
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy to Fly.io
+        working-directory: packages/audit-worker
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          flyctl deploy --remote-only --app rankcli-audit-worker
+
+      - name: Set Fly.io Secrets
+        working-directory: packages/audit-worker
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          flyctl secrets set \
+            SUPABASE_URL="https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co" \
+            SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+            WORKER_SECRET="${{ secrets.AUDIT_WORKER_SECRET }}" \
+            --app rankcli-audit-worker
+
+      - name: Verify Deployment
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          echo "Waiting for deployment to stabilize..."
+          sleep 10
+
+          # Get machine ID and restart to apply secrets
+          MACHINE_ID=$(flyctl machine list --app rankcli-audit-worker --json | jq -r '.[0].id')
+          if [ -n "$MACHINE_ID" ] && [ "$MACHINE_ID" != "null" ]; then
+            echo "Restarting machine $MACHINE_ID..."
+            flyctl machine restart $MACHINE_ID --app rankcli-audit-worker
+            sleep 15
+          fi
+
+          # Health check with retries
+          for i in 1 2 3 4 5; do
+            if curl -sf https://rankcli-audit-worker.fly.dev/health; then
+              echo "✅ Audit worker is healthy"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying in 5s..."
+            sleep 5
+          done
+
+          echo "❌ Health check failed after 5 attempts"
+          exit 1
 
   # ---------------------------------------------------------------------------
   # Run Database Migrations & Deploy Edge Functions
@@ -202,7 +282,9 @@ jobs:
           supabase secrets set \
             STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
             STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
-            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
+            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+            AUDIT_WORKER_URL="https://rankcli-audit-worker.fly.dev" \
+            AUDIT_WORKER_SECRET="${{ secrets.AUDIT_WORKER_SECRET }}"
 
       - name: Deploy Edge Functions
         working-directory: packages/saas
@@ -264,7 +346,7 @@ jobs:
   summary:
     name: Deployment Summary
     runs-on: ubuntu-latest
-    needs: [preflight, deploy-frontend, migrate, sync-stripe]
+    needs: [preflight, deploy-frontend, deploy-worker, migrate, sync-stripe]
     if: always()
 
     steps:
@@ -282,8 +364,13 @@ jobs:
           echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Frontend | ${{ needs.deploy-frontend.result == 'success' && '✅ Deployed' || needs.deploy-frontend.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Audit Worker (Fly.io) | ${{ needs.deploy-worker.result == 'success' && '✅ Deployed' || needs.deploy-worker.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Migrations & Edge Functions | ${{ needs.migrate.result == 'success' && '✅ Applied' || needs.migrate.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Stripe Pricing Sync | ${{ needs.sync-stripe.result == 'success' && '✅ Synced' || needs.sync-stripe.result == 'skipped' && '⏭️ Skipped' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Services" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend**: https://rankcli.dev" >> $GITHUB_STEP_SUMMARY
+          echo "- **Audit Worker**: https://rankcli-audit-worker.fly.dev" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Edge Functions" >> $GITHUB_STEP_SUMMARY
           echo "- create-checkout" >> $GITHUB_STEP_SUMMARY

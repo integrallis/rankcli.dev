@@ -1,0 +1,47 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": [
+    "./packages/agent-runtime/src/index.ts",
+    "./packages/cli/src/index.ts"
+  ],
+  "out": "./packages/saas/public/api-docs",
+  "plugin": ["typedoc-plugin-markdown"],
+  "name": "RankCLI API Documentation",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeInternal": true,
+  "includeVersion": true,
+  "categorizeByGroup": true,
+  "categoryOrder": [
+    "Audit",
+    "Checks",
+    "Discovery",
+    "Fixes",
+    "CLI",
+    "*"
+  ],
+  "navigationLinks": {
+    "Website": "https://rankcli.dev",
+    "GitHub": "https://github.com/rankcli/rankcli"
+  },
+  "visibilityFilters": {
+    "protected": false,
+    "private": false,
+    "inherited": true,
+    "external": false
+  },
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "downlevelIteration": true
+  },
+  "exclude": [
+    "**/node_modules/**",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ],
+  "skipErrorChecking": true
+}

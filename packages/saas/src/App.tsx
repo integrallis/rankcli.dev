@@ -2,6 +2,7 @@ import { Routes, Route } from 'react-router-dom';
 import { LandingPage } from './pages/LandingPage';
 import { FreeAuditPage } from './pages/FreeAuditPage';
 import { PricingPage } from './pages/PricingPage';
+import { DocsPage } from './pages/DocsPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
@@ -20,6 +21,7 @@ function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/free-audit" element={<FreeAuditPage />} />
       <Route path="/pricing" element={<PricingPage />} />
+      <Route path="/docs" element={<DocsPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />

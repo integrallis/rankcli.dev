@@ -68,7 +68,12 @@ export function DashboardPage() {
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
             <p className="text-sm text-muted-foreground">
-              Welcome back, {user?.email?.split('@')[0] || 'Developer'}
+              {(() => {
+                const hour = new Date().getHours();
+                if (hour < 12) return 'Good morning';
+                if (hour < 18) return 'Good afternoon';
+                return 'Good evening';
+              })()}, {user?.email?.split('@')[0] || 'Developer'}
             </p>
           </div>
 

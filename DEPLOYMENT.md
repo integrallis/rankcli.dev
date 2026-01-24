@@ -12,8 +12,9 @@ This guide covers everything needed to deploy RankCLI for both development and p
 2. [Manual Setup Steps](#manual-setup-steps)
 3. [Development Deployment](#development-deployment)
 4. [Production Deployment](#production-deployment)
-5. [Threat Intelligence Updates](#threat-intelligence-updates)
-6. [Troubleshooting](#troubleshooting)
+5. [CLI Package Build](#cli-package-build)
+6. [Threat Intelligence Updates](#threat-intelligence-updates)
+7. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -21,17 +22,24 @@ This guide covers everything needed to deploy RankCLI for both development and p
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         RankCLI                           │
+│                           RankCLI                               │
 ├─────────────────────────────────────────────────────────────────┤
 │  Frontend (React + Vite)     │  Cloudflare Pages (Production)  │
-│                              │  localhost:3000 (Development)    │
+│                              │  localhost:3005 (Development)    │
 ├──────────────────────────────┼──────────────────────────────────┤
 │  Backend (Supabase)          │  Auth, Database, Edge Functions  │
 ├──────────────────────────────┼──────────────────────────────────┤
 │  Payments (Stripe)           │  Subscriptions + Credit Bundles  │
 ├──────────────────────────────┼──────────────────────────────────┤
-│  CLI / Agent Runtime         │  npm package (separate)          │
+│  CLI (rankcli npm)           │  WASM-protected audit engine     │
+├──────────────────────────────┼──────────────────────────────────┤
+│  Agent Runtime               │  200+ SEO checks (TypeScript)    │
 └─────────────────────────────────────────────────────────────────┘
+
+Deployment Modes:
+- SaaS: Edge Functions → TypeScript checks (server-side, unprotected)
+- CLI:  npm package → WASM binary (client-side, encrypted)
+- Action: GitHub Action → npm package → WASM (encrypted)
 ```
 
 ### Services Used
@@ -42,6 +50,17 @@ This guide covers everything needed to deploy RankCLI for both development and p
 | Stripe | Payments | Test mode | Live mode |
 | Cloudflare Pages | Frontend hosting | N/A | Yes |
 | GitHub Actions | CI/CD | Yes | Yes |
+| npm | CLI package distribution | N/A | Yes |
+
+### Build Toolchain
+
+| Tool | Purpose | Version |
+|------|---------|---------|
+| Node.js | JavaScript runtime | 20+ |
+| pnpm | Package manager | 8+ |
+| Rust | WASM compilation | 1.70+ |
+| wasm-pack | Rust → WASM builder | Latest |
+| tsup | TypeScript bundler | 8+ |
 
 ---
 
@@ -141,10 +160,19 @@ Go to **Settings → Secrets and variables → Actions → Variables**
 ## Development Deployment
 
 ### Prerequisites
+
+**Required:**
 - Node.js 20+
 - pnpm 8+
-- Docker & Docker Compose
 - Supabase CLI (`npm install -g supabase`)
+
+**For CLI/WASM builds:**
+- Rust 1.70+ (`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)
+- wasm-pack (`cargo install wasm-pack`)
+- WASM target (`rustup target add wasm32-unknown-unknown`)
+
+**Optional:**
+- Docker & Docker Compose (for containerized development)
 
 ### Step 1: Configure Environment
 
@@ -200,6 +228,28 @@ supabase functions deploy stripe-webhook --no-verify-jwt
 supabase functions deploy run-audit --no-verify-jwt
 ```
 
+#### DevContainer / Docker-in-Docker Deployment
+
+When deploying from a DevContainer, the standard `supabase functions deploy` command may fail with a Docker mount error:
+
+```
+The path /workspace/packages/saas/supabase/functions is not shared from the host
+```
+
+**Solution**: Use the `--use-api` flag to bypass Docker and upload directly via the Supabase API:
+
+```bash
+# Copy functions to /tmp (avoids mount issues)
+mkdir -p /tmp/supabase-deploy/supabase/functions
+cp -r packages/saas/supabase/functions/* /tmp/supabase-deploy/supabase/functions/
+
+# Deploy using API (no Docker required)
+cd /tmp/supabase-deploy
+npx supabase functions deploy run-audit --no-verify-jwt --project-ref <project-ref> --use-api
+```
+
+This works for all functions and is the recommended approach in DevContainers.
+
 ### Step 5: Start Development Server
 
 ```bash
@@ -217,7 +267,8 @@ pnpm dev
 
 | Port | Service |
 |------|---------|
-| 3000 | Frontend (Vite dev server) |
+| 3005 | Frontend (Vite dev server) |
+| 8080 | Audit Worker (local dev) |
 | 54321 | Supabase Studio (if running locally) |
 
 ### Quick Dev Deploy Script
@@ -306,6 +357,334 @@ curl https://your-domain.com
 |----------|-------------|----------|
 | `SUPABASE_ACCESS_TOKEN` | Supabase CLI access token | For CLI |
 | `SUPABASE_JWT_SECRET` | JWT secret for token verification | For CLI |
+
+---
+
+## Fly.io Audit Worker
+
+For paid users, deep audits (up to 20 pages, 5-minute timeout) are handled by a Fly.io worker instead of Supabase Edge Functions (which have a 45-second limit).
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      Audit Flow                                  │
+├─────────────────────────────────────────────────────────────────┤
+│  Free Users:                                                     │
+│    Frontend → Edge Function (3 pages, 40s timeout)               │
+│                                                                  │
+│  Paid Users:                                                     │
+│    Frontend → Edge Function → Fly.io Worker (20 pages, 5min)     │
+│                              ↓                                   │
+│                         Updates DB when done                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Initial Setup
+
+1. Install Fly CLI:
+```bash
+curl -L https://fly.io/install.sh | sh
+```
+
+2. Login and create app:
+```bash
+fly auth login
+cd packages/audit-worker
+fly apps create rankcli-audit-worker
+```
+
+3. Set secrets:
+```bash
+fly secrets set \
+  SUPABASE_URL="https://your-project.supabase.co" \
+  SUPABASE_SERVICE_ROLE_KEY="your-service-key" \
+  OPENAI_API_KEY="your-openai-key" \
+  WORKER_SECRET="generate-a-strong-secret"
+```
+
+4. Deploy:
+```bash
+fly deploy
+```
+
+### Set Edge Function Secrets
+
+After deploying the worker, configure the edge function to use it:
+
+```bash
+supabase secrets set \
+  AUDIT_WORKER_URL="https://rankcli-audit-worker.fly.dev" \
+  AUDIT_WORKER_SECRET="same-secret-as-above"
+```
+
+### Local Development
+
+The audit worker runs automatically as part of the devcontainer:
+
+```bash
+# Option 1: Devcontainer (automatic)
+# Worker runs at http://audit-worker:8080 inside the container
+
+# Option 2: Run manually
+cd packages/audit-worker
+pnpm dev
+# Worker runs at http://localhost:8080
+```
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/jobs` | GET | List active jobs |
+| `/jobs/:id` | GET | Get job status |
+| `/audit` | POST | Submit audit job |
+
+### Monitoring
+
+```bash
+# View logs
+fly logs
+
+# Check status
+fly status
+
+# Scale up for more capacity
+fly scale count 2
+```
+
+---
+
+## CLI Package Build
+
+The `rankcli` npm package includes WASM-protected SEO checks. This section covers building the CLI for development and production.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    rankcli npm package                          │
+├─────────────────────────────────────────────────────────────────┤
+│  TypeScript CLI        │  dist/index.js                         │
+│  WASM Engine Wrapper   │  dist/wasm-engine.js                   │
+│  Encrypted WASM Binary │  wasm/rankcli_audit_engine_bg.wasm     │
+│  WASM Bindings         │  wasm/rankcli_audit_engine.js          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+The SEO checks are:
+1. Written in TypeScript (`packages/agent-runtime/src/audit/checks/`)
+2. Bundled to self-contained IIFE
+3. Encrypted with AES-256-GCM at Rust compile time
+4. Embedded in WASM binary
+5. Decrypted at runtime using license key
+6. Executed in Node.js VM sandbox
+
+### Prerequisites
+
+```bash
+# Install Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Add WASM target
+rustup target add wasm32-unknown-unknown
+
+# Install wasm-pack
+cargo install wasm-pack
+
+# Verify
+wasm-pack --version
+```
+
+### Development Build
+
+**Quick setup script:**
+
+```bash
+# Run from project root - sets up everything for local testing
+./scripts/setup-local-test.sh
+```
+
+**Manual steps:**
+
+```bash
+# 1. Build agent-runtime WASM bundle (JS checks → IIFE)
+cd packages/agent-runtime
+pnpm build:wasm
+
+# 2. Build WASM binary with dev key
+cd packages/cli
+pnpm build:wasm:dev
+
+# 3. Build TypeScript
+pnpm build:js
+
+# Or all at once (requires Rust/wasm-pack):
+pnpm build
+```
+
+### Testing Locally
+
+```bash
+cd packages/cli
+
+# Test WASM decryption directly
+node -e "
+const wasm = require('./wasm/rankcli_audit_engine.js');
+wasm.init_engine('dev');
+console.log('Decrypted:', wasm.get_decrypted_code().length, 'chars');
+console.log('Tier:', wasm.get_tier());
+"
+
+# Run WASM integration test suite
+pnpm test:wasm
+
+# Test full audit (requires build:js first)
+node -e "
+const { initEngine, runAudit } = require('./dist/wasm-engine.js');
+(async () => {
+  await initEngine('dev');
+  const html = '<html><head><title>Test</title></head><body><h1>Hello</h1></body></html>';
+  const result = await runAudit('https://example.com', html);
+  console.log('Score:', result.score);
+  console.log('Issues:', result.issues.length);
+})();
+"
+```
+
+### Production Build
+
+For production, set `RANKCLI_BUILD_KEY` to a secure 32-byte base64 key:
+
+```bash
+# Generate production key (store securely!)
+export RANKCLI_BUILD_KEY=$(openssl rand -base64 32)
+
+# Build with production key
+cd packages/cli
+pnpm build:wasm
+
+# Verify package contents
+npm pack --dry-run
+```
+
+### Package Publishing
+
+```bash
+# Build everything
+cd packages/cli
+pnpm build
+
+# Publish to npm
+npm publish
+```
+
+### GitHub Actions Integration
+
+The repository includes two workflows for CLI builds:
+
+1. **`ci.yml`** - Runs on every PR/push, builds and tests with dev key
+2. **`build-cli.yml`** - Builds with production key, publishes on release
+
+**Required Secrets:**
+
+| Secret | Description | Required For |
+|--------|-------------|--------------|
+| `RANKCLI_BUILD_KEY` | Base64-encoded 32-byte AES key | Production builds |
+| `NPM_TOKEN` | npm access token for publishing | npm publish |
+
+**Generate production key:**
+```bash
+# Generate and copy to clipboard (macOS)
+openssl rand -base64 32 | pbcopy
+
+# Or just display
+openssl rand -base64 32
+```
+
+**Workflow triggers:**
+
+| Workflow | Trigger | Action |
+|----------|---------|--------|
+| `ci.yml` | Push/PR to main | Build + test with dev key |
+| `build-cli.yml` | Push to main (cli/agent changes) | Build only |
+| `build-cli.yml` | Release published | Build + publish to npm |
+| `build-cli.yml` | Manual dispatch | Build + optional publish |
+
+### Publishing to npm
+
+**Automatic publishing (recommended):**
+
+```bash
+# Create a release - triggers build-cli.yml automatically
+gh release create v1.0.0 --title "Release 1.0.0" --notes "Release notes here"
+
+# The workflow will:
+# 1. Build with production RANKCLI_BUILD_KEY
+# 2. Run WASM integration tests
+# 3. Set package version from tag (v1.0.0 → 1.0.0)
+# 4. Publish to npm
+```
+
+**Manual publishing:**
+
+```bash
+# Trigger workflow manually with publish flag
+gh workflow run build-cli.yml -f publish=true
+
+# Or build locally and publish
+cd packages/cli
+RANKCLI_BUILD_KEY=$(cat /path/to/key) pnpm build
+npm publish
+```
+
+### WASM Integration Tests
+
+The CLI includes a test suite that verifies WASM functionality:
+
+```bash
+cd packages/cli
+
+# Run WASM integration tests
+pnpm test:wasm
+
+# Tests verify:
+# ✓ Engine not ready before init
+# ✓ Invalid license key rejected
+# ✓ Dev key accepted
+# ✓ Engine ready after init
+# ✓ Correct tier for license
+# ✓ Audit returns valid results
+```
+
+### Workflow Files
+
+| File | Purpose |
+|------|---------|
+| `.github/workflows/ci.yml` | PR/push validation with dev key |
+| `.github/workflows/build-cli.yml` | Production builds and npm publishing |
+
+### CI Pipeline Steps
+
+The `build-cli.yml` workflow performs these steps:
+
+1. **Setup environment** - Node.js, pnpm, Rust, wasm-pack
+2. **Build agent-runtime** - `pnpm build:wasm` (JS → IIFE bundle)
+3. **Build CLI WASM** - `pnpm build:wasm` (encrypt + embed in WASM)
+4. **Build TypeScript** - `pnpm build:js`
+5. **Run tests** - `pnpm test:wasm`
+6. **Upload artifact** - Build artifacts saved for 7 days
+7. **Publish** - (on release) Publish to npm registry
+
+### Detailed Documentation
+
+See [docs/wasm-code-protection.md](docs/wasm-code-protection.md) for:
+- Encryption algorithm details
+- Key derivation process
+- Tier-based check limits
+- API reference
+- Troubleshooting
 
 ---
 
@@ -442,12 +821,57 @@ supabase functions logs create-checkout
 supabase functions serve
 ```
 
+### WASM Build Failing
+
+```bash
+# Check Rust is installed
+rustc --version
+
+# Check wasm-pack is installed
+wasm-pack --version
+
+# Check WASM target is installed
+rustup target list | grep wasm32
+
+# If missing, add it:
+rustup target add wasm32-unknown-unknown
+
+# Clean and rebuild
+cd packages/cli/native
+cargo clean
+cd ..
+pnpm build:wasm:dev
+```
+
+### "Invalid license key" Error
+
+The license key doesn't match the key used at build time. For development builds, use `"dev"`:
+
+```typescript
+await initEngine('dev');
+```
+
+For production, ensure `RANKCLI_LICENSE_KEY` environment variable matches the tier associated with the user's subscription.
+
+### "WASM engine not found" Error
+
+The WASM binary hasn't been built or is in the wrong location:
+
+```bash
+cd packages/cli
+pnpm build:wasm:dev
+
+# Verify files exist
+ls -la wasm/
+```
+
 ---
 
 ## Checklist
 
 ### Development Setup Checklist
 
+**SaaS Platform:**
 - [ ] Supabase project created
 - [ ] Google OAuth configured in Supabase
 - [ ] GitHub OAuth configured in Supabase
@@ -457,10 +881,18 @@ supabase functions serve
 - [ ] Supabase CLI linked to project
 - [ ] Database migrations applied
 - [ ] Edge Functions deployed
-- [ ] Dev server running
+- [ ] Dev server running on port 3005
+
+**CLI Package:**
+- [ ] Rust installed with WASM target
+- [ ] wasm-pack installed
+- [ ] Agent runtime WASM bundle built
+- [ ] CLI WASM binary built (dev mode)
+- [ ] Local testing passing
 
 ### Production Setup Checklist
 
+**SaaS Platform:**
 - [ ] Separate Supabase project for production
 - [ ] Google OAuth configured for production URLs
 - [ ] GitHub OAuth configured for production URLs
@@ -471,3 +903,9 @@ supabase functions serve
 - [ ] Cloudflare Pages project created
 - [ ] Custom domain configured (optional)
 - [ ] First deployment triggered
+
+**CLI Package:**
+- [ ] `RANKCLI_BUILD_KEY` secret set in GitHub
+- [ ] `NPM_TOKEN` secret set in GitHub
+- [ ] WASM build workflow configured
+- [ ] First npm publish completed

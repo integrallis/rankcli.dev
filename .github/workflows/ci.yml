@@ -27,6 +27,7 @@ jobs:
       cli: ${{ steps.filter.outputs.cli }}
       agent: ${{ steps.filter.outputs.agent }}
       plugins: ${{ steps.filter.outputs.plugins }}
+      native: ${{ steps.filter.outputs.native }}
     steps:
       - uses: actions/checkout@v4
 
@@ -44,6 +45,8 @@ jobs:
               - 'packages/vite-plugin/**'
               - 'packages/next-plugin/**'
               - 'packages/astro-plugin/**'
+            native:
+              - 'packages/cli/native/**'
 
   # ---------------------------------------------------------------------------
   # SaaS Frontend Tests
@@ -118,17 +121,13 @@ jobs:
         run: pnpm test
 
   # ---------------------------------------------------------------------------
-  # CLI Tests
+  # CLI Tests (includes WASM build)
   # ---------------------------------------------------------------------------
   cli-tests:
     name: CLI Tests
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.cli == 'true' || github.event_name == 'push'
-
-    defaults:
-      run:
-        working-directory: packages/cli
+    if: needs.changes.outputs.cli == 'true' || needs.changes.outputs.agent == 'true' || needs.changes.outputs.native == 'true' || github.event_name == 'push'
 
     steps:
       - uses: actions/checkout@v4
@@ -144,11 +143,39 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
+      - name: Setup Rust
+        uses: dtolnay/rust-action@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: packages/cli/native
+
+      - name: Install wasm-pack
+        run: cargo install wasm-pack --locked
+
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build
-        run: pnpm build
+      - name: Build agent-runtime WASM bundle
+        working-directory: packages/agent-runtime
+        run: pnpm build:wasm
+
+      - name: Build CLI (with WASM)
+        working-directory: packages/cli
+        run: |
+          pnpm build:wasm:dev
+          pnpm build:js
+
+      - name: Run WASM integration tests
+        working-directory: packages/cli
+        run: pnpm test:wasm
+
+      - name: Run unit tests
+        working-directory: packages/cli
+        run: pnpm test
 
   # ---------------------------------------------------------------------------
   # Plugin Tests

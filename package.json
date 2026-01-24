@@ -12,12 +12,18 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",
+    "docs": "typedoc",
     "cli": "pnpm --filter @rankcli/cli",
     "saas": "pnpm --filter @rankcli/saas",
-    "agent": "pnpm --filter @rankcli/agent-runtime"
+    "agent": "pnpm --filter @rankcli/agent-runtime",
+    "worker": "pnpm --filter @rankcli/audit-worker",
+    "worker:dev": "pnpm --filter @rankcli/audit-worker dev",
+    "worker:docker": "docker compose up audit-worker"
   },
   "devDependencies": {
     "turbo": "^2.0.0",
+    "typedoc": "^0.28.16",
+    "typedoc-plugin-markdown": "^4.9.0",
     "typescript": "^5.3.0"
   },
   "engines": {

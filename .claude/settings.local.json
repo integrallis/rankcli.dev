@@ -86,7 +86,9 @@
       "Bash(for domain in rankcli.io shipmeta.io seoci.io rankops.io prseo.io shiprank.io fixmeta.io crawlrank.io seohook.io rankship.io seoship.io mergemeta.io pushrank.io commitrank.io)",
       "Bash(for domain in shipit.dev rankpr.dev prmeta.dev metapr.dev seomerge.dev mergeit.dev rankci.dev cirank.dev deployrank.dev rankdeploy.dev buildrank.dev metabuild.dev pushmeta.dev metapush.dev prship.dev shippr.dev metaops.dev opsrank.dev rankctl.dev ctlrank.dev)",
       "Bash(for domain in rankup.dev rankup.ai rankup.io seoup.dev seoup.ai seoup.io metaup.dev metaup.ai shipup.dev shipup.ai uprank.dev uprank.ai upmeta.dev upmeta.ai)",
-      "Bash(./scripts/dev-deploy.sh:*)"
+      "Bash(./scripts/dev-deploy.sh:*)",
+      "Bash(lsof:*)",
+      "Bash(ps:*)"
     ],
     "deny": []
   }

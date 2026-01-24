@@ -7,6 +7,10 @@ import {
   ChevronsUpDown,
   GitPullRequest,
   Loader2,
+  EyeOff,
+  XCircle,
+  X,
+  CheckSquare,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { IssueGroup } from './IssueGroup';
 import { exportToMarkdown, exportToPDF } from '@/lib/export-utils';
+import { supabase } from '@/integrations/supabase/client';
 import type { AuditIssue } from '@/integrations/supabase/types';
 
 // Category display labels
@@ -53,6 +58,7 @@ interface IssuesListProps {
   onCreateFixPR?: () => void;
   isCreatingPR?: boolean;
   hasGitHub?: boolean;
+  onIssuesUpdated?: () => void;
 }
 
 export function IssuesList({
@@ -62,9 +68,12 @@ export function IssuesList({
   onCreateFixPR,
   isCreatingPR = false,
   hasGitHub = false,
+  onIssuesUpdated,
 }: IssuesListProps) {
   const [groupBy, setGroupBy] = useState<GroupBy>('severity');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isUpdating, setIsUpdating] = useState(false);
 
   // Group issues based on current grouping mode
   const groupedIssues = useMemo(() => {
@@ -91,7 +100,7 @@ export function IssuesList({
     }
   }, [issues, groupBy]);
 
-  // Toggle single issue
+  // Toggle single issue expansion
   const handleToggleIssue = useCallback((id: string) => {
     setExpandedIds((prev) => {
       const next = new Set(prev);
@@ -135,6 +144,63 @@ export function IssuesList({
     setExpandedIds(new Set());
   }, []);
 
+  // Selection handlers
+  const handleSelectIssue = useCallback((id: string, selected: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (selected) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const handleSelectGroup = useCallback((ids: string[], selected: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      for (const id of ids) {
+        if (selected) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
+      }
+      return next;
+    });
+  }, []);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+  }, []);
+
+  // Bulk status update
+  const handleBulkStatusUpdate = useCallback(
+    async (status: 'ignored' | 'wont_fix') => {
+      if (selectedIds.size === 0) return;
+
+      setIsUpdating(true);
+      try {
+        const { error } = await supabase
+          .from('audit_issues')
+          .update({ status })
+          .in('id', Array.from(selectedIds));
+
+        if (error) throw error;
+
+        // Clear selection and notify parent
+        setSelectedIds(new Set());
+        onIssuesUpdated?.();
+      } catch (err) {
+        console.error('Failed to update issues:', err);
+      } finally {
+        setIsUpdating(false);
+      }
+    },
+    [selectedIds, onIssuesUpdated]
+  );
+
   // Export handlers
   const handleExportMarkdown = () => {
     exportToMarkdown(issues, projectName, projectUrl);
@@ -148,8 +214,11 @@ export function IssuesList({
   const errorCount = issues.filter((i) => i.severity === 'error').length;
   const warningCount = issues.filter((i) => i.severity === 'warning').length;
 
+  const showCheckboxes = issues.length > 0;
+  const hasSelection = selectedIds.size > 0;
+
   return (
-    <Card>
+    <Card className="relative">
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -181,6 +250,25 @@ export function IssuesList({
                     Create Fix PR
                   </>
                 )}
+              </Button>
+            )}
+
+            {/* Bulk Select Toggle */}
+            {showCheckboxes && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-muted-foreground"
+                onClick={() =>
+                  hasSelection
+                    ? handleClearSelection()
+                    : setSelectedIds(new Set(issues.map((i) => i.id)))
+                }
+              >
+                <CheckSquare className="h-4 w-4" />
+                <span className="hidden sm:inline">
+                  {hasSelection ? 'Deselect' : 'Select'}
+                </span>
               </Button>
             )}
 
@@ -257,6 +345,10 @@ export function IssuesList({
                 onExpandAll={() => handleExpandGroup(groupedIssues.error || [])}
                 onCollapseAll={() => handleCollapseGroup(groupedIssues.error || [])}
                 projectUrl={projectUrl}
+                selectedIds={selectedIds}
+                onSelectIssue={handleSelectIssue}
+                onSelectGroup={handleSelectGroup}
+                showCheckboxes={showCheckboxes}
               />
               <IssueGroup
                 title="Warnings"
@@ -267,6 +359,10 @@ export function IssuesList({
                 onExpandAll={() => handleExpandGroup(groupedIssues.warning || [])}
                 onCollapseAll={() => handleCollapseGroup(groupedIssues.warning || [])}
                 projectUrl={projectUrl}
+                selectedIds={selectedIds}
+                onSelectIssue={handleSelectIssue}
+                onSelectGroup={handleSelectGroup}
+                showCheckboxes={showCheckboxes}
               />
               <IssueGroup
                 title="Notices"
@@ -278,6 +374,10 @@ export function IssuesList({
                 onCollapseAll={() => handleCollapseGroup(groupedIssues.notice || [])}
                 projectUrl={projectUrl}
                 defaultCollapsed={true}
+                selectedIds={selectedIds}
+                onSelectIssue={handleSelectIssue}
+                onSelectGroup={handleSelectGroup}
+                showCheckboxes={showCheckboxes}
               />
             </>
           ) : (
@@ -291,11 +391,65 @@ export function IssuesList({
                 onExpandAll={() => handleExpandGroup(categoryIssues as AuditIssue[])}
                 onCollapseAll={() => handleCollapseGroup(categoryIssues as AuditIssue[])}
                 projectUrl={projectUrl}
+                selectedIds={selectedIds}
+                onSelectIssue={handleSelectIssue}
+                onSelectGroup={handleSelectGroup}
+                showCheckboxes={showCheckboxes}
               />
             ))
           )}
         </div>
       </CardContent>
+
+      {/* Floating Action Bar */}
+      {hasSelection && (
+        <div className="sticky bottom-4 mx-4 mb-4 flex items-center justify-between gap-4 rounded-lg border border-border bg-card p-3 shadow-lg">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">
+              {selectedIds.size} selected
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={handleClearSelection}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => handleBulkStatusUpdate('ignored')}
+              disabled={isUpdating}
+            >
+              {isUpdating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <EyeOff className="h-4 w-4" />
+              )}
+              Mark as Ignored
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              onClick={() => handleBulkStatusUpdate('wont_fix')}
+              disabled={isUpdating}
+            >
+              {isUpdating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <XCircle className="h-4 w-4" />
+              )}
+              Won't Fix
+            </Button>
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

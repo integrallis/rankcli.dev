@@ -1,24 +1,50 @@
-import { Terminal, GitPullRequest, CheckCircle } from 'lucide-react';
+import { Terminal, Scan, Wrench, GitPullRequest, Upload } from 'lucide-react';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
+import { cn } from '@/lib/utils';
 
 const steps = [
   {
     icon: Terminal,
-    title: 'Install the CLI',
-    description: 'One command to install. Works with any framework.',
-    code: 'npm i -g @rankcli/cli',
+    title: 'Install & Login',
+    description: 'One command to install, one to authenticate.',
+    code: 'npm i -g rankcli && rankcli auth',
   },
   {
+    icon: Scan,
+    title: 'Run the Audit',
+    description: '280+ SEO checks in seconds. Works with any framework.',
+    code: 'rankcli audit',
+  },
+  {
+    icon: Wrench,
+    title: 'Apply Fixes',
+    description: 'Auto-fix issues locally or create a PR automatically.',
+    code: 'rankcli fix',
+  },
+];
+
+const approaches = [
+  {
+    title: 'Keep Full Control',
+    description: 'No repo access needed. Run locally, push when ready.',
+    icon: Upload,
+    commands: [
+      { cmd: 'rankcli audit', desc: 'Run 280+ checks' },
+      { cmd: 'rankcli fix --commit', desc: 'Apply fixes + commit' },
+      { cmd: 'git push', desc: 'Push when ready' },
+    ],
+    highlight: 'Solo plan',
+  },
+  {
+    title: 'Full Automation',
+    description: 'Connect GitHub for hands-free SEO maintenance.',
     icon: GitPullRequest,
-    title: 'Connect your repo',
-    description: 'Link GitHub for automated audits and PRs.',
-    code: 'rankcli connect',
-  },
-  {
-    icon: CheckCircle,
-    title: 'Merge the fixes',
-    description: 'Review and merge. SEO improves automatically.',
-    code: 'git merge fix/seo',
+    commands: [
+      { cmd: 'rankcli link', desc: 'Connect your repo' },
+      { cmd: 'rankcli fix --pr', desc: 'Create PR automatically' },
+      { cmd: '✓ Merge & done', desc: 'Review and merge' },
+    ],
+    highlight: 'Pro plan',
   },
 ];
 
@@ -31,45 +57,74 @@ export function HowItWorks() {
             How it works
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Three steps to automated SEO. No dashboards to check. No meetings to schedule.
+            Three commands to better SEO. No dashboards to check. No meetings to schedule.
           </p>
         </ScrollReveal>
 
-        {/* Mobile: stack vertically */}
-        <div className="md:hidden flex flex-col gap-10 max-w-sm mx-auto">
+        {/* Main 3-step flow */}
+        <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto mb-20">
           {steps.map((step, index) => (
-            <Step key={index} step={step} />
+            <ScrollReveal key={index} delay={index * 0.1}>
+              <div className="flex flex-col items-center text-center">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-5">
+                  <step.icon className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
+                <p className="text-muted-foreground mb-4 text-sm">{step.description}</p>
+                <code className="text-xs px-3 py-1.5 bg-muted rounded-md font-mono">
+                  {step.code}
+                </code>
+              </div>
+            </ScrollReveal>
           ))}
         </div>
 
-        {/* Desktop: 20% - 50% - 20% with gaps */}
-        <div className="hidden md:flex justify-center items-start gap-8 max-w-5xl mx-auto">
-          <div style={{ width: '20%' }}>
-            <Step step={steps[0]} />
-          </div>
-          <div style={{ width: '50%' }}>
-            <Step step={steps[1]} />
-          </div>
-          <div style={{ width: '20%' }}>
-            <Step step={steps[2]} />
-          </div>
+        {/* Two approaches */}
+        <ScrollReveal className="text-center mb-10">
+          <h3 className="text-xl font-semibold mb-3">Choose your workflow</h3>
+          <p className="text-muted-foreground max-w-xl mx-auto text-sm">
+            Full control or full automation — you decide how much access to grant.
+          </p>
+        </ScrollReveal>
+
+        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          {approaches.map((approach, index) => (
+            <ScrollReveal key={index} delay={index * 0.1}>
+              <div className={cn(
+                'rounded-lg border p-6 h-full',
+                index === 1 ? 'border-primary bg-primary/5' : 'border-border'
+              )}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={cn(
+                    'w-10 h-10 rounded-full flex items-center justify-center',
+                    index === 1 ? 'bg-primary/20' : 'bg-muted'
+                  )}>
+                    <approach.icon className={cn(
+                      'h-5 w-5',
+                      index === 1 ? 'text-primary' : 'text-muted-foreground'
+                    )} />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">{approach.title}</h4>
+                    <span className="text-xs text-muted-foreground">{approach.highlight}</span>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">{approach.description}</p>
+                <div className="space-y-2">
+                  {approach.commands.map((cmd, i) => (
+                    <div key={i} className="flex items-center gap-3 text-sm">
+                      <code className="px-2 py-1 bg-muted rounded text-xs font-mono flex-shrink-0">
+                        {cmd.cmd}
+                      </code>
+                      <span className="text-muted-foreground text-xs">{cmd.desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </ScrollReveal>
+          ))}
         </div>
       </div>
     </section>
-  );
-}
-
-function Step({ step }: { step: typeof steps[0] }) {
-  return (
-    <div className="flex flex-col items-center text-center">
-      <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-7">
-        <step.icon className="h-8 w-8 text-primary" />
-      </div>
-      <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
-      <p className="text-muted-foreground mb-5 min-h-[48px]">{step.description}</p>
-      <code className="text-sm px-3 py-1.5 bg-muted rounded-md font-mono whitespace-nowrap">
-        {step.code}
-      </code>
-    </div>
   );
 }

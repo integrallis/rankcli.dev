@@ -72,7 +72,7 @@ rankcli fix            # Apply auto-fixes
 
 # SaaS
 cd packages/saas
-pnpm dev               # Start dev server on localhost:3000
+pnpm dev               # Start dev server on localhost:3005
 
 # Development deployment
 ./scripts/dev-deploy.sh   # Full dev setup (migrations, functions, server)
@@ -122,3 +122,4 @@ rankcli ci                      # CI/CD mode (for GitHub Actions)
 - Don't add complex abstractions - keep it simple
 - Don't wait for user input - propose and execute
 - Don't add time estimates
+- Don't let the dev server run on any port other than 3005. Kill processes on 3005-3008 first: `lsof -ti:3005,3006,3007,3008 | xargs -r kill -9`

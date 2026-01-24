@@ -1,5 +1,5 @@
 {
-  "name": "rankcli",
+  "name": "rankcli-vscode",
   "displayName": "RankCLI",
   "description": "Real-time SEO linting for HTML, React, Vue, and Astro files - Ship code, get ranked.",
   "version": "0.0.1",

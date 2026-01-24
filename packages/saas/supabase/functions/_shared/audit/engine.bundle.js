@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-01-23T04:39:48.007Z
+// Generated: 2026-01-24T17:34:51.371Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -8669,23 +8669,33 @@ function generateRecommendations2(renderingMethod, hasContentInHTML, charCount, 
   const recommendations = [];
   if (renderingMethod === "csr") {
     recommendations.push(
-      "Critical: Enable server-side rendering (SSR) or static site generation (SSG) for SEO"
+      "Critical: Pre-render your pages so crawlers see actual content in the HTML"
     );
     if (framework === "React") {
       recommendations.push(
-        "Consider migrating to Next.js, Remix, or Gatsby for built-in SSR/SSG support"
+        'Quick fix: Add react-snap to pre-render pages at build time (npm install -D react-snap, add "postbuild": "react-snap" to scripts)'
+      );
+      recommendations.push(
+        "Alternative: Use Vike (vite-plugin-ssr) for SSR/SSG without changing frameworks"
       );
     } else if (framework === "Vue") {
       recommendations.push(
-        "Consider using Nuxt.js for Vue SSR/SSG capabilities"
+        "Quick fix: Add prerender-spa-plugin to pre-render pages at build time"
+      );
+      recommendations.push(
+        "Alternative: Use Vike (vite-plugin-ssr) for SSR/SSG without changing frameworks"
       );
     } else if (framework === "Angular Universal") {
       recommendations.push(
         "Enable Angular Universal for server-side rendering"
       );
+    } else {
+      recommendations.push(
+        "Quick fix: Use a pre-rendering tool like react-snap or prerender-spa-plugin"
+      );
     }
     recommendations.push(
-      "Google can render JavaScript, but SSR is more reliable and faster to index"
+      "Google can render JavaScript, but pre-rendered HTML is more reliable and faster to index"
     );
   }
   if (!hasContentInHTML) {
@@ -8705,6 +8715,7 @@ function analyzeClientRendering(html, url) {
   const issues = [];
   const analysis = analyzeRendering(html);
   if (analysis.renderingMethod === "csr" && analysis.confidence !== "low") {
+    const howToFixByFramework = analysis.frameworkDetected === "React" ? 'Add react-snap to pre-render pages: npm install -D react-snap, then add "postbuild": "react-snap" to package.json scripts. No code changes needed.' : analysis.frameworkDetected === "Vue" ? "Add prerender-spa-plugin to pre-render pages at build time. Alternatively, use Vike for SSR/SSG." : "Pre-render your pages using react-snap, prerender-spa-plugin, or similar build-time tools.";
     issues.push({
       code: "CLIENT_SIDE_RENDERING",
       severity: "error",
@@ -8712,7 +8723,7 @@ function analyzeClientRendering(html, url) {
       title: "Page relies on client-side rendering",
       description: "This page appears to render content primarily via JavaScript. Search engines may not see your content.",
       impact: "Google can execute JavaScript but it's slower and less reliable. Content may not be indexed properly.",
-      howToFix: "Implement server-side rendering (SSR) or static site generation (SSG). Use frameworks like Next.js, Nuxt, Remix, or Astro.",
+      howToFix: howToFixByFramework,
       affectedUrls: [url],
       details: {
         confidence: analysis.confidence,
@@ -8745,7 +8756,7 @@ function analyzeClientRendering(html, url) {
       title: `${analysis.frameworkDetected} detected without SSR markers`,
       description: `This appears to be a ${analysis.frameworkDetected} SPA without server-side rendering enabled.`,
       impact: "Single Page Applications without SSR have slower time-to-content for search crawlers.",
-      howToFix: analysis.frameworkDetected === "React" ? "Add SSR using Next.js, Remix, or implement custom SSR with ReactDOMServer." : "Add SSR using Nuxt.js or implement custom SSR with @vue/server-renderer.",
+      howToFix: analysis.frameworkDetected === "React" ? "Quick fix: Add react-snap (npm install -D react-snap) to pre-render at build time. Alternative: Use Vike for SSR/SSG." : "Quick fix: Add prerender-spa-plugin to pre-render at build time. Alternative: Use Vike for SSR/SSG.",
       affectedUrls: [url],
       details: {
         framework: analysis.frameworkDetected,
@@ -16749,9 +16760,12 @@ var urlSafetyDatabase = {
 
 // src/audit/engine.ts
 async function runFullAudit(options) {
-  const { url, checkBrokenLinks = false, checkHreflangUrls = false, checkCanonicalChain = false, cruxApiKey } = options;
+  const { url, checkBrokenLinks = false, checkHreflangUrls = false, checkCanonicalChain = false, cruxApiKey, checksLimit = 280 } = options;
   const allIssues = [];
   const pages = [];
+  const tier = checksLimit <= 50 ? "free" : checksLimit <= 100 ? "registered" : "paid";
+  const runPremiumChecks = tier === "paid";
+  const runExtendedChecks = tier !== "free";
   const parsedUrl = new URL(url);
   const domain = parsedUrl.hostname;
   console.log(`
@@ -16786,50 +16800,50 @@ async function runFullAudit(options) {
   }
   const html = fetchResult.data;
   const headers = fetchResult.headers;
-  console.log("\u{1F4DD} Phase 2: Running synchronous HTML checks (parallel)...");
+  console.log(`\u{1F4DD} Phase 2: Running synchronous HTML checks (tier: ${tier}, limit: ${checksLimit})...`);
   const onPageResult = analyzeOnPage(html, url);
   const structuredDataResult = analyzeStructuredData(html, url);
   const mobileResult = analyzeMobile(html, url);
   const mobileResourceIssues = checkMobileResources(html, url);
   const socialResult = analyzeSocialMeta(html, url);
   const soft404Result = detectSoft404(html, url, 200);
-  const anchorResult = analyzeAnchorText(html, url);
   const serpResult = analyzeSERPPreview(html, url);
-  const localSeoResult = analyzeLocalSEO(html, url);
   const domResult = analyzeDOMStructure(html, url);
-  const modernImageResult = analyzeModernImages(html, url);
   const techResult = detectTechnologies(html, url, headers);
   const keywordResult = analyzeKeywords(html, url);
-  const snippetResult = analyzeFeaturedSnippet(html, url);
-  const linkGraphResult = analyzeInternalLinkGraph(html, url);
-  const resourceHintResult = analyzeResourceHints(html, url);
-  const eeatResult = analyzeEEATSignals(html, url);
-  const contentScienceResult = analyzeContentScience(html, url);
-  const cannibalizationResult = analyzeKeywordCannibalizationSinglePage(html, url);
-  const trackerResult = analyzeTrackerBloat(html, url);
-  const csrResult = analyzeClientRendering(html, url);
-  const responsiveImgResult = analyzeResponsiveImages(html, url);
-  const conversionResult = analyzeConversionElements(html, url);
-  const keywordPlacementResult = analyzeKeywordPlacement(html, url);
-  const clusterResult = analyzeTopicalClusters(html, url);
-  const platformResult = analyzePlatformPresence(html, url);
-  const toolResult = analyzeInteractiveTools(html, url);
-  const funnelResult = analyzeFunnelIntent(html, url);
-  const navboostResult = analyzeNavBoostSignals(html, url);
-  const entityResult = analyzeEntitySEO(html, url);
-  const qdfFreshnessResult = analyzeFreshnessSignals(html, url);
-  const aiContentStructureResult = analyzeAIContentStructure(html, url);
-  const citationQualityResult = analyzeCitationQuality(html, url);
-  const answerConcisenessResult = analyzeAnswerConciseness(html, url);
-  const brandMentionResult = analyzeBrandMentionOptimization(html, url);
-  const citationWorthinessResult = analyzeAICitationWorthiness(html, url);
-  const reviewEcosystemResult = analyzeReviewEcosystem(html, url);
+  const paginationResult = analyzePagination(html, url, onPageResult.data.canonical);
+  const urlSafetyResult = analyzeUrlSafety(url);
   const domSizeResult = analyzeDomSize(html, url);
   const imageDimensionsResult = analyzeImageDimensions(html, url);
-  const colorContrastResult = analyzeColorContrast(html, url);
-  const pageResourcesResult = analyzePageResources(html, url);
-  const urlSafetyResult = analyzeUrlSafety(url);
-  const paginationResult = analyzePagination(html, url, onPageResult.data.canonical);
+  const anchorResult = runExtendedChecks ? analyzeAnchorText(html, url) : { issues: [], data: {} };
+  const localSeoResult = runExtendedChecks ? analyzeLocalSEO(html, url) : { issues: [], data: {} };
+  const modernImageResult = runExtendedChecks ? analyzeModernImages(html, url) : { issues: [], data: {} };
+  const resourceHintResult = runExtendedChecks ? analyzeResourceHints(html, url) : { issues: [], data: {} };
+  const trackerResult = runExtendedChecks ? analyzeTrackerBloat(html, url) : { issues: [], data: {} };
+  const csrResult = runExtendedChecks ? analyzeClientRendering(html, url) : { issues: [], data: {} };
+  const responsiveImgResult = runExtendedChecks ? analyzeResponsiveImages(html, url) : { issues: [], data: {} };
+  const colorContrastResult = runExtendedChecks ? analyzeColorContrast(html, url) : { issues: [], data: {} };
+  const pageResourcesResult = runExtendedChecks ? analyzePageResources(html, url) : { issues: [], data: {} };
+  const snippetResult = runPremiumChecks ? analyzeFeaturedSnippet(html, url) : { issues: [], data: {} };
+  const linkGraphResult = runPremiumChecks ? analyzeInternalLinkGraph(html, url) : { issues: [], data: {} };
+  const eeatResult = runPremiumChecks ? analyzeEEATSignals(html, url) : { issues: [], data: {} };
+  const contentScienceResult = runPremiumChecks ? analyzeContentScience(html, url) : { issues: [], data: {} };
+  const cannibalizationResult = runPremiumChecks ? analyzeKeywordCannibalizationSinglePage(html, url) : { issues: [], data: {} };
+  const conversionResult = runPremiumChecks ? analyzeConversionElements(html, url) : { issues: [], data: {} };
+  const keywordPlacementResult = runPremiumChecks ? analyzeKeywordPlacement(html, url) : { issues: [], data: {} };
+  const clusterResult = runPremiumChecks ? analyzeTopicalClusters(html, url) : { issues: [], data: {} };
+  const platformResult = runPremiumChecks ? analyzePlatformPresence(html, url) : { issues: [], data: {} };
+  const toolResult = runPremiumChecks ? analyzeInteractiveTools(html, url) : { issues: [], data: {} };
+  const funnelResult = runPremiumChecks ? analyzeFunnelIntent(html, url) : { issues: [], data: {} };
+  const navboostResult = runPremiumChecks ? analyzeNavBoostSignals(html, url) : { issues: [], data: {} };
+  const entityResult = runPremiumChecks ? analyzeEntitySEO(html, url) : { issues: [], data: {} };
+  const qdfFreshnessResult = runPremiumChecks ? analyzeFreshnessSignals(html, url) : { issues: [], data: {} };
+  const aiContentStructureResult = runPremiumChecks ? analyzeAIContentStructure(html, url) : { issues: [], data: {} };
+  const citationQualityResult = runPremiumChecks ? analyzeCitationQuality(html, url) : { issues: [], data: {} };
+  const answerConcisenessResult = runPremiumChecks ? analyzeAnswerConciseness(html, url) : { issues: [], data: {} };
+  const brandMentionResult = runPremiumChecks ? analyzeBrandMentionOptimization(html, url) : { issues: [], data: {} };
+  const citationWorthinessResult = runPremiumChecks ? analyzeAICitationWorthiness(html, url) : { issues: [], data: {} };
+  const reviewEcosystemResult = runPremiumChecks ? analyzeReviewEcosystem(html, url) : { issues: [], data: {} };
   allIssues.push(
     ...onPageResult.issues,
     ...structuredDataResult.issues,
@@ -16919,68 +16933,71 @@ async function runFullAudit(options) {
     console.error("Performance check failed:", err);
     return [];
   });
-  const asyncResults = await Promise.all([
-    safeAsync("Links", () => analyzeLinks(html, url, checkBrokenLinks)),
-    safeAsync("Images", () => analyzeImages(html, url, checkBrokenLinks)),
-    performancePromise,
-    safeAsync("Security", () => analyzeSecurity(html, url, headers)),
-    safeAsyncIssues("Certificate", async () => (await checkCertificate(url)).issues),
-    safeAsync("Hreflang", () => analyzeHreflang(html, url, { validateUrls: checkHreflangUrls })),
-    safeAsync("Canonical Advanced", () => analyzeCanonicalAdvanced(html, url, { checkChain: checkCanonicalChain })),
-    safeAsync("Redirects", () => analyzeRedirects(url)),
-    safeAsync("AI Readiness", () => runAIReadinessChecks(url, html)),
-    safeAsync("Security Headers", () => analyzeSecurityHeaders(url)),
-    safeAsync("Content Freshness", () => analyzeContentFreshness(url, html)),
-    safeAsync("Additional Checks", () => runAdditionalChecks(url, html)),
-    safeAsync("IndexNow", () => analyzeIndexNow(html, url, headers)),
-    safeAsync("Site Maturity", () => analyzeSiteMaturity(html, url)),
-    safeAsync("Redirect Chain", () => analyzeRedirectChain(url)),
-    safeAsync("Bing Optimization", () => analyzeBingOptimization(html, url)),
-    // Competitor-parity checks (async)
-    safeAsync("Robots Validation", () => validateRobotsTxt(url)),
-    safeAsync("LLMs.txt", () => analyzeLlmsTxt(url)),
-    safeAsync("Canonical Domain", () => analyzeCanonicalDomain(url)),
-    safeAsync("Caching Headers", () => analyzeCachingHeaders(url, headers)),
-    safeAsync("HTML Compliance", () => analyzeHtmlCompliance(html, url, headers)),
-    // New Rank Math parity checks (async)
-    safeAsync("Asset Minification", () => analyzeAssetMinification(html, url)),
-    safeAsync("Responsive CSS", () => analyzeResponsiveCss(html, url)),
-    safeAsync("Directory Listing", () => analyzeDirectoryListing(url)),
-    // Core Web Vitals (optional)
-    cruxApiKey ? safeAsyncIssues("Core Web Vitals", async () => {
-      const cwv = await fetchCoreWebVitals(url, cruxApiKey);
-      const issues = [];
-      if (cwv) {
-        if (cwv.lcp?.rating === "poor") {
-          issues.push({
-            code: "LCP_POOR",
-            severity: "error",
-            category: "performance",
-            title: "Poor Largest Contentful Paint (LCP)",
-            description: `LCP is ${cwv.lcp.value}ms (should be under 2500ms)`,
-            impact: "Direct Core Web Vitals ranking factor.",
-            howToFix: "Optimize hero images, preload critical resources, improve server response time.",
-            affectedUrls: [url],
-            details: { lcp: cwv.lcp }
-          });
+  const asyncChecks = [];
+  asyncChecks.push(safeAsync("Links", () => analyzeLinks(html, url, checkBrokenLinks)));
+  asyncChecks.push(safeAsync("Images", () => analyzeImages(html, url, checkBrokenLinks)));
+  asyncChecks.push(performancePromise);
+  asyncChecks.push(safeAsync("Security", () => analyzeSecurity(html, url, headers)));
+  asyncChecks.push(safeAsyncIssues("Certificate", async () => (await checkCertificate(url)).issues));
+  asyncChecks.push(safeAsync("Redirects", () => analyzeRedirects(url)));
+  asyncChecks.push(safeAsync("Robots Validation", () => validateRobotsTxt(url)));
+  asyncChecks.push(safeAsync("Canonical Domain", () => analyzeCanonicalDomain(url)));
+  if (runExtendedChecks) {
+    asyncChecks.push(safeAsync("Hreflang", () => analyzeHreflang(html, url, { validateUrls: checkHreflangUrls })));
+    asyncChecks.push(safeAsync("Canonical Advanced", () => analyzeCanonicalAdvanced(html, url, { checkChain: checkCanonicalChain })));
+    asyncChecks.push(safeAsync("Security Headers", () => analyzeSecurityHeaders(url)));
+    asyncChecks.push(safeAsync("Caching Headers", () => analyzeCachingHeaders(url, headers)));
+    asyncChecks.push(safeAsync("HTML Compliance", () => analyzeHtmlCompliance(html, url, headers)));
+    asyncChecks.push(safeAsync("Redirect Chain", () => analyzeRedirectChain(url)));
+    asyncChecks.push(safeAsync("Asset Minification", () => analyzeAssetMinification(html, url)));
+    asyncChecks.push(safeAsync("Responsive CSS", () => analyzeResponsiveCss(html, url)));
+    asyncChecks.push(safeAsync("Directory Listing", () => analyzeDirectoryListing(url)));
+  }
+  if (runPremiumChecks) {
+    asyncChecks.push(safeAsync("AI Readiness", () => runAIReadinessChecks(url, html)));
+    asyncChecks.push(safeAsync("Content Freshness", () => analyzeContentFreshness(url, html)));
+    asyncChecks.push(safeAsync("Additional Checks", () => runAdditionalChecks(url, html)));
+    asyncChecks.push(safeAsync("IndexNow", () => analyzeIndexNow(html, url, headers)));
+    asyncChecks.push(safeAsync("Site Maturity", () => analyzeSiteMaturity(html, url)));
+    asyncChecks.push(safeAsync("Bing Optimization", () => analyzeBingOptimization(html, url)));
+    asyncChecks.push(safeAsync("LLMs.txt", () => analyzeLlmsTxt(url)));
+    if (cruxApiKey) {
+      asyncChecks.push(safeAsyncIssues("Core Web Vitals", async () => {
+        const cwv = await fetchCoreWebVitals(url, cruxApiKey);
+        const issues = [];
+        if (cwv) {
+          if (cwv.lcp?.rating === "poor") {
+            issues.push({
+              code: "LCP_POOR",
+              severity: "error",
+              category: "performance",
+              title: "Poor Largest Contentful Paint (LCP)",
+              description: `LCP is ${cwv.lcp.value}ms (should be under 2500ms)`,
+              impact: "Direct Core Web Vitals ranking factor.",
+              howToFix: "Optimize hero images, preload critical resources, improve server response time.",
+              affectedUrls: [url],
+              details: { lcp: cwv.lcp }
+            });
+          }
+          if (cwv.cls?.rating === "poor") {
+            issues.push({
+              code: "CLS_POOR",
+              severity: "error",
+              category: "performance",
+              title: "Poor Cumulative Layout Shift (CLS)",
+              description: `CLS is ${cwv.cls.value} (should be under 0.1)`,
+              impact: "Direct Core Web Vitals ranking factor.",
+              howToFix: "Set image dimensions, avoid inserting content above existing content.",
+              affectedUrls: [url],
+              details: { cls: cwv.cls }
+            });
+          }
         }
-        if (cwv.cls?.rating === "poor") {
-          issues.push({
-            code: "CLS_POOR",
-            severity: "error",
-            category: "performance",
-            title: "Poor Cumulative Layout Shift (CLS)",
-            description: `CLS is ${cwv.cls.value} (should be under 0.1)`,
-            impact: "Direct Core Web Vitals ranking factor.",
-            howToFix: "Set image dimensions, avoid inserting content above existing content.",
-            affectedUrls: [url],
-            details: { cls: cwv.cls }
-          });
-        }
-      }
-      return issues;
-    }) : Promise.resolve([])
-  ]);
+        return issues;
+      }));
+    }
+  }
+  const asyncResults = await Promise.all(asyncChecks);
   for (const issues of asyncResults) {
     allIssues.push(...issues);
   }
@@ -17158,6 +17175,357 @@ function groupIssuesByCategory(issues) {
   }
   return grouped;
 }
+
+// src/audit/discovery/link-crawler.ts
+var HIGH_PRIORITY_PATTERNS = [
+  /^\/(pricing|about|features|contact|demo|signup|login|blog)\/?$/i,
+  /^\/(products?|services?|solutions?|plans?)\/?$/i,
+  /^\/(docs?|documentation|help|support|faq)\/?$/i,
+  /^\/(careers?|jobs?|team|company)\/?$/i
+];
+var MEDIUM_PRIORITY_PATTERNS = [
+  /^\/(privacy|terms|legal|security)\/?$/i,
+  /^\/[a-z0-9-]+\/?$/i
+  // Top-level pages
+];
+var EXCLUDE_PATTERNS = [
+  /\.(png|jpg|jpeg|gif|svg|webp|ico|pdf|zip|tar|gz)$/i,
+  // Files
+  /^(mailto:|tel:|javascript:|#)/i,
+  // Non-HTTP
+  /\/(api|_next|static|assets|cdn)\//i,
+  // Technical paths
+  /[?&](utm_|ref=|source=)/i
+  // Tracking params
+];
+function extractLinks2(html, baseUrl) {
+  const base = new URL(baseUrl);
+  const links = /* @__PURE__ */ new Set();
+  const hrefRegex = /href=["']([^"']+)["']/gi;
+  let match;
+  while ((match = hrefRegex.exec(html)) !== null) {
+    try {
+      const href = match[1];
+      if (EXCLUDE_PATTERNS.some((pattern) => pattern.test(href))) {
+        continue;
+      }
+      let url;
+      if (href.startsWith("http://") || href.startsWith("https://")) {
+        url = new URL(href);
+      } else if (href.startsWith("/")) {
+        url = new URL(href, base);
+      } else {
+        continue;
+      }
+      if (url.hostname !== base.hostname) {
+        continue;
+      }
+      const normalized = normalizeUrl3(url);
+      if (normalized) {
+        links.add(normalized);
+      }
+    } catch {
+    }
+  }
+  return Array.from(links);
+}
+function normalizeUrl3(url) {
+  url.hash = "";
+  const paramsToRemove = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "ref", "source"];
+  for (const param of paramsToRemove) {
+    url.searchParams.delete(param);
+  }
+  let pathname = url.pathname;
+  if (pathname.length > 1 && pathname.endsWith("/")) {
+    pathname = pathname.slice(0, -1);
+  }
+  if (pathname === "" || pathname === "/") {
+    return null;
+  }
+  return `${url.protocol}//${url.hostname}${pathname}${url.search}`;
+}
+function calculatePriority(url) {
+  try {
+    const pathname = new URL(url).pathname;
+    for (const pattern of HIGH_PRIORITY_PATTERNS) {
+      if (pattern.test(pathname)) {
+        return 9;
+      }
+    }
+    for (const pattern of MEDIUM_PRIORITY_PATTERNS) {
+      if (pattern.test(pathname)) {
+        return 6;
+      }
+    }
+    const depth = (pathname.match(/\//g) || []).length;
+    if (depth >= 3) {
+      return 2;
+    }
+    if (depth === 2) {
+      return 4;
+    }
+    return 5;
+  } catch {
+    return 1;
+  }
+}
+function discoverPagesFromLinks(baseUrl, html, maxPages = 5) {
+  const links = extractLinks2(html, baseUrl);
+  const pages = links.map((url) => ({
+    url,
+    source: "internal-link",
+    priority: calculatePriority(url)
+  }));
+  pages.sort((a, b) => b.priority - a.priority);
+  return pages.slice(0, maxPages);
+}
+function parseSitemap(xml, baseUrl) {
+  const pages = [];
+  const base = new URL(baseUrl);
+  const locRegex = /<loc>([^<]+)<\/loc>/gi;
+  let match;
+  while ((match = locRegex.exec(xml)) !== null) {
+    try {
+      const url = new URL(match[1]);
+      if (url.hostname !== base.hostname) {
+        continue;
+      }
+      if (EXCLUDE_PATTERNS.some((pattern) => pattern.test(url.pathname))) {
+        continue;
+      }
+      pages.push({
+        url: url.href,
+        source: "sitemap",
+        priority: calculatePriority(url.href)
+      });
+    } catch {
+    }
+  }
+  return pages;
+}
+function mergePages(...pageSets) {
+  const seen = /* @__PURE__ */ new Map();
+  for (const pages of pageSets) {
+    for (const page of pages) {
+      const existing = seen.get(page.url);
+      if (!existing || page.priority > existing.priority) {
+        seen.set(page.url, page);
+      }
+    }
+  }
+  return Array.from(seen.values()).sort((a, b) => b.priority - a.priority);
+}
+
+// src/audit/discovery/repo-routes.ts
+function detectFramework2(packageJson, files) {
+  if (!packageJson)
+    return "unknown";
+  const deps = { ...packageJson.dependencies, ...packageJson.devDependencies };
+  if (deps["next"]) {
+    return "nextjs";
+  }
+  if (deps["astro"]) {
+    return "astro";
+  }
+  if (deps["@sveltejs/kit"]) {
+    return "sveltekit";
+  }
+  if (deps["vue-router"] || deps["@vue/router"]) {
+    return "vue";
+  }
+  if (deps["react"] && deps["vite"]) {
+    return "react-vite";
+  }
+  if (deps["react"] || deps["react-dom"]) {
+    const hasRouterFile = files.some(
+      (f) => f.match(/routes?\.(tsx?|jsx?)$/) || f.includes("router") || f.endsWith("App.tsx") || f.endsWith("App.jsx")
+    );
+    if (hasRouterFile) {
+      return "react";
+    }
+  }
+  return "unknown";
+}
+async function discoverRoutesFromRepo(files, framework, fetchFile) {
+  switch (framework) {
+    case "nextjs":
+      return discoverNextRoutes(files);
+    case "astro":
+      return discoverAstroRoutes(files);
+    case "react":
+    case "react-vite":
+      return discoverReactRouterRoutes(files, fetchFile);
+    case "vue":
+      return discoverVueRouterRoutes(files, fetchFile);
+    case "sveltekit":
+      return discoverSvelteRoutes(files);
+    default:
+      return [];
+  }
+}
+function discoverNextRoutes(files) {
+  const routes = [];
+  for (const file of files) {
+    const appMatch = file.match(/^app\/(.*)\/page\.(tsx?|jsx?)$/);
+    if (appMatch) {
+      let path = "/" + appMatch[1];
+      path = path.replace(/\/\([^)]+\)/g, "");
+      if (path === "/")
+        path = "/";
+      const isDynamic = path.includes("[");
+      routes.push({
+        path,
+        type: isDynamic ? "dynamic" : "static",
+        sourceFile: file
+      });
+      continue;
+    }
+    if (file.match(/^app\/page\.(tsx?|jsx?)$/)) {
+      routes.push({
+        path: "/",
+        type: "static",
+        sourceFile: file
+      });
+      continue;
+    }
+    const pagesMatch = file.match(/^pages\/(.+)\.(tsx?|jsx?)$/);
+    if (pagesMatch) {
+      const pagePath = pagesMatch[1];
+      if (pagePath.startsWith("_") || pagePath.startsWith("api/")) {
+        continue;
+      }
+      let path = "/" + pagePath;
+      path = path.replace(/\/index$/, "");
+      if (path === "")
+        path = "/";
+      const isDynamic = path.includes("[");
+      routes.push({
+        path,
+        type: isDynamic ? "dynamic" : "static",
+        sourceFile: file
+      });
+    }
+  }
+  const seen = /* @__PURE__ */ new Map();
+  for (const route of routes) {
+    if (!seen.has(route.path)) {
+      seen.set(route.path, route);
+    }
+  }
+  return Array.from(seen.values());
+}
+function discoverAstroRoutes(files) {
+  const routes = [];
+  for (const file of files) {
+    const match = file.match(/^src\/pages\/(.+)\.(astro|md|mdx)$/);
+    if (match) {
+      let path = "/" + match[1];
+      path = path.replace(/\/index$/, "");
+      if (path === "")
+        path = "/";
+      const isDynamic = path.includes("[");
+      routes.push({
+        path,
+        type: isDynamic ? "dynamic" : "static",
+        sourceFile: file
+      });
+    }
+  }
+  return routes;
+}
+function discoverSvelteRoutes(files) {
+  const routes = [];
+  for (const file of files) {
+    const match = file.match(/^src\/routes\/(.*)\/?\+page\.svelte$/);
+    if (match) {
+      let path = "/" + (match[1] || "");
+      path = path.replace(/\/\([^)]+\)/g, "");
+      path = path.replace(/\/+/g, "/");
+      if (path === "")
+        path = "/";
+      const isDynamic = path.includes("[");
+      routes.push({
+        path,
+        type: isDynamic ? "dynamic" : "static",
+        sourceFile: file
+      });
+    }
+  }
+  return routes;
+}
+async function discoverReactRouterRoutes(files, fetchFile) {
+  const routerFiles = files.filter(
+    (f) => f.match(/routes?\.(tsx?|jsx?)$/) || f.includes("router") || f.endsWith("App.tsx") || f.endsWith("App.jsx") || f.includes("Router")
+  );
+  const routes = [];
+  for (const file of routerFiles) {
+    const content = await fetchFile(file);
+    if (!content)
+      continue;
+    const patterns = [
+      /<Route[^>]*\spath=["']([^"']+)["']/g,
+      /{\s*path:\s*["']([^"']+)["']/g,
+      /createBrowserRouter\([^)]*path:\s*["']([^"']+)["']/g
+    ];
+    for (const pattern of patterns) {
+      let match;
+      while ((match = pattern.exec(content)) !== null) {
+        const path = match[1];
+        if (path === "*" || path.includes("*"))
+          continue;
+        routes.push({
+          path,
+          type: path.includes(":") ? "dynamic" : "static",
+          sourceFile: file
+        });
+      }
+    }
+  }
+  const seen = /* @__PURE__ */ new Set();
+  return routes.filter((r) => {
+    if (seen.has(r.path))
+      return false;
+    seen.add(r.path);
+    return true;
+  });
+}
+async function discoverVueRouterRoutes(files, fetchFile) {
+  const routerFiles = files.filter(
+    (f) => f.match(/router\/index\.(ts|js)$/) || f.match(/router\.(ts|js)$/) || f.includes("routes")
+  );
+  const routes = [];
+  for (const file of routerFiles) {
+    const content = await fetchFile(file);
+    if (!content)
+      continue;
+    const pathRegex = /path:\s*["']([^"']+)["']/g;
+    let match;
+    while ((match = pathRegex.exec(content)) !== null) {
+      const path = match[1];
+      if (path.includes("*") || path === "/:pathMatch(.*)")
+        continue;
+      routes.push({
+        path,
+        type: path.includes(":") ? "dynamic" : "static",
+        sourceFile: file
+      });
+    }
+  }
+  const seen = /* @__PURE__ */ new Set();
+  return routes.filter((r) => {
+    if (seen.has(r.path))
+      return false;
+    seen.add(r.path);
+    return true;
+  });
+}
+function routesToUrls(routes, baseUrl, maxUrls = 5) {
+  const base = new URL(baseUrl);
+  return routes.filter((r) => r.type === "static").slice(0, maxUrls).map((r) => {
+    const url = new URL(r.path, base);
+    return url.href;
+  });
+}
 export {
   ISSUE_DEFINITIONS,
   analyzeAnchorText,
@@ -17201,9 +17569,15 @@ export {
   checkRedirects,
   checkRobotsTxt,
   checkSitemap,
+  detectFramework2 as detectFramework,
   detectSoft404,
   detectTechnologies,
+  discoverPagesFromLinks,
+  discoverRoutesFromRepo,
   formatReport,
+  mergePages,
+  parseSitemap,
+  routesToUrls,
   runAIReadinessChecks,
   runCrawlabilityChecks,
   runFullAudit,
