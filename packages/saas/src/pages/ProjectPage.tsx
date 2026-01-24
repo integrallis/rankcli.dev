@@ -21,19 +21,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useProject } from '@/hooks/useProjects';
+import { useAuditSSE } from '@/hooks/useAuditSSE';
 import { cn } from '@/lib/utils';
 import type { Project } from '@/integrations/supabase/types';
 import { ConnectGitHubModal } from '@/components/project/ConnectGitHubModal';
 import { ProjectSettingsModal } from '@/components/project/ProjectSettingsModal';
 import { IssuesList } from '@/components/project/IssuesList';
 
-// Check limits per tier (using full agent-runtime engine)
-const TIER_CHECKS = {
-  free: 200,
-  solo: 280,
-  pro: 280,
-  agency: 280,
-};
 
 export function ProjectPage() {
   const { id: projectId } = useParams();
@@ -65,6 +59,31 @@ export function ProjectPage() {
     prUrl?: string;
   } | null>(null);
 
+  // Track pending audit for SSE connection
+  const [pendingAuditId, setPendingAuditId] = useState<string | null>(null);
+  const [auditProgress, setAuditProgress] = useState<{
+    progress: number;
+    pagesCompleted: number;
+    pagesTotal: number;
+  } | null>(null);
+
+  // SSE connection for real-time audit updates (paid users using worker)
+  useAuditSSE({
+    auditId: pendingAuditId,
+    enabled: !!pendingAuditId,
+    onProgress: (_auditId, progress, pagesCompleted, pagesTotal) => {
+      setAuditProgress({ progress, pagesCompleted, pagesTotal });
+    },
+    onCompleted: () => {
+      setPendingAuditId(null);
+      setAuditProgress(null);
+    },
+    onFailed: () => {
+      setPendingAuditId(null);
+      setAuditProgress(null);
+    },
+  });
+
   // Auto-dismiss notification after 10 seconds
   useEffect(() => {
     if (notification) {
@@ -84,12 +103,17 @@ export function ProjectPage() {
   const pendingAudit = audits.find((a) => a.status === 'pending' || a.status === 'running');
 
   // Get check counts from the audit or summary
-  const auditSummary = latestAudit?.summary as { checksRun?: number } | undefined;
+  const auditSummary = latestAudit?.summary as { checksRun?: number; pagesAudited?: number } | undefined;
   const checksRun = (latestAudit as { checks_run?: number })?.checks_run || auditSummary?.checksRun || 0;
-  const totalChecks = TIER_CHECKS.pro; // TODO: Get from user's subscription tier
+  const pagesAudited = (latestAudit as { pages_crawled?: number })?.pages_crawled || auditSummary?.pagesAudited || 1;
 
   const handleRunAudit = async () => {
-    await runAudit();
+    const audit = await runAudit();
+    // Set pending audit ID to enable SSE connection
+    if (audit?.id) {
+      setPendingAuditId(audit.id);
+      setAuditProgress(null);
+    }
   };
 
   const handleConnectGitHub = async (repoUrl: string) => {
@@ -366,7 +390,7 @@ export function ProjectPage() {
                 <div className="flex items-center gap-2">
                   <Info className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">
-                    <strong>{checksRun}</strong> checks run out of <strong>{totalChecks}+</strong> available
+                    <strong>{checksRun}</strong> checks performed across <strong>{pagesAudited}</strong> page{pagesAudited !== 1 ? 's' : ''}
                   </span>
                 </div>
                 <div className="flex gap-4 text-sm">
@@ -413,9 +437,24 @@ export function ProjectPage() {
             <CardContent className="py-8 text-center">
               <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
               <p className="text-lg font-medium mb-2">Audit in progress...</p>
-              <p className="text-muted-foreground">
-                Running 200+ SEO checks. This usually takes 30-60 seconds.
-              </p>
+              {auditProgress ? (
+                <div className="space-y-2">
+                  <p className="text-muted-foreground">
+                    Page {auditProgress.pagesCompleted} of {auditProgress.pagesTotal}
+                  </p>
+                  <div className="w-64 mx-auto bg-muted rounded-full h-2">
+                    <div
+                      className="bg-primary h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${auditProgress.progress}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">{auditProgress.progress}%</p>
+                </div>
+              ) : (
+                <p className="text-muted-foreground">
+                  Running 200+ SEO checks. This usually takes 30-60 seconds.
+                </p>
+              )}
             </CardContent>
           </Card>
         )}

@@ -8,9 +8,13 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
       - "3005:3005"
+      - "8080:8080"
     command: sleep infinity
     environment:
       - ENVIRONMENT=development
+      # For local dev, audit worker runs on localhost:8080
+      - VITE_AUDIT_WORKER_URL=http://localhost:8080
+      - VITE_AUDIT_WORKER_SECRET=dev-secret
     env_file:
       - ../.env
     networks:

@@ -30,7 +30,7 @@ interface UserSubscription {
     plan_id: string;
     name: string;
     price_cents: number;
-  }[] | null;
+  } | null;
 }
 
 const tabs = [
@@ -89,7 +89,14 @@ export function AccountPage() {
       .single();
 
     if (data) {
-      setSubscription(data as UserSubscription);
+      // Supabase returns joined relation as object for to-one relations
+      const subscriptionData: UserSubscription = {
+        plan_id: data.plan_id,
+        status: data.status,
+        current_period_end: data.current_period_end,
+        plan: Array.isArray(data.plan) ? data.plan[0] || null : data.plan,
+      };
+      setSubscription(subscriptionData);
     }
   };
 
@@ -108,8 +115,8 @@ export function AccountPage() {
     }
   }, [showSuccessMessage]);
 
-  // Get current subscription info (plan is an array from Supabase join)
-  const planData = subscription?.plan?.[0];
+  // Get current subscription info
+  const planData = subscription?.plan;
   const currentPlanId = planData?.plan_id || 'free';
   const subscriptionStatus = subscription?.status || 'active';
   const isFreeTier = !subscription?.plan_id || currentPlanId === 'free';

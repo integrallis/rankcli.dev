@@ -315,6 +315,15 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
     if (!user || !projectId) return null;
 
     try {
+      // Check if user is on a paid plan
+      const { data: subscription } = await supabase
+        .from('user_subscriptions')
+        .select('plan_id')
+        .eq('user_id', user.id)
+        .single();
+
+      const isPaidUser = !!subscription?.plan_id;
+
       // Create pending audit record
       const { data: audit, error: auditError } = await supabase
         .from('audits')
@@ -332,12 +341,51 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
       // Refresh to show pending state
       await fetchProject();
 
-      // Call edge function to run the audit
+      // Get project URL for paid user worker call
+      const { data: projectData } = await supabase
+        .from('projects')
+        .select('url')
+        .eq('id', projectId)
+        .single();
+
       const { data: session } = await supabase.auth.getSession();
       const token = session?.session?.access_token;
 
-      if (token) {
-        // Call in background - don't await
+      // Environment-based worker URL (local in dev, Fly.io in prod)
+      const workerUrl = import.meta.env.VITE_AUDIT_WORKER_URL || 'http://localhost:8080';
+      const workerSecret = import.meta.env.VITE_AUDIT_WORKER_SECRET || 'dev-secret';
+
+      if (isPaidUser && projectData?.url) {
+        // Paid users: Call audit worker directly (Fly.io in prod, localhost in dev)
+        console.log('Paid user - calling audit worker:', workerUrl);
+
+        fetch(`${workerUrl}/audit`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${workerSecret}`,
+          },
+          body: JSON.stringify({
+            auditId: audit.id,
+            projectId,
+            url: projectData.url,
+            maxPages: 10,
+            checksLimit: 280,
+            enableAI: true,
+          }),
+        }).then(async (res) => {
+          if (!res.ok) {
+            console.error('Audit worker failed:', await res.text());
+          }
+          // SSE hook in the component will handle real-time updates
+        }).catch((err) => {
+          console.error('Audit worker request failed:', err);
+          fetchProject();
+        });
+      } else if (token) {
+        // Free users: Call edge function
+        console.log('Free user - calling edge function');
+
         fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/run-audit`, {
           method: 'POST',
           headers: {
