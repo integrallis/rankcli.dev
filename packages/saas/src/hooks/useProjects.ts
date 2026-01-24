@@ -315,14 +315,68 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
     if (!user || !projectId) return null;
 
     try {
-      // Check if user is on a paid plan
+      // Check if user is on a paid plan and get subscription details
       const { data: subscription } = await supabase
         .from('user_subscriptions')
-        .select('plan_id')
+        .select('plan_id, current_period_start')
         .eq('user_id', user.id)
         .single();
 
       const isPaidUser = !!subscription?.plan_id;
+
+      // Get this project's domain
+      const { data: currentProject } = await supabase
+        .from('projects')
+        .select('domain')
+        .eq('id', projectId)
+        .single();
+
+      if (!currentProject?.domain) {
+        throw new Error('Project domain not found');
+      }
+
+      // Determine domain limit and billing cycle start
+      let domainsPerMonth: number | null = 2; // Free tier default
+      let billingCycleStart: string;
+
+      if (subscription?.plan_id) {
+        // Paid user - get limit from plan
+        const planLimits: Record<string, number | null> = {
+          'solo': 5,
+          'pro': 15,
+          'agency': null, // unlimited
+        };
+        domainsPerMonth = planLimits[subscription.plan_id] ?? 5;
+        billingCycleStart = subscription.current_period_start || new Date().toISOString();
+      } else {
+        // Free user - use rolling 30-day window
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        billingCycleStart = thirtyDaysAgo.toISOString();
+      }
+
+      // Check domain limit (null = unlimited)
+      if (domainsPerMonth !== null) {
+        // Get unique domains audited this billing cycle
+        const { data: auditedDomains } = await supabase
+          .from('audits')
+          .select('projects!inner(domain)')
+          .eq('projects.user_id', user.id)
+          .gte('created_at', billingCycleStart)
+          .eq('status', 'completed');
+
+        const uniqueDomains = new Set(
+          auditedDomains?.map((a: { projects: { domain: string } }) => a.projects.domain) || []
+        );
+
+        // Check if we're at limit and this is a new domain
+        if (uniqueDomains.size >= domainsPerMonth && !uniqueDomains.has(currentProject.domain)) {
+          throw new Error(
+            `Domain limit reached. You can audit up to ${domainsPerMonth} unique domains per ${isPaidUser ? 'billing cycle' : 'month'}. ` +
+            `Upgrade your plan to audit more domains.`
+          );
+        }
+      }
 
       // Create pending audit record
       const { data: audit, error: auditError } = await supabase

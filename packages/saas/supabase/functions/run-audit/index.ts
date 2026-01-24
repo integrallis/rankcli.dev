@@ -2,12 +2,16 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // Import the shared audit engine (280+ checks)
-import { runFullAudit, formatReport, urlSafetyDatabase } from '../_shared/audit/index.ts';
+import { runFullAudit, formatReport, urlSafetyDatabase, discoverPagesFromLinks } from '../_shared/audit/index.ts';
 import type { AuditReport, AuditIssue as EngineIssue } from '../_shared/audit/index.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const openaiApiKey = Deno.env.get('OPENAI_API_KEY') || '';
+
+// Fly.io Audit Worker for deep audits (paid users)
+const auditWorkerUrl = Deno.env.get('AUDIT_WORKER_URL') || '';
+const auditWorkerSecret = Deno.env.get('AUDIT_WORKER_SECRET') || '';
 
 // AI Analysis Types
 interface AIContentAnalysis {
@@ -138,6 +142,261 @@ function convertIssue(issue: EngineIssue): DbAuditIssue {
   };
 }
 
+/**
+ * Fetch a URL and return HTML content
+ */
+async function fetchHtml(url: string, timeout: number = 10000): Promise<string | null> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'RankCLI-Bot/1.0 (+https://rankcli.dev/bot)',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      },
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      return null;
+    }
+
+    return await response.text();
+  } catch (error) {
+    console.error(`[AUDIT] Failed to fetch ${url}:`, error);
+    return null;
+  }
+}
+
+/**
+ * Discover pages from route files when GitHub is connected
+ */
+async function discoverPagesFromRepo(
+  supabase: ReturnType<typeof createClient>,
+  project: { github_installation_id: number; github_repo_url: string; url: string; framework: string | null },
+  maxPages: number
+): Promise<string[]> {
+  try {
+    // Get installation token from Supabase
+    const { data: installation, error } = await supabase
+      .from('github_installations')
+      .select('*')
+      .eq('installation_id', project.github_installation_id)
+      .single();
+
+    if (error || !installation) {
+      console.log('[AUDIT] No GitHub installation found, falling back to link crawling');
+      return [];
+    }
+
+    // Parse repo URL to get owner/repo
+    const repoMatch = project.github_repo_url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+    if (!repoMatch) {
+      console.log('[AUDIT] Invalid GitHub repo URL');
+      return [];
+    }
+
+    const [, owner, repo] = repoMatch;
+
+    // Get installation access token
+    const tokenResponse = await fetch(`https://api.github.com/app/installations/${project.github_installation_id}/access_tokens`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${Deno.env.get('GITHUB_APP_JWT') || ''}`,
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    });
+
+    if (!tokenResponse.ok) {
+      console.log('[AUDIT] Failed to get GitHub installation token');
+      return [];
+    }
+
+    const { token } = await tokenResponse.json();
+
+    // Get repository tree
+    const treeResponse = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    });
+
+    if (!treeResponse.ok) {
+      console.log('[AUDIT] Failed to get repository tree');
+      return [];
+    }
+
+    const { tree } = await treeResponse.json();
+    const files = tree
+      .filter((f: { type: string }) => f.type === 'blob')
+      .map((f: { path: string }) => f.path);
+
+    // Detect framework and discover routes
+    const framework = project.framework || detectFrameworkFromFiles(files);
+    const routes = discoverRoutesFromFiles(files, framework);
+
+    // Convert static routes to URLs
+    const baseUrl = project.url;
+    const urls = routes
+      .filter(r => r.type === 'static')
+      .slice(0, maxPages)
+      .map(r => {
+        try {
+          return new URL(r.path, baseUrl).href;
+        } catch {
+          return null;
+        }
+      })
+      .filter((url): url is string => url !== null);
+
+    console.log(`[AUDIT] Discovered ${urls.length} routes from repo (${framework})`);
+    return urls;
+  } catch (error) {
+    console.error('[AUDIT] Route discovery failed:', error);
+    return [];
+  }
+}
+
+/**
+ * Detect framework from file patterns
+ */
+function detectFrameworkFromFiles(files: string[]): string {
+  // Check for Next.js (App Router)
+  if (files.some(f => f.startsWith('app/') && f.endsWith('page.tsx'))) {
+    return 'nextjs';
+  }
+
+  // Check for Next.js (Pages Router)
+  if (files.some(f => f.startsWith('pages/') && f.endsWith('.tsx'))) {
+    return 'nextjs';
+  }
+
+  // Check for Astro
+  if (files.some(f => f.startsWith('src/pages/') && f.endsWith('.astro'))) {
+    return 'astro';
+  }
+
+  // Check for SvelteKit
+  if (files.some(f => f.includes('+page.svelte'))) {
+    return 'sveltekit';
+  }
+
+  // Check for React with router files
+  if (files.some(f => f.match(/routes?\.(tsx?|jsx?)$/))) {
+    return 'react';
+  }
+
+  return 'unknown';
+}
+
+/**
+ * Discover routes from file structure
+ */
+function discoverRoutesFromFiles(files: string[], framework: string): Array<{ path: string; type: 'static' | 'dynamic' }> {
+  const routes: Array<{ path: string; type: 'static' | 'dynamic' }> = [];
+
+  switch (framework) {
+    case 'nextjs':
+      for (const file of files) {
+        // App Router: app/**/page.tsx
+        const appMatch = file.match(/^app\/(.*)\/page\.(tsx?|jsx?)$/);
+        if (appMatch) {
+          let path = '/' + appMatch[1];
+          path = path.replace(/\/\([^)]+\)/g, ''); // Remove route groups
+          const isDynamic = path.includes('[');
+          routes.push({ path, type: isDynamic ? 'dynamic' : 'static' });
+          continue;
+        }
+
+        // App Router root
+        if (file.match(/^app\/page\.(tsx?|jsx?)$/)) {
+          routes.push({ path: '/', type: 'static' });
+          continue;
+        }
+
+        // Pages Router
+        const pagesMatch = file.match(/^pages\/(.+)\.(tsx?|jsx?)$/);
+        if (pagesMatch) {
+          const pagePath = pagesMatch[1];
+          if (pagePath.startsWith('_') || pagePath.startsWith('api/')) continue;
+
+          let path = '/' + pagePath;
+          path = path.replace(/\/index$/, '');
+          if (path === '') path = '/';
+
+          const isDynamic = path.includes('[');
+          routes.push({ path, type: isDynamic ? 'dynamic' : 'static' });
+        }
+      }
+      break;
+
+    case 'astro':
+      for (const file of files) {
+        const match = file.match(/^src\/pages\/(.+)\.(astro|md|mdx)$/);
+        if (match) {
+          let path = '/' + match[1];
+          path = path.replace(/\/index$/, '');
+          if (path === '') path = '/';
+
+          const isDynamic = path.includes('[');
+          routes.push({ path, type: isDynamic ? 'dynamic' : 'static' });
+        }
+      }
+      break;
+
+    case 'sveltekit':
+      for (const file of files) {
+        const match = file.match(/^src\/routes\/(.*)\/?\+page\.svelte$/);
+        if (match) {
+          let path = '/' + (match[1] || '');
+          path = path.replace(/\/\([^)]+\)/g, '');
+          path = path.replace(/\/+/g, '/');
+          if (path === '') path = '/';
+
+          const isDynamic = path.includes('[');
+          routes.push({ path, type: isDynamic ? 'dynamic' : 'static' });
+        }
+      }
+      break;
+  }
+
+  // Deduplicate by path
+  const seen = new Set<string>();
+  return routes.filter(r => {
+    if (seen.has(r.path)) return false;
+    seen.add(r.path);
+    return true;
+  });
+}
+
+/**
+ * Merge issues from multiple page audits, aggregating affected_urls
+ */
+function mergeIssues(issueArrays: DbAuditIssue[][]): DbAuditIssue[] {
+  const issueMap = new Map<string, DbAuditIssue>();
+
+  for (const issues of issueArrays) {
+    for (const issue of issues) {
+      const existing = issueMap.get(issue.code);
+      if (existing) {
+        // Merge affected URLs
+        const urls = new Set([...existing.affected_urls, ...issue.affected_urls]);
+        existing.affected_urls = Array.from(urls);
+      } else {
+        issueMap.set(issue.code, { ...issue });
+      }
+    }
+  }
+
+  return Array.from(issueMap.values());
+}
+
 serve(async (req) => {
   console.log('[AUDIT] Function invoked at:', new Date().toISOString());
 
@@ -234,53 +493,287 @@ serve(async (req) => {
       .eq('id', audit.id);
 
     const startTime = Date.now();
+    const HARD_TIMEOUT = 40000; // 40 second hard limit (edge functions timeout at 45s)
 
-    try {
-      // ========== LOAD THREAT HASHES FOR URL SAFETY (with timeout) ==========
-      const threatHashPromise = loadThreatHashes(supabase).catch(() => 0);
-      const timeoutPromise = new Promise<number>(resolve => setTimeout(() => resolve(0), 3000));
-      await Promise.race([threatHashPromise, timeoutPromise]);
+    // Wrap entire audit in a hard timeout using Promise.race
+    const runAuditWithTimeout = async (): Promise<Response> => {
+      // ========== DETERMINE CHECK LIMIT BASED ON USER TIER ==========
+      let checksLimit = 50; // Default for unauthenticated/free users
 
-      // ========== RUN FULL AUDIT ENGINE (280+ CHECKS) ==========
-      console.log(`[AUDIT] Starting full audit on ${project.url}...`);
-      console.log(`[AUDIT] Timestamp: ${new Date().toISOString()}`);
+      if (userId) {
+        // Check if user has a subscription
+        const { data: subscription } = await supabase
+          .from('user_subscriptions')
+          .select('plan_id, status')
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .single();
 
-      let auditReport;
-      try {
-        // Call runFullAudit with options object and 45-second timeout
-        // Edge functions have 60s max, so we timeout at 45s to leave room for cleanup
-        const auditPromise = runFullAudit({
-          url: project.url,
-          maxPages: 1,
-        });
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Audit timed out after 45 seconds')), 45000)
-        );
+        if (subscription?.plan_id) {
+          // Paid user - get limit from their plan
+          const { data: plan } = await supabase
+            .from('subscription_plans')
+            .select('checks_limit')
+            .eq('plan_id', subscription.plan_id)
+            .single();
 
-        auditReport = await Promise.race([auditPromise, timeoutPromise]);
-        console.log(`[AUDIT] runFullAudit completed successfully`);
-      } catch (auditEngineError) {
-        console.error(`[AUDIT] runFullAudit FAILED:`, auditEngineError);
-        console.error(`[AUDIT] Error name: ${auditEngineError?.name}`);
-        console.error(`[AUDIT] Error message: ${auditEngineError?.message}`);
-        console.error(`[AUDIT] Error stack: ${auditEngineError?.stack}`);
-        throw auditEngineError;
+          checksLimit = plan?.checks_limit || 280;
+        } else {
+          // Registered but free user - gets 100 checks
+          checksLimit = 100;
+        }
       }
 
-      // Get checks run from summary.passed + issues count
-      const checksRun = auditReport.summary.passed + auditReport.summary.errors + auditReport.summary.warnings;
-      console.log(`[AUDIT] Complete: ${auditReport.issues.length} issues found from ${checksRun} checks`);
+      console.log(`[AUDIT] User tier check limit: ${checksLimit}`);
 
-      // Convert engine issues to database format
-      const issues: DbAuditIssue[] = auditReport.issues.map(convertIssue);
+      // ========== CHECK DOMAIN LIMIT (ANTI-GAMING) ==========
+      if (userId) {
+        // Get subscription details for billing cycle
+        const { data: subDetails } = await supabase
+          .from('user_subscriptions')
+          .select('plan_id, current_period_start')
+          .eq('user_id', userId)
+          .single();
 
-      // ========== AI ANALYSIS (Optional) ==========
+        // Determine domain limit and billing cycle start
+        const planLimits: Record<string, number | null> = {
+          'solo': 5,
+          'pro': 15,
+          'agency': null, // unlimited
+        };
+        const domainsPerMonth = subDetails?.plan_id
+          ? (planLimits[subDetails.plan_id] ?? 5)
+          : 2; // Free tier
+
+        // Billing cycle: subscription start or rolling 30 days for free
+        let billingCycleStart: string;
+        if (subDetails?.current_period_start) {
+          billingCycleStart = subDetails.current_period_start;
+        } else {
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          billingCycleStart = thirtyDaysAgo.toISOString();
+        }
+
+        // Check domain limit (null = unlimited)
+        if (domainsPerMonth !== null) {
+          // Get unique domains audited this billing cycle
+          const { data: auditedDomains } = await supabase
+            .from('audits')
+            .select('projects!inner(domain)')
+            .eq('projects.user_id', userId)
+            .gte('created_at', billingCycleStart)
+            .eq('status', 'completed');
+
+          const uniqueDomains = new Set<string>();
+          auditedDomains?.forEach((a: { projects: { domain: string } }) => {
+            if (a.projects?.domain) uniqueDomains.add(a.projects.domain);
+          });
+
+          // Check if we're at limit and this is a new domain
+          if (uniqueDomains.size >= domainsPerMonth && !uniqueDomains.has(project.domain)) {
+            console.log(`[AUDIT] Domain limit reached: ${uniqueDomains.size}/${domainsPerMonth}`);
+
+            // Mark audit as failed
+            await supabase
+              .from('audits')
+              .update({
+                status: 'failed',
+                error_message: `Domain limit reached (${domainsPerMonth} domains per month)`,
+                completed_at: new Date().toISOString()
+              })
+              .eq('id', audit.id);
+
+            return new Response(JSON.stringify({
+              error: `Domain limit reached. You can audit up to ${domainsPerMonth} unique domains per month. Upgrade your plan to audit more domains.`,
+              code: 'DOMAIN_LIMIT_REACHED'
+            }), {
+              status: 403,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+
+          console.log(`[AUDIT] Domain check passed: ${uniqueDomains.size}/${domainsPerMonth} domains used`);
+        }
+      }
+
+      // ========== DELEGATE TO FLY.IO WORKER FOR PAID USERS ==========
+      // Paid users get deep audits (up to 20 pages, 5 min timeout) via Fly.io worker
+      const isPaidUser = checksLimit >= 280;
+
+      if (isPaidUser && auditWorkerUrl && auditWorkerSecret) {
+        console.log('[AUDIT] Delegating to Fly.io worker for deep audit...');
+
+        try {
+          const workerResponse = await fetch(`${auditWorkerUrl}/audit`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${auditWorkerSecret}`,
+            },
+            body: JSON.stringify({
+              auditId: audit.id,
+              projectId: project.id,
+              url: project.url,
+              maxPages: 10, // Deep audit with more pages
+              checksLimit,
+              enableAI: !!openaiApiKey,
+            }),
+          });
+
+          if (workerResponse.ok) {
+            const workerResult = await workerResponse.json();
+            console.log(`[AUDIT] Delegated to worker, job ID: ${workerResult.jobId}`);
+
+            // Return immediately - worker will update DB when done
+            return new Response(JSON.stringify({
+              success: true,
+              auditId: audit.id,
+              delegated: true,
+              workerJobId: workerResult.jobId,
+              message: 'Deep audit in progress. Results will appear shortly.',
+            }), {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          } else {
+            console.error(`[AUDIT] Worker delegation failed: ${workerResponse.status}`);
+            // Fall through to edge function audit as fallback
+          }
+        } catch (workerError) {
+          console.error('[AUDIT] Worker delegation error:', workerError);
+          // Fall through to edge function audit as fallback
+        }
+
+        console.log('[AUDIT] Falling back to edge function audit...');
+      }
+
+      // ========== LOAD THREAT HASHES FOR URL SAFETY (with timeout) ==========
+      const threatHashPromise = loadThreatHashes(supabase).catch(() => 0);
+      const hashTimeoutPromise = new Promise<number>(resolve => setTimeout(() => resolve(0), 2000));
+      await Promise.race([threatHashPromise, hashTimeoutPromise]);
+
+      // ========== DISCOVER PAGES TO AUDIT ==========
+      const maxPages = 3; // Reduced for speed - can increase later
+      let pagesToAudit: string[] = [project.url]; // Always include homepage
+
+      // Try to discover additional pages (with timeout)
+      const discoveryStart = Date.now();
+      const discoveryTimeout = 5000; // 5 seconds max for discovery
+
+      try {
+        if (project.github_installation_id && project.github_repo_url) {
+          // Have repo access - use route discovery
+          console.log('[AUDIT] Attempting route discovery from GitHub repo...');
+          const repoPromise = discoverPagesFromRepo(supabase, project, maxPages - 1);
+          const repoTimeoutPromise = new Promise<string[]>(resolve => setTimeout(() => resolve([]), discoveryTimeout));
+          const repoPages = await Promise.race([repoPromise, repoTimeoutPromise]);
+          if (repoPages.length > 0) {
+            pagesToAudit = [project.url, ...repoPages.filter(p => p !== project.url)];
+          }
+        }
+
+        // If no repo pages, fall back to link crawling
+        if (pagesToAudit.length === 1) {
+          console.log('[AUDIT] Fetching homepage to discover pages...');
+          const homepageHtml = await fetchHtml(project.url, 5000); // Reduced timeout
+          if (homepageHtml) {
+            const discovered = discoverPagesFromLinks(project.url, homepageHtml, maxPages - 1);
+            const additionalPages = discovered.map(p => p.url).filter(url => url !== project.url);
+            pagesToAudit = [project.url, ...additionalPages];
+            console.log(`[AUDIT] Discovered ${additionalPages.length} additional pages from links`);
+          }
+        }
+      } catch (discoveryError) {
+        console.error('[AUDIT] Page discovery failed, continuing with homepage only:', discoveryError);
+      }
+
+      console.log(`[AUDIT] Page discovery completed in ${Date.now() - discoveryStart}ms`);
+
+      console.log(`[AUDIT] Will audit ${pagesToAudit.length} pages in PARALLEL:`, pagesToAudit);
+
+      // ========== RUN AUDITS ON ALL PAGES IN PARALLEL ==========
+      const perPageTimeout = 15000; // 15 seconds per page max
+
+      const auditPage = async (pageUrl: string, index: number): Promise<{
+        report: AuditReport | null;
+        issues: DbAuditIssue[];
+        checksRun: number;
+        url: string;
+      }> => {
+        const startTime = Date.now();
+        console.log(`[AUDIT] [Thread ${index}] Starting: ${pageUrl}`);
+
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), perPageTimeout);
+
+          const pageReport = await runFullAudit({
+            url: pageUrl,
+            maxPages: 1,
+            checksLimit,
+          });
+
+          clearTimeout(timeoutId);
+
+          const pageIssues = pageReport.issues.map(convertIssue);
+          const checksRun = pageReport.summary.passed + pageReport.summary.errors + pageReport.summary.warnings;
+
+          console.log(`[AUDIT] [Thread ${index}] Complete in ${Date.now() - startTime}ms: ${pageUrl} (${pageIssues.length} issues)`);
+
+          return { report: pageReport, issues: pageIssues, checksRun, url: pageUrl };
+        } catch (error) {
+          console.error(`[AUDIT] [Thread ${index}] Failed after ${Date.now() - startTime}ms: ${pageUrl}`, error);
+          return { report: null, issues: [], checksRun: 0, url: pageUrl };
+        }
+      };
+
+      // Run all page audits in parallel
+      const parallelStart = Date.now();
+      const auditResults = await Promise.allSettled(
+        pagesToAudit.map((url, index) => auditPage(url, index))
+      );
+      console.log(`[AUDIT] All ${pagesToAudit.length} pages completed in ${Date.now() - parallelStart}ms (parallel)`);
+
+      // Collect results
+      const allIssues: DbAuditIssue[][] = [];
+      let totalChecksRun = 0;
+      let primaryReport: AuditReport | null = null;
+
+      for (let i = 0; i < auditResults.length; i++) {
+        const result = auditResults[i];
+        if (result.status === 'fulfilled' && result.value) {
+          const { report, issues, checksRun } = result.value;
+          allIssues.push(issues);
+          totalChecksRun += checksRun;
+
+          // First successful result is the homepage (primary report)
+          if (i === 0 && report) {
+            primaryReport = report;
+          }
+        }
+      }
+
+      if (!primaryReport) {
+        throw new Error('Primary audit failed - no report generated');
+      }
+
+      // Merge issues from all pages
+      const mergedIssues = mergeIssues(allIssues);
+      console.log(`[AUDIT] Merged ${mergedIssues.length} unique issues from ${pagesToAudit.length} pages`);
+
+      // ========== AI ANALYSIS (Optional - skip if running low on time) ==========
       let aiContentAnalysis: AIContentAnalysis | null = null;
       let aiMetaAnalysis: AIMetaAnalysis | null = null;
       let aiFixPrioritization: AIFixPrioritization | null = null;
 
-      if (openaiApiKey && auditReport.pages[0]) {
-        const page = auditReport.pages[0];
+      const elapsedTime = Date.now() - startTime;
+      const timeRemaining = HARD_TIMEOUT - elapsedTime;
+      const skipAI = timeRemaining < 15000; // Skip AI if less than 15 seconds remaining
+
+      if (skipAI) {
+        console.log(`[AUDIT] Skipping AI analysis (only ${timeRemaining}ms remaining)`);
+      } else if (openaiApiKey && primaryReport.pages[0]) {
+        const page = primaryReport.pages[0];
         console.log('Running AI-powered analysis...');
 
         // Extract data for AI analysis from the audit report
@@ -306,7 +799,7 @@ serve(async (req) => {
         }
 
         // Run fix prioritization
-        const issuesForPrioritization = issues.map(i => ({
+        const issuesForPrioritization = mergedIssues.map(i => ({
           code: i.code,
           severity: i.severity,
           title: i.title,
@@ -326,7 +819,7 @@ serve(async (req) => {
             .slice(0, 3);
 
           for (const improvement of topImprovements) {
-            issues.push({
+            mergedIssues.push({
               code: 'AI_CONTENT_SUGGESTION',
               severity: 'notice',
               category: 'content',
@@ -344,7 +837,7 @@ serve(async (req) => {
         if (aiMetaAnalysis?.titleAnalysis?.suggestions?.[0]) {
           const titleEffectiveness = aiMetaAnalysis.titleAnalysis.effectiveness;
           if (!pageData.title || titleEffectiveness < 70) {
-            issues.push({
+            mergedIssues.push({
               code: 'AI_TITLE_SUGGESTION',
               severity: 'notice',
               category: 'on-page',
@@ -367,18 +860,18 @@ serve(async (req) => {
 
       // ========== USE HEALTH SCORES FROM ENGINE ==========
       const healthScores: HealthScores = {
-        crawlability: auditReport.healthScore?.crawlability ?? 100,
-        onPage: auditReport.healthScore?.onPage ?? 100,
-        content: auditReport.healthScore?.content ?? 100,
-        performance: auditReport.healthScore?.performance ?? 100,
-        security: auditReport.healthScore?.security ?? 100,
-        socialMeta: auditReport.healthScore?.social ?? 100,
-        aiReadiness: auditReport.healthScore?.aiReadiness ?? 100,
+        crawlability: primaryReport.healthScore?.crawlability ?? 100,
+        onPage: primaryReport.healthScore?.onPage ?? 100,
+        content: primaryReport.healthScore?.content ?? 100,
+        performance: primaryReport.healthScore?.performance ?? 100,
+        security: primaryReport.healthScore?.security ?? 100,
+        socialMeta: primaryReport.healthScore?.social ?? 100,
+        aiReadiness: primaryReport.healthScore?.aiReadiness ?? 100,
         mobile: 100, // Not in HealthScore interface, default to 100
       };
 
       // Use overall score from engine
-      let overallScore = auditReport.healthScore?.overall ?? 85;
+      let overallScore = primaryReport.healthScore?.overall ?? 85;
 
       // Apply AI boost if available
       if (aiContentAnalysis?.overallScore) {
@@ -397,17 +890,18 @@ serve(async (req) => {
         .update({
           status: 'completed',
           score: overallScore,
-          pages_crawled: auditReport.pages.length,
-          issues_found: issues.length,
-          checks_run: checksRun,
+          pages_crawled: pagesToAudit.length,
+          issues_found: mergedIssues.length,
+          checks_run: totalChecksRun,
           health_scores: healthScores,
           completed_at: new Date().toISOString(),
           duration_ms: duration,
           summary: {
-            errors: issues.filter(i => i.severity === 'error').length,
-            warnings: issues.filter(i => i.severity === 'warning').length,
-            notices: issues.filter(i => i.severity === 'notice').length,
-            checksRun,
+            errors: mergedIssues.filter(i => i.severity === 'error').length,
+            warnings: mergedIssues.filter(i => i.severity === 'warning').length,
+            notices: mergedIssues.filter(i => i.severity === 'notice').length,
+            checksRun: totalChecksRun,
+            pagesAudited: pagesToAudit.length,
             aiAnalyzed: !!aiContentAnalysis,
           },
           ai_analysis: aiContentAnalysis || aiMetaAnalysis || aiFixPrioritization ? {
@@ -426,9 +920,9 @@ serve(async (req) => {
       console.log(`[AUDIT] Audit record updated successfully`);
 
       // Save issues
-      if (issues.length > 0) {
-        console.log(`[AUDIT] Saving ${issues.length} issues...`);
-        const issueRecords = issues.map(issue => ({
+      if (mergedIssues.length > 0) {
+        console.log(`[AUDIT] Saving ${mergedIssues.length} issues...`);
+        const issueRecords = mergedIssues.map(issue => ({
           audit_id: audit.id,
           project_id: project.id,
           code: issue.code,
@@ -470,12 +964,22 @@ serve(async (req) => {
         success: true,
         auditId: audit.id,
         score: overallScore,
-        issuesFound: issues.length,
-        checksRun,
+        issuesFound: mergedIssues.length,
+        checksRun: totalChecksRun,
+        pagesAudited: pagesToAudit.length,
         duration,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    };
+
+    // Race the audit against hard timeout
+    try {
+      const timeoutPromise = new Promise<Response>((_, reject) => {
+        setTimeout(() => reject(new Error('Audit timed out after 40 seconds')), HARD_TIMEOUT);
+      });
+
+      return await Promise.race([runAuditWithTimeout(), timeoutPromise]);
 
     } catch (auditError) {
       // Mark audit as failed
@@ -483,6 +987,7 @@ serve(async (req) => {
         .from('audits')
         .update({
           status: 'failed',
+          error_message: auditError?.message || 'Audit timed out',
           completed_at: new Date().toISOString(),
         })
         .eq('id', audit.id);

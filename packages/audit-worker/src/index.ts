@@ -196,6 +196,78 @@ async function runDeepAudit(
   const startTime = Date.now();
 
   try {
+    // ========== CHECK DOMAIN LIMIT (ANTI-GAMING) ==========
+    // Get project to find user and domain
+    const { data: project } = await supabase
+      .from('projects')
+      .select('user_id, domain')
+      .eq('id', job.projectId)
+      .single();
+
+    if (project?.user_id) {
+      // Get subscription details for billing cycle
+      const { data: subDetails } = await supabase
+        .from('user_subscriptions')
+        .select('plan_id, current_period_start')
+        .eq('user_id', project.user_id)
+        .single();
+
+      // Determine domain limit (paid users only use worker)
+      const planLimits: Record<string, number | null> = {
+        'solo': 5,
+        'pro': 15,
+        'agency': null, // unlimited
+      };
+      const domainsPerMonth = subDetails?.plan_id
+        ? (planLimits[subDetails.plan_id] ?? 5)
+        : 5; // Default for paid
+
+      // Check domain limit (null = unlimited)
+      if (domainsPerMonth !== null && subDetails?.current_period_start) {
+        // Get unique domains audited this billing cycle
+        const { data: auditedDomains } = await supabase
+          .from('audits')
+          .select('projects!inner(domain)')
+          .eq('projects.user_id', project.user_id)
+          .gte('created_at', subDetails.current_period_start)
+          .eq('status', 'completed');
+
+        const uniqueDomains = new Set<string>();
+        auditedDomains?.forEach((a: { projects: { domain: string } }) => {
+          if (a.projects?.domain) uniqueDomains.add(a.projects.domain);
+        });
+
+        // Check if we're at limit and this is a new domain
+        if (uniqueDomains.size >= domainsPerMonth && !uniqueDomains.has(project.domain)) {
+          app.log.warn({ jobId: job.id, domains: uniqueDomains.size, limit: domainsPerMonth }, 'Domain limit reached');
+
+          // Mark audit as failed
+          await supabase
+            .from('audits')
+            .update({
+              status: 'failed',
+              error_message: `Domain limit reached (${domainsPerMonth} domains per month)`,
+              completed_at: new Date().toISOString()
+            })
+            .eq('id', job.auditId);
+
+          job.status = 'failed';
+          job.error = `Domain limit reached (${domainsPerMonth} domains per month)`;
+
+          broadcastEvent(job.auditId, {
+            type: 'job_failed',
+            job_id: job.id,
+            audit_id: job.auditId,
+            error: job.error,
+          });
+
+          return;
+        }
+
+        app.log.info({ jobId: job.id, domains: uniqueDomains.size, limit: domainsPerMonth }, 'Domain check passed');
+      }
+    }
+
     job.status = 'running';
     job.startedAt = new Date();
 

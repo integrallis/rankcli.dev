@@ -6,6 +6,24 @@
     "description": "One-time audit, no signup required",
     "tagline": "Analyze your site for free"
   },
+  "free_registered": {
+    "enabled": true,
+    "checks_limit": 100,
+    "sites_limit": 1,
+    "domains_per_month": 2,
+    "description": "Create an account for more checks and history",
+    "tagline": "100 checks, audit history included",
+    "features": {
+      "full_audit": false,
+      "audit_history": true,
+      "export_reports": false,
+      "local_auto_fix": false,
+      "github_connect": false,
+      "github_auto_fix": false,
+      "api_access": false,
+      "white_label": false
+    }
+  },
   "trial": {
     "enabled": true,
     "duration_days": 14,
@@ -17,13 +35,15 @@
     {
       "id": "solo",
       "name": "Solo",
-      "price_cents": 700,
-      "price_cents_annual": 5600,
+      "price_cents": 900,
+      "price_cents_annual": 7200,
       "billing_period": "month",
       "tagline": "For indie developers",
       "popular": false,
       "limits": {
         "sites": 3,
+        "domains_per_month": 5,
+        "checks": 280,
         "team_members": 1,
         "keywords": 50,
         "api_requests_day": 100,
@@ -34,10 +54,12 @@
       "features": {
         "full_audit": true,
         "weekly_schedule": true,
-        "github_connect": true,
+        "export_reports": true,
+        "local_auto_fix": true,
+        "github_connect": false,
         "github_auto_fix": false,
         "slack_alerts": false,
-        "api_access": true,
+        "api_access": false,
         "competitor_tracking": 0,
         "ai_analysis": true,
         "keyword_research": true,
@@ -45,15 +67,16 @@
         "competitor_intel": false,
         "backlink_finder": false,
         "local_seo": false,
-        "tool_opportunities": false
+        "tool_opportunities": false,
+        "white_label": false
       },
       "highlights": [
         "3 sites monitored",
-        "200+ SEO checks",
+        "280+ SEO checks",
         "Weekly automated audits",
-        "GitHub integration",
-        "AI-powered analysis",
-        "CLI + API access"
+        "Local auto-fix via CLI",
+        "Export PDF reports",
+        "AI-powered analysis"
       ]
     },
     {
@@ -66,6 +89,8 @@
       "popular": true,
       "limits": {
         "sites": 10,
+        "domains_per_month": 15,
+        "checks": 280,
         "team_members": 5,
         "keywords": 200,
         "api_requests_day": 1000,
@@ -78,10 +103,12 @@
       "features": {
         "full_audit": true,
         "daily_schedule": true,
+        "export_reports": true,
+        "local_auto_fix": true,
         "github_connect": true,
         "github_auto_fix": true,
         "slack_alerts": true,
-        "api_access": true,
+        "api_access": false,
         "competitor_tracking": 3,
         "ai_analysis": true,
         "keyword_research": true,
@@ -89,14 +116,15 @@
         "competitor_intel": true,
         "backlink_finder": true,
         "local_seo": true,
-        "tool_opportunities": false
+        "tool_opportunities": false,
+        "white_label": false
       },
       "highlights": [
         "10 sites monitored",
         "Daily automated audits",
+        "GitHub integration",
         "Auto-fix PRs via GitHub",
         "Slack/Discord alerts",
-        "Competitor intelligence",
         "5 team members"
       ]
     },
@@ -110,6 +138,8 @@
       "popular": false,
       "limits": {
         "sites": 50,
+        "domains_per_month": null,
+        "checks": 280,
         "team_members": null,
         "keywords": 1000,
         "api_requests_day": 10000,
@@ -123,6 +153,8 @@
       "features": {
         "full_audit": true,
         "hourly_schedule": true,
+        "export_reports": true,
+        "local_auto_fix": true,
         "github_connect": true,
         "github_auto_fix": true,
         "slack_alerts": true,
@@ -141,11 +173,11 @@
       },
       "highlights": [
         "50 sites monitored",
-        "Unlimited team members",
         "On-demand audits",
+        "Unlimited team members",
+        "REST API access",
         "White-label reports",
-        "Priority support",
-        "API integrations"
+        "Priority support"
       ]
     }
   ],
@@ -155,6 +187,12 @@
     "plan_access": "pro",
     "limit": 500,
     "description": "Lifetime Pro access - limited to 500 licenses"
+  },
+  "feature_descriptions": {
+    "api_access": "REST API to integrate RankCLI into your own tools, dashboards, and workflows. Build custom integrations, automate bulk audits, and receive webhook notifications.",
+    "white_label": "Remove RankCLI branding from PDF reports and exports. Add your own logo and colors for client-facing deliverables.",
+    "local_auto_fix": "Apply SEO fixes directly to your local codebase via CLI. Creates commits and branches ready for you to push.",
+    "github_auto_fix": "Automatically create fix PRs via GitHub App integration. No manual intervention required."
   },
   "seo_modules": {
     "ai_audit": {
