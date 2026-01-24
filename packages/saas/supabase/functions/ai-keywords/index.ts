@@ -17,6 +17,11 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
 
+// Worker configuration for paid keyword research
+const WORKER_URL = Deno.env.get('AUDIT_WORKER_URL') || 'http://localhost:8080';
+const WORKER_SECRET = Deno.env.get('WORKER_SECRET') || 'dev-secret';
+const USE_WORKER_FOR_PAID = Deno.env.get('USE_WORKER_FOR_KEYWORDS') === 'true';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -73,6 +78,22 @@ interface FreeToolIdea {
   difficulty: 'easy' | 'medium' | 'hard';
   buildComplexity: 'simple' | 'moderate' | 'complex';
   ctaToProduct: string;
+  /** Enhanced fields for specificity */
+  inputFormat: string;
+  outputFormat: string;
+  productTieIn: string;
+  deepLinkPattern?: string;
+  competitorAnalysis: {
+    existingTools: string[];
+    hasFreeAlternative: boolean;
+    ourAdvantage: string;
+  };
+  implementationHints: {
+    suggestedLibraries: string[];
+    estimatedHours: number;
+    canUseExistingOSS: boolean;
+  };
+  feasibilityScore: number; // 1-5
 }
 
 interface WizardQuestion {
@@ -348,7 +369,7 @@ async function generateKeywordRecommendations(
           content: `You are an expert SEO strategist implementing "Engineering as Marketing" strategy.
 
 Your goal is to recommend keywords that can be targeted with:
-1. Content pages (blog posts, guides)
+1. Content pages (blog posts, guides, landing pages)
 2. Free tools that drive traffic and convert to paid product
 
 KEYWORD CRITERIA (per Bhanu's strategy):
@@ -356,27 +377,81 @@ KEYWORD CRITERIA (per Bhanu's strategy):
 - Search volume > 500/month ideal, > 100 acceptable
 - Must be relevant to the product (can convert visitors)
 
-For each keyword, specify:
-- Whether to create a page, optimize existing, or build a free tool
-- If uncertainty is high for a keyword, mark action as "needs-input"
+=== KEYWORD RECOMMENDATIONS ===
+For each keyword, provide:
+- action: "create-page" means create a NEW page targeting this keyword
+- For "create-page" actions, include specifics in rationale:
+  - Suggested URL path (e.g., "/solutions/animated-diagrams")
+  - Content angle (e.g., "Compare animated vs static diagrams, show use cases")
+  - Target word count (e.g., "1500-2000 words")
 
-FREE TOOL IDEAS - CRITICAL RULES:
-- Tools must be ADJACENT utilities, NOT the core product itself
-- Tools should solve a RELATED problem that the target audience has
-- Tools must be simple standalone utilities (can be built in 1-2 days)
-- Tools capture users who might THEN need the main product
+=== FREE TOOL IDEAS - STRICT REQUIREMENTS ===
 
-GOOD examples:
-- For a "Mermaid Diagram Animator" → "Mermaid Syntax Validator", "Mermaid to PNG Converter", "Flowchart to Mermaid Generator"
-- For a "JSON API Library" → "JSON Formatter", "JSON to CSV Converter", "API Response Validator"
-- For a "Email Marketing Tool" → "Subject Line Tester", "Spam Score Checker", "Email Preview Tool"
-- For a "Video Editor" → "Thumbnail Generator", "Video Format Converter", "Aspect Ratio Calculator"
+Tools must be:
+1. ADJACENT utilities, NOT the core product itself
+2. SPECIFIC - exact input and output formats (not vague descriptions)
+3. BUILDABLE - realistic scope (4-16 hours of work)
+4. TIED TO PRODUCT - output can flow into the main product
 
-BAD examples (these are the product itself, NOT free tools):
-- For a "Mermaid Diagram Animator" → "Animated Diagram Creator" (this IS the product)
-- For a "Email Marketing Tool" → "Email Campaign Builder" (this IS the product)
+REQUIRED SPECIFICITY for each tool:
+- inputFormat: EXACT format (e.g., "PlantUML text syntax", "Draw.io XML export", "Flowchart JSON")
+- outputFormat: EXACT format (e.g., "Mermaid diagram code", "PNG image 1200x630", "CSV with columns: name,value")
+- productTieIn: How does the tool's OUTPUT connect to the main product?
+- deepLinkPattern: Can we link directly into the product? (e.g., "/editor?import={base64output}")
 
-The free tool should make users think: "This is useful! I wonder what else they offer..." and naturally lead to the main product.`
+COMPETITOR RESEARCH required:
+- existingTools: Name 2-3 competing tools for this exact functionality
+- hasFreeAlternative: Do free alternatives already exist?
+- ourAdvantage: Why would someone use ours instead?
+
+IMPLEMENTATION HINTS required:
+- suggestedLibraries: npm/GitHub libraries that could power this (e.g., "mermaid", "plantuml-encoder")
+- estimatedHours: Realistic hours to build (4-40)
+- canUseExistingOSS: Can we wrap an existing open-source library?
+
+FEASIBILITY SCORING (1-5):
+- 5: Trivial to build, exact specs, clear libraries exist
+- 4: Simple, well-defined, some custom logic needed
+- 3: Moderate complexity, requires some research
+- 2: Complex, unclear scope, may take longer
+- 1: Too vague, not buildable as specified
+
+REJECT IDEAS THAT:
+- Score below 3 on feasibility
+- Don't specify exact input/output formats
+- Are the main product (not an adjacent utility)
+- Are too vague (e.g., "Diagram Style Customizer" - style for what?)
+
+=== EXAMPLES ===
+
+GOOD tool idea for "Mermaid Diagram Animator" (animerm.ai):
+{
+  "toolName": "PlantUML to Mermaid Converter",
+  "description": "Converts PlantUML sequence diagrams to Mermaid syntax so you can animate them in animerm.ai",
+  "inputFormat": "PlantUML text syntax (@startuml...@enduml)",
+  "outputFormat": "Mermaid sequenceDiagram syntax",
+  "productTieIn": "Converted diagrams can be imported directly into animerm.ai editor for animation",
+  "deepLinkPattern": "/editor?code={base64MermaidCode}",
+  "competitorAnalysis": {
+    "existingTools": ["kroki.io (renders, no conversion)", "planttext.com (PlantUML only)"],
+    "hasFreeAlternative": false,
+    "ourAdvantage": "Direct integration with animerm.ai for animation, not just static rendering"
+  },
+  "implementationHints": {
+    "suggestedLibraries": ["plantuml-parser", "mermaid"],
+    "estimatedHours": 8,
+    "canUseExistingOSS": true
+  },
+  "feasibilityScore": 4
+}
+
+BAD tool idea (REJECT):
+{
+  "toolName": "Diagram Style Customizer",
+  "description": "A utility to customize diagram styles and export them for presentations."
+  // BAD: No input format, no output format, "styles" is vague, no competitor research
+  // feasibilityScore: 1 - REJECT
+}`
         },
         {
           role: 'user',
@@ -394,7 +469,9 @@ Current Confidence Level: ${Math.round(uncertainty.overallConfidence * 100)}%
 ${wizardContext}
 
 IMPORTANT: For freeToolIdeas, suggest UTILITY tools that are ADJACENT to "${summary.productName}" - NOT the product itself.
-Think: "What simple tool would ${summary.targetAudience} search for that we could build in a day?"
+Think: "What simple tool would ${summary.targetAudience} search for that we could build in 4-16 hours?"
+
+BE SPECIFIC: Every tool must have exact input/output formats. Vague ideas will be rejected.
 
 Return JSON:
 {
@@ -406,25 +483,40 @@ Return JSON:
       "intent": "informational|transactional|navigational|commercial",
       "relevance": 0.0-1.0,
       "action": "create-page|optimize-existing|build-tool|needs-input|skip",
-      "rationale": "Why this keyword and action",
+      "rationale": "For create-page: include suggested URL path, content angle, and target word count. For build-tool: reference the tool idea. For others: explain the strategy.",
       "impact": "high|medium|low",
       "effort": "high|medium|low"
     }
   ],
   "freeToolIdeas": [
     {
-      "toolName": "Tool Name (must be a simple utility, NOT the main product)",
-      "description": "What the standalone utility tool does",
-      "targetKeyword": "Primary keyword to target (should be different from product keywords)",
+      "toolName": "Specific Tool Name (e.g., 'PlantUML to Mermaid Converter')",
+      "description": "Exactly what it does and why users need it",
+      "targetKeyword": "Primary keyword (e.g., 'plantuml to mermaid')",
       "searchVolume": "high|medium|low",
       "difficulty": "easy|medium|hard",
       "buildComplexity": "simple|moderate|complex",
-      "ctaToProduct": "How this utility naturally leads users to want ${summary.productName}"
+      "ctaToProduct": "CTA text (e.g., 'Animate your converted diagram in ${summary.productName} →')",
+      "inputFormat": "EXACT input format (e.g., 'PlantUML text (@startuml...@enduml)')",
+      "outputFormat": "EXACT output format (e.g., 'Mermaid sequenceDiagram syntax')",
+      "productTieIn": "How output connects to ${summary.productName}",
+      "deepLinkPattern": "URL pattern if possible (e.g., '/editor?code={base64}') or null",
+      "competitorAnalysis": {
+        "existingTools": ["tool1", "tool2"],
+        "hasFreeAlternative": true/false,
+        "ourAdvantage": "Why ours is better"
+      },
+      "implementationHints": {
+        "suggestedLibraries": ["npm-package-1", "github/repo"],
+        "estimatedHours": 8,
+        "canUseExistingOSS": true/false
+      },
+      "feasibilityScore": 1-5
     }
   ]
 }
 
-Generate 10-15 keywords and 3-5 ADJACENT utility tool ideas (not the product itself).`
+Generate 10-15 keywords and 3-5 SPECIFIC tool ideas. ONLY include tools with feasibilityScore >= 3.`
         }
       ],
       max_tokens: 3000,
@@ -650,6 +742,54 @@ serve(async (req) => {
     }
 
     // Paid tier: Full results
+    // For paid tiers, route to worker if enabled (enhanced tool ideas with competitive search)
+    if (USE_WORKER_FOR_PAID && planTier !== 'free') {
+      console.log('Routing to worker for enhanced keyword research...');
+
+      try {
+        const workerResponse = await fetch(`${WORKER_URL}/keywords`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${WORKER_SECRET}`,
+          },
+          body: JSON.stringify({
+            url,
+            projectId,
+            tier: planTier,
+            wizardResponses: wizardResponses
+              ? Object.entries(wizardResponses).map(([q, a]) => ({ id: q, answer: a }))
+              : undefined,
+            enableEnhancedToolIdeas: true,
+          }),
+        });
+
+        if (workerResponse.ok) {
+          const workerResult = await workerResponse.json();
+          console.log('Worker response received');
+
+          // Map worker result to expected format
+          return new Response(JSON.stringify({
+            success: true,
+            tier: 'paid',
+            siteSummary: workerResult.siteSummary || summary,
+            uncertainty: workerResult.uncertainty || uncertainty,
+            recommendations: workerResult.recommendations || [],
+            freeToolIdeas: workerResult.freeToolIdeas || [],
+            wizardQuestions,
+            needsWizard,
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } else {
+          console.warn('Worker request failed, falling back to edge function');
+        }
+      } catch (workerError) {
+        console.warn('Worker unavailable, falling back to edge function:', workerError);
+      }
+    }
+
+    // Fallback: Generate using edge function
     console.log('Step 3: Generating keyword recommendations...');
     const { recommendations, freeToolIdeas } = await generateKeywordRecommendations(
       summary,

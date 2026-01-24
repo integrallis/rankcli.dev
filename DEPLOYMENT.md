@@ -136,6 +136,8 @@ These are one-time setup steps that **cannot be automated** and must be done man
 #### Repository Secrets
 Go to **Settings → Secrets and variables → Actions → Secrets**
 
+**Required Secrets:**
+
 | Secret | Description |
 |--------|-------------|
 | `SUPABASE_ACCESS_TOKEN` | Supabase CLI access token ([generate here](https://supabase.com/dashboard/account/tokens)) |
@@ -147,6 +149,19 @@ Go to **Settings → Secrets and variables → Actions → Secrets**
 | `STRIPE_WEBHOOK_SECRET` | Webhook signing secret |
 | `CLOUDFLARE_API_TOKEN` | Cloudflare API token with Pages edit permissions |
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
+| `FLY_API_TOKEN` | Fly.io API token for worker deployment |
+| `AUDIT_WORKER_SECRET` | Shared secret for worker authentication |
+| `OPENAI_API_KEY` | OpenAI API key for AI features |
+
+**Optional Secrets (for AI Keyword Research):**
+
+| Secret | Description |
+|--------|-------------|
+| `BRAVE_API_KEY` | Brave Search API key (2,000 free/month) - [Get here](https://brave.com/search/api/) |
+| `SERPER_API_KEY` | Serper.dev API key (2,500 free/month) - [Get here](https://serper.dev/) |
+| `GITHUB_TOKEN_SEARCH` | GitHub PAT for rate limits (no scopes needed) - [Generate here](https://github.com/settings/tokens) |
+
+**Note:** Use `GITHUB_TOKEN_SEARCH` instead of `GITHUB_TOKEN` because the latter is reserved by GitHub Actions.
 
 #### Repository Variables
 Go to **Settings → Secrets and variables → Actions → Variables**
@@ -349,7 +364,12 @@ curl https://your-domain.com
 | `SUPABASE_SERVICE_KEY` | Supabase service role key | Yes |
 | `STRIPE_SECRET_KEY` | Stripe secret key | Yes |
 | `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret | Yes |
-| `OPENAI_API_KEY` | OpenAI API key for AI features | Optional |
+| `OPENAI_API_KEY` | OpenAI API key for AI features | Yes (for AI) |
+| `AUDIT_WORKER_URL` | Fly.io worker URL | Yes (for paid) |
+| `AUDIT_WORKER_SECRET` | Shared secret for worker auth | Yes (for paid) |
+| `BRAVE_API_KEY` | Brave Search API key (2,000 free/month) | Optional |
+| `SERPER_API_KEY` | Serper.dev API key (2,500 free/month) | Optional |
+| `GITHUB_TOKEN` | GitHub PAT for rate limits (no scopes) | Optional |
 
 ### CLI / Development
 
@@ -453,6 +473,151 @@ fly status
 # Scale up for more capacity
 fly scale count 2
 ```
+
+---
+
+## AI Keyword Research
+
+The AI-powered keyword research feature uses OpenAI plus competitive search APIs to generate actionable keyword recommendations and free tool ideas. This feature includes an LLM-as-judge system that filters out vague or unbuildable suggestions.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                  AI Keyword Research Flow                        │
+├─────────────────────────────────────────────────────────────────┤
+│  CLI (--ai flag):                                                │
+│    rankcli keywords --url example.com --ai                       │
+│                              ↓                                   │
+│    1. Try cloud (Supabase edge function)                         │
+│    2. Fallback to local (requires OPENAI_API_KEY)                │
+│                                                                  │
+│  SaaS UI:                                                        │
+│    Dashboard → Project → Keywords → "AI Analysis"                │
+│                              ↓                                   │
+│    Edge Function → (paid tiers) → Fly.io Worker                  │
+│                              ↓                                   │
+│    Competitive Search (Brave/Serper/GitHub/npm)                  │
+│                              ↓                                   │
+│    LLM Judge (filters vague ideas)                               │
+│                              ↓                                   │
+│    Enhanced tool ideas with:                                     │
+│    - Input/output formats                                        │
+│    - Competitor analysis                                         │
+│    - Implementation hints                                        │
+│    - Feasibility scores                                          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Competitive Search APIs
+
+The keyword research feature uses free-tier APIs for competitive intelligence:
+
+| API | Free Tier | Purpose | Required |
+|-----|-----------|---------|----------|
+| Brave Search | 2,000/month | Find existing tools, competitors | Optional |
+| Serper.dev | 2,500/month | Google search fallback | Optional |
+| GitHub API | 60/hour (unauth) or 5,000/hour (auth) | Find open source alternatives | Optional |
+| npm Registry | Unlimited | Find JavaScript libraries | Built-in |
+| Hacker News | Unlimited | Find discussions, sentiment | Built-in |
+
+**Note:** Without API keys, the system still works but with limited competitive data.
+
+### Getting API Keys
+
+#### Brave Search API
+1. Go to [brave.com/search/api](https://brave.com/search/api/)
+2. Sign up for the **Free** plan (2,000 queries/month)
+3. Generate an API key
+4. Set as `BRAVE_API_KEY`
+
+#### Serper.dev API
+1. Go to [serper.dev](https://serper.dev/)
+2. Sign up for free (2,500 credits/month)
+3. Copy your API key from the dashboard
+4. Set as `SERPER_API_KEY`
+
+#### GitHub Personal Access Token
+1. Go to [github.com/settings/tokens](https://github.com/settings/tokens)
+2. Click **Generate new token (classic)**
+3. **No scopes required** - just for rate limiting (60 → 5,000 requests/hour)
+4. Generate and copy the token
+5. Set as `GITHUB_TOKEN` (or `GITHUB_TOKEN_SEARCH` in GitHub Actions to avoid conflicts)
+
+### Local Development
+
+```bash
+# Add to .env file
+OPENAI_API_KEY=sk-proj-...
+BRAVE_API_KEY=BSA...
+SERPER_API_KEY=...
+GITHUB_TOKEN=ghp_...
+
+# Test keyword research
+cd packages/cli
+npx tsx src/index.ts keywords --url https://example.com --ai --local
+```
+
+### Production Deployment
+
+#### Fly.io Worker
+```bash
+# Set secrets on Fly.io
+fly secrets set \
+  BRAVE_API_KEY="your-brave-key" \
+  SERPER_API_KEY="your-serper-key" \
+  GITHUB_TOKEN="your-github-token" \
+  --app rankcli-audit-worker
+```
+
+#### Supabase Edge Functions
+```bash
+# Set secrets on Supabase
+supabase secrets set \
+  BRAVE_API_KEY="your-brave-key" \
+  SERPER_API_KEY="your-serper-key" \
+  GITHUB_TOKEN="your-github-token"
+```
+
+### GitHub Actions
+
+The `deploy.yml` workflow automatically sets these secrets if configured:
+
+| GitHub Secret | Target |
+|---------------|--------|
+| `BRAVE_API_KEY` | Fly.io + Supabase |
+| `SERPER_API_KEY` | Fly.io + Supabase |
+| `GITHUB_TOKEN_SEARCH` | Fly.io + Supabase (as `GITHUB_TOKEN`) |
+
+**Note:** Use `GITHUB_TOKEN_SEARCH` instead of `GITHUB_TOKEN` in GitHub Actions because `GITHUB_TOKEN` is a reserved name for the automatic token.
+
+### LLM Judge System
+
+The AI keyword research includes an LLM-as-judge system that:
+
+1. **Evaluates feasibility** (1-5): Can this tool actually be built?
+2. **Evaluates specificity** (1-5): Are input/output formats defined?
+3. **Evaluates product fit** (1-5): Does it connect to the main product?
+4. **Evaluates market opportunity** (1-5): Is there demand without strong free alternatives?
+
+Tools must score ≥3 on feasibility and specificity to pass. Failed ideas are logged with reasons for debugging.
+
+### Troubleshooting
+
+**"No tool ideas generated"**
+- This is expected if all ideas fail the LLM judge's quality threshold
+- Check logs for "Skipping X - failed feasibility check" messages
+- The judge is intentionally strict to avoid vague suggestions
+
+**"Competitive search failed"**
+- Check API key validity and rate limits
+- Brave: 2,000/month limit
+- Serper: 2,500/month limit
+- The system gracefully falls back to npm/GitHub if search APIs fail
+
+**"Cloud unavailable, running locally"**
+- The CLI auto-falls back to local processing if cloud is unreachable
+- Ensure `OPENAI_API_KEY` is set for local processing
 
 ---
 
@@ -903,6 +1068,19 @@ ls -la wasm/
 - [ ] Cloudflare Pages project created
 - [ ] Custom domain configured (optional)
 - [ ] First deployment triggered
+
+**Fly.io Audit Worker:**
+- [ ] Fly.io account created
+- [ ] `FLY_API_TOKEN` secret set in GitHub
+- [ ] `AUDIT_WORKER_SECRET` secret set in GitHub
+- [ ] `OPENAI_API_KEY` secret set in GitHub
+- [ ] Worker deployed and healthy
+
+**AI Keyword Research (Optional):**
+- [ ] `BRAVE_API_KEY` secret set in GitHub (for competitive search)
+- [ ] `SERPER_API_KEY` secret set in GitHub (backup search)
+- [ ] `GITHUB_TOKEN_SEARCH` secret set in GitHub (for rate limits)
+- [ ] Keyword research tested via CLI and UI
 
 **CLI Package:**
 - [ ] `RANKCLI_BUILD_KEY` secret set in GitHub

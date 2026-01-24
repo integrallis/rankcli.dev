@@ -1,7 +1,15 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { runFullAudit, discoverPagesFromLinks, type AuditReport, type AuditIssue } from '@rankcli/agent-runtime';
+import {
+  runFullAudit,
+  discoverPagesFromLinks,
+  runAIKeywordResearch,
+  searchCompetitors,
+  type AuditReport,
+  type AuditIssue,
+  type PlanTier,
+} from '@rankcli/agent-runtime';
 import { EventEmitter } from 'events';
 
 // Environment
@@ -10,6 +18,10 @@ const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 const WORKER_SECRET = process.env.WORKER_SECRET || 'dev-secret';
+// Competitive search API keys (optional but recommended)
+const BRAVE_API_KEY = process.env.BRAVE_API_KEY || '';
+const SERPER_API_KEY = process.env.SERPER_API_KEY || '';
+const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 
 // Timeouts for deep audits (much more generous than edge functions)
 const AUDIT_TIMEOUT = 300000; // 5 minutes max per audit
@@ -611,6 +623,146 @@ Return JSON with:
     return null;
   }
 }
+
+// ========== KEYWORD RESEARCH ENDPOINT ==========
+
+app.post<{
+  Body: {
+    url: string;
+    projectId?: string;
+    tier: PlanTier;
+    wizardResponses?: Array<{ id: string; answer: string }>;
+    userContext?: {
+      productDescription?: string;
+      targetAudience?: string;
+      competitors?: string[];
+      mainProblem?: string;
+      differentiator?: string;
+    };
+    enableEnhancedToolIdeas?: boolean;
+  };
+}>('/keywords', async (request, reply) => {
+  // Verify worker secret
+  const authHeader = request.headers.authorization;
+  if (authHeader !== `Bearer ${WORKER_SECRET}`) {
+    return reply.status(401).send({ error: 'Unauthorized' });
+  }
+
+  const {
+    url,
+    projectId,
+    tier,
+    wizardResponses,
+    userContext,
+    enableEnhancedToolIdeas = true,
+  } = request.body;
+
+  if (!url) {
+    return reply.status(400).send({ error: 'URL is required' });
+  }
+
+  if (!OPENAI_API_KEY) {
+    return reply.status(500).send({ error: 'OpenAI API key not configured' });
+  }
+
+  app.log.info({ url, tier, projectId }, 'Starting keyword research');
+
+  try {
+    const result = await runAIKeywordResearch({
+      url,
+      tier,
+      openaiApiKey: OPENAI_API_KEY,
+      userContext,
+      wizardResponses,
+      enableEnhancedToolIdeas,
+      competitiveSearchKeys: {
+        braveApiKey: BRAVE_API_KEY || undefined,
+        serperApiKey: SERPER_API_KEY || undefined,
+        githubToken: GITHUB_TOKEN || undefined,
+      },
+    });
+
+    app.log.info({
+      url,
+      tier,
+      opportunitiesCount: 'opportunities' in result ? result.opportunities?.length : 0,
+      toolIdeasCount: 'freeToolIdeas' in result ? result.freeToolIdeas?.length : 0,
+    }, 'Keyword research completed');
+
+    // Save to database if projectId provided and paid tier
+    if (projectId && tier !== 'free' && 'siteSummary' in result) {
+      const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+      // Get user_id from project
+      const { data: project } = await supabase
+        .from('projects')
+        .select('user_id')
+        .eq('id', projectId)
+        .single();
+
+      if (project?.user_id) {
+        await supabase.from('keyword_research_results').insert({
+          project_id: projectId,
+          user_id: project.user_id,
+          url,
+          site_summary: result.siteSummary,
+          uncertainty: result.uncertainty,
+          recommendations: result.recommendations || [],
+          free_tool_ideas: result.freeToolIdeas || [],
+          wizard_responses: wizardResponses ? Object.fromEntries(
+            wizardResponses.map(r => [r.id, r.answer])
+          ) : null,
+          confidence: result.uncertainty?.overallConfidence || 0,
+          created_at: new Date().toISOString(),
+        });
+      }
+    }
+
+    return reply.send({
+      success: true,
+      tier,
+      ...result,
+    });
+
+  } catch (error) {
+    app.log.error({ err: error, url }, 'Keyword research failed');
+    return reply.status(500).send({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+// Competitive search endpoint (for testing/debugging)
+app.post<{
+  Body: {
+    query: string;
+  };
+}>('/competitive-search', async (request, reply) => {
+  const authHeader = request.headers.authorization;
+  if (authHeader !== `Bearer ${WORKER_SECRET}`) {
+    return reply.status(401).send({ error: 'Unauthorized' });
+  }
+
+  const { query } = request.body;
+  if (!query) {
+    return reply.status(400).send({ error: 'Query is required' });
+  }
+
+  try {
+    const result = await searchCompetitors(query, {
+      braveApiKey: BRAVE_API_KEY || undefined,
+      serperApiKey: SERPER_API_KEY || undefined,
+      githubToken: GITHUB_TOKEN || undefined,
+      maxResults: 10,
+    });
+
+    return reply.send(result);
+  } catch (error) {
+    return reply.status(500).send({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
 
 // Start server
 const start = async () => {

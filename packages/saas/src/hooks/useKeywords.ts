@@ -52,6 +52,22 @@ export interface FreeToolIdea {
   difficulty: 'easy' | 'medium' | 'hard';
   buildComplexity: 'simple' | 'moderate' | 'complex';
   ctaToProduct: string;
+  /** Enhanced fields for specificity */
+  inputFormat?: string;
+  outputFormat?: string;
+  productTieIn?: string;
+  deepLinkPattern?: string;
+  competitorAnalysis?: {
+    existingTools: string[];
+    hasFreeAlternative: boolean;
+    ourAdvantage: string;
+  };
+  implementationHints?: {
+    suggestedLibraries: string[];
+    estimatedHours: number;
+    canUseExistingOSS: boolean;
+  };
+  feasibilityScore?: number; // 1-5
 }
 
 export interface WizardQuestion {

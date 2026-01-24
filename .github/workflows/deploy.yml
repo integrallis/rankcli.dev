@@ -17,6 +17,11 @@
 # - FLY_API_TOKEN
 # - AUDIT_WORKER_SECRET
 # - OPENAI_API_KEY
+#
+# Optional Secrets (for AI keyword research competitive analysis):
+# - BRAVE_API_KEY          (Brave Search API - 2,000 free/month)
+# - SERPER_API_KEY         (Serper.dev Google Search - 2,500 free/month)
+# - GITHUB_TOKEN_SEARCH    (GitHub PAT for increased rate limits - no scopes needed)
 
 name: Deploy
 
@@ -184,12 +189,25 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          flyctl secrets set \
-            SUPABASE_URL="https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co" \
-            SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_KEY }}" \
-            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
-            WORKER_SECRET="${{ secrets.AUDIT_WORKER_SECRET }}" \
-            --app rankcli-audit-worker
+          # Build secrets command with required secrets
+          SECRETS_CMD="flyctl secrets set"
+          SECRETS_CMD="$SECRETS_CMD SUPABASE_URL=\"https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co\""
+          SECRETS_CMD="$SECRETS_CMD SUPABASE_SERVICE_ROLE_KEY=\"${{ secrets.SUPABASE_SERVICE_KEY }}\""
+          SECRETS_CMD="$SECRETS_CMD OPENAI_API_KEY=\"${{ secrets.OPENAI_API_KEY }}\""
+          SECRETS_CMD="$SECRETS_CMD WORKER_SECRET=\"${{ secrets.AUDIT_WORKER_SECRET }}\""
+
+          # Add optional competitive search API keys if configured
+          if [ -n "${{ secrets.BRAVE_API_KEY }}" ]; then
+            SECRETS_CMD="$SECRETS_CMD BRAVE_API_KEY=\"${{ secrets.BRAVE_API_KEY }}\""
+          fi
+          if [ -n "${{ secrets.SERPER_API_KEY }}" ]; then
+            SECRETS_CMD="$SECRETS_CMD SERPER_API_KEY=\"${{ secrets.SERPER_API_KEY }}\""
+          fi
+          if [ -n "${{ secrets.GITHUB_TOKEN_SEARCH }}" ]; then
+            SECRETS_CMD="$SECRETS_CMD GITHUB_TOKEN=\"${{ secrets.GITHUB_TOKEN_SEARCH }}\""
+          fi
+
+          eval "$SECRETS_CMD --app rankcli-audit-worker"
 
       - name: Verify Deployment
         env:
@@ -279,12 +297,28 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
         run: |
+          # Set required secrets
           supabase secrets set \
             STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
             STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
             OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
             AUDIT_WORKER_URL="https://rankcli-audit-worker.fly.dev" \
             AUDIT_WORKER_SECRET="${{ secrets.AUDIT_WORKER_SECRET }}"
+
+          # Set optional competitive search API keys if configured
+          OPTIONAL_SECRETS=""
+          if [ -n "${{ secrets.BRAVE_API_KEY }}" ]; then
+            OPTIONAL_SECRETS="$OPTIONAL_SECRETS BRAVE_API_KEY=\"${{ secrets.BRAVE_API_KEY }}\""
+          fi
+          if [ -n "${{ secrets.SERPER_API_KEY }}" ]; then
+            OPTIONAL_SECRETS="$OPTIONAL_SECRETS SERPER_API_KEY=\"${{ secrets.SERPER_API_KEY }}\""
+          fi
+          if [ -n "${{ secrets.GITHUB_TOKEN_SEARCH }}" ]; then
+            OPTIONAL_SECRETS="$OPTIONAL_SECRETS GITHUB_TOKEN=\"${{ secrets.GITHUB_TOKEN_SEARCH }}\""
+          fi
+          if [ -n "$OPTIONAL_SECRETS" ]; then
+            eval "supabase secrets set $OPTIONAL_SECRETS"
+          fi
 
       - name: Deploy Edge Functions
         working-directory: packages/saas
@@ -296,6 +330,7 @@ jobs:
           supabase functions deploy create-portal --no-verify-jwt
           supabase functions deploy run-audit --no-verify-jwt
           supabase functions deploy free-audit --no-verify-jwt
+          supabase functions deploy ai-keywords --no-verify-jwt
 
   # ---------------------------------------------------------------------------
   # Sync Stripe Pricing (when pricing config changes)
@@ -378,3 +413,4 @@ jobs:
           echo "- create-portal" >> $GITHUB_STEP_SUMMARY
           echo "- run-audit" >> $GITHUB_STEP_SUMMARY
           echo "- free-audit" >> $GITHUB_STEP_SUMMARY
+          echo "- ai-keywords" >> $GITHUB_STEP_SUMMARY

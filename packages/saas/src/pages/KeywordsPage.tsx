@@ -548,17 +548,29 @@ function KeywordCard({ keyword }: { keyword: KeywordRecommendation }) {
   const getActionBadge = (action: string) => {
     switch (action) {
       case 'create-page':
-        return <Badge variant="outline" className="border-blue-500/50 text-blue-600">Create Page</Badge>;
+        return <Badge variant="outline" className="border-blue-500/50 text-blue-600">Create New Page</Badge>;
       case 'optimize-existing':
-        return <Badge variant="outline" className="border-green-500/50 text-green-600">Optimize</Badge>;
+        return <Badge variant="outline" className="border-green-500/50 text-green-600">Optimize Existing</Badge>;
       case 'build-tool':
-        return <Badge variant="outline" className="border-purple-500/50 text-purple-600">Build Tool</Badge>;
+        return <Badge variant="outline" className="border-purple-500/50 text-purple-600">Build Free Tool</Badge>;
       case 'needs-input':
-        return <Badge variant="outline" className="border-yellow-500/50 text-yellow-600">Needs Input</Badge>;
+        return <Badge variant="outline" className="border-yellow-500/50 text-yellow-600">Needs More Info</Badge>;
       default:
         return <Badge variant="secondary">Skip</Badge>;
     }
   };
+
+  // Parse rationale for "create-page" to extract suggested URL if present
+  const parseCreatePageDetails = (rationale: string) => {
+    const urlMatch = rationale.match(/(?:URL|path|suggested path)[:\s]+([\/\w-]+)/i);
+    const wordCountMatch = rationale.match(/(\d+[-–]\d+)\s*words?/i);
+    return {
+      suggestedUrl: urlMatch?.[1],
+      wordCount: wordCountMatch?.[1],
+    };
+  };
+
+  const createPageDetails = keyword.action === 'create-page' ? parseCreatePageDetails(keyword.rationale) : null;
 
   return (
     <div className="flex items-start gap-4 p-4 rounded-lg bg-muted/50 hover:bg-muted/80 transition-colors">
@@ -567,6 +579,25 @@ function KeywordCard({ keyword }: { keyword: KeywordRecommendation }) {
           <h4 className="font-medium text-lg">{keyword.keyword}</h4>
           {getActionBadge(keyword.action)}
         </div>
+
+        {/* Action-specific details */}
+        {keyword.action === 'create-page' && (
+          <div className="mb-3 p-3 bg-blue-500/5 rounded-lg border border-blue-500/20">
+            <p className="text-sm font-medium text-blue-600 mb-1">Create a new page targeting this keyword:</p>
+            {createPageDetails?.suggestedUrl && (
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium">Suggested URL:</span>{' '}
+                <code className="bg-muted px-1 rounded">{createPageDetails.suggestedUrl}</code>
+              </p>
+            )}
+            {createPageDetails?.wordCount && (
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium">Target length:</span> {createPageDetails.wordCount} words
+              </p>
+            )}
+          </div>
+        )}
+
         <p className="text-sm text-muted-foreground mb-3">{keyword.rationale}</p>
         <div className="flex flex-wrap gap-4 text-sm">
           <span className="flex items-center gap-1">
@@ -604,17 +635,61 @@ function KeywordCard({ keyword }: { keyword: KeywordRecommendation }) {
 }
 
 function ToolIdeaCard({ tool }: { tool: FreeToolIdea }) {
+  // Check if tool has enhanced fields (new format)
+  const hasEnhancedFields = 'inputFormat' in tool && 'outputFormat' in tool;
+
   return (
     <div className="p-4 rounded-lg border bg-card hover:shadow-md transition-shadow">
       <div className="flex items-start gap-3 mb-3">
         <div className="p-2 bg-purple-500/10 rounded-lg">
           <Lightbulb className="h-5 w-5 text-purple-500" />
         </div>
-        <div>
-          <h4 className="font-semibold">{tool.toolName}</h4>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h4 className="font-semibold">{tool.toolName}</h4>
+            {hasEnhancedFields && tool.feasibilityScore && (
+              <Badge
+                variant="outline"
+                className={cn(
+                  'text-xs',
+                  tool.feasibilityScore >= 4 ? 'border-green-500/50 text-green-600' :
+                  tool.feasibilityScore >= 3 ? 'border-yellow-500/50 text-yellow-600' :
+                  'border-red-500/50 text-red-600'
+                )}
+              >
+                Score: {tool.feasibilityScore}/5
+              </Badge>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">{tool.description}</p>
         </div>
       </div>
+
+      {/* Enhanced: Input/Output Formats */}
+      {hasEnhancedFields && (
+        <div className="mb-3 p-3 bg-muted/50 rounded-lg space-y-2 text-sm">
+          <div>
+            <span className="font-medium text-muted-foreground">Input: </span>
+            <code className="bg-background px-1 rounded text-xs">{tool.inputFormat}</code>
+          </div>
+          <div>
+            <span className="font-medium text-muted-foreground">Output: </span>
+            <code className="bg-background px-1 rounded text-xs">{tool.outputFormat}</code>
+          </div>
+          {tool.productTieIn && (
+            <div>
+              <span className="font-medium text-muted-foreground">Product Tie-in: </span>
+              <span className="text-xs">{tool.productTieIn}</span>
+            </div>
+          )}
+          {tool.deepLinkPattern && (
+            <div>
+              <span className="font-medium text-muted-foreground">Deep Link: </span>
+              <code className="bg-background px-1 rounded text-xs">{tool.deepLinkPattern}</code>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
@@ -635,9 +710,55 @@ function ToolIdeaCard({ tool }: { tool: FreeToolIdea }) {
         </div>
       </div>
 
+      {/* Enhanced: Competitor Analysis */}
+      {hasEnhancedFields && tool.competitorAnalysis && (
+        <div className="mt-3 pt-3 border-t">
+          <p className="text-xs font-medium text-muted-foreground mb-1">Competitive Landscape:</p>
+          {tool.competitorAnalysis.existingTools?.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium">Existing:</span> {tool.competitorAnalysis.existingTools.join(', ')}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium">Free alternatives:</span>{' '}
+            {tool.competitorAnalysis.hasFreeAlternative ? 'Yes' : 'No'}
+          </p>
+          {tool.competitorAnalysis.ourAdvantage && (
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium">Our advantage:</span> {tool.competitorAnalysis.ourAdvantage}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Enhanced: Implementation Hints */}
+      {hasEnhancedFields && tool.implementationHints && (
+        <div className="mt-3 pt-3 border-t">
+          <p className="text-xs font-medium text-muted-foreground mb-1">Implementation:</p>
+          {tool.implementationHints.suggestedLibraries?.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium">Libraries:</span>{' '}
+              {tool.implementationHints.suggestedLibraries.map((lib, i) => (
+                <code key={i} className="bg-background px-1 rounded mr-1">{lib}</code>
+              ))}
+            </p>
+          )}
+          {tool.implementationHints.estimatedHours && (
+            <p className="text-xs text-muted-foreground">
+              <span className="font-medium">Est. time:</span> {tool.implementationHints.estimatedHours} hours
+            </p>
+          )}
+          {tool.implementationHints.canUseExistingOSS && (
+            <Badge variant="outline" className="text-xs mt-1 border-green-500/50 text-green-600">
+              Can wrap existing OSS
+            </Badge>
+          )}
+        </div>
+      )}
+
       <div className="mt-4 pt-3 border-t">
         <p className="text-xs text-muted-foreground">
-          <strong>CTA Strategy:</strong> {tool.ctaToProduct}
+          <strong>CTA:</strong> {tool.ctaToProduct}
         </p>
       </div>
     </div>
