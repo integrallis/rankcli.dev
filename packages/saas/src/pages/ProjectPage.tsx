@@ -113,10 +113,9 @@ export function ProjectPage() {
   const latestAudit = audits.find((a) => a.status === 'completed');
   const pendingAudit = audits.find((a) => a.status === 'pending' || a.status === 'running');
 
-  // Get check counts from the audit or summary
-  const auditSummary = latestAudit?.summary as { checksRun?: number; pagesAudited?: number } | undefined;
-  const checksRun = (latestAudit as { checks_run?: number })?.checks_run || auditSummary?.checksRun || 0;
-  const pagesAudited = (latestAudit as { pages_crawled?: number })?.pages_crawled || auditSummary?.pagesAudited || 1;
+  // Get check counts from the audit
+  const checksRun = latestAudit?.checks_run || 0;
+  const pagesAudited = latestAudit?.pages_crawled || 1;
 
   const handleRunAudit = async () => {
     const audit = await runAudit();

@@ -81,6 +81,7 @@ export interface Audit {
   score: number | null;
   pages_crawled: number;
   issues_found: number;
+  checks_run: number;
   health_scores: {
     crawlability?: number;
     indexability?: number;

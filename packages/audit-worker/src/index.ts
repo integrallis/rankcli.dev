@@ -279,7 +279,9 @@ async function runDeepAudit(
           const { report } = result.value;
           const issues = report.issues.map(issue => mapIssueToDb(issue, job.auditId, job.projectId));
           allIssues.push(issues);
-          totalChecksRun += report.checksRun || 0;
+          // Calculate checks run from summary (passed + errors + warnings)
+          const checksRun = (report.summary?.passed || 0) + (report.summary?.errors || 0) + (report.summary?.warnings || 0);
+          totalChecksRun += checksRun;
 
           if (i === 0 && j === 0) {
             primaryReport = report;
