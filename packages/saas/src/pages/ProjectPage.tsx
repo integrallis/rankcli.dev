@@ -38,6 +38,7 @@ export function ProjectPage() {
     issues,
     isLoading,
     error,
+    refetch,
     runAudit,
     createFixPR,
     deleteAudit,
@@ -77,10 +78,14 @@ export function ProjectPage() {
     onCompleted: () => {
       setPendingAuditId(null);
       setAuditProgress(null);
+      // Refetch project data to get updated audit status
+      refetch();
     },
     onFailed: () => {
       setPendingAuditId(null);
       setAuditProgress(null);
+      // Refetch to update UI state
+      refetch();
     },
   });
 
