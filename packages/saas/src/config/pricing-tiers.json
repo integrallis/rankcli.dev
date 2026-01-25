@@ -20,6 +20,8 @@
       "local_auto_fix": false,
       "github_connect": false,
       "github_auto_fix": false,
+      "gsc_integration": false,
+      "metrics_sync": false,
       "api_access": false,
       "white_label": false
     }
@@ -49,7 +51,9 @@
         "api_requests_day": 100,
         "historical_days": 30,
         "keyword_research_per_month": 5,
-        "content_optimizations_per_month": 3
+        "content_optimizations_per_month": 3,
+        "gsc_sync_interval_hours": 168,
+        "keyword_tracking": 100
       },
       "features": {
         "full_audit": true,
@@ -68,15 +72,18 @@
         "backlink_finder": false,
         "local_seo": false,
         "tool_opportunities": false,
-        "white_label": false
+        "white_label": false,
+        "gsc_integration": true,
+        "metrics_sync": true,
+        "bing_webmaster": false
       },
       "highlights": [
         "3 sites monitored",
         "280+ SEO checks",
         "Weekly automated audits",
+        "Weekly GSC metrics sync",
         "Local auto-fix via CLI",
-        "Export PDF reports",
-        "AI-powered analysis"
+        "Export PDF reports"
       ]
     },
     {
@@ -98,7 +105,9 @@
         "keyword_research_per_month": 25,
         "content_optimizations_per_month": 15,
         "competitor_analyses_per_month": 5,
-        "backlink_reports_per_month": 3
+        "backlink_reports_per_month": 3,
+        "gsc_sync_interval_hours": 24,
+        "keyword_tracking": 500
       },
       "features": {
         "full_audit": true,
@@ -117,13 +126,16 @@
         "backlink_finder": true,
         "local_seo": true,
         "tool_opportunities": false,
-        "white_label": false
+        "white_label": false,
+        "gsc_integration": true,
+        "metrics_sync": true,
+        "bing_webmaster": true
       },
       "highlights": [
         "10 sites monitored",
         "Daily automated audits",
-        "GitHub integration",
-        "Auto-fix PRs via GitHub",
+        "Daily GSC metrics sync",
+        "GitHub auto-fix PRs",
         "Slack/Discord alerts",
         "5 team members"
       ]
@@ -148,7 +160,9 @@
         "content_optimizations_per_month": null,
         "competitor_analyses_per_month": null,
         "backlink_reports_per_month": null,
-        "tool_opportunities_per_month": 10
+        "tool_opportunities_per_month": 10,
+        "gsc_sync_interval_hours": 1,
+        "keyword_tracking": null
       },
       "features": {
         "full_audit": true,
@@ -169,11 +183,15 @@
         "backlink_finder": true,
         "local_seo": true,
         "tool_opportunities": true,
-        "seo_api_integration": true
+        "seo_api_integration": true,
+        "gsc_integration": true,
+        "metrics_sync": true,
+        "bing_webmaster": true,
+        "dataforseo_integration": true
       },
       "highlights": [
         "50 sites monitored",
-        "On-demand audits",
+        "Hourly GSC metrics sync",
         "Unlimited team members",
         "REST API access",
         "White-label reports",
@@ -192,9 +210,23 @@
     "api_access": "REST API to integrate RankCLI into your own tools, dashboards, and workflows. Build custom integrations, automate bulk audits, and receive webhook notifications.",
     "white_label": "Remove RankCLI branding from PDF reports and exports. Add your own logo and colors for client-facing deliverables.",
     "local_auto_fix": "Apply SEO fixes directly to your local codebase via CLI. Creates commits and branches ready for you to push.",
-    "github_auto_fix": "Automatically create fix PRs via GitHub App integration. No manual intervention required."
+    "github_auto_fix": "Automatically create fix PRs via GitHub App integration. No manual intervention required.",
+    "gsc_integration": "Connect Google Search Console to track impressions, clicks, CTR, and average position. See which queries drive traffic and monitor keyword rankings.",
+    "metrics_sync": "Automatic sync of SEO metrics from connected sources. Frequency varies by plan: Solo (weekly), Pro (daily), Agency (hourly).",
+    "bing_webmaster": "Bing Webmaster Tools integration for Bing/Yahoo search metrics. Track your visibility across all major search engines.",
+    "dataforseo_integration": "Real-time SERP data via DataForSEO API. Get accurate keyword positions, search volumes, and SERP features without delays."
   },
   "seo_modules": {
+    "metrics_tracking": {
+      "name": "SEO Metrics Tracking",
+      "description": "Google Search Console integration, keyword rankings, performance trends",
+      "tiers": ["solo", "pro", "agency"],
+      "sync_frequency": {
+        "solo": "Weekly",
+        "pro": "Daily",
+        "agency": "Hourly"
+      }
+    },
     "ai_audit": {
       "name": "AI-Powered Audit",
       "description": "GPT-4o content analysis, meta optimization, fix prioritization",
