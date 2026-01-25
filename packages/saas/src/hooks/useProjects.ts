@@ -366,7 +366,7 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
           .eq('status', 'completed');
 
         const uniqueDomains = new Set(
-          auditedDomains?.map((a: { projects: { domain: string } }) => a.projects.domain) || []
+          auditedDomains?.map((a: { projects: { domain: string }[] }) => a.projects[0]?.domain).filter(Boolean) || []
         );
 
         // Check if we're at limit and this is a new domain

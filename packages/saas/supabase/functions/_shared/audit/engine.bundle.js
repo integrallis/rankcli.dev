@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-01-24T22:45:21.931Z
+// Generated: 2026-01-25T00:55:07.095Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -16758,6 +16758,141 @@ var urlSafetyDatabase = {
   getStats: () => threatDb.getStats()
 };
 
+// src/audit/checks/tracking-verification.ts
+import * as cheerio56 from "https://esm.sh/cheerio@1.0.0";
+function analyzeTrackingVerification(html, url) {
+  const issues = [];
+  const $ = cheerio56.load(html);
+  const ga4Match = html.match(/gtag\s*\(\s*['"]config['"]\s*,\s*['"](G-[A-Z0-9]+)['"]/i) || html.match(/googletagmanager\.com\/gtag\/js\?id=(G-[A-Z0-9]+)/i);
+  const hasGa4 = !!ga4Match;
+  const ga4MeasurementId = ga4Match ? ga4Match[1] : void 0;
+  const gtmMatch = html.match(/googletagmanager\.com\/gtm\.js\?id=(GTM-[A-Z0-9]+)/i);
+  const hasGtm = !!gtmMatch;
+  const gtmContainerId = gtmMatch ? gtmMatch[1] : void 0;
+  const hasGtmNoscript = /googletagmanager\.com\/ns\.html\?id=GTM-[A-Z0-9]+/i.test(html);
+  const gscMeta = $('meta[name="google-site-verification"]').attr("content");
+  const hasGscVerification = !!(gscMeta && gscMeta.length > 10);
+  const bingMeta = $('meta[name="msvalidate.01"]').attr("content");
+  const hasBingVerification = !!(bingMeta && bingMeta.length > 10);
+  const jsonLdScripts = $('script[type="application/ld+json"]');
+  const hasMicrodata = $('[itemtype*="schema.org"]').length > 0;
+  const hasJsonLd = jsonLdScripts.length > 0;
+  const schemaTypes = [];
+  let hasValidJson = true;
+  jsonLdScripts.each((_, el) => {
+    try {
+      const content = $(el).html();
+      if (content) {
+        const parsed = JSON.parse(content);
+        if (parsed["@type"]) {
+          schemaTypes.push(parsed["@type"]);
+        }
+      }
+    } catch {
+      hasValidJson = false;
+    }
+  });
+  const data = {
+    ga4: { detected: hasGa4, measurementId: ga4MeasurementId },
+    gtm: { detected: hasGtm, containerId: gtmContainerId, hasNoscript: hasGtmNoscript },
+    gsc: { verified: hasGscVerification, verificationCode: gscMeta },
+    bing: { verified: hasBingVerification, verificationCode: bingMeta },
+    schemaOrg: { detected: hasJsonLd || hasMicrodata, types: schemaTypes, hasValidJson },
+    sitemap: { inRobotsTxt: false }
+    // Set later if we check robots.txt
+  };
+  if (!hasGa4 && !hasGtm) {
+    issues.push({
+      code: "GA4_MISSING",
+      severity: "warning",
+      category: "tracking",
+      title: "Google Analytics 4 not detected",
+      description: "No GA4 tracking code found. GA4 is essential for measuring organic traffic and conversions.",
+      impact: "Cannot measure SEO impact without analytics tracking.",
+      howToFix: "Add GA4 tracking code to your site. Get your measurement ID from analytics.google.com.",
+      affectedUrls: [url],
+      learnMoreUrl: "https://support.google.com/analytics/answer/9304153"
+    });
+  }
+  if (!hasGscVerification) {
+    issues.push({
+      code: "GSC_VERIFICATION_MISSING",
+      severity: "warning",
+      category: "tracking",
+      title: "Google Search Console verification not found",
+      description: "No GSC verification meta tag detected. GSC provides essential data about your search performance.",
+      impact: "Missing critical insights into Google search visibility, impressions, and clicks.",
+      howToFix: "Add your GSC verification meta tag to the <head> section. Get it from search.google.com/search-console.",
+      affectedUrls: [url],
+      learnMoreUrl: "https://support.google.com/webmasters/answer/9008080"
+    });
+  }
+  if (!hasBingVerification) {
+    issues.push({
+      code: "BING_VERIFICATION_MISSING",
+      severity: "info",
+      category: "tracking",
+      title: "Bing Webmaster Tools verification not found",
+      description: "No Bing verification meta tag detected. Bing/Yahoo account for 5-8% of search traffic.",
+      impact: "Missing insights on Bing/Yahoo search traffic.",
+      howToFix: "Add Bing Webmaster Tools verification for insights on Bing/Yahoo traffic. Get it from bing.com/webmasters.",
+      affectedUrls: [url],
+      learnMoreUrl: "https://www.bing.com/webmasters/help/how-to-verify-ownership-of-your-site-afcfefc6"
+    });
+  }
+  if (!hasGtm) {
+    issues.push({
+      code: "GTM_MISSING",
+      severity: "info",
+      category: "tracking",
+      title: "Google Tag Manager not detected",
+      description: "GTM not found. While not required, GTM makes it easier to manage tracking tags without code changes.",
+      impact: "Tag management requires developer involvement for each change.",
+      howToFix: "Consider using GTM for easier tag management. It allows marketing to add tags without developer help.",
+      affectedUrls: [url],
+      learnMoreUrl: "https://tagmanager.google.com/"
+    });
+  } else if (!hasGtmNoscript) {
+    issues.push({
+      code: "GTM_NOSCRIPT_MISSING",
+      severity: "info",
+      category: "tracking",
+      title: "GTM noscript fallback missing",
+      description: "GTM is installed but the noscript fallback is missing. This is needed for users with JavaScript disabled.",
+      impact: "Users with JS disabled won't be tracked.",
+      howToFix: "Add the GTM noscript tag immediately after the opening <body> tag.",
+      affectedUrls: [url],
+      learnMoreUrl: "https://developers.google.com/tag-manager/quickstart"
+    });
+  }
+  if (!hasJsonLd && !hasMicrodata) {
+    issues.push({
+      code: "SCHEMA_ORG_MISSING",
+      severity: "warning",
+      category: "content",
+      title: "No structured data found",
+      description: "No Schema.org structured data detected. Structured data helps search engines understand your content and can enable rich snippets.",
+      impact: "Missing opportunity for rich results in search (stars, images, FAQs, etc.).",
+      howToFix: "Add JSON-LD structured data for your content type (Organization, Product, Article, etc.).",
+      affectedUrls: [url],
+      learnMoreUrl: "https://developers.google.com/search/docs/appearance/structured-data"
+    });
+  } else if (hasJsonLd && !hasValidJson) {
+    issues.push({
+      code: "SCHEMA_ORG_INVALID",
+      severity: "error",
+      category: "content",
+      title: "Invalid JSON-LD structured data",
+      description: "One or more JSON-LD scripts contain invalid JSON. This will prevent search engines from parsing your structured data.",
+      impact: "Structured data is being ignored due to syntax errors.",
+      howToFix: "Fix the JSON syntax errors in your structured data. Use the Rich Results Test to validate.",
+      affectedUrls: [url],
+      learnMoreUrl: "https://search.google.com/test/rich-results"
+    });
+  }
+  return { issues, data };
+}
+
 // src/audit/engine.ts
 async function runFullAudit(options) {
   const { url, checkBrokenLinks = false, checkHreflangUrls = false, checkCanonicalChain = false, cruxApiKey, checksLimit = 280 } = options;
@@ -16815,6 +16950,7 @@ async function runFullAudit(options) {
   const urlSafetyResult = analyzeUrlSafety(url);
   const domSizeResult = analyzeDomSize(html, url);
   const imageDimensionsResult = analyzeImageDimensions(html, url);
+  const trackingResult = analyzeTrackingVerification(html, url);
   const anchorResult = runExtendedChecks ? analyzeAnchorText(html, url) : { issues: [], data: {} };
   const localSeoResult = runExtendedChecks ? analyzeLocalSEO(html, url) : { issues: [], data: {} };
   const modernImageResult = runExtendedChecks ? analyzeModernImages(html, url) : { issues: [], data: {} };
@@ -16887,7 +17023,8 @@ async function runFullAudit(options) {
     ...colorContrastResult.issues,
     ...pageResourcesResult.issues,
     ...urlSafetyResult.issues,
-    ...paginationResult.issues
+    ...paginationResult.issues,
+    ...trackingResult.issues
   );
   if (!structuredDataResult.data.hasSchema) {
     const suggestions = suggestSchemaTypes(html, url);

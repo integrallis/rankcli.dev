@@ -366,8 +366,7 @@ describe('Domain limit anti-gaming checks', () => {
     });
 
     it('should use rolling 30-day window for free users', () => {
-      const subscription = null; // Free user
-
+      // Free user has no subscription - uses rolling 30-day window
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const billingCycleStart = thirtyDaysAgo.toISOString();
@@ -379,7 +378,7 @@ describe('Domain limit anti-gaming checks', () => {
 
     it('should reset domain count at new billing cycle', () => {
       // Simulating domains audited in previous billing cycle
-      const previousCycleStart = '2025-12-01T00:00:00.000Z';
+      // previousCycleStart would be used for old audits (documented but not needed in test)
       const currentCycleStart = '2026-01-01T00:00:00.000Z';
 
       const allAudits = [
