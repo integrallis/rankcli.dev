@@ -31,7 +31,7 @@ const sections = [
     id: 'cli-reference',
     title: 'CLI Reference',
     icon: Code,
-    subsections: ['audit', 'fix', 'link', 'keywords', 'setup'],
+    subsections: ['auth', 'audit', 'apply', 'keywords', 'content', 'setup'],
   },
   {
     id: 'dashboard',
@@ -163,9 +163,27 @@ function GettingStartedSection() {
         </p>
         <CodeBlock code="rankcli login" />
         <p className="text-muted-foreground mt-4">
-          This will open your browser to authenticate. You can also use email/password:
+          This will prompt for email and password. You can also use browser-based login:
+        </p>
+        <CodeBlock code="rankcli login --browser" />
+        <p className="text-muted-foreground mt-4">
+          Or provide your email directly:
         </p>
         <CodeBlock code="rankcli login --email you@example.com" />
+
+        <h4 className="font-medium mt-6 mb-2">API Key Authentication (CI/CD)</h4>
+        <p className="text-muted-foreground mb-4">
+          For non-interactive environments like CI/CD pipelines, use an API key:
+        </p>
+        <CodeBlock code="rankcli login --token rankcli_your_api_key_here" />
+        <p className="text-muted-foreground mt-4">
+          Or set the environment variable (recommended for CI):
+        </p>
+        <CodeBlock code="export RANKCLI_API_KEY=rankcli_your_api_key_here" />
+        <p className="text-muted-foreground mt-2 text-sm">
+          Generate an API key from <a href="/account" className="text-primary underline">Account Settings → API Keys</a>.
+        </p>
+
         <p className="text-muted-foreground mt-4">
           Check your login status:
         </p>
@@ -289,6 +307,33 @@ function CLIReferenceSection() {
         </p>
       </div>
 
+      {/* Auth commands */}
+      <section id="auth">
+        <h2 className="text-xl font-semibold mb-4">Authentication Commands</h2>
+        <p className="text-muted-foreground mb-4">
+          Manage your RankCLI authentication.
+        </p>
+        <CodeBlock
+          code={`rankcli login [options]
+
+Options:
+  -e, --email <email>    Email address for login
+  -b, --browser          Open browser for OAuth login
+  -t, --token <apiKey>   API key for non-interactive auth (CI/CD)`}
+        />
+        <CodeBlock
+          code={`rankcli logout              Log out of your account
+rankcli whoami              Show current logged in user`}
+        />
+        <h4 className="font-medium mt-6 mb-2">Examples</h4>
+        <CodeBlock code="# Interactive login (email/password)" />
+        <CodeBlock code="rankcli login" />
+        <CodeBlock code="# Login with API key (CI/CD)" />
+        <CodeBlock code="rankcli login --token rankcli_your_api_key_here" />
+        <CodeBlock code="# Or set environment variable" />
+        <CodeBlock code="export RANKCLI_API_KEY=rankcli_your_api_key_here" />
+      </section>
+
       {/* rankcli audit */}
       <section id="audit">
         <h2 className="text-xl font-semibold mb-4">rankcli audit</h2>
@@ -376,11 +421,61 @@ Options:
           code={`rankcli keywords [options]
 
 Options:
-  -u, --url <url>      URL to analyze
-  -s, --seed <kw>      Seed keyword to start research
-  --competitor <url>   Competitor URL for gap analysis
-  --quick              Quick analysis with fewer results`}
+  -u, --url <url>            URL to analyze
+  -s, --seed <keywords>      Seed keywords (comma-separated)
+  --auto                     Auto-extract seed keywords from your page
+  --quick                    Quick mode - skip questions, use defaults
+  --ai                       Use GPT-4 for enhanced analysis
+  --local                    Force local processing (skip cloud worker)
+  --competitor               Competitor gap analysis mode
+  -c, --competitors <urls>   Competitor domains (comma-separated)`}
         />
+        <h4 className="font-medium mt-6 mb-2">Examples</h4>
+        <CodeBlock code="# AI-powered keyword research" />
+        <CodeBlock code="rankcli keywords --url https://mysite.com --ai" />
+        <CodeBlock code="# Quick analysis with seed keywords" />
+        <CodeBlock code="rankcli keywords --url https://mysite.com --quick -s 'seo tools,seo audit'" />
+        <CodeBlock code="# Competitor gap analysis" />
+        <CodeBlock code="rankcli keywords --url https://mysite.com --competitor -c 'competitor1.com,competitor2.com' -s 'target keyword'" />
+      </section>
+
+      {/* rankcli content */}
+      <section id="content">
+        <h2 className="text-xl font-semibold mb-4">rankcli content</h2>
+        <p className="text-muted-foreground mb-4">
+          Analyze content for readability, keyword density, and featured snippet optimization.
+        </p>
+        <CodeBlock
+          code={`rankcli content [options]
+
+Options:
+  -u, --url <url>          URL to analyze
+  -k, --keyword <keyword>  Target keyword for analysis
+  --headline <headline>    Analyze a headline
+  --mode <mode>            Analysis mode (full, readability, headline, snippet, density)`}
+        />
+        <h4 className="font-medium mt-6 mb-2">Examples</h4>
+        <CodeBlock code="# Full content analysis" />
+        <CodeBlock code="rankcli content --url https://mysite.com/blog-post --keyword 'seo tips'" />
+        <CodeBlock code="# Check headline effectiveness" />
+        <CodeBlock code="rankcli content --headline 'The Ultimate Guide to SEO'" />
+      </section>
+
+      {/* rankcli intent */}
+      <section id="intent">
+        <h2 className="text-xl font-semibold mb-4">rankcli intent</h2>
+        <p className="text-muted-foreground mb-4">
+          Classify search intent for a keyword.
+        </p>
+        <CodeBlock
+          code={`rankcli intent <keyword>
+
+Arguments:
+  keyword     Keyword to analyze for search intent`}
+        />
+        <h4 className="font-medium mt-6 mb-2">Examples</h4>
+        <CodeBlock code="rankcli intent 'buy running shoes'" />
+        <CodeBlock code="rankcli intent 'how to optimize images for seo'" />
       </section>
 
       {/* rankcli setup */}
@@ -390,18 +485,31 @@ Options:
           Configure tracking and CI/CD integrations.
         </p>
         <CodeBlock
-          code={`rankcli setup [command]
+          code={`rankcli setup [options]
 
-Commands:
-  ga4              Add Google Analytics 4 tracking
-  gsc              Add Google Search Console verification
-  github-action    Create GitHub Actions workflow`}
+Options:
+  --ga4 <id>        Google Analytics 4 Measurement ID (G-XXXXXXXXXX)
+  --gsc <code>      Google Search Console verification code
+  --github-action   Set up automated GitHub Action
+  --schedule <freq> GitHub Action schedule (daily, weekly, monthly)
+  --all             Interactive setup wizard`}
         />
         <h4 className="font-medium mt-6 mb-2">Examples</h4>
         <CodeBlock code="# Add GA4 tracking to your project" />
-        <CodeBlock code="rankcli setup ga4 --id G-XXXXXXXXXX" />
+        <CodeBlock code="rankcli setup --ga4 G-XXXXXXXXXX" />
         <CodeBlock code="# Create GitHub Actions workflow" />
-        <CodeBlock code="rankcli setup github-action" />
+        <CodeBlock code="rankcli setup --github-action" />
+        <CodeBlock code="# Interactive setup wizard" />
+        <CodeBlock code="rankcli setup --all" />
+      </section>
+
+      {/* rankcli gsc-setup */}
+      <section id="gsc-setup">
+        <h2 className="text-xl font-semibold mb-4">rankcli gsc-setup</h2>
+        <p className="text-muted-foreground mb-4">
+          Show Google Search Console API setup instructions.
+        </p>
+        <CodeBlock code="rankcli gsc-setup" />
       </section>
     </div>
   );
@@ -1152,12 +1260,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install RankCLI
-        run: npm install -g @rankcli/cli
+        run: npm install -g rankcli
 
       - name: Run SEO Audit
         run: rankcli audit --url \${{ secrets.SITE_URL }} -o json > audit.json
         env:
-          RANKCLI_TOKEN: \${{ secrets.RANKCLI_TOKEN }}
+          RANKCLI_API_KEY: \${{ secrets.RANKCLI_API_KEY }}
 
       - name: Check for critical issues
         run: |
@@ -1176,7 +1284,7 @@ jobs:
           code={`- uses: rankcli/audit-action@v1
   with:
     url: \${{ secrets.SITE_URL }}
-    token: \${{ secrets.RANKCLI_TOKEN }}
+    api-key: \${{ secrets.RANKCLI_API_KEY }}
     fail-on-errors: true`}
         />
       </section>
@@ -1204,14 +1312,18 @@ function APISection() {
 
         <h4 className="font-medium mt-6 mb-2">Authentication</h4>
         <p className="text-muted-foreground mb-4">
-          Use your API key in the Authorization header:
+          Use your API key in the X-API-Key header:
         </p>
         <CodeBlock
           code={`curl -X POST https://api.rankcli.dev/v1/audit \\
-  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "X-API-Key: rankcli_your_api_key_here" \\
   -H "Content-Type: application/json" \\
   -d '{"url": "https://example.com"}'`}
         />
+        <p className="text-muted-foreground mt-4">
+          Generate an API key from <a href="/account" className="text-primary underline">Account Settings → API Keys</a>.
+          API keys start with <code className="bg-muted px-1 rounded">rankcli_</code>.
+        </p>
 
         <h4 className="font-medium mt-6 mb-2">Endpoints</h4>
         <div className="space-y-4">

@@ -736,13 +736,79 @@ npm pack --dry-run
 
 ### Package Publishing
 
+The CLI package is published to npm as `rankcli`.
+
+**Prerequisites:**
+- npm account with publish access
+- `NPM_TOKEN` secret set in GitHub (for automated publishing)
+
+**Manual Publishing:**
+
 ```bash
-# Build everything
 cd packages/cli
+
+# Build everything (TypeScript + WASM)
 pnpm build
+
+# Verify package contents
+npm pack --dry-run
+
+# Login to npm (if not already)
+npm login
 
 # Publish to npm
 npm publish
+
+# Or publish with a specific tag
+npm publish --tag beta
+```
+
+**Automated Publishing (GitHub Actions):**
+
+Publishing is automated via the `build-cli.yml` workflow:
+
+1. **On Release:** When you create a GitHub release, the workflow automatically:
+   - Builds with production `RANKCLI_BUILD_KEY`
+   - Sets version from the release tag (e.g., `v1.0.0` → `1.0.0`)
+   - Publishes to npm
+
+```bash
+# Create a release (triggers automatic publish)
+gh release create v1.0.0 --title "Release 1.0.0" --notes "Release notes here"
+```
+
+2. **Manual Dispatch:** Trigger workflow manually with publish flag:
+
+```bash
+gh workflow run build-cli.yml -f publish=true
+```
+
+**Required GitHub Secrets for npm Publishing:**
+
+| Secret | Description |
+|--------|-------------|
+| `NPM_TOKEN` | npm access token ([generate here](https://www.npmjs.com/settings/~/tokens)) |
+| `RANKCLI_BUILD_KEY` | Base64-encoded 32-byte AES key for WASM encryption |
+
+**Generate npm Token:**
+
+1. Go to [npmjs.com/settings/~/tokens](https://www.npmjs.com/settings/~/tokens)
+2. Click "Generate New Token" → "Classic Token"
+3. Select "Automation" for CI/CD usage
+4. Copy the token and add as GitHub secret `NPM_TOKEN`
+
+**Version Management:**
+
+The package version is managed in `packages/cli/package.json`. For releases:
+- The CI workflow auto-updates version from the git tag
+- For manual publishes, update version manually first
+
+```bash
+# Update version manually
+cd packages/cli
+npm version patch  # 0.0.1 → 0.0.2
+npm version minor  # 0.0.2 → 0.1.0
+npm version major  # 0.1.0 → 1.0.0
 ```
 
 ### GitHub Actions Integration

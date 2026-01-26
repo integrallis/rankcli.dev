@@ -81,12 +81,37 @@ pnpm dev               # Start dev server on localhost:3005
 ## CLI Commands
 
 ```bash
-rankcli init [dir]              # Initialize RankCLI in a project
-rankcli audit [url]             # Run SEO audit on a URL
-rankcli fix [--dry-run]         # Apply fixes (or preview)
-rankcli report [--format json]  # Generate audit report
-rankcli ci                      # CI/CD mode (for GitHub Actions)
+# Authentication
+rankcli login                   # Interactive login (email/password)
+rankcli login --browser         # Browser-based OAuth login
+rankcli login --token <key>     # API key login (for CI/CD)
+rankcli logout                  # Log out
+rankcli whoami                  # Show current user
+
+# Auditing
+rankcli audit --url <url>       # Run SEO audit on a URL
+rankcli audit --url <url> --max-pages 10  # Multi-page audit
+rankcli audit --url <url> --ai  # AI-enhanced audit
+rankcli audit -o json           # Output as JSON
+
+# Fixes
+rankcli apply --url <url>       # Apply SEO fixes to codebase
+rankcli apply --dry-run         # Preview fixes without applying
+
+# Keywords & Content
+rankcli keywords --url <url> --ai   # AI keyword research
+rankcli content --url <url> -k <keyword>  # Content analysis
+rankcli intent <keyword>        # Search intent classification
+
+# Setup
+rankcli init                    # Initialize in a project
+rankcli setup --github-action   # Create GitHub Action workflow
+rankcli setup --ga4 <id>        # Add GA4 tracking
 ```
+
+**Environment Variables:**
+- `RANKCLI_API_KEY` - API key for non-interactive auth (CI/CD)
+- `OPENAI_API_KEY` - For AI-powered features
 
 ## Taglines
 
