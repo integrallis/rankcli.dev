@@ -51,13 +51,17 @@ CREATE TABLE IF NOT EXISTS seo_metrics (
 );
 
 -- Index for efficient querying
-CREATE INDEX idx_seo_metrics_project_period ON seo_metrics(project_id, period_start DESC);
-CREATE INDEX idx_seo_metrics_source ON seo_metrics(source, period_start DESC);
+CREATE INDEX IF NOT EXISTS idx_seo_metrics_project_period ON seo_metrics(project_id, period_start DESC);
+CREATE INDEX IF NOT EXISTS idx_seo_metrics_source ON seo_metrics(source, period_start DESC);
 
 -- -----------------------------------------------------------------------------
 -- Keyword Position Tracking
 -- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS keyword_rankings (
+-- Drop existing table if it has wrong schema
+DROP TABLE IF EXISTS keyword_ranking_history CASCADE;
+DROP TABLE IF EXISTS keyword_rankings CASCADE;
+
+CREATE TABLE keyword_rankings (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
 
@@ -99,13 +103,13 @@ CREATE TABLE IF NOT EXISTS keyword_rankings (
   UNIQUE(project_id, keyword, search_engine, device, location)
 );
 
-CREATE INDEX idx_keyword_rankings_project ON keyword_rankings(project_id);
-CREATE INDEX idx_keyword_rankings_keyword ON keyword_rankings(keyword);
+CREATE INDEX IF NOT EXISTS idx_keyword_rankings_project ON keyword_rankings(project_id);
+CREATE INDEX IF NOT EXISTS idx_keyword_rankings_keyword ON keyword_rankings(keyword);
 
 -- -----------------------------------------------------------------------------
 -- Keyword Ranking History (for trend charts)
 -- -----------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS keyword_ranking_history (
+CREATE TABLE keyword_ranking_history (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   keyword_ranking_id UUID NOT NULL REFERENCES keyword_rankings(id) ON DELETE CASCADE,
 
@@ -114,7 +118,7 @@ CREATE TABLE IF NOT EXISTS keyword_ranking_history (
   checked_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_keyword_history_ranking ON keyword_ranking_history(keyword_ranking_id, checked_at DESC);
+CREATE INDEX IF NOT EXISTS idx_keyword_history_ranking ON keyword_ranking_history(keyword_ranking_id, checked_at DESC);
 
 -- -----------------------------------------------------------------------------
 -- Audit History (for regression detection)
@@ -146,7 +150,7 @@ CREATE TABLE IF NOT EXISTS audit_snapshots (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_audit_snapshots_project ON audit_snapshots(project_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_snapshots_project ON audit_snapshots(project_id, created_at DESC);
 
 -- -----------------------------------------------------------------------------
 -- SEO Changes (for attribution)
@@ -185,7 +189,7 @@ CREATE TABLE IF NOT EXISTS seo_changes (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_seo_changes_project ON seo_changes(project_id, occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_seo_changes_project ON seo_changes(project_id, occurred_at DESC);
 
 -- -----------------------------------------------------------------------------
 -- OAuth Connections (GSC, Bing, GA4)
@@ -218,8 +222,8 @@ CREATE TABLE IF NOT EXISTS oauth_connections (
   UNIQUE(user_id, provider, site_url)
 );
 
-CREATE INDEX idx_oauth_connections_user ON oauth_connections(user_id);
-CREATE INDEX idx_oauth_connections_project ON oauth_connections(project_id);
+CREATE INDEX IF NOT EXISTS idx_oauth_connections_user ON oauth_connections(user_id);
+CREATE INDEX IF NOT EXISTS idx_oauth_connections_project ON oauth_connections(project_id);
 
 -- -----------------------------------------------------------------------------
 -- Sync Jobs (for tracking sync status)
@@ -248,8 +252,8 @@ CREATE TABLE IF NOT EXISTS sync_jobs (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_sync_jobs_project ON sync_jobs(project_id, created_at DESC);
-CREATE INDEX idx_sync_jobs_next_run ON sync_jobs(next_run_at) WHERE status = 'pending';
+CREATE INDEX IF NOT EXISTS idx_sync_jobs_project ON sync_jobs(project_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sync_jobs_next_run ON sync_jobs(next_run_at) WHERE status = 'pending';
 
 -- -----------------------------------------------------------------------------
 -- RLS Policies
