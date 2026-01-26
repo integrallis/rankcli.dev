@@ -63,7 +63,7 @@
         "github_connect": false,
         "github_auto_fix": false,
         "slack_alerts": false,
-        "api_access": false,
+        "api_access": true,
         "competitor_tracking": 0,
         "ai_analysis": true,
         "keyword_research": true,
@@ -79,9 +79,9 @@
       },
       "highlights": [
         "3 sites monitored",
-        "280+ SEO checks",
+        "200+ SEO checks",
         "Weekly automated audits",
-        "Weekly GSC metrics sync",
+        "API access (100 req/day)",
         "Local auto-fix via CLI",
         "Export PDF reports"
       ]
@@ -117,7 +117,7 @@
         "github_connect": true,
         "github_auto_fix": true,
         "slack_alerts": true,
-        "api_access": false,
+        "api_access": true,
         "competitor_tracking": 3,
         "ai_analysis": true,
         "keyword_research": true,
@@ -134,7 +134,7 @@
       "highlights": [
         "10 sites monitored",
         "Daily automated audits",
-        "Daily GSC metrics sync",
+        "API access (1K req/day)",
         "GitHub auto-fix PRs",
         "Slack/Discord alerts",
         "5 team members"
@@ -193,7 +193,7 @@
         "50 sites monitored",
         "Hourly GSC metrics sync",
         "Unlimited team members",
-        "REST API access",
+        "API access (10K req/day)",
         "White-label reports",
         "Priority support"
       ]

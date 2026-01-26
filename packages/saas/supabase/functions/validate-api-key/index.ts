@@ -9,6 +9,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
 };
 
+// Rate limits per plan (requests per day)
+const RATE_LIMITS: Record<string, number> = {
+  solo: 100,
+  pro: 1000,
+  agency: 10000,
+  free: 0, // No API access for free tier
+};
+
 // Hash the API key using SHA-256
 async function hashKey(key: string): Promise<string> {
   const encoder = new TextEncoder();
@@ -95,6 +103,61 @@ serve(async (req) => {
       .single();
 
     const plan = subscription?.plan as { plan_id: string; name: string; sites_limit: number } | null;
+    const planId = plan?.plan_id || 'free';
+
+    // Check if plan has API access
+    const rateLimit = RATE_LIMITS[planId] ?? 0;
+    if (rateLimit === 0) {
+      return new Response(JSON.stringify({
+        error: 'API access requires a paid subscription (Solo, Pro, or Agency)',
+        upgrade_url: 'https://rankcli.dev/pricing'
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check rate limit - count requests today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const { count: requestCount } = await supabase
+      .from('api_requests')
+      .select('*', { count: 'exact', head: true })
+      .eq('api_key_id', keyData.id)
+      .gte('created_at', today.toISOString());
+
+    const currentCount = requestCount || 0;
+    const remaining = Math.max(0, rateLimit - currentCount);
+
+    if (currentCount >= rateLimit) {
+      return new Response(JSON.stringify({
+        error: 'Rate limit exceeded',
+        limit: rateLimit,
+        used: currentCount,
+        resets_at: new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+        upgrade_url: planId !== 'agency' ? 'https://rankcli.dev/pricing' : undefined
+      }), {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': 'application/json',
+          'X-RateLimit-Limit': rateLimit.toString(),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+        },
+      });
+    }
+
+    // Log this API request
+    await supabase
+      .from('api_requests')
+      .insert({
+        api_key_id: keyData.id,
+        user_id: keyData.user_id,
+        endpoint: req.headers.get('X-Endpoint') || 'validate',
+        ip_address: req.headers.get('X-Forwarded-For') || req.headers.get('CF-Connecting-IP'),
+      });
 
     return new Response(JSON.stringify({
       valid: true,
@@ -103,7 +166,7 @@ serve(async (req) => {
         email: userData.user.email,
       },
       subscription: {
-        planId: plan?.plan_id || 'free',
+        planId: planId,
         planName: plan?.name || 'Free',
         sitesLimit: plan?.sites_limit || 1,
         status: subscription?.status || 'active',
@@ -112,8 +175,19 @@ serve(async (req) => {
         id: keyData.id,
         name: keyData.name,
       },
+      rateLimit: {
+        limit: rateLimit,
+        remaining: remaining - 1, // Account for this request
+        resetsAt: new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+      },
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'application/json',
+        'X-RateLimit-Limit': rateLimit.toString(),
+        'X-RateLimit-Remaining': (remaining - 1).toString(),
+        'X-RateLimit-Reset': new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+      },
     });
 
   } catch (error) {

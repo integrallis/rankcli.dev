@@ -215,8 +215,8 @@ function GettingStartedSection() {
                 <td className="py-2 pr-4">SEO Checks</td>
                 <td className="text-center py-2 px-4">50</td>
                 <td className="text-center py-2 px-4">100</td>
-                <td className="text-center py-2 px-4">280+</td>
-                <td className="text-center py-2 px-4">280+</td>
+                <td className="text-center py-2 px-4">200+</td>
+                <td className="text-center py-2 px-4">200+</td>
               </tr>
               <tr className="border-b">
                 <td className="py-2 pr-4">Cloud Sync</td>
@@ -257,7 +257,7 @@ function GettingStartedSection() {
 
         <h4 className="font-medium mt-6 mb-2">What Gets Checked</h4>
         <p className="text-muted-foreground mb-4">
-          The audit runs 280+ SEO checks across these categories:
+          The audit runs 200+ SEO checks across these categories:
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {[
@@ -571,7 +571,7 @@ function DashboardSection() {
           Understanding Audits
         </h2>
         <p className="text-muted-foreground mb-4">
-          Each audit runs 280+ SEO checks and produces a comprehensive report.
+          Each audit runs 200+ SEO checks and produces a comprehensive report.
         </p>
 
         <h4 className="font-medium mt-6 mb-2">Health Scores</h4>
@@ -1139,7 +1139,7 @@ function WorkflowsSection() {
               <h4 className="font-medium">Run an audit</h4>
               <CodeBlock code="rankcli audit --url https://yoursite.com" />
               <p className="text-sm text-muted-foreground mt-1">
-                280+ SEO checks run and results sync to your dashboard.
+                200+ SEO checks run and results sync to your dashboard.
               </p>
             </div>
           </div>

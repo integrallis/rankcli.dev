@@ -48,9 +48,9 @@ const featureComparison = [
   {
     name: 'SEO Checks',
     free: '100',
-    solo: '280+',
-    pro: '280+',
-    agency: '280+'
+    solo: '200+',
+    pro: '200+',
+    agency: '200+'
   },
   {
     name: 'Sites',
@@ -113,9 +113,9 @@ const featureComparison = [
   {
     name: 'REST API Access',
     free: false,
-    solo: false,
-    pro: false,
-    agency: true,
+    solo: '100/day',
+    pro: '1K/day',
+    agency: '10K/day',
     tooltip: 'Programmatic API for custom integrations and bulk operations'
   },
   {

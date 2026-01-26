@@ -7,6 +7,10 @@ import { BlogPage } from './pages/BlogPage';
 import { BlogPostPage } from './pages/BlogPostPage';
 import { MetaTagAnalyzerPage } from './pages/tools/MetaTagAnalyzerPage';
 import { OgImagePreviewPage } from './pages/tools/OgImagePreviewPage';
+import { ChatGPTCheckerPage } from './pages/tools/ChatGPTCheckerPage';
+import { AIVisibilityCheckerPage } from './pages/tools/AIVisibilityCheckerPage';
+import { CompetitorAnalyzerPage } from './pages/tools/CompetitorAnalyzerPage';
+import { WidgetPage } from './pages/WidgetPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
@@ -30,6 +34,10 @@ function App() {
       <Route path="/blog/:slug" element={<BlogPostPage />} />
       <Route path="/tools/meta-tag-analyzer" element={<MetaTagAnalyzerPage />} />
       <Route path="/tools/og-image-preview" element={<OgImagePreviewPage />} />
+      <Route path="/tools/chatgpt-checker" element={<ChatGPTCheckerPage />} />
+      <Route path="/tools/ai-visibility" element={<AIVisibilityCheckerPage />} />
+      <Route path="/tools/compare" element={<CompetitorAnalyzerPage />} />
+      <Route path="/widget" element={<WidgetPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />

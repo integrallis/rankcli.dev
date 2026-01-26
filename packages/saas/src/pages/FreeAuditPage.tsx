@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Loader2, ArrowRight, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
+import { Search, Loader2, ArrowRight, AlertCircle, CheckCircle, XCircle, Bot, Sparkles } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { CategoryRadarChart } from '@/components/audit/CategoryRadarChart';
+import { SERPPreview } from '@/components/audit/SERPPreview';
+import { ShareResults } from '@/components/audit/ShareResults';
 
 interface AuditResult {
   score: number;
@@ -16,6 +20,7 @@ interface AuditResult {
     severity: 'error' | 'warning' | 'notice';
     title: string;
     category: string;
+    description?: string;
   }[];
   categories: {
     crawlability: number;
@@ -23,7 +28,15 @@ interface AuditResult {
     content: number;
     performance: number;
     security: number;
+    socialMeta: number;
+    aiReadiness: number;
   };
+  checksRun: number;
+  totalIssues: number;
+  hiddenIssues: number;
+  title?: string;
+  description?: string;
+  favicon?: string;
 }
 
 export function FreeAuditPage() {
@@ -71,7 +84,21 @@ export function FreeAuditPage() {
       setResult({
         score: data.score,
         issues: data.issues,
-        categories: data.categories,
+        categories: {
+          crawlability: data.categories?.crawlability ?? 0,
+          onPage: data.categories?.onPage ?? 0,
+          content: data.categories?.content ?? 0,
+          performance: data.categories?.performance ?? 0,
+          security: data.categories?.security ?? 0,
+          socialMeta: data.categories?.socialMeta ?? 0,
+          aiReadiness: data.categories?.aiReadiness ?? 0,
+        },
+        checksRun: data.checksRun || 280,
+        totalIssues: data.totalIssues || data.issues?.length || 0,
+        hiddenIssues: data.hiddenIssues || 0,
+        title: data.title,
+        description: data.description,
+        favicon: data.favicon,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to run audit');
@@ -97,12 +124,51 @@ export function FreeAuditPage() {
     }
   };
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Free SEO Audit Tool',
+    description: 'Get instant SEO analysis for any website. 200+ checks including technical SEO, content, performance, and AI readiness. No signup required.',
+    applicationCategory: 'DeveloperApplication',
+    operatingSystem: 'Any',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
+  };
+
+  const handleEmailCapture = async (email: string) => {
+    // Send email to edge function for PDF report
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    fetch(`${supabaseUrl}/functions/v1/free-audit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, email }),
+    }).catch(console.error);
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>Free SEO Audit - 200+ Checks, Instant Results | RankCLI</title>
+        <meta
+          name="description"
+          content="Get instant SEO analysis for any website. 200+ checks including technical SEO, content, performance, and AI readiness. No signup required."
+        />
+        <meta property="og:title" content="Free SEO Audit Tool | RankCLI" />
+        <meta
+          property="og:description"
+          content="Analyze your website's SEO health with 200+ checks. Get instant results for free."
+        />
+        <link rel="canonical" href="https://rankcli.dev/free-audit" />
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+      </Helmet>
+
       <Navbar />
 
       <main className="container py-16">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
             <Badge variant="outline" className="mb-4">
@@ -112,7 +178,7 @@ export function FreeAuditPage() {
               Free SEO Audit
             </h1>
             <p className="text-lg text-muted-foreground">
-              Get instant SEO insights for any website. No signup required.
+              200+ SEO checks in seconds. No signup required.
             </p>
           </div>
 
@@ -162,30 +228,55 @@ export function FreeAuditPage() {
           {/* Results */}
           {result && !isLoading && (
             <div className="space-y-8">
-              {/* Score Card */}
+              {/* Score Card with Radar Chart */}
               <Card>
                 <CardHeader className="text-center">
-                  <CardTitle>SEO Score</CardTitle>
+                  <CardTitle>SEO Health Score</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Based on {result.checksRun} checks
+                  </p>
                 </CardHeader>
-                <CardContent className="text-center pb-8">
-                  <div className={cn('text-6xl font-bold mb-2', getScoreColor(result.score))}>
-                    {result.score}
-                  </div>
-                  <p className="text-muted-foreground">out of 100</p>
-
-                  {/* Category scores */}
-                  <div className="grid grid-cols-5 gap-4 mt-8">
-                    {Object.entries(result.categories).map(([category, score]) => (
-                      <div key={category} className="text-center">
-                        <div className={cn('text-2xl font-semibold', getScoreColor(score))}>
-                          {score}
-                        </div>
-                        <p className="text-xs text-muted-foreground capitalize">
-                          {category.replace(/([A-Z])/g, ' $1').trim()}
-                        </p>
+                <CardContent className="pb-8">
+                  <div className="grid md:grid-cols-2 gap-8 items-center">
+                    {/* Score */}
+                    <div className="text-center">
+                      <div className={cn('text-7xl font-bold mb-2', getScoreColor(result.score))}>
+                        {result.score}
                       </div>
-                    ))}
+                      <p className="text-muted-foreground mb-4">out of 100</p>
+
+                      {/* AI Readiness Badge */}
+                      {result.categories.aiReadiness > 0 && (
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-sm">
+                          <Bot className="h-4 w-4" />
+                          <span>AI Readiness: {result.categories.aiReadiness}%</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Radar Chart */}
+                    <div>
+                      <CategoryRadarChart categories={result.categories} />
+                    </div>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* SERP Preview */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5" />
+                    Google Search Preview
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <SERPPreview
+                    url={url.startsWith('http') ? url : `https://${url}`}
+                    title={result.title}
+                    description={result.description}
+                    favicon={result.favicon}
+                  />
                 </CardContent>
               </Card>
 
@@ -194,7 +285,12 @@ export function FreeAuditPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     Issues Found
-                    <Badge variant="outline">{result.issues.length} issues</Badge>
+                    <div className="flex gap-2">
+                      <Badge variant="outline">{result.totalIssues} total</Badge>
+                      {result.hiddenIssues > 0 && (
+                        <Badge variant="secondary">+{result.hiddenIssues} more</Badge>
+                      )}
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
@@ -208,6 +304,9 @@ export function FreeAuditPage() {
                         <div className="flex-1">
                           <p className="font-medium">{issue.title}</p>
                           <p className="text-sm text-muted-foreground">{issue.category}</p>
+                          {issue.description && (
+                            <p className="text-sm text-muted-foreground mt-1">{issue.description}</p>
+                          )}
                         </div>
                         <Badge
                           variant={
@@ -224,19 +323,44 @@ export function FreeAuditPage() {
                     ))}
                   </div>
 
-                  {/* Upgrade CTA */}
-                  <div className="mt-8 p-6 rounded-lg bg-primary/5 border border-primary/20 text-center">
-                    <p className="font-semibold mb-2">
-                      This preview runs 50 checks. Sign up to unlock all 300+ checks.
-                    </p>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Get detailed reports, auto-fix suggestions, and track improvements over time.
-                    </p>
+                  {result.hiddenIssues > 0 && (
+                    <div className="mt-4 p-4 rounded-lg bg-muted/30 text-center text-sm text-muted-foreground">
+                      +{result.hiddenIssues} more issues found. Sign up to see the complete report.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Share Results */}
+              <Card>
+                <CardContent className="pt-6">
+                  <ShareResults
+                    url={url.startsWith('http') ? url : `https://${url}`}
+                    score={result.score}
+                    onEmailCapture={handleEmailCapture}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Upgrade CTA */}
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="py-8 text-center">
+                  <h3 className="text-xl font-semibold mb-2">
+                    Want to Fix These Issues Automatically?
+                  </h3>
+                  <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
+                    RankCLI can automatically fix SEO issues and create pull requests.
+                    Track improvements over time and get alerts when new issues appear.
+                  </p>
+                  <div className="flex justify-center gap-4">
                     <Link to="/signup">
                       <Button className="gap-2">
-                        Get Full Report
+                        Start Free Trial
                         <ArrowRight className="h-4 w-4" />
                       </Button>
+                    </Link>
+                    <Link to="/tools/ai-visibility">
+                      <Button variant="outline">Check AI Visibility</Button>
                     </Link>
                   </div>
                 </CardContent>

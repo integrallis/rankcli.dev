@@ -320,7 +320,7 @@ export function MetaTagAnalyzerPage() {
               <div className="p-6 rounded-xl bg-primary/5 border border-primary/20 text-center">
                 <h3 className="text-lg font-semibold mb-2">Want a Full SEO Audit?</h3>
                 <p className="text-muted-foreground mb-4">
-                  This tool checks meta tags. RankCLI runs 280+ SEO checks including
+                  This tool checks meta tags. RankCLI runs 200+ SEO checks including
                   performance, security, structured data, and more.
                 </p>
                 <div className="flex justify-center gap-3">

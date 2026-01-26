@@ -1,14 +1,21 @@
 import {
   Search,
   GitPullRequest,
-  BarChart3,
   Zap,
-  Shield,
   Globe,
+  Bot,
+  Terminal,
 } from 'lucide-react';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ui/scroll-reveal';
 
 const features = [
+  {
+    icon: Bot,
+    title: 'AI Visibility Tracking',
+    description:
+      'Track if ChatGPT, Claude, Gemini, and Perplexity recommend your brand. The new SEO frontier.',
+    highlight: true,
+  },
   {
     icon: Search,
     title: '200+ SEO Checks',
@@ -22,10 +29,10 @@ const features = [
       'Connect GitHub and get PRs with fixes automatically. Just review and merge.',
   },
   {
-    icon: BarChart3,
-    title: 'Keyword Tracking',
+    icon: Terminal,
+    title: 'CLI-First',
     description:
-      'Track rankings over time. Get alerts when positions change significantly.',
+      'Run audits from your terminal with `rankcli audit`. JSON output, scriptable, CI/CD ready.',
   },
   {
     icon: Zap,
@@ -34,16 +41,10 @@ const features = [
       'Parallel crawling and analysis. 50-page site audited in under 30 seconds.',
   },
   {
-    icon: Shield,
-    title: 'Security Checks',
-    description:
-      'HTTPS, mixed content, security headers. Keep your site secure and trusted.',
-  },
-  {
     icon: Globe,
-    title: 'Multi-site Support',
+    title: 'Framework Plugins',
     description:
-      'Monitor multiple sites from one dashboard. Perfect for agencies and portfolios.',
+      'Native plugins for Vite, Next.js, and Astro. Seamless integration with your stack.',
   },
 ];
 
@@ -63,12 +64,17 @@ export function Features() {
         <StaggerContainer className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10 max-w-4xl mx-auto">
           {features.map((feature, index) => (
             <StaggerItem key={index}>
-              <div className="flex gap-4">
+              <div className={`flex gap-4 ${feature.highlight ? 'p-4 -m-4 rounded-lg bg-primary/5 border border-primary/20' : ''}`}>
                 <div className="flex-shrink-0">
-                  <feature.icon className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+                  <feature.icon className={`h-5 w-5 ${feature.highlight ? 'text-primary' : 'text-muted-foreground'}`} strokeWidth={1.5} />
                 </div>
                 <div>
-                  <h3 className="font-medium mb-1 tracking-tight">{feature.title}</h3>
+                  <h3 className="font-medium mb-1 tracking-tight">
+                    {feature.title}
+                    {feature.highlight && (
+                      <span className="ml-2 text-xs text-primary font-normal">New</span>
+                    )}
+                  </h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     {feature.description}
                   </p>

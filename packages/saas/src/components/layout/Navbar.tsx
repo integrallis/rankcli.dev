@@ -12,8 +12,11 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
-// Nav link type
-type NavLink = { href: string; label: string; external?: boolean };
+interface NavLink {
+  href: string;
+  label: string;
+  external?: boolean;
+}
 
 // Base nav links (always shown)
 const baseNavLinks: NavLink[] = [

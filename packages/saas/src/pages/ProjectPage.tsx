@@ -27,6 +27,7 @@ import type { Project } from '@/integrations/supabase/types';
 import { ConnectGitHubModal } from '@/components/project/ConnectGitHubModal';
 import { ProjectSettingsModal } from '@/components/project/ProjectSettingsModal';
 import { IssuesList } from '@/components/project/IssuesList';
+import { AIVisibilityCard } from '@/components/dashboard/AIVisibilityCard';
 import {
   Tooltip,
   TooltipContent,
@@ -391,6 +392,15 @@ export function ProjectPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* AI Visibility Card */}
+        <div className="mb-6">
+          <AIVisibilityCard
+            projectId={project.id}
+            domain={new URL(project.url).hostname}
+            brand={project.name}
+          />
+        </div>
 
         {/* Checks Summary */}
         {latestAudit && (

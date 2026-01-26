@@ -30,7 +30,7 @@ const MAX_PAGES = 20;         // Up to 20 pages for paid users
 
 // SSE event types
 interface SseEvent {
-  type: 'job_created' | 'job_started' | 'job_progress' | 'job_completed' | 'job_failed' | 'heartbeat';
+  type: 'job_created' | 'job_started' | 'job_progress' | 'job_completed' | 'job_failed' | 'heartbeat' | 'provider_result';
   job_id?: string;
   audit_id?: string;
   progress?: number;
@@ -38,7 +38,52 @@ interface SseEvent {
   pages_total?: number;
   score?: number;
   error?: string;
+  // AI visibility specific
+  provider?: string;
+  provider_name?: string;
+  mentioned?: boolean;
+  position?: number | null;
+  sentiment?: string | null;
+  context?: string | null;
 }
+
+// AI visibility job tracking
+interface AIVisibilityJob {
+  id: string;
+  url: string;
+  brand: string;
+  domain: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  progress: number;
+  providersTotal: number;
+  providersCompleted: number;
+  results: AIProviderResult[];
+  overallScore: number;
+  startedAt?: Date;
+  completedAt?: Date;
+  error?: string;
+}
+
+interface AIProviderResult {
+  provider: string;
+  name: string;
+  mentioned: boolean;
+  position: number | null;
+  sentiment: 'positive' | 'neutral' | 'negative' | null;
+  context: string | null;
+  score: number;
+  error?: string;
+}
+
+const aiVisibilityJobs = new Map<string, AIVisibilityJob>();
+
+// LLM Provider configurations
+const LLM_PROVIDERS = [
+  { id: 'openai', name: 'ChatGPT', model: 'gpt-4o-mini' },
+  { id: 'anthropic', name: 'Claude', model: 'claude-3-haiku-20240307' },
+  { id: 'google', name: 'Gemini', model: 'gemini-pro' },
+  { id: 'perplexity', name: 'Perplexity', model: 'llama-3.1-sonar-small-128k-online' },
+] as const;
 
 // Event emitter for SSE broadcasts
 const sseEmitter = new EventEmitter();
@@ -615,7 +660,7 @@ Return JSON with:
 
     if (!response.ok) return null;
 
-    const data = await response.json();
+    const data = await response.json() as { choices?: { message?: { content?: string } }[] };
     const content = data.choices?.[0]?.message?.content;
     if (!content) return null;
 
@@ -764,6 +809,476 @@ app.post<{
     });
   }
 });
+
+// ========== AI VISIBILITY CHECK ENDPOINT ==========
+
+app.post<{
+  Body: {
+    url: string;
+    brand?: string;
+  };
+}>('/ai-visibility', async (request, reply) => {
+  const { url, brand: customBrand } = request.body;
+
+  if (!url) {
+    return reply.status(400).send({ error: 'URL is required' });
+  }
+
+  // Parse URL and extract brand
+  let domain: string;
+  let brand: string;
+  try {
+    const parsed = new URL(url.startsWith('http') ? url : `https://${url}`);
+    domain = parsed.hostname.replace(/^www\./, '');
+    brand = customBrand || domain.split('.')[0].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  } catch {
+    return reply.status(400).send({ error: 'Invalid URL' });
+  }
+
+  const jobId = `aiv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+  const job: AIVisibilityJob = {
+    id: jobId,
+    url,
+    brand,
+    domain,
+    status: 'pending',
+    progress: 0,
+    providersTotal: LLM_PROVIDERS.length,
+    providersCompleted: 0,
+    results: [],
+    overallScore: 0,
+  };
+
+  aiVisibilityJobs.set(jobId, job);
+
+  // Start checking in background
+  runAIVisibilityCheck(job).catch(err => {
+    app.log.error({ err, jobId }, 'AI visibility check failed');
+  });
+
+  // Broadcast job created
+  broadcastEvent(jobId, {
+    type: 'job_created',
+    job_id: jobId,
+  });
+
+  return reply.status(202).send({
+    jobId,
+    status: 'pending',
+    message: 'AI visibility check started. Connect to /ai-visibility/stream/:jobId for real-time updates.',
+    streamUrl: `/ai-visibility/stream/${jobId}`,
+  });
+});
+
+// SSE stream for AI visibility updates
+app.get<{ Params: { jobId: string } }>('/ai-visibility/stream/:jobId', async (request, reply) => {
+  const { jobId } = request.params;
+
+  // Set SSE headers
+  reply.raw.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+  });
+
+  // Send initial connection event
+  reply.raw.write(`data: ${JSON.stringify({ type: 'connected', job_id: jobId })}\n\n`);
+
+  // Check if job already has results (late connection)
+  const job = aiVisibilityJobs.get(jobId);
+  if (job && job.results.length > 0) {
+    // Send existing results
+    for (const result of job.results) {
+      reply.raw.write(`data: ${JSON.stringify({
+        type: 'provider_result',
+        job_id: jobId,
+        provider: result.provider,
+        provider_name: result.name,
+        mentioned: result.mentioned,
+        position: result.position,
+        sentiment: result.sentiment,
+        context: result.context,
+        progress: job.progress,
+      })}\n\n`);
+    }
+
+    // If already completed, send completion
+    if (job.status === 'completed') {
+      reply.raw.write(`data: ${JSON.stringify({
+        type: 'job_completed',
+        job_id: jobId,
+        score: job.overallScore,
+        progress: 100,
+      })}\n\n`);
+    }
+  }
+
+  // Handler for job events
+  const eventHandler = (event: SseEvent) => {
+    reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
+  };
+
+  // Subscribe to events for this job
+  sseEmitter.on(`audit:${jobId}`, eventHandler);
+
+  // Heartbeat every 30 seconds
+  const heartbeat = setInterval(() => {
+    reply.raw.write(`data: ${JSON.stringify({ type: 'heartbeat' })}\n\n`);
+  }, 30000);
+
+  // Cleanup on disconnect
+  request.raw.on('close', () => {
+    sseEmitter.off(`audit:${jobId}`, eventHandler);
+    clearInterval(heartbeat);
+  });
+});
+
+// Get AI visibility job status
+app.get<{ Params: { jobId: string } }>('/ai-visibility/jobs/:jobId', async (request, reply) => {
+  const { jobId } = request.params;
+  const job = aiVisibilityJobs.get(jobId);
+
+  if (!job) {
+    return reply.status(404).send({ error: 'Job not found' });
+  }
+
+  return job;
+});
+
+// AI Visibility check runner
+async function runAIVisibilityCheck(job: AIVisibilityJob): Promise<void> {
+  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
+  const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
+  const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY || '';
+
+  try {
+    job.status = 'running';
+    job.startedAt = new Date();
+
+    broadcastEvent(job.id, {
+      type: 'job_started',
+      job_id: job.id,
+    });
+
+    app.log.info({ jobId: job.id, brand: job.brand, domain: job.domain }, 'Starting AI visibility check');
+
+    const query = `What are some good alternatives to ${job.brand}? Can you recommend similar tools or services to ${job.domain}?`;
+
+    // Check each provider sequentially to stream results as they come in
+    const providers = [
+      { id: 'openai', name: 'ChatGPT', check: () => checkOpenAI(job.brand, job.domain, query) },
+      { id: 'anthropic', name: 'Claude', check: () => checkAnthropic(job.brand, job.domain, query, ANTHROPIC_API_KEY) },
+      { id: 'google', name: 'Gemini', check: () => checkGoogle(job.brand, job.domain, query, GOOGLE_API_KEY) },
+      { id: 'perplexity', name: 'Perplexity', check: () => checkPerplexity(job.brand, job.domain, query, PERPLEXITY_API_KEY) },
+    ];
+
+    for (const provider of providers) {
+      try {
+        app.log.info({ jobId: job.id, provider: provider.id }, 'Checking provider');
+
+        const result = await provider.check();
+        job.results.push(result);
+        job.providersCompleted++;
+        job.progress = Math.round((job.providersCompleted / job.providersTotal) * 100);
+
+        // Broadcast individual result
+        broadcastEvent(job.id, {
+          type: 'provider_result',
+          job_id: job.id,
+          provider: result.provider,
+          provider_name: result.name,
+          mentioned: result.mentioned,
+          position: result.position,
+          sentiment: result.sentiment,
+          context: result.context,
+          progress: job.progress,
+        });
+
+        app.log.info({
+          jobId: job.id,
+          provider: provider.id,
+          mentioned: result.mentioned,
+          position: result.position,
+        }, 'Provider check complete');
+
+      } catch (err) {
+        app.log.error({ err, jobId: job.id, provider: provider.id }, 'Provider check failed');
+
+        const errorResult: AIProviderResult = {
+          provider: provider.id,
+          name: provider.name,
+          mentioned: false,
+          position: null,
+          sentiment: null,
+          context: null,
+          score: 0,
+          error: err instanceof Error ? err.message : 'Unknown error',
+        };
+        job.results.push(errorResult);
+        job.providersCompleted++;
+        job.progress = Math.round((job.providersCompleted / job.providersTotal) * 100);
+
+        broadcastEvent(job.id, {
+          type: 'provider_result',
+          job_id: job.id,
+          provider: errorResult.provider,
+          provider_name: errorResult.name,
+          mentioned: false,
+          position: null,
+          sentiment: null,
+          context: null,
+          progress: job.progress,
+          error: errorResult.error,
+        });
+      }
+    }
+
+    // Calculate overall score
+    const mentionedCount = job.results.filter(r => r.mentioned && !r.error).length;
+    const validResults = job.results.filter(r => !r.error);
+    job.overallScore = validResults.length > 0
+      ? Math.round((mentionedCount / validResults.length) * 100)
+      : 0;
+
+    // Bonus for good positions
+    const topPositions = job.results.filter(r => r.mentioned && r.position !== null && r.position <= 3);
+    if (topPositions.length > 0) {
+      job.overallScore = Math.min(100, job.overallScore + 10);
+    }
+
+    job.status = 'completed';
+    job.completedAt = new Date();
+    job.progress = 100;
+
+    broadcastEvent(job.id, {
+      type: 'job_completed',
+      job_id: job.id,
+      score: job.overallScore,
+      progress: 100,
+    });
+
+    app.log.info({
+      jobId: job.id,
+      score: job.overallScore,
+      mentioned: mentionedCount,
+      total: job.results.length,
+    }, 'AI visibility check completed');
+
+    // Clean up job after 10 minutes
+    setTimeout(() => aiVisibilityJobs.delete(job.id), 600000);
+
+  } catch (error) {
+    app.log.error({ err: error, jobId: job.id }, 'AI visibility check failed');
+
+    job.status = 'failed';
+    job.error = error instanceof Error ? error.message : 'Unknown error';
+    job.completedAt = new Date();
+
+    broadcastEvent(job.id, {
+      type: 'job_failed',
+      job_id: job.id,
+      error: job.error,
+    });
+
+    setTimeout(() => aiVisibilityJobs.delete(job.id), 600000);
+  }
+}
+
+// LLM Provider check functions
+async function checkOpenAI(brand: string, domain: string, query: string): Promise<AIProviderResult> {
+  const baseResult: AIProviderResult = {
+    provider: 'openai',
+    name: 'ChatGPT',
+    mentioned: false,
+    position: null,
+    sentiment: null,
+    context: null,
+    score: 0,
+  };
+
+  if (!OPENAI_API_KEY) return baseResult;
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [
+        { role: 'system', content: 'You are a helpful assistant that recommends tools and websites. List your top recommendations.' },
+        { role: 'user', content: query },
+      ],
+      max_tokens: 500,
+      temperature: 0.7,
+    }),
+  });
+
+  if (!response.ok) return baseResult;
+
+  const data = await response.json() as { choices?: { message?: { content?: string } }[] };
+  const content = data.choices?.[0]?.message?.content || '';
+
+  return analyzeProviderResponse(content, brand, domain, 'openai', 'ChatGPT');
+}
+
+async function checkAnthropic(brand: string, domain: string, query: string, apiKey: string): Promise<AIProviderResult> {
+  const baseResult: AIProviderResult = {
+    provider: 'anthropic',
+    name: 'Claude',
+    mentioned: false,
+    position: null,
+    sentiment: null,
+    context: null,
+    score: 0,
+  };
+
+  if (!apiKey) return baseResult;
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 500,
+      messages: [{ role: 'user', content: query }],
+    }),
+  });
+
+  if (!response.ok) return baseResult;
+
+  const data = await response.json() as { content?: { text?: string }[] };
+  const content = data.content?.[0]?.text || '';
+
+  return analyzeProviderResponse(content, brand, domain, 'anthropic', 'Claude');
+}
+
+async function checkGoogle(brand: string, domain: string, query: string, apiKey: string): Promise<AIProviderResult> {
+  const baseResult: AIProviderResult = {
+    provider: 'google',
+    name: 'Gemini',
+    mentioned: false,
+    position: null,
+    sentiment: null,
+    context: null,
+    score: 0,
+  };
+
+  if (!apiKey) return baseResult;
+
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: query }] }],
+    }),
+  });
+
+  if (!response.ok) return baseResult;
+
+  const data = await response.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+  const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+  return analyzeProviderResponse(content, brand, domain, 'google', 'Gemini');
+}
+
+async function checkPerplexity(brand: string, domain: string, query: string, apiKey: string): Promise<AIProviderResult> {
+  const baseResult: AIProviderResult = {
+    provider: 'perplexity',
+    name: 'Perplexity',
+    mentioned: false,
+    position: null,
+    sentiment: null,
+    context: null,
+    score: 0,
+  };
+
+  if (!apiKey) return baseResult;
+
+  const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-sonar-small-128k-online',
+      messages: [{ role: 'user', content: query }],
+      max_tokens: 500,
+    }),
+  });
+
+  if (!response.ok) return baseResult;
+
+  const data = await response.json() as { choices?: { message?: { content?: string } }[] };
+  const content = data.choices?.[0]?.message?.content || '';
+
+  return analyzeProviderResponse(content, brand, domain, 'perplexity', 'Perplexity');
+}
+
+function analyzeProviderResponse(
+  content: string,
+  brand: string,
+  domain: string,
+  provider: string,
+  name: string
+): AIProviderResult {
+  const brandLower = brand.toLowerCase();
+  const domainLower = domain.toLowerCase();
+  const contentLower = content.toLowerCase();
+
+  const mentioned = contentLower.includes(brandLower) || contentLower.includes(domainLower);
+
+  let position: number | null = null;
+  let context: string | null = null;
+  let sentiment: 'positive' | 'neutral' | 'negative' | null = null;
+
+  if (mentioned) {
+    const lines = content.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].toLowerCase();
+      if (line.includes(brandLower) || line.includes(domainLower)) {
+        const match = lines[i].match(/^(\d+)[.\)]/);
+        position = match ? parseInt(match[1], 10) : i + 1;
+        context = lines[i].trim().slice(0, 150);
+        break;
+      }
+    }
+
+    // Simple sentiment analysis
+    const positiveWords = ['great', 'excellent', 'best', 'recommend', 'popular', 'powerful'];
+    const negativeWords = ['avoid', 'poor', 'limited', 'expensive', 'outdated'];
+    const contextLower = (context || content).toLowerCase();
+    const positiveCount = positiveWords.filter(w => contextLower.includes(w)).length;
+    const negativeCount = negativeWords.filter(w => contextLower.includes(w)).length;
+
+    sentiment = positiveCount > negativeCount ? 'positive' : negativeCount > positiveCount ? 'negative' : 'neutral';
+  }
+
+  let score = 0;
+  if (mentioned) {
+    score = 50;
+    if (position && position <= 3) score = 100;
+    else if (position && position <= 5) score = 75;
+  }
+
+  return {
+    provider,
+    name,
+    mentioned,
+    position,
+    sentiment,
+    context,
+    score,
+  };
+}
 
 // Start server
 const start = async () => {

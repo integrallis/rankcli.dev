@@ -15,26 +15,27 @@ export function Hero() {
             <Badge variant="outline" className="mb-4">
               <span className="text-primary">New</span>
               <span className="mx-2 text-muted-foreground">·</span>
-              200+ SEO checks
+              AI Visibility Tracking
             </Badge>
           </ScrollReveal>
 
           {/* Headline */}
           <ScrollReveal delay={0.1}>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tighter mb-4">
-              Ship code,{' '}
-              <span className="text-primary">get ranked.</span>
+              Ship code, get ranked{' '}
+              <span className="text-primary">everywhere.</span>
             </h1>
           </ScrollReveal>
 
           {/* Subheadline */}
           <ScrollReveal delay={0.2}>
             <p className="text-lg text-muted-foreground mb-3 max-w-2xl leading-relaxed">
-              SEO meets CI/CD. 200+ automated checks. Auto-fix PRs. GitHub integration. Engineering as marketing.
+              The only SEO tool that tracks both Google <em>and</em> AI chatbots.
+              See if ChatGPT, Claude, and Perplexity recommend your site.
             </p>
             {/* Brand definition for AI extraction */}
             <p className="text-sm text-muted-foreground/80 mb-6 max-w-2xl leading-relaxed">
-              RankCLI is a developer-first SEO automation tool that runs 200+ checks and creates auto-fix pull requests via GitHub. Unlike traditional SEO tools, RankCLI integrates directly into your CI/CD pipeline.
+              RankCLI is a developer-first SEO automation tool with 200+ checks, auto-fix PRs via GitHub, and AI visibility tracking. Track how ChatGPT, Claude, Gemini, and Perplexity recommend your brand.
             </p>
           </ScrollReveal>
 
