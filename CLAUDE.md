@@ -147,4 +147,5 @@ rankcli setup --ga4 <id>        # Add GA4 tracking
 - Don't add complex abstractions - keep it simple
 - Don't wait for user input - propose and execute
 - Don't add time estimates
+- Don't add "Co-Authored-By" lines mentioning Claude or Anthropic in git commits
 - Don't let the dev server run on any port other than 3005. Kill processes on 3005-3008 first: `lsof -ti:3005,3006,3007,3008 | xargs -r kill -9`
