@@ -53,19 +53,24 @@ export function AccountPage() {
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
 
-  // Check for success/canceled URL params
+  // Check for URL params (tab, success, canceled)
   useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && tabs.some(t => t.id === tab)) {
+      setActiveTab(tab);
+    }
     if (searchParams.get('success') === 'true') {
       setActiveTab('billing');
       setShowSuccessMessage(true);
-      // Clear the URL params
-      setSearchParams({});
       // Hide success message after 5 seconds
       setTimeout(() => setShowSuccessMessage(false), 5000);
     }
     if (searchParams.get('canceled') === 'true') {
       setActiveTab('billing');
-      setSearchParams({});
+    }
+    // Clear the URL params after reading
+    if (searchParams.toString()) {
+      setSearchParams({}, { replace: true });
     }
   }, [searchParams, setSearchParams]);
 

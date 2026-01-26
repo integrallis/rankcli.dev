@@ -12,17 +12,26 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
-const navLinks = [
+// Base nav links (always shown)
+const baseNavLinks = [
   { href: '/docs', label: 'Docs' },
-  { href: '/free-audit', label: 'Free Audit' },
+  { href: '/blog', label: 'Blog' },
   { href: '/pricing', label: 'Pricing' },
-  { href: 'https://github.com/rankcli/rankcli', label: 'GitHub', external: true },
+  { href: 'https://github.com/apps/rankcli', label: 'GitHub', external: true },
 ];
+
+// Free Audit link (only shown to non-authenticated users)
+const freeAuditLink = { href: '/free-audit', label: 'Free Audit' };
 
 export function Navbar() {
   const { isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Build nav links - hide Free Audit for logged-in users
+  const navLinks = isAuthenticated
+    ? baseNavLinks
+    : [...baseNavLinks.slice(0, 2), freeAuditLink, ...baseNavLinks.slice(2)];
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">

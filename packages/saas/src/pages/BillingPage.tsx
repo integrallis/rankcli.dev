@@ -8,8 +8,10 @@ export function BillingPage() {
 
   useEffect(() => {
     // Preserve any query params (success, canceled) when redirecting
-    const params = searchParams.toString();
-    navigate(`/account${params ? `?${params}` : ''}`, { replace: true });
+    // Add tab=billing to open the billing tab
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('tab', 'billing');
+    navigate(`/account?${newParams.toString()}`, { replace: true });
   }, [navigate, searchParams]);
 
   return null;

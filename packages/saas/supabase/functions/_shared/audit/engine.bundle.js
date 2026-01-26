@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-01-25T00:55:07.095Z
+// Generated: 2026-01-25T22:47:31.139Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -1739,6 +1739,79 @@ var ISSUE_DEFINITIONS = {
     description: "External links use URL shorteners, hiding the actual destination.",
     impact: "URL shorteners reduce trust and SEO link value.",
     howToFix: "Replace shortened URLs with direct links to the destination."
+  },
+  // ==================== FRAMEWORK-SPECIFIC SEO ====================
+  REACT_CSR_DETECTED: {
+    code: "REACT_CSR_DETECTED",
+    severity: "error",
+    category: "framework",
+    title: "Client-side rendered React app detected",
+    description: "React apps without SSR send empty HTML to crawlers. Search engines may not index your content.",
+    impact: "Critical - your content is likely invisible to Google.",
+    howToFix: "Migrate to Next.js for automatic SSR/SSG, add prerendering with react-snap, or use react-helmet-async with a prerender service."
+  },
+  NEXTJS_NO_METADATA_API: {
+    code: "NEXTJS_NO_METADATA_API",
+    severity: "warning",
+    category: "framework",
+    title: "Not using Next.js Metadata API",
+    description: "Next.js 13+ has a built-in Metadata API that is more reliable than third-party solutions.",
+    impact: "Missing out on Next.js optimized SEO features.",
+    howToFix: "Use export const metadata or generateMetadata in your page/layout files."
+  },
+  VUE_CSR_DETECTED: {
+    code: "VUE_CSR_DETECTED",
+    severity: "error",
+    category: "framework",
+    title: "Client-side rendered Vue app detected",
+    description: "Vue apps without SSR send empty HTML to crawlers.",
+    impact: "Your content may not be indexed by search engines.",
+    howToFix: "Migrate to Nuxt for automatic SSR/SSG, or add SSR with @vue/server-renderer."
+  },
+  ANGULAR_NO_UNIVERSAL: {
+    code: "ANGULAR_NO_UNIVERSAL",
+    severity: "error",
+    category: "framework",
+    title: "Angular app without Universal (SSR)",
+    description: "Client-side Angular apps send empty HTML to crawlers.",
+    impact: "Your content may not be indexed by search engines.",
+    howToFix: "Add Angular Universal for SSR: ng add @angular/ssr"
+  },
+  WORDPRESS_NO_SEO_PLUGIN: {
+    code: "WORDPRESS_NO_SEO_PLUGIN",
+    severity: "warning",
+    category: "framework",
+    title: "No SEO plugin detected",
+    description: "WordPress benefits greatly from an SEO plugin like Yoast or Rank Math.",
+    impact: "Missing automated SEO features like sitemaps, schema, and meta tag management.",
+    howToFix: "Install Yoast SEO or Rank Math plugin."
+  },
+  WORDPRESS_NO_CACHING: {
+    code: "WORDPRESS_NO_CACHING",
+    severity: "warning",
+    category: "framework",
+    title: "No caching plugin detected",
+    description: "WordPress without caching is slow, hurting Core Web Vitals.",
+    impact: "Poor performance affects user experience and rankings.",
+    howToFix: "Install WP Super Cache, W3 Total Cache, or LiteSpeed Cache."
+  },
+  SPA_EMPTY_BODY: {
+    code: "SPA_EMPTY_BODY",
+    severity: "error",
+    category: "framework",
+    title: "Single Page App with empty body",
+    description: "Page body contains minimal content, suggesting client-side rendering without SSR.",
+    impact: "Search engines see an empty page and cannot index your content.",
+    howToFix: "Implement server-side rendering, static site generation, or prerendering."
+  },
+  FRAMEWORK_OUTDATED: {
+    code: "FRAMEWORK_OUTDATED",
+    severity: "warning",
+    category: "framework",
+    title: "Outdated framework version detected",
+    description: "Running an outdated version of your framework may have security vulnerabilities and SEO bugs.",
+    impact: "Potential security issues and missing SEO improvements.",
+    howToFix: "Update to the latest stable version of your framework."
   }
 };
 
@@ -16805,89 +16878,82 @@ function analyzeTrackingVerification(html, url) {
     issues.push({
       code: "GA4_MISSING",
       severity: "warning",
-      category: "tracking",
+      category: "on-page",
       title: "Google Analytics 4 not detected",
       description: "No GA4 tracking code found. GA4 is essential for measuring organic traffic and conversions.",
       impact: "Cannot measure SEO impact without analytics tracking.",
       howToFix: "Add GA4 tracking code to your site. Get your measurement ID from analytics.google.com.",
-      affectedUrls: [url],
-      learnMoreUrl: "https://support.google.com/analytics/answer/9304153"
+      affectedUrls: [url]
     });
   }
   if (!hasGscVerification) {
     issues.push({
       code: "GSC_VERIFICATION_MISSING",
       severity: "warning",
-      category: "tracking",
+      category: "on-page",
       title: "Google Search Console verification not found",
       description: "No GSC verification meta tag detected. GSC provides essential data about your search performance.",
       impact: "Missing critical insights into Google search visibility, impressions, and clicks.",
       howToFix: "Add your GSC verification meta tag to the <head> section. Get it from search.google.com/search-console.",
-      affectedUrls: [url],
-      learnMoreUrl: "https://support.google.com/webmasters/answer/9008080"
+      affectedUrls: [url]
     });
   }
   if (!hasBingVerification) {
     issues.push({
       code: "BING_VERIFICATION_MISSING",
-      severity: "info",
-      category: "tracking",
+      severity: "notice",
+      category: "on-page",
       title: "Bing Webmaster Tools verification not found",
       description: "No Bing verification meta tag detected. Bing/Yahoo account for 5-8% of search traffic.",
       impact: "Missing insights on Bing/Yahoo search traffic.",
       howToFix: "Add Bing Webmaster Tools verification for insights on Bing/Yahoo traffic. Get it from bing.com/webmasters.",
-      affectedUrls: [url],
-      learnMoreUrl: "https://www.bing.com/webmasters/help/how-to-verify-ownership-of-your-site-afcfefc6"
+      affectedUrls: [url]
     });
   }
   if (!hasGtm) {
     issues.push({
       code: "GTM_MISSING",
-      severity: "info",
-      category: "tracking",
+      severity: "notice",
+      category: "on-page",
       title: "Google Tag Manager not detected",
       description: "GTM not found. While not required, GTM makes it easier to manage tracking tags without code changes.",
       impact: "Tag management requires developer involvement for each change.",
       howToFix: "Consider using GTM for easier tag management. It allows marketing to add tags without developer help.",
-      affectedUrls: [url],
-      learnMoreUrl: "https://tagmanager.google.com/"
+      affectedUrls: [url]
     });
   } else if (!hasGtmNoscript) {
     issues.push({
       code: "GTM_NOSCRIPT_MISSING",
-      severity: "info",
-      category: "tracking",
+      severity: "notice",
+      category: "on-page",
       title: "GTM noscript fallback missing",
       description: "GTM is installed but the noscript fallback is missing. This is needed for users with JavaScript disabled.",
       impact: "Users with JS disabled won't be tracked.",
       howToFix: "Add the GTM noscript tag immediately after the opening <body> tag.",
-      affectedUrls: [url],
-      learnMoreUrl: "https://developers.google.com/tag-manager/quickstart"
+      affectedUrls: [url]
     });
   }
   if (!hasJsonLd && !hasMicrodata) {
     issues.push({
       code: "SCHEMA_ORG_MISSING",
       severity: "warning",
-      category: "content",
+      category: "structured-data",
       title: "No structured data found",
       description: "No Schema.org structured data detected. Structured data helps search engines understand your content and can enable rich snippets.",
       impact: "Missing opportunity for rich results in search (stars, images, FAQs, etc.).",
       howToFix: "Add JSON-LD structured data for your content type (Organization, Product, Article, etc.).",
-      affectedUrls: [url],
-      learnMoreUrl: "https://developers.google.com/search/docs/appearance/structured-data"
+      affectedUrls: [url]
     });
   } else if (hasJsonLd && !hasValidJson) {
     issues.push({
       code: "SCHEMA_ORG_INVALID",
       severity: "error",
-      category: "content",
+      category: "structured-data",
       title: "Invalid JSON-LD structured data",
       description: "One or more JSON-LD scripts contain invalid JSON. This will prevent search engines from parsing your structured data.",
       impact: "Structured data is being ignored due to syntax errors.",
       howToFix: "Fix the JSON syntax errors in your structured data. Use the Rich Results Test to validate.",
-      affectedUrls: [url],
-      learnMoreUrl: "https://search.google.com/test/rich-results"
+      affectedUrls: [url]
     });
   }
   return { issues, data };

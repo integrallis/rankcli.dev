@@ -227,7 +227,7 @@ export function FreeAuditPage() {
                   {/* Upgrade CTA */}
                   <div className="mt-8 p-6 rounded-lg bg-primary/5 border border-primary/20 text-center">
                     <p className="font-semibold mb-2">
-                      This is a preview. Sign up to see all 200+ checks.
+                      This preview runs 50 checks. Sign up to unlock all 300+ checks.
                     </p>
                     <p className="text-sm text-muted-foreground mb-4">
                       Get detailed reports, auto-fix suggestions, and track improvements over time.

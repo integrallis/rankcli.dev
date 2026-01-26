@@ -316,8 +316,8 @@ async function runDeepAudit(
     const BATCH_SIZE = 5; // Process 5 pages at a time
     const allIssues: DbAuditIssue[][] = [];
     let primaryReport: AuditReport | null = null;
-    // Use checksLimit as unique checks count (the same checks run on each page)
-    const uniqueChecksRun = options.checksLimit;
+    // Track unique checks (from first page only - same checks run on each page)
+    let uniqueChecksRun = 0;
 
     for (let i = 0; i < pagesToAudit.length; i += BATCH_SIZE) {
       const batch = pagesToAudit.slice(i, i + BATCH_SIZE);
@@ -367,6 +367,9 @@ async function runDeepAudit(
 
           if (i === 0 && j === 0) {
             primaryReport = report;
+            // Get unique checks count from first page only (same checks run on all pages)
+            uniqueChecksRun = (report.summary?.passed || 0) + (report.summary?.errors || 0) + (report.summary?.warnings || 0);
+            app.log.info({ jobId: job.id, uniqueChecksRun }, 'Unique checks count from first page');
           }
         }
       }

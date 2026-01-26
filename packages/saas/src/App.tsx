@@ -3,6 +3,10 @@ import { LandingPage } from './pages/LandingPage';
 import { FreeAuditPage } from './pages/FreeAuditPage';
 import { PricingPage } from './pages/PricingPage';
 import { DocsPage } from './pages/DocsPage';
+import { BlogPage } from './pages/BlogPage';
+import { BlogPostPage } from './pages/BlogPostPage';
+import { MetaTagAnalyzerPage } from './pages/tools/MetaTagAnalyzerPage';
+import { OgImagePreviewPage } from './pages/tools/OgImagePreviewPage';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { AuthCallbackPage } from './pages/AuthCallbackPage';
@@ -22,6 +26,10 @@ function App() {
       <Route path="/free-audit" element={<FreeAuditPage />} />
       <Route path="/pricing" element={<PricingPage />} />
       <Route path="/docs" element={<DocsPage />} />
+      <Route path="/blog" element={<BlogPage />} />
+      <Route path="/blog/:slug" element={<BlogPostPage />} />
+      <Route path="/tools/meta-tag-analyzer" element={<MetaTagAnalyzerPage />} />
+      <Route path="/tools/og-image-preview" element={<OgImagePreviewPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
