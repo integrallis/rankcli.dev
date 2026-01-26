@@ -14,7 +14,7 @@ function generateApiKey(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   const randomBytes = new Uint8Array(32);
   crypto.getRandomValues(randomBytes);
-  let key = 'seo_';
+  let key = 'rankcli_';
   for (const byte of randomBytes) {
     key += chars[byte % chars.length];
   }
