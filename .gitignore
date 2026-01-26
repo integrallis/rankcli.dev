@@ -73,6 +73,7 @@ service-account.json
 
 # Data
 data/
+!packages/saas/src/data/
 *.db
 *.sqlite
 
@@ -86,3 +87,5 @@ test_repos/
 docs/*.txt
 docs/*.pdf
 packages/saas/docs/results/
+env_prod.txt
+pat.txt
