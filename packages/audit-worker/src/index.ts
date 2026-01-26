@@ -316,7 +316,8 @@ async function runDeepAudit(
     const BATCH_SIZE = 5; // Process 5 pages at a time
     const allIssues: DbAuditIssue[][] = [];
     let primaryReport: AuditReport | null = null;
-    let totalChecksRun = 0;
+    // Use checksLimit as unique checks count (the same checks run on each page)
+    const uniqueChecksRun = options.checksLimit;
 
     for (let i = 0; i < pagesToAudit.length; i += BATCH_SIZE) {
       const batch = pagesToAudit.slice(i, i + BATCH_SIZE);
@@ -363,9 +364,6 @@ async function runDeepAudit(
           const { report } = result.value;
           const issues = report.issues.map(issue => mapIssueToDb(issue, job.auditId, job.projectId));
           allIssues.push(issues);
-          // Calculate checks run from summary (passed + errors + warnings)
-          const checksRun = (report.summary?.passed || 0) + (report.summary?.errors || 0) + (report.summary?.warnings || 0);
-          totalChecksRun += checksRun;
 
           if (i === 0 && j === 0) {
             primaryReport = report;
@@ -415,7 +413,7 @@ async function runDeepAudit(
         score: overallScore,
         pages_crawled: pagesToAudit.length,
         issues_found: mergedIssues.length,
-        checks_run: totalChecksRun,
+        checks_run: uniqueChecksRun,
         health_scores: healthScores,
         completed_at: new Date().toISOString(),
         duration_ms: duration,
@@ -423,7 +421,7 @@ async function runDeepAudit(
           errors: mergedIssues.filter(i => i.severity === 'error').length,
           warnings: mergedIssues.filter(i => i.severity === 'warning').length,
           notices: mergedIssues.filter(i => i.severity === 'notice').length,
-          checksRun: totalChecksRun,
+          checksRun: uniqueChecksRun,
           pagesAudited: pagesToAudit.length,
           aiAnalyzed: !!aiAnalysis,
           worker: 'fly.io',
