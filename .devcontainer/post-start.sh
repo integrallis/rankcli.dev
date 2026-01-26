@@ -7,13 +7,21 @@ sudo chmod 666 /var/run/docker.sock 2>/dev/null || true
 
 cd /workspace
 
+# Load environment variables from .env file
+if [ -f /workspace/.env ]; then
+  set -a
+  source /workspace/.env
+  set +a
+fi
+
 # Kill any stale processes on our ports
 lsof -ti:3005,3006,3007,3008,8080 | xargs -r kill -9 2>/dev/null || true
 
-# Export env vars for the worker
-export SUPABASE_URL=$VITE_SUPABASE_URL
-export SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_KEY
-export WORKER_SECRET=dev-secret
+# Export env vars for the worker (map VITE_ prefixed vars to worker vars)
+export SUPABASE_URL="${VITE_SUPABASE_URL}"
+export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_KEY}"
+export OPENAI_API_KEY="${OPENAI_API_KEY}"
+export WORKER_SECRET="${WORKER_SECRET:-dev-secret}"
 export PORT=8080
 
 echo ""
@@ -21,6 +29,14 @@ echo "========================================"
 echo "  Starting RankCLI Development Services"
 echo "========================================"
 echo ""
+
+# Verify critical env vars are set
+if [ -z "$SUPABASE_URL" ]; then
+  echo "WARNING: SUPABASE_URL not set. Check /workspace/.env file."
+fi
+if [ -z "$OPENAI_API_KEY" ]; then
+  echo "WARNING: OPENAI_API_KEY not set. AI features will be disabled."
+fi
 
 # Ensure builds are up to date
 echo "Building packages..."

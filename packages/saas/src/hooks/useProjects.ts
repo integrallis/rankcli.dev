@@ -402,17 +402,18 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
         .eq('id', projectId)
         .single();
 
-      const { data: session } = await supabase.auth.getSession();
-      const token = session?.session?.access_token;
-
-      // Environment-based worker URL (local in dev, Fly.io in prod)
+      // Worker URL (local in dev, Fly.io in prod)
       const workerUrl = import.meta.env.VITE_AUDIT_WORKER_URL || 'http://localhost:8080';
       const workerSecret = import.meta.env.VITE_AUDIT_WORKER_SECRET || 'dev-secret';
 
-      if (isPaidUser && projectData?.url) {
-        // Paid users: Call audit worker directly (Fly.io in prod, localhost in dev)
-        console.log('Paid user - calling audit worker:', workerUrl);
+      // Tier-based audit parameters
+      const auditParams = isPaidUser
+        ? { maxPages: 10, checksLimit: 280, enableAI: true }
+        : { maxPages: 1, checksLimit: 50, enableAI: false };
 
+      console.log(`${isPaidUser ? 'Paid' : 'Free'} user - calling audit worker:`, workerUrl, auditParams);
+
+      if (projectData?.url) {
         fetch(`${workerUrl}/audit`, {
           method: 'POST',
           headers: {
@@ -423,9 +424,7 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
             auditId: audit.id,
             projectId,
             url: projectData.url,
-            maxPages: 10,
-            checksLimit: 280,
-            enableAI: true,
+            ...auditParams,
           }),
         }).then(async (res) => {
           if (!res.ok) {
@@ -436,27 +435,9 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
           console.error('Audit worker request failed:', err);
           fetchProject();
         });
-      } else if (token) {
-        // Free users: Call edge function
-        console.log('Free user - calling edge function');
-
-        fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/run-audit`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({ auditId: audit.id }),
-        }).then(async (res) => {
-          if (!res.ok) {
-            console.error('Audit failed:', await res.text());
-          }
-          // Refresh after audit completes
-          fetchProject();
-        }).catch((err) => {
-          console.error('Audit request failed:', err);
-          fetchProject();
-        });
+      } else {
+        console.error('No project URL found');
+        fetchProject();
       }
 
       return audit;
