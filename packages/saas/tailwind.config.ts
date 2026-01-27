@@ -68,6 +68,7 @@ const config: Config = {
       fontFamily: {
         sans: ['Geist', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+        heading: ['Bricolage Grotesque', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         base: ['15px', { lineHeight: '1.6' }],  /* Relaxed body text */
