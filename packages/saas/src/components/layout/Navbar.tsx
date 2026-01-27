@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
-import { Menu, X, Terminal, Github, User, Settings, LogOut } from 'lucide-react';
+import { Menu, X, Github, User, Settings, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -43,9 +43,8 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
       <div className="container flex h-14 items-center justify-between">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <Terminal className="h-5 w-5 text-primary" />
-          <span className="font-medium tracking-tight">RankCLI</span>
+        <Link to="/" className="flex items-center">
+          <img src="/logo_w_text.svg" alt="RankCLI" className="h-8" />
         </Link>
 
         {/* Desktop Navigation */}
