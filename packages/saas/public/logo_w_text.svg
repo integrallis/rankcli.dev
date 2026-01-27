@@ -12,7 +12,7 @@
     </filter>
   </defs>
   <!-- Logo icon scaled down -->
-  <g fill="none" stroke="#00ff00" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#neon-glow)" transform="translate(4, 4)">
+  <g fill="none" stroke="#21c45d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" filter="url(#neon-glow)" transform="translate(4, 4)">
     <path d="M 8 8 L 20 20 L 8 32" />
     <line x1="24" y1="32" x2="36" y2="32">
       <animate
@@ -26,12 +26,12 @@
   </g>
   <!-- RankCLI text in Bricolage Grotesque -->
   <text
-    x="56"
+    x="48"
     y="32"
     font-family="'Bricolage Grotesque', system-ui, sans-serif"
     font-weight="600"
     font-size="26"
-    fill="#00ff00"
+    fill="#21c45d"
     filter="url(#neon-glow)"
   >RankCLI</text>
 </svg>

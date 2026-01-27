@@ -8,7 +8,7 @@
       </feMerge>
     </filter>
   </defs>
-  <g fill="none" stroke="#00ff00" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" filter="url(#neon-glow)">
+  <g fill="none" stroke="#21c45d" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" filter="url(#neon-glow)">
     <path d="M 32 32 L 64 64 L 32 96" />
     <line x1="72" y1="96" x2="104" y2="96">
       <animate
