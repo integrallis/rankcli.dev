@@ -97,7 +97,7 @@
   html {
     @apply scroll-smooth;
   }
-  h1 {
+  h1, h2 {
     @apply font-heading font-semibold;
   }
 }
