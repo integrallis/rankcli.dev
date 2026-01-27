@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { LandingPage } from './pages/LandingPage';
 import { FreeAuditPage } from './pages/FreeAuditPage';
@@ -22,6 +23,9 @@ import { BillingPage } from './pages/BillingPage';
 import { GitHubCallbackPage } from './pages/GitHubCallbackPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
+// Lazy-loaded checkout pages
+const LTDCheckoutPage = lazy(() => import('./pages/checkout/LTDCheckoutPage'));
+
 function App() {
   return (
     <Routes>
@@ -38,6 +42,11 @@ function App() {
       <Route path="/tools/ai-visibility" element={<AIVisibilityCheckerPage />} />
       <Route path="/tools/compare" element={<CompetitorAnalyzerPage />} />
       <Route path="/widget" element={<WidgetPage />} />
+      <Route path="/checkout/ltd" element={
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+          <LTDCheckoutPage />
+        </Suspense>
+      } />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/auth/callback" element={<AuthCallbackPage />} />

@@ -37,9 +37,87 @@ serve(async (req) => {
         const session = event.data.object as Stripe.Checkout.Session;
         const userId = session.metadata?.supabase_user_id;
         const planId = session.metadata?.plan_id;
+        const ltdTier = session.metadata?.ltd_tier;
+        const isLTD = session.metadata?.type === "lifetime_deal";
 
-        console.log(`[WEBHOOK] checkout.session.completed: userId=${userId}, planId=${planId}`);
+        console.log(`[WEBHOOK] checkout.session.completed: userId=${userId}, planId=${planId}, isLTD=${isLTD}, ltdTier=${ltdTier}`);
 
+        // Handle Lifetime Deal purchase
+        if (isLTD && ltdTier) {
+          console.log(`[WEBHOOK] Processing LTD purchase: tier=${ltdTier}`);
+
+          // Get or create user if not logged in during purchase
+          let effectiveUserId = userId;
+          const customerEmail = session.metadata?.customer_email || session.customer_details?.email;
+
+          if (!effectiveUserId && customerEmail) {
+            // Check if user exists with this email
+            const { data: existingUser } = await supabaseClient.auth.admin.getUserByEmail(customerEmail);
+
+            if (existingUser?.user) {
+              effectiveUserId = existingUser.user.id;
+              console.log(`[WEBHOOK] Found existing user by email: ${effectiveUserId}`);
+            } else {
+              // Create a new user account for this email
+              const { data: newUser, error: createError } = await supabaseClient.auth.admin.createUser({
+                email: customerEmail,
+                email_confirm: true,
+              });
+
+              if (createError) {
+                console.error("[WEBHOOK] Failed to create user:", createError);
+              } else {
+                effectiveUserId = newUser.user?.id;
+                console.log(`[WEBHOOK] Created new user: ${effectiveUserId}`);
+              }
+            }
+          }
+
+          if (!effectiveUserId) {
+            console.error("[WEBHOOK] Cannot process LTD without user ID or email");
+            break;
+          }
+
+          // Get payment intent ID from session
+          const paymentIntentId = session.payment_intent as string;
+
+          // Complete the LTD purchase using our database function
+          const { data: purchaseId, error: purchaseError } = await supabaseClient.rpc(
+            "complete_ltd_purchase",
+            {
+              p_checkout_session_id: session.id,
+              p_user_id: effectiveUserId,
+              p_payment_intent_id: paymentIntentId,
+              p_price_cents: session.amount_total || 0,
+              p_ip_address: null,
+              p_user_agent: null,
+              p_referral_source: session.metadata?.referral_source || null,
+            }
+          );
+
+          if (purchaseError) {
+            console.error("[WEBHOOK] Failed to complete LTD purchase:", purchaseError);
+          } else {
+            console.log(`[WEBHOOK] SUCCESS: LTD purchase completed: ${purchaseId}`);
+
+            // Update user_subscriptions to reflect LTD status
+            await supabaseClient
+              .from("user_subscriptions")
+              .upsert({
+                user_id: effectiveUserId,
+                plan_id: null, // LTDs don't use plan_id
+                status: "lifetime",
+                stripe_customer_id: session.customer as string,
+                current_period_start: new Date().toISOString(),
+                current_period_end: null, // No end date for lifetime
+              }, { onConflict: "user_id" });
+
+            console.log(`[WEBHOOK] User subscription updated to lifetime status`);
+          }
+          break;
+        }
+
+        // Handle regular subscription purchase
         if (!userId) {
           console.error("[WEBHOOK] Missing supabase_user_id in metadata");
           break;
@@ -175,6 +253,70 @@ serve(async (req) => {
             .eq("user_id", userSub.user_id);
 
           console.log(`[WEBHOOK] Invoice paid for user ${userSub.user_id}`);
+        }
+        break;
+      }
+
+      case "checkout.session.expired": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const isLTD = session.metadata?.type === "lifetime_deal";
+
+        if (isLTD) {
+          console.log(`[WEBHOOK] LTD checkout expired: ${session.id}`);
+          // The release will happen automatically via the release_expired_ltd_reservations function
+          // which should be called periodically (e.g., by a cron job)
+          // But we can also manually release it here for immediate cleanup
+
+          // Note: The reservation has a 30-minute expiry in the database
+          // so it will be cleaned up eventually even if this webhook fails
+        }
+        break;
+      }
+
+      case "charge.refunded": {
+        const charge = event.data.object as Stripe.Charge;
+        const paymentIntentId = charge.payment_intent as string;
+
+        if (!paymentIntentId) break;
+
+        // Check if this refund is for an LTD purchase
+        const { data: ltdPurchase } = await supabaseClient
+          .from("ltd_purchases")
+          .select("id, tier, user_id")
+          .eq("stripe_payment_intent_id", paymentIntentId)
+          .single();
+
+        if (ltdPurchase) {
+          console.log(`[WEBHOOK] LTD refund detected: ${ltdPurchase.id}`);
+
+          // Mark as refunded
+          await supabaseClient
+            .from("ltd_purchases")
+            .update({
+              refunded_at: new Date().toISOString(),
+              refund_reason: charge.refunds?.data?.[0]?.reason || "requested",
+            })
+            .eq("id", ltdPurchase.id);
+
+          // Decrement sold count (add license back)
+          await supabaseClient.rpc("exec_sql", {
+            query: `
+              UPDATE ltd_inventory
+              SET sold_count = sold_count - 1, updated_at = NOW()
+              WHERE tier = '${ltdPurchase.tier}'
+            `,
+          });
+
+          // Revert user subscription status
+          await supabaseClient
+            .from("user_subscriptions")
+            .update({
+              status: "expired",
+              current_period_end: new Date().toISOString(),
+            })
+            .eq("user_id", ltdPurchase.user_id);
+
+          console.log(`[WEBHOOK] LTD refund processed for user ${ltdPurchase.user_id}`);
         }
         break;
       }

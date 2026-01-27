@@ -10,13 +10,14 @@ This guide covers everything needed to deploy RankCLI for both development and p
 
 ## Table of Contents
 
-1. [Quick Start](#quick-start)
-2. [Architecture Overview](#architecture-overview)
-3. [Manual Prerequisites](#manual-prerequisites)
-4. [Automated Deployment](#automated-deployment)
-5. [Development Setup](#development-setup)
+1. [Architecture Overview](#architecture-overview)
+2. [Manual Setup Steps](#manual-setup-steps)
+3. [Development Deployment](#development-deployment)
+4. [Production Deployment](#production-deployment)
+5. [Lifetime Deals (LTD) Setup](#lifetime-deals-ltd-setup)
 6. [CLI Package Build](#cli-package-build)
-7. [Troubleshooting](#troubleshooting)
+7. [Threat Intelligence Updates](#threat-intelligence-updates)
+8. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -429,6 +430,294 @@ supabase functions deploy
 
 ---
 
+## Lifetime Deals (LTD) Setup
+
+RankCLI offers limited-time lifetime deals with capped licenses for sustainable revenue. This section covers deploying the LTD system.
+
+### LTD Pricing Tiers
+
+| Tier | Price | Licenses | Sites | Audits/Month | API/Day |
+|------|-------|----------|-------|--------------|---------|
+| LTD Starter | $79 | 500 | 1 | 4 | 50 |
+| LTD Pro | $149 | 350 | 3 | 12 | 200 |
+| LTD Agency | $299 | 150 | 10 | 30 | 500 |
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    LTD Purchase Flow                             │
+├─────────────────────────────────────────────────────────────────┤
+│  1. User clicks "Get Lifetime Access"                            │
+│                         ↓                                        │
+│  2. Frontend calls ltd-checkout edge function                    │
+│                         ↓                                        │
+│  3. Database reserves license (30-min hold)                      │
+│                         ↓                                        │
+│  4. Stripe Checkout session created (one-time payment)           │
+│                         ↓                                        │
+│  5. User completes payment on Stripe                             │
+│                         ↓                                        │
+│  6. Stripe webhook → complete_ltd_purchase() function            │
+│     - Moves reservation to purchase                              │
+│     - Decrements inventory                                       │
+│     - Auto-disables tier if sold out                            │
+│                         ↓                                        │
+│  7. User gets lifetime status in user_subscriptions              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Step 1: Run Database Migration
+
+The LTD system requires migration `027_add_lifetime_deals.sql`:
+
+```bash
+cd packages/saas
+
+# Push migration to Supabase
+supabase db push
+
+# Verify tables created
+supabase db inspect
+```
+
+**Tables created:**
+- `ltd_purchases` - Tracks all LTD purchases
+- `ltd_inventory` - Tracks license caps per tier
+- `ltd_reservations` - Temporary holds during checkout
+
+**Functions created:**
+- `get_ltd_remaining(tier)` - Returns remaining licenses
+- `get_ltd_availability()` - Returns all tier availability
+- `reserve_ltd_license()` - Atomically reserves during checkout
+- `complete_ltd_purchase()` - Converts reservation to purchase
+- `release_expired_ltd_reservations()` - Cleanup (call periodically)
+- `user_has_ltd(user_id)` - Checks if user has LTD
+
+### Step 2: Create Stripe Products
+
+Run the setup script to create Stripe products and prices:
+
+```bash
+# From workspace root
+STRIPE_SECRET_KEY=sk_xxx node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/cli.mjs packages/saas/scripts/setup-ltd-stripe.ts
+
+# Or if tsx is in PATH
+STRIPE_SECRET_KEY=sk_xxx npx tsx packages/saas/scripts/setup-ltd-stripe.ts
+```
+
+**Output:**
+```
+Setting up Stripe products for Lifetime Deals...
+
+Processing RankCLI LTD Starter...
+  Created product: prod_xxx
+  Created price: price_xxx ($79)
+
+Processing RankCLI LTD Pro...
+  Created product: prod_xxx
+  Created price: price_xxx ($149)
+
+Processing RankCLI LTD Agency...
+  Created product: prod_xxx
+  Created price: price_xxx ($299)
+
+=== Setup Complete ===
+
+Add these to your environment variables:
+
+STRIPE_LTD_STARTER_PRICE_ID=price_xxx
+STRIPE_LTD_PRO_PRICE_ID=price_xxx
+STRIPE_LTD_AGENCY_PRICE_ID=price_xxx
+```
+
+### Step 3: Configure Environment Variables
+
+Add the LTD Stripe price IDs to your environment:
+
+```bash
+# .env (development)
+STRIPE_LTD_STARTER_PRICE_ID=price_xxx
+STRIPE_LTD_PRO_PRICE_ID=price_xxx
+STRIPE_LTD_AGENCY_PRICE_ID=price_xxx
+```
+
+### Step 4: Deploy Edge Functions
+
+Deploy the LTD-related edge functions:
+
+```bash
+cd packages/saas
+
+# Set LTD secrets
+supabase secrets set \
+  STRIPE_LTD_STARTER_PRICE_ID="price_xxx" \
+  STRIPE_LTD_PRO_PRICE_ID="price_xxx" \
+  STRIPE_LTD_AGENCY_PRICE_ID="price_xxx"
+
+# Deploy functions
+supabase functions deploy ltd-availability --no-verify-jwt
+supabase functions deploy ltd-checkout --no-verify-jwt
+
+# The stripe-webhook function handles LTD purchases automatically
+# (already updated to handle type: "lifetime_deal" metadata)
+```
+
+### Step 5: Update Stripe Webhook
+
+Add these events to your Stripe webhook endpoint:
+
+1. Go to **Developers → Webhooks** in Stripe Dashboard
+2. Edit your webhook endpoint
+3. Add these events if not already present:
+   - `checkout.session.completed` (for LTD purchases)
+   - `checkout.session.expired` (for releasing reservations)
+   - `charge.refunded` (for LTD refunds)
+
+### Step 6: Set Up Reservation Cleanup (Optional)
+
+Expired reservations (30-min timeout) should be cleaned up periodically. Options:
+
+**Option A: Supabase pg_cron (Recommended)**
+
+1. Enable pg_cron extension: Dashboard → Database → Extensions → pg_cron
+2. Schedule cleanup:
+
+```sql
+SELECT cron.schedule(
+  'cleanup-ltd-reservations',
+  '*/5 * * * *',  -- Every 5 minutes
+  $$SELECT release_expired_ltd_reservations()$$
+);
+```
+
+**Option B: External cron (e.g., GitHub Action)**
+
+```yaml
+# .github/workflows/ltd-cleanup.yml
+name: LTD Reservation Cleanup
+on:
+  schedule:
+    - cron: '*/5 * * * *'  # Every 5 minutes
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call cleanup function
+        run: |
+          curl -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/release_expired_ltd_reservations" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}"
+```
+
+### Step 7: Configure Frontend Default View
+
+The pricing page defaults to showing LTD during launch. To change this:
+
+```json
+// packages/saas/src/config/pricing-tiers.json
+{
+  "default_view": "lifetime_deals",  // Options: "lifetime_deals", "subscriptions"
+  ...
+}
+```
+
+### LTD Environment Variables Reference
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `STRIPE_LTD_STARTER_PRICE_ID` | Stripe price ID for LTD Starter | Yes |
+| `STRIPE_LTD_PRO_PRICE_ID` | Stripe price ID for LTD Pro | Yes |
+| `STRIPE_LTD_AGENCY_PRICE_ID` | Stripe price ID for LTD Agency | Yes |
+
+### LTD GitHub Secrets (Production)
+
+Add these to your repository secrets:
+
+| Secret | Description |
+|--------|-------------|
+| `STRIPE_LTD_STARTER_PRICE_ID` | Stripe price ID for LTD Starter (production) |
+| `STRIPE_LTD_PRO_PRICE_ID` | Stripe price ID for LTD Pro (production) |
+| `STRIPE_LTD_AGENCY_PRICE_ID` | Stripe price ID for LTD Agency (production) |
+
+### Monitoring LTD Sales
+
+**View inventory status:**
+
+```sql
+SELECT * FROM get_ltd_availability();
+```
+
+**View purchase history:**
+
+```sql
+SELECT
+  tier,
+  COUNT(*) as purchases,
+  SUM(price_cents) / 100 as revenue_usd
+FROM ltd_purchases
+WHERE refunded_at IS NULL
+GROUP BY tier;
+```
+
+**Check for stuck reservations:**
+
+```sql
+SELECT *
+FROM ltd_reservations
+WHERE NOT converted_to_purchase
+  AND expires_at < NOW();
+```
+
+### Disabling LTD
+
+To disable LTD sales (e.g., after launch period):
+
+**Option A: In config file**
+
+```json
+// packages/saas/src/config/pricing-tiers.json
+{
+  "lifetime_deals": {
+    "enabled": false,
+    ...
+  }
+}
+```
+
+**Option B: In database (immediate)**
+
+```sql
+UPDATE ltd_inventory SET is_active = false;
+```
+
+### LTD Refund Handling
+
+When a refund is processed in Stripe:
+
+1. The `charge.refunded` webhook fires
+2. The `stripe-webhook` function:
+   - Marks the purchase as refunded in `ltd_purchases`
+   - Decrements `sold_count` in `ltd_inventory` (license returned)
+   - Reverts user's subscription status to "expired"
+
+### Files Reference
+
+| File | Description |
+|------|-------------|
+| `supabase/migrations/027_add_lifetime_deals.sql` | Database schema and functions |
+| `supabase/functions/ltd-availability/index.ts` | Returns current LTD availability |
+| `supabase/functions/ltd-checkout/index.ts` | Creates checkout sessions |
+| `supabase/functions/stripe-webhook/index.ts` | Handles LTD purchase completion |
+| `src/config/pricing-tiers.json` | LTD tier configuration |
+| `src/components/landing/Pricing.tsx` | LTD pricing UI with toggle |
+| `src/pages/checkout/LTDCheckoutPage.tsx` | LTD checkout flow |
+| `src/hooks/useLTD.ts` | LTD React hooks |
+| `scripts/setup-ltd-stripe.ts` | Stripe product setup script |
+
+---
+
 ## CLI Package Build
 
 For building the WASM-protected CLI package.
@@ -515,7 +804,7 @@ curl -s "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/pages/project
 
 **Issue:** Domain doesn't resolve after nameserver change
 
-**Solution:** 
+**Solution:**
 1. Verify nameservers updated at registrar
 2. Check Cloudflare zone status (should be "active")
 3. Wait up to 48 hours for global propagation (usually 5-30 min)
@@ -555,7 +844,25 @@ host -t NS yourdomain.com
 - [ ] Stripe webhook receiving events
 - [ ] User signup/login working
 
----
+**Lifetime Deals (LTD):**
+- [ ] Migration `027_add_lifetime_deals.sql` applied
+- [ ] Stripe LTD products created (run `setup-ltd-stripe.ts`)
+- [ ] `STRIPE_LTD_STARTER_PRICE_ID` secret set
+- [ ] `STRIPE_LTD_PRO_PRICE_ID` secret set
+- [ ] `STRIPE_LTD_AGENCY_PRICE_ID` secret set
+- [ ] `ltd-availability` function deployed
+- [ ] `ltd-checkout` function deployed
+- [ ] Stripe webhook events configured (checkout.session.completed/expired, charge.refunded)
+- [ ] pg_cron reservation cleanup scheduled (optional)
+- [ ] LTD pricing page tested
+- [ ] Test purchase flow verified
+
+**Fly.io Audit Worker:**
+- [ ] Fly.io account created
+- [ ] `FLY_API_TOKEN` secret set in GitHub
+- [ ] `AUDIT_WORKER_SECRET` secret set in GitHub
+- [ ] `OPENAI_API_KEY` secret set in GitHub
+- [ ] Worker deployed and healthy
 
 ## Reference
 

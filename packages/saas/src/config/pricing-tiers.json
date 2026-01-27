@@ -1,5 +1,5 @@
 {
-  "default_view": "subscriptions",
+  "default_view": "lifetime_deals",
   "free_audit": {
     "enabled": true,
     "checks_limit": 50,
@@ -199,12 +199,120 @@
       ]
     }
   ],
-  "lifetime_deal": {
+  "lifetime_deals": {
     "enabled": true,
-    "price_cents": 9900,
-    "plan_access": "pro",
-    "limit": 500,
-    "description": "Lifetime Pro access - limited to 500 licenses"
+    "show_remaining": true,
+    "urgency_threshold": 50,
+    "tiers": [
+      {
+        "id": "ltd_starter",
+        "name": "LTD Starter",
+        "price_cents": 7900,
+        "total_licenses": 500,
+        "tagline": "Perfect for side projects",
+        "popular": false,
+        "limits": {
+          "sites": 1,
+          "audits_per_month": 4,
+          "api_requests_day": 50,
+          "team_members": 1,
+          "checks": 200
+        },
+        "features": {
+          "full_audit": true,
+          "export_reports": true,
+          "local_auto_fix": true,
+          "github_connect": false,
+          "github_auto_fix": false,
+          "ai_analysis": true,
+          "api_access": true,
+          "white_label": false
+        },
+        "highlights": [
+          "1 site monitored",
+          "4 audits per month",
+          "200+ SEO checks",
+          "API access (50 req/day)",
+          "Export PDF reports",
+          "Lifetime updates"
+        ],
+        "comparison_to_sub": "Pays for itself in 9 months vs Solo"
+      },
+      {
+        "id": "ltd_pro",
+        "name": "LTD Pro",
+        "price_cents": 14900,
+        "total_licenses": 350,
+        "tagline": "Best value for developers",
+        "popular": true,
+        "limits": {
+          "sites": 3,
+          "audits_per_month": 12,
+          "api_requests_day": 200,
+          "team_members": 2,
+          "checks": 200
+        },
+        "features": {
+          "full_audit": true,
+          "export_reports": true,
+          "local_auto_fix": true,
+          "github_connect": true,
+          "github_auto_fix": false,
+          "ai_analysis": true,
+          "api_access": true,
+          "slack_alerts": true,
+          "white_label": false
+        },
+        "highlights": [
+          "3 sites monitored",
+          "12 audits per month",
+          "200+ SEO checks",
+          "API access (200 req/day)",
+          "GitHub integration",
+          "Slack alerts",
+          "Lifetime updates"
+        ],
+        "comparison_to_sub": "Pays for itself in 6 months vs Pro"
+      },
+      {
+        "id": "ltd_agency",
+        "name": "LTD Agency",
+        "price_cents": 29900,
+        "total_licenses": 150,
+        "tagline": "For agencies & freelancers",
+        "popular": false,
+        "limits": {
+          "sites": 10,
+          "audits_per_month": 30,
+          "api_requests_day": 500,
+          "team_members": 5,
+          "checks": 200
+        },
+        "features": {
+          "full_audit": true,
+          "export_reports": true,
+          "local_auto_fix": true,
+          "github_connect": true,
+          "github_auto_fix": true,
+          "ai_analysis": true,
+          "api_access": true,
+          "slack_alerts": true,
+          "white_label": true,
+          "priority_support": true
+        },
+        "highlights": [
+          "10 sites monitored",
+          "30 audits per month",
+          "200+ SEO checks",
+          "API access (500 req/day)",
+          "Auto-fix PRs",
+          "White-label reports",
+          "Priority support",
+          "Lifetime updates"
+        ],
+        "comparison_to_sub": "Pays for itself in 3 months vs Agency"
+      }
+    ]
   },
   "feature_descriptions": {
     "api_access": "REST API to integrate RankCLI into your own tools, dashboards, and workflows. Build custom integrations, automate bulk audits, and receive webhook notifications.",

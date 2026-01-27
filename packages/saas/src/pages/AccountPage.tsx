@@ -22,6 +22,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import pricingTiers from '@/config/pricing-tiers.json';
+import { useUserLTD } from '@/hooks/useLTD';
 
 interface UserSubscription {
   plan_id: string | null;
@@ -89,18 +90,18 @@ export function AccountPage() {
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
 
-  // Check for URL params (tab, success, canceled)
+  // Check for URL params (tab, success, canceled, ltd_success)
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab && tabs.some(t => t.id === tab)) {
       setActiveTab(tab);
     }
-    if (searchParams.get('success') === 'true') {
+    if (searchParams.get('success') === 'true' || searchParams.get('ltd_success') === 'true') {
       setActiveTab('billing');
       setShowSuccessMessage(true);
       setTimeout(() => setShowSuccessMessage(false), 5000);
     }
-    if (searchParams.get('canceled') === 'true') {
+    if (searchParams.get('canceled') === 'true' || searchParams.get('ltd_canceled') === 'true') {
       setActiveTab('billing');
     }
     if (searchParams.toString()) {
@@ -193,10 +194,14 @@ export function AccountPage() {
     }
   }, [showSuccessMessage]);
 
+  // LTD status
+  const { userLTD, hasLTD } = useUserLTD();
+
   // Get current subscription info
   const planData = subscription?.plan;
   const currentPlanId = planData?.plan_id || 'free';
   const subscriptionStatus = subscription?.status || 'active';
+  const isLifetime = subscriptionStatus === 'lifetime' || hasLTD;
   const isFreeTier = !subscription?.plan_id || currentPlanId === 'free';
 
   const planDetails = planData
@@ -507,7 +512,9 @@ export function AccountPage() {
                             Payment successful!
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Your subscription is being activated. This may take a moment.
+                            {isLifetime
+                              ? 'Your lifetime deal has been activated. Enjoy!'
+                              : 'Your subscription is being activated. This may take a moment.'}
                           </p>
                         </div>
                       </div>
@@ -523,18 +530,38 @@ export function AccountPage() {
                     <div className="flex items-center justify-between mb-6">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-2xl font-bold">{planDetails?.name || 'Free'}</span>
-                          <Badge variant={subscriptionStatus === 'active' ? 'default' : 'secondary'}>
-                            {subscriptionStatus}
-                          </Badge>
+                          <span className="text-2xl font-bold">
+                            {isLifetime
+                              ? `LTD ${userLTD?.tier?.replace('ltd_', '').charAt(0).toUpperCase()}${userLTD?.tier?.replace('ltd_', '').slice(1) || ''}`
+                              : planDetails?.name || 'Free'}
+                          </span>
+                          {isLifetime ? (
+                            <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white">
+                              Lifetime
+                            </Badge>
+                          ) : (
+                            <Badge variant={subscriptionStatus === 'active' ? 'default' : 'secondary'}>
+                              {subscriptionStatus}
+                            </Badge>
+                          )}
                         </div>
                         <p className="text-muted-foreground">
-                          {planDetails?.price_cents
-                            ? `$${planDetails.price_cents / 100}/month`
-                            : 'Free forever'}
+                          {isLifetime
+                            ? 'One-time payment, lifetime access'
+                            : planDetails?.price_cents
+                              ? `$${planDetails.price_cents / 100}/month`
+                              : 'Free forever'}
                         </p>
                       </div>
-                      {!isFreeTier ? (
+                      {isLifetime ? (
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">
+                            Purchased {userLTD?.purchasedAt
+                              ? new Date(userLTD.purchasedAt).toLocaleDateString()
+                              : ''}
+                          </p>
+                        </div>
+                      ) : !isFreeTier ? (
                         <Button variant="outline" onClick={handleManageBilling} disabled={isLoading}>
                           Manage Billing
                         </Button>
@@ -562,7 +589,7 @@ export function AccountPage() {
                         </div>
                       </div>
 
-                      {subscription?.current_period_end && (
+                      {!isLifetime && subscription?.current_period_end && (
                         <p className="text-sm text-muted-foreground">
                           Next billing date: {new Date(subscription.current_period_end).toLocaleDateString()}
                         </p>
@@ -571,7 +598,7 @@ export function AccountPage() {
                   </CardContent>
                 </Card>
 
-                {isFreeTier && (
+                {isFreeTier && !isLifetime && (
                   <Card>
                     <CardHeader>
                       <CardTitle>Upgrade Your Plan</CardTitle>
