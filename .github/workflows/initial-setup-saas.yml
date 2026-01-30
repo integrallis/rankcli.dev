@@ -288,15 +288,22 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
 
-      # Deploy to Cloudflare Pages (creates project if it doesn't exist)
+      # Deploy to Cloudflare Pages
       - name: Install Wrangler
         run: npm install -g wrangler
+
+      - name: Create Cloudflare Pages Project (if not exists)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          wrangler pages project create rankcli --production-branch=main 2>/dev/null || echo "Project already exists"
 
       - name: Deploy to Cloudflare Pages
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: wrangler pages deploy dist --project-name=rankcli --branch=main
+        run: wrangler pages deploy dist --project-name=rankcli --branch=main --commit-dirty=true
         working-directory: packages/saas
 
   # ============================================
