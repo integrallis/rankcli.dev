@@ -5,13 +5,10 @@ export interface BlogPost {
   excerpt: string;
   content: string;
   publishedAt: string;
-  readingTime: string;
+  readTime: string;
   tags: string[];
   featured?: boolean;
-  author: {
-    name: string;
-    avatar?: string;
-  };
+  author: string;
 }
 
 // Placeholder blog posts - replace with real content
@@ -43,12 +40,10 @@ rankcli audit https://your-site.com
 Stay tuned for more updates!
     `,
     publishedAt: '2026-01-30',
-    readingTime: '3 min read',
+    readTime: '3 min read',
     tags: ['announcement', 'getting-started'],
     featured: true,
-    author: {
-      name: 'RankCLI Team',
-    },
+    author: 'RankCLI Team',
   },
 ];
 
