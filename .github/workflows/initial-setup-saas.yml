@@ -11,6 +11,8 @@ on:
 env:
   SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
   SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+  DOMAIN: rankcli.dev
+  CLOUDFLARE_PAGES_DOMAIN: rankcli.pages.dev
 
 jobs:
   # ============================================
@@ -54,14 +56,90 @@ jobs:
             echo "  - SUPABASE_ANON_KEY: Your Supabase anon key"
             echo "  - STRIPE_SECRET_KEY: Your Stripe secret key (sk_live_... or sk_test_...)"
             echo "  - STRIPE_PUBLISHABLE_KEY: Your Stripe publishable key"
+            echo "  - DNSIMPLE_TOKEN: Your DNSimple API token"
+            echo "  - DNSIMPLE_ACCOUNT_ID: Your DNSimple account ID"
+            echo "  - FLY_API_TOKEN: Your Fly.io API token"
             echo ""
             echo "Variables (Settings > Secrets and variables > Actions > Variables):"
             echo "  - SUPABASE_PROJECT_REF: Your Supabase project reference (e.g., abcdefghijklmnop)"
-            echo "  - APP_URL: Your app URL (e.g., https://seo-autopilot.com)"
+            echo "  - APP_URL: Your app URL (e.g., https://rankcli.dev)"
             exit 1
           fi
 
           echo "✅ All required secrets present"
+
+  # ============================================
+  # Setup DNS Records (DNSimple)
+  # ============================================
+  setup-dns:
+    name: Setup DNS Records
+    runs-on: ubuntu-latest
+    needs: validate
+    if: ${{ secrets.DNSIMPLE_TOKEN != '' }}
+    steps:
+      - name: Setup DNS Records
+        env:
+          DNSIMPLE_TOKEN: ${{ secrets.DNSIMPLE_TOKEN }}
+          DNSIMPLE_ACCOUNT_ID: ${{ secrets.DNSIMPLE_ACCOUNT_ID }}
+        run: |
+          echo "🌐 Setting up DNS records for ${{ env.DOMAIN }}..."
+          
+          # Function to create or update a record (idempotent)
+          upsert_record() {
+            local name="$1"
+            local type="$2"
+            local content="$3"
+            local ttl="${4:-3600}"
+            
+            # Check if record exists
+            existing=$(curl -s -H "Authorization: Bearer $DNSIMPLE_TOKEN" \
+              "https://api.dnsimple.com/v2/$DNSIMPLE_ACCOUNT_ID/zones/${{ env.DOMAIN }}/records?name=$name&type=$type")
+            
+            record_id=$(echo "$existing" | jq -r '.data[0].id // empty')
+            
+            if [ -n "$record_id" ]; then
+              echo "  Updating existing $type record for '$name'..."
+              curl -s -X PATCH \
+                -H "Authorization: Bearer $DNSIMPLE_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{\"content\":\"$content\",\"ttl\":$ttl}" \
+                "https://api.dnsimple.com/v2/$DNSIMPLE_ACCOUNT_ID/zones/${{ env.DOMAIN }}/records/$record_id" | jq .
+            else
+              echo "  Creating $type record for '$name'..."
+              curl -s -X POST \
+                -H "Authorization: Bearer $DNSIMPLE_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{\"name\":\"$name\",\"type\":\"$type\",\"content\":\"$content\",\"ttl\":$ttl}" \
+                "https://api.dnsimple.com/v2/$DNSIMPLE_ACCOUNT_ID/zones/${{ env.DOMAIN }}/records" | jq .
+            fi
+          }
+          
+          # Root domain → Cloudflare Pages
+          upsert_record "" "CNAME" "${{ env.CLOUDFLARE_PAGES_DOMAIN }}"
+          
+          # www subdomain → Cloudflare Pages  
+          upsert_record "www" "CNAME" "${{ env.CLOUDFLARE_PAGES_DOMAIN }}"
+          
+          echo "✅ DNS records configured"
+
+  # ============================================
+  # Setup Fly.io App
+  # ============================================
+  setup-flyio:
+    name: Setup Fly.io App
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Setup Fly CLI
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Create Fly.io App (idempotent)
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          echo "🚀 Setting up Fly.io app..."
+          flyctl apps create rankcli-audit-worker 2>/dev/null || echo "App already exists"
+          echo "✅ Fly.io app ready: rankcli-audit-worker"
 
   # ============================================
   # Initial Database Setup
@@ -69,7 +147,8 @@ jobs:
   setup-database:
     name: Setup Database
     runs-on: ubuntu-latest
-    needs: validate
+    needs: [validate, setup-dns, setup-flyio]
+    if: always() && needs.validate.result == 'success'
     steps:
       - uses: actions/checkout@v4
 
@@ -228,7 +307,7 @@ jobs:
   summary:
     name: Setup Summary
     runs-on: ubuntu-latest
-    needs: [validate, setup-database, setup-stripe, deploy-functions, deploy-frontend]
+    needs: [validate, setup-dns, setup-flyio, setup-database, setup-stripe, deploy-functions, deploy-frontend]
     if: always()
     steps:
       - name: Summary
@@ -238,10 +317,19 @@ jobs:
           echo "| Step | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
           echo "| Validation | ${{ needs.validate.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| DNS (DNSimple) | ${{ needs.setup-dns.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Fly.io App | ${{ needs.setup-flyio.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Database | ${{ needs.setup-database.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Stripe | ${{ needs.setup-stripe.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Edge Functions | ${{ needs.deploy-functions.result }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Frontend | ${{ needs.deploy-frontend.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Infrastructure" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Domain**: https://${{ env.DOMAIN }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend**: Cloudflare Pages (${{ env.CLOUDFLARE_PAGES_DOMAIN }})" >> $GITHUB_STEP_SUMMARY
+          echo "- **Audit Worker**: https://rankcli-audit-worker.fly.dev" >> $GITHUB_STEP_SUMMARY
+          echo "- **API**: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -249,14 +337,10 @@ jobs:
           echo "   - Enable Google OAuth in Supabase Dashboard > Authentication > Providers" >> $GITHUB_STEP_SUMMARY
           echo "   - Enable GitHub OAuth in Supabase Dashboard > Authentication > Providers" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "2. **Set Stripe Webhook Secret** (if not already done)" >> $GITHUB_STEP_SUMMARY
-          echo "   - Get the webhook secret from Stripe Dashboard > Developers > Webhooks" >> $GITHUB_STEP_SUMMARY
-          echo "   - Add it as STRIPE_WEBHOOK_SECRET in GitHub Secrets" >> $GITHUB_STEP_SUMMARY
+          echo "2. **Verify Stripe Webhook**" >> $GITHUB_STEP_SUMMARY
+          echo "   - Check webhook is pointing to: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co/functions/v1/stripe-webhook" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "3. **Configure DNS** (if using custom domain)" >> $GITHUB_STEP_SUMMARY
-          echo "   - Point your domain to the deployed frontend" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "4. **Test the Application**" >> $GITHUB_STEP_SUMMARY
-          echo "   - Visit your app URL" >> $GITHUB_STEP_SUMMARY
+          echo "3. **Test the Application**" >> $GITHUB_STEP_SUMMARY
+          echo "   - Visit https://${{ env.DOMAIN }}" >> $GITHUB_STEP_SUMMARY
           echo "   - Try the free audit tool" >> $GITHUB_STEP_SUMMARY
           echo "   - Sign up and test Stripe checkout" >> $GITHUB_STEP_SUMMARY
