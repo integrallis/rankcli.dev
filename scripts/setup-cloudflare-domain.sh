@@ -169,6 +169,31 @@ else
 fi
 
 # -----------------------------------------------------------------------------
+# Step 6: Update DNSimple nameservers (if credentials provided)
+# -----------------------------------------------------------------------------
+if [[ -n "${DNSIMPLE_TOKEN:-}" && -n "${DNSIMPLE_ACCOUNT_ID:-}" ]]; then
+  echo ""
+  echo "📋 Updating nameservers at DNSimple..."
+  
+  NS_RESULT=$(curl -s -X PUT "https://api.dnsimple.com/v2/$DNSIMPLE_ACCOUNT_ID/registrar/domains/$DOMAIN/delegation" \
+    -H "Authorization: Bearer $DNSIMPLE_TOKEN" \
+    -H "Content-Type: application/json" \
+    -H "Accept: application/json" \
+    -d "[\"$NS1\",\"$NS2\"]")
+  
+  if echo "$NS_RESULT" | jq -e '.data' > /dev/null 2>&1; then
+    echo "✅ Nameservers updated at DNSimple"
+    DNSIMPLE_UPDATED=true
+  else
+    echo "⚠️  Failed to update nameservers:"
+    echo "$NS_RESULT" | jq -r '.message // "Unknown error"'
+    DNSIMPLE_UPDATED=false
+  fi
+else
+  DNSIMPLE_UPDATED=false
+fi
+
+# -----------------------------------------------------------------------------
 # Summary
 # -----------------------------------------------------------------------------
 echo ""
@@ -176,15 +201,27 @@ echo "════════════════════════�
 echo "✅ CLOUDFLARE SETUP COMPLETE"
 echo "═══════════════════════════════════════════════════════════════════════════"
 echo ""
-echo "📋 Next step: Update nameservers at your registrar"
-echo ""
-echo "   Current registrar: $(host -t NS $DOMAIN 2>/dev/null | head -1 | awk '{print $NF}' || echo 'unknown')"
-echo ""
-echo "   Change nameservers to:"
-echo "   ┌─────────────────────────────────────┐"
-echo "   │  $NS1  │"
-echo "   │  $NS2  │"
-echo "   └─────────────────────────────────────┘"
+
+if [[ "$DNSIMPLE_UPDATED" == "true" ]]; then
+  echo "✅ Nameservers automatically updated at DNSimple!"
+  echo ""
+  echo "   Nameservers set to:"
+  echo "   ┌─────────────────────────────────────┐"
+  echo "   │  $NS1  │"
+  echo "   │  $NS2  │"
+  echo "   └─────────────────────────────────────┘"
+else
+  echo "📋 Next step: Update nameservers at your registrar"
+  echo ""
+  echo "   Current registrar: $(host -t NS $DOMAIN 2>/dev/null | head -1 | awk '{print $NF}' || echo 'unknown')"
+  echo ""
+  echo "   Change nameservers to:"
+  echo "   ┌─────────────────────────────────────┐"
+  echo "   │  $NS1  │"
+  echo "   │  $NS2  │"
+  echo "   └─────────────────────────────────────┘"
+fi
+
 echo ""
 echo "   After nameserver propagation (5-30 min), your site will be live at:"
 echo "   → https://$DOMAIN"
