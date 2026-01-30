@@ -237,7 +237,10 @@ jobs:
           supabase secrets set \
             STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
             STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
-            APP_URL="${{ vars.APP_URL }}"
+            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+            AUDIT_WORKER_URL="https://rankcli-audit-worker.fly.dev" \
+            AUDIT_WORKER_SECRET="${{ secrets.AUDIT_WORKER_SECRET }}" \
+            APP_URL="https://${{ env.DOMAIN }}"
         working-directory: packages/saas
 
       - name: Deploy Edge Functions
@@ -245,6 +248,9 @@ jobs:
           supabase functions deploy create-checkout --no-verify-jwt
           supabase functions deploy stripe-webhook --no-verify-jwt
           supabase functions deploy create-portal --no-verify-jwt
+          supabase functions deploy run-audit --no-verify-jwt
+          supabase functions deploy free-audit --no-verify-jwt
+          supabase functions deploy ai-keywords --no-verify-jwt
         working-directory: packages/saas
 
   # ============================================
@@ -279,27 +285,13 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
 
-      # Deploy to Cloudflare Pages (if configured)
+      # Deploy to Cloudflare Pages (creates project if it doesn't exist)
       - name: Deploy to Cloudflare Pages
-        if: vars.CLOUDFLARE_PROJECT_NAME != ''
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: ${{ vars.CLOUDFLARE_PROJECT_NAME }}
-          directory: packages/saas/dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-
-      # Alternative: Deploy to Vercel (if configured)
-      - name: Deploy to Vercel
-        if: vars.VERCEL_PROJECT_ID != '' && vars.CLOUDFLARE_PROJECT_NAME == ''
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ vars.VERCEL_PROJECT_ID }}
-          working-directory: packages/saas
-          vercel-args: '--prod'
+          command: pages deploy packages/saas/dist --project-name=rankcli --branch=main
 
   # ============================================
   # Summary
