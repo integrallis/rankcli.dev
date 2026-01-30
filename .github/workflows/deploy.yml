@@ -328,7 +328,6 @@ jobs:
           supabase functions deploy create-checkout --no-verify-jwt
           supabase functions deploy stripe-webhook --no-verify-jwt
           supabase functions deploy create-portal --no-verify-jwt
-          supabase functions deploy run-audit --no-verify-jwt
           supabase functions deploy free-audit --no-verify-jwt
           supabase functions deploy ai-keywords --no-verify-jwt
 
@@ -411,6 +410,5 @@ jobs:
           echo "- create-checkout" >> $GITHUB_STEP_SUMMARY
           echo "- stripe-webhook" >> $GITHUB_STEP_SUMMARY
           echo "- create-portal" >> $GITHUB_STEP_SUMMARY
-          echo "- run-audit" >> $GITHUB_STEP_SUMMARY
           echo "- free-audit" >> $GITHUB_STEP_SUMMARY
           echo "- ai-keywords" >> $GITHUB_STEP_SUMMARY
