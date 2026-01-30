@@ -75,13 +75,17 @@ jobs:
     name: Setup DNS Records
     runs-on: ubuntu-latest
     needs: validate
-    if: ${{ secrets.DNSIMPLE_TOKEN != '' }}
     steps:
       - name: Setup DNS Records
         env:
           DNSIMPLE_TOKEN: ${{ secrets.DNSIMPLE_TOKEN }}
           DNSIMPLE_ACCOUNT_ID: ${{ secrets.DNSIMPLE_ACCOUNT_ID }}
         run: |
+          if [ -z "$DNSIMPLE_TOKEN" ]; then
+            echo "⚠️ DNSIMPLE_TOKEN not set, skipping DNS setup"
+            exit 0
+          fi
+         
           echo "🌐 Setting up DNS records for ${{ env.DOMAIN }}..."
           
           # Function to create or update a record (idempotent)
