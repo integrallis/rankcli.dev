@@ -1,0 +1,231 @@
+# =============================================================================
+# Custom Domain Setup Workflow
+# =============================================================================
+# Adds a custom domain to Cloudflare and configures it for Cloudflare Pages.
+# Run manually after initial SaaS setup.
+#
+# Prerequisites:
+# - Domain registered (any registrar)
+# - Cloudflare Pages project already deployed
+# - CLOUDFLARE_API_TOKEN with Zone:Edit, DNS:Edit, Pages:Edit permissions
+#
+# After running, manually update nameservers at your registrar.
+# =============================================================================
+
+name: Setup Custom Domain
+
+on:
+  workflow_dispatch:
+    inputs:
+      domain:
+        description: 'Domain name (e.g., rankcli.dev)'
+        required: true
+        type: string
+      pages_project:
+        description: 'Cloudflare Pages project name'
+        required: true
+        default: 'rankcli'
+        type: string
+      confirm:
+        description: 'Type SETUP to confirm'
+        required: true
+        type: string
+
+env:
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+jobs:
+  validate:
+    name: Validate Input
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check confirmation
+        if: ${{ inputs.confirm != 'SETUP' }}
+        run: |
+          echo "❌ You must type SETUP to confirm"
+          exit 1
+
+      - name: Validate domain format
+        run: |
+          DOMAIN="${{ inputs.domain }}"
+          if [[ ! "$DOMAIN" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$ ]]; then
+            echo "❌ Invalid domain format: $DOMAIN"
+            exit 1
+          fi
+          echo "✅ Domain format valid: $DOMAIN"
+
+  setup-cloudflare:
+    name: Setup Cloudflare
+    needs: validate
+    runs-on: ubuntu-latest
+    outputs:
+      zone_id: ${{ steps.setup.outputs.zone_id }}
+      ns1: ${{ steps.setup.outputs.ns1 }}
+      ns2: ${{ steps.setup.outputs.ns2 }}
+    steps:
+      - name: Check/Create Zone
+        id: zone
+        run: |
+          DOMAIN="${{ inputs.domain }}"
+          API="https://api.cloudflare.com/client/v4"
+          
+          # Check if zone exists
+          ZONE_CHECK=$(curl -s -X GET "$API/zones?name=$DOMAIN" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json")
+          
+          ZONE_ID=$(echo "$ZONE_CHECK" | jq -r '.result[0].id // empty')
+          
+          if [[ -n "$ZONE_ID" ]]; then
+            echo "✅ Zone already exists: $ZONE_ID"
+          else
+            echo "➕ Creating zone..."
+            ZONE_RESULT=$(curl -s -X POST "$API/zones" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data "{\"name\":\"$DOMAIN\",\"account\":{\"id\":\"$CLOUDFLARE_ACCOUNT_ID\"},\"jump_start\":true}")
+            
+            if echo "$ZONE_RESULT" | jq -e '.success' > /dev/null; then
+              ZONE_ID=$(echo "$ZONE_RESULT" | jq -r '.result.id')
+              echo "✅ Zone created: $ZONE_ID"
+            else
+              echo "❌ Failed to create zone:"
+              echo "$ZONE_RESULT" | jq '.errors'
+              exit 1
+            fi
+          fi
+          
+          echo "zone_id=$ZONE_ID" >> $GITHUB_OUTPUT
+
+      - name: Get Nameservers
+        id: ns
+        run: |
+          API="https://api.cloudflare.com/client/v4"
+          ZONE_ID="${{ steps.zone.outputs.zone_id }}"
+          
+          ZONE_INFO=$(curl -s -X GET "$API/zones/$ZONE_ID" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json")
+          
+          NS1=$(echo "$ZONE_INFO" | jq -r '.result.name_servers[0]')
+          NS2=$(echo "$ZONE_INFO" | jq -r '.result.name_servers[1]')
+          
+          echo "ns1=$NS1" >> $GITHUB_OUTPUT
+          echo "ns2=$NS2" >> $GITHUB_OUTPUT
+          
+          echo "✅ Nameservers: $NS1, $NS2"
+
+      - name: Configure DNS Records
+        run: |
+          DOMAIN="${{ inputs.domain }}"
+          PAGES_PROJECT="${{ inputs.pages_project }}"
+          ZONE_ID="${{ steps.zone.outputs.zone_id }}"
+          API="https://api.cloudflare.com/client/v4"
+          
+          upsert_dns() {
+            local type="$1"
+            local name="$2"
+            local content="$3"
+            
+            EXISTING=$(curl -s -X GET "$API/zones/$ZONE_ID/dns_records?type=$type&name=$name" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Content-Type: application/json")
+            RECORD_ID=$(echo "$EXISTING" | jq -r '.result[0].id // empty')
+            
+            if [[ -n "$RECORD_ID" ]]; then
+              curl -s -X PUT "$API/zones/$ZONE_ID/dns_records/$RECORD_ID" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                -H "Content-Type: application/json" \
+                --data "{\"type\":\"$type\",\"name\":\"$name\",\"content\":\"$content\",\"proxied\":true}" > /dev/null
+              echo "Updated: $name → $content"
+            else
+              curl -s -X POST "$API/zones/$ZONE_ID/dns_records" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                -H "Content-Type: application/json" \
+                --data "{\"type\":\"$type\",\"name\":\"$name\",\"content\":\"$content\",\"proxied\":true}" > /dev/null
+              echo "Created: $name → $content"
+            fi
+          }
+          
+          upsert_dns "CNAME" "$DOMAIN" "${PAGES_PROJECT}.pages.dev"
+          upsert_dns "CNAME" "www.$DOMAIN" "${PAGES_PROJECT}.pages.dev"
+          
+          echo "✅ DNS records configured"
+
+      - name: Set SSL Mode
+        run: |
+          ZONE_ID="${{ steps.zone.outputs.zone_id }}"
+          API="https://api.cloudflare.com/client/v4"
+          
+          curl -s -X PATCH "$API/zones/$ZONE_ID/settings/ssl" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data '{"value":"full"}' > /dev/null
+          
+          echo "✅ SSL mode set to Full"
+
+      - name: Add Custom Domain to Pages
+        run: |
+          DOMAIN="${{ inputs.domain }}"
+          PAGES_PROJECT="${{ inputs.pages_project }}"
+          API="https://api.cloudflare.com/client/v4"
+          
+          # Add root domain
+          RESULT=$(curl -s -X POST "$API/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PAGES_PROJECT/domains" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "{\"name\":\"$DOMAIN\"}")
+          
+          if echo "$RESULT" | jq -e '.success' > /dev/null; then
+            echo "✅ Added $DOMAIN to Pages"
+          else
+            echo "ℹ️  $DOMAIN may already be configured"
+          fi
+          
+          # Add www
+          RESULT=$(curl -s -X POST "$API/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PAGES_PROJECT/domains" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            -H "Content-Type: application/json" \
+            --data "{\"name\":\"www.$DOMAIN\"}")
+          
+          if echo "$RESULT" | jq -e '.success' > /dev/null; then
+            echo "✅ Added www.$DOMAIN to Pages"
+          else
+            echo "ℹ️  www.$DOMAIN may already be configured"
+          fi
+
+      - name: Setup Complete
+        id: setup
+        run: |
+          echo "zone_id=${{ steps.zone.outputs.zone_id }}" >> $GITHUB_OUTPUT
+          echo "ns1=${{ steps.ns.outputs.ns1 }}" >> $GITHUB_OUTPUT
+          echo "ns2=${{ steps.ns.outputs.ns2 }}" >> $GITHUB_OUTPUT
+
+  summary:
+    name: Setup Summary
+    needs: setup-cloudflare
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print Instructions
+        run: |
+          echo ""
+          echo "═══════════════════════════════════════════════════════════════════"
+          echo "✅ CLOUDFLARE DOMAIN SETUP COMPLETE"
+          echo "═══════════════════════════════════════════════════════════════════"
+          echo ""
+          echo "📋 MANUAL STEP REQUIRED: Update nameservers at your registrar"
+          echo ""
+          echo "   Domain: ${{ inputs.domain }}"
+          echo "   Zone ID: ${{ needs.setup-cloudflare.outputs.zone_id }}"
+          echo ""
+          echo "   Change nameservers to:"
+          echo "   ┌─────────────────────────────────────────────────────┐"
+          echo "   │  ${{ needs.setup-cloudflare.outputs.ns1 }}"
+          echo "   │  ${{ needs.setup-cloudflare.outputs.ns2 }}"
+          echo "   └─────────────────────────────────────────────────────┘"
+          echo ""
+          echo "   After propagation (5-30 min), site will be live at:"
+          echo "   → https://${{ inputs.domain }}"
+          echo "   → https://www.${{ inputs.domain }}"
+          echo ""
