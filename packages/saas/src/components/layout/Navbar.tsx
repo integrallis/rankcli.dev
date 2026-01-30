@@ -12,8 +12,11 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 
+// Nav link type
+type NavLink = { href: string; label: string; external?: boolean };
+
 // Base nav links (always shown)
-const baseNavLinks = [
+const baseNavLinks: NavLink[] = [
   { href: '/docs', label: 'Docs' },
   { href: '/blog', label: 'Blog' },
   { href: '/pricing', label: 'Pricing' },
@@ -21,7 +24,7 @@ const baseNavLinks = [
 ];
 
 // Free Audit link (only shown to non-authenticated users)
-const freeAuditLink = { href: '/free-audit', label: 'Free Audit' };
+const freeAuditLink: NavLink = { href: '/free-audit', label: 'Free Audit' };
 
 export function Navbar() {
   const { isAuthenticated, logout } = useAuth();
