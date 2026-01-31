@@ -177,7 +177,37 @@ jobs:
           name: rankcli-package
           path: packages/cli/
 
-      - name: Publish to npm
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build agent-runtime
+        working-directory: packages/agent-runtime
+        run: pnpm build
+
+      - name: Publish agent-runtime
+        working-directory: packages/agent-runtime
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          # Check if version already exists
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          if npm view @rankcli/agent-runtime@$CURRENT_VERSION version 2>/dev/null; then
+            echo "ℹ️ @rankcli/agent-runtime@$CURRENT_VERSION already published, skipping"
+          else
+            echo "📦 Publishing @rankcli/agent-runtime@$CURRENT_VERSION"
+            npm publish --access public
+          fi
+
+      - name: Fix workspace dependency in CLI
+        working-directory: packages/cli
+        run: |
+          # Replace workspace:* with actual version
+          RUNTIME_VERSION=$(cd ../agent-runtime && node -p "require('./package.json').version")
+          echo "Replacing workspace:* with ^$RUNTIME_VERSION"
+          sed -i "s|\"workspace:\\*\"|\"^$RUNTIME_VERSION\"|g" package.json
+          cat package.json | grep agent-runtime
+
+      - name: Publish CLI to npm
         working-directory: packages/cli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
