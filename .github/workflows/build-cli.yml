@@ -189,17 +189,22 @@ jobs:
             npm version "$VERSION" --no-git-tag-version --allow-same-version
           fi
 
-          echo "📦 Publishing rankcli@$(node -p "require('./package.json').version")"
+          echo "📦 Publishing @rankcli/cli@$(node -p "require('./package.json').version")"
           npm publish --access public
 
       - name: Create publish summary
         run: |
-          echo "## 📦 Published to npm" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Package:** rankcli" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** $(cd packages/cli && node -p \"require('./package.json').version\")" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Install with:" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "npm install rankcli" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          VERSION=$(cd packages/cli && node -p "require('./package.json').version")
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          ## 📦 Published to npm
+
+          **Package:** @rankcli/cli
+          EOF
+          echo "**Version:** $VERSION" >> $GITHUB_STEP_SUMMARY
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+          Install with:
+          ```bash
+          npm install -g @rankcli/cli
+          ```
+          EOF
