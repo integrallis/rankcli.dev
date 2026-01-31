@@ -159,6 +159,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Build agent-runtime
+        working-directory: packages/agent-runtime
+        run: pnpm build
+
       - name: Build agent-runtime WASM bundle
         working-directory: packages/agent-runtime
         run: pnpm build:wasm
