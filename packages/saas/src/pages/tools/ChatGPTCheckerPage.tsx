@@ -406,30 +406,32 @@ export function ChatGPTCheckerPage() {
             </div>
           )}
 
-          {/* Other Tools */}
-          <div className="mt-12 text-center">
-            <p className="text-sm text-muted-foreground mb-4">Also check out our other free tools:</p>
-            <div className="flex flex-wrap justify-center gap-3">
-              <Link to="/tools/ai-visibility">
-                <Button variant="ghost" size="sm">
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  AI Visibility Checker
-                </Button>
-              </Link>
-              <Link to="/tools/meta-tag-analyzer">
-                <Button variant="ghost" size="sm">
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  Meta Tag Analyzer
-                </Button>
-              </Link>
-              <Link to="/free-audit">
-                <Button variant="ghost" size="sm">
-                  <ExternalLink className="h-3 w-3 mr-1" />
-                  Full SEO Audit
-                </Button>
-              </Link>
+          {/* Other Tools - only for anonymous users on free tool */}
+          {!urlParam && (
+            <div className="mt-12 text-center">
+              <p className="text-sm text-muted-foreground mb-4">Also check out our other free tools:</p>
+              <div className="flex flex-wrap justify-center gap-3">
+                <Link to="/tools/ai-visibility">
+                  <Button variant="ghost" size="sm">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    AI Visibility Checker
+                  </Button>
+                </Link>
+                <Link to="/tools/meta-tag-analyzer">
+                  <Button variant="ghost" size="sm">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Meta Tag Analyzer
+                  </Button>
+                </Link>
+                <Link to="/free-audit">
+                  <Button variant="ghost" size="sm">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    Full SEO Audit
+                  </Button>
+                </Link>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </main>
 
