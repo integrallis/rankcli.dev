@@ -25,18 +25,27 @@ ALTER TABLE keyword_research_results ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users can view own keyword research results" ON keyword_research_results;
 DROP POLICY IF EXISTS "Users can insert keyword research results" ON keyword_research_results;
 DROP POLICY IF EXISTS "Service role full access to keyword research" ON keyword_research_results;
+DROP POLICY IF EXISTS "Users can view keyword research for own projects" ON keyword_research_results;
+DROP POLICY IF EXISTS "Users can insert keyword research for own projects" ON keyword_research_results;
 
--- Users can view their own keyword research results
-CREATE POLICY "Users can view own keyword research results"
+-- Users can view keyword research results for projects they own
+CREATE POLICY "Users can view keyword research for own projects"
     ON keyword_research_results FOR SELECT
-    USING (auth.uid() = user_id);
+    USING (
+        EXISTS (
+            SELECT 1 FROM projects 
+            WHERE projects.id = keyword_research_results.project_id 
+            AND projects.user_id = auth.uid()
+        )
+    );
 
--- Users can insert keyword research results for their projects
-CREATE POLICY "Users can insert keyword research results"
+-- Users can insert keyword research results for projects they own
+CREATE POLICY "Users can insert keyword research for own projects"
     ON keyword_research_results FOR INSERT
-    WITH CHECK (auth.uid() = user_id);
-
--- Service role can manage all results (for edge functions)
-CREATE POLICY "Service role full access to keyword research"
-    ON keyword_research_results FOR ALL
-    USING (auth.role() = 'service_role');
+    WITH CHECK (
+        EXISTS (
+            SELECT 1 FROM projects 
+            WHERE projects.id = keyword_research_results.project_id 
+            AND projects.user_id = auth.uid()
+        )
+    );
