@@ -15,6 +15,7 @@ import {
   Bot,
   TrendingUp,
   ExternalLink,
+  ArrowLeft,
 } from 'lucide-react';
 import { useAIVisibilitySSE } from '@/hooks/useAIVisibilitySSE';
 
@@ -134,42 +135,77 @@ export function ChatGPTCheckerPage() {
 
       <main className="container py-12">
         <div className="max-w-3xl mx-auto">
+          {/* Back button for project context */}
+          {urlParam && (
+            <div className="mb-6">
+              <Link to={`/dashboard`}>
+                <Button variant="ghost" size="sm" className="-ml-2">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Dashboard
+                </Button>
+              </Link>
+            </div>
+          )}
+
           {/* Header */}
           <div className="text-center mb-8">
-            <Badge variant="secondary" className="mb-4">
-              Free Tool
-            </Badge>
+            {!urlParam && (
+              <Badge variant="secondary" className="mb-4">
+                Free Tool
+              </Badge>
+            )}
             <h1 className="text-3xl md:text-4xl font-bold mb-4">
-              Is Your Site Recommended by ChatGPT?
+              {urlParam ? 'ChatGPT Visibility Check' : 'Is Your Site Recommended by ChatGPT?'}
             </h1>
             <p className="text-lg text-muted-foreground">
-              Check if ChatGPT mentions your website when users ask for recommendations
-              in your industry. AI visibility is the new SEO.
+              {urlParam 
+                ? 'See if ChatGPT recommends your site when users ask for suggestions.'
+                : 'Check if ChatGPT mentions your website when users ask for recommendations in your industry. AI visibility is the new SEO.'
+              }
             </p>
           </div>
 
-          {/* Input */}
-          <div className="flex gap-2 mb-8">
-            <Input
-              type="url"
-              placeholder="Enter your website URL (e.g., mysite.com)"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleCheck()}
-              className="flex-1"
-              disabled={isLoading}
-            />
-            <Button onClick={handleCheck} disabled={isLoading || !url}>
-              {isWaitingForChatGPT ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <Search className="h-4 w-4 mr-2" />
-                  Check Now
-                </>
-              )}
-            </Button>
-          </div>
+          {/* Input - show static display when coming from project */}
+          {urlParam ? (
+            <div className="flex items-center justify-center gap-4 mb-8 p-4 rounded-lg bg-muted/30 border">
+              <div className="flex items-center gap-2">
+                <Bot className="h-5 w-5 text-muted-foreground" />
+                <span className="font-medium">{new URL(urlParam).hostname}</span>
+              </div>
+              <Button onClick={handleCheck} disabled={isLoading} size="sm">
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Search className="h-4 w-4 mr-2" />
+                    Check Again
+                  </>
+                )}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex gap-2 mb-8">
+              <Input
+                type="url"
+                placeholder="Enter your website URL (e.g., mysite.com)"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleCheck()}
+                className="flex-1"
+                disabled={isLoading}
+              />
+              <Button onClick={handleCheck} disabled={isLoading || !url}>
+                {isWaitingForChatGPT ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <Search className="h-4 w-4 mr-2" />
+                    Check Now
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
 
           {/* Error */}
           {error && isFailed && (
