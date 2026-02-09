@@ -203,7 +203,7 @@ jobs:
       - name: Deploy Edge Functions
         run: |
           # Deploy all edge functions
-          for fn in packages/saas/supabase/functions/*/; do
+          for fn in supabase/functions/*/; do
             fn_name=$(basename "$fn")
             # Skip shared folder
             if [ "$fn_name" != "_shared" ]; then
@@ -211,7 +211,7 @@ jobs:
               supabase functions deploy "$fn_name" --no-verify-jwt
             fi
           done
-        working-directory: .
+        working-directory: packages/saas
 
   # ============================================
   # Sync Stripe Pricing
