@@ -179,14 +179,25 @@ jobs:
 
       - name: Set Edge Function Secrets
         run: |
+          # Required secrets
           supabase secrets set \
             STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
             STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
-            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
-            ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
-            GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}" \
-            PERPLEXITY_API_KEY="${{ secrets.PERPLEXITY_API_KEY }}" \
             APP_URL="${{ vars.APP_URL }}"
+          
+          # Optional API keys - only set if present
+          if [ -n "${{ secrets.OPENAI_API_KEY }}" ]; then
+            supabase secrets set OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
+          fi
+          if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+            supabase secrets set ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}"
+          fi
+          if [ -n "${{ secrets.GOOGLE_API_KEY }}" ]; then
+            supabase secrets set GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}"
+          fi
+          if [ -n "${{ secrets.PERPLEXITY_API_KEY }}" ]; then
+            supabase secrets set PERPLEXITY_API_KEY="${{ secrets.PERPLEXITY_API_KEY }}"
+          fi
         working-directory: packages/saas
 
       - name: Deploy Edge Functions
