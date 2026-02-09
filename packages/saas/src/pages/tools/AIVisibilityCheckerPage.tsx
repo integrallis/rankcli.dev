@@ -451,6 +451,7 @@ export function AIVisibilityCheckerPage() {
                 ))}
               </div>
             </div>
+          )}
 
           {/* Info Section (when no result and not loading) */}
           {status === 'idle' && (
