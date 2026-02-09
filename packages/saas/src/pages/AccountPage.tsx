@@ -69,6 +69,7 @@ export function AccountPage() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [sitesCount, setSitesCount] = useState(0);
 
   // API Keys state
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
@@ -139,6 +140,19 @@ export function AccountPage() {
     }
   };
 
+  // Fetch sites count
+  const fetchSitesCount = async () => {
+    if (!user) return;
+
+    const { count } = await supabase
+      .from('projects')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .is('deleted_at', null);
+
+    setSitesCount(count || 0);
+  };
+
   // Fetch API keys
   const fetchApiKeys = async () => {
     if (!user) return;
@@ -181,6 +195,7 @@ export function AccountPage() {
 
   useEffect(() => {
     fetchSubscription();
+    fetchSitesCount();
     fetchApiKeys();
     fetchNotifications();
   }, [user]);
@@ -209,7 +224,7 @@ export function AccountPage() {
     : { name: 'Free', price_cents: 0 };
 
   const subscriptionPlan = pricingTiers.subscriptions.find(s => s.id === currentPlanId);
-  const sitesUsed = 1;
+  const sitesUsed = sitesCount;
   const sitesLimit = subscriptionPlan?.limits.sites || 1;
 
   const handleSaveProfile = async () => {
@@ -946,7 +961,7 @@ export function AccountPage() {
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isCreatingKey}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCreateApiKey} disabled={isCreatingKey}>
+            <Button onClick={handleCreateApiKey} disabled={isCreatingKey}>
               {isCreatingKey ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -955,7 +970,7 @@ export function AccountPage() {
               ) : (
                 'Create Key'
               )}
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

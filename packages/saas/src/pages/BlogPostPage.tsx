@@ -164,6 +164,8 @@ export function BlogPostPage() {
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
+                // Skip the first h1 since we already render the title in the header
+                h1: () => null,
                 code({ className, children, ...props }) {
                   const match = /language-(\w+)/.exec(className || '');
                   const language = match ? match[1] : '';
