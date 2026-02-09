@@ -21,6 +21,11 @@ CREATE INDEX IF NOT EXISTS idx_keyword_research_created ON keyword_research_resu
 -- RLS policies
 ALTER TABLE keyword_research_results ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (for idempotency)
+DROP POLICY IF EXISTS "Users can view own keyword research results" ON keyword_research_results;
+DROP POLICY IF EXISTS "Users can insert keyword research results" ON keyword_research_results;
+DROP POLICY IF EXISTS "Service role full access to keyword research" ON keyword_research_results;
+
 -- Users can view their own keyword research results
 CREATE POLICY "Users can view own keyword research results"
     ON keyword_research_results FOR SELECT
