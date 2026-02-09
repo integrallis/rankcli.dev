@@ -124,7 +124,7 @@ serve(async (req) => {
     }
 
     // Save to database
-    await supabase.from('ai_visibility_checks').insert({
+    const { error: insertError } = await supabase.from('ai_visibility_checks').insert({
       url: targetUrl,
       domain,
       brand,
@@ -142,6 +142,11 @@ serve(async (req) => {
       project_id: projectId || null,
       providers: results,
     });
+
+    if (insertError) {
+      console.error('Database insert error:', insertError);
+      // Don't fail the request, just log it
+    }
 
     const response: AIVisibilityResult = {
       url: targetUrl,

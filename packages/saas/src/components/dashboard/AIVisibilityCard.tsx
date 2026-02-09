@@ -123,7 +123,10 @@ export function AIVisibilityCard({
       });
     } catch (err) {
       console.error('AI visibility check error:', err);
-      setError('Failed to check AI visibility');
+      const errorMessage = err instanceof Error ? err.message : 
+        (typeof err === 'object' && err !== null && 'message' in err) ? String((err as {message: unknown}).message) :
+        'Failed to check AI visibility';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
