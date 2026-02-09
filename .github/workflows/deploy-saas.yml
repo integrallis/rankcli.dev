@@ -182,15 +182,25 @@ jobs:
           supabase secrets set \
             STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
             STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
+            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+            ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}" \
+            GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}" \
+            PERPLEXITY_API_KEY="${{ secrets.PERPLEXITY_API_KEY }}" \
             APP_URL="${{ vars.APP_URL }}"
         working-directory: packages/saas
 
       - name: Deploy Edge Functions
         run: |
-          supabase functions deploy create-checkout --no-verify-jwt
-          supabase functions deploy stripe-webhook --no-verify-jwt
-          supabase functions deploy create-portal --no-verify-jwt
-        working-directory: packages/saas
+          # Deploy all edge functions
+          for fn in packages/saas/supabase/functions/*/; do
+            fn_name=$(basename "$fn")
+            # Skip shared folder
+            if [ "$fn_name" != "_shared" ]; then
+              echo "Deploying function: $fn_name"
+              supabase functions deploy "$fn_name" --no-verify-jwt
+            fi
+          done
+        working-directory: .
 
   # ============================================
   # Sync Stripe Pricing
