@@ -207,6 +207,62 @@ app.post<{
   });
 });
 
+// Quick audit endpoint (synchronous, for free audits)
+// Returns results directly instead of requiring SSE streaming
+app.post<{
+  Body: {
+    url: string;
+    maxPages?: number;
+    checksLimit?: number;
+    enableAI?: boolean;
+  };
+}>('/audit/quick', async (request, reply) => {
+  // Verify worker secret
+  const authHeader = request.headers.authorization;
+  if (authHeader !== `Bearer ${WORKER_SECRET}`) {
+    return reply.status(401).send({ error: 'Unauthorized' });
+  }
+
+  const { url, maxPages = 1, checksLimit = 280, enableAI = false } = request.body;
+
+  if (!url) {
+    return reply.status(400).send({ error: 'Missing required field: url' });
+  }
+
+  app.log.info({ url, maxPages, checksLimit }, 'Starting quick audit');
+
+  try {
+    // Run single-page audit with timeout
+    const auditPromise = runFullAudit({
+      url,
+      maxPages: Math.min(maxPages, 1), // Limit to 1 page for quick audits
+    });
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Audit timed out after 45 seconds')), 45000)
+    );
+
+    const report: AuditReport = await Promise.race([auditPromise, timeoutPromise]);
+
+    app.log.info({ url, issues: report.issues.length }, 'Quick audit completed');
+
+    // Return full report
+    return reply.send({
+      score: report.healthScore?.overall ?? 85,
+      issues: report.issues,
+      healthScore: report.healthScore,
+      summary: report.summary,
+      url: report.url,
+    });
+
+  } catch (error) {
+    app.log.error({ err: error, url }, 'Quick audit failed');
+    return reply.status(500).send({
+      error: error instanceof Error ? error.message : 'Audit failed',
+    });
+  }
+});
+
 // SSE stream for audit updates
 app.get<{ Params: { auditId: string } }>('/stream/:auditId', async (request, reply) => {
   const { auditId } = request.params;

@@ -1,44 +1,17 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// Import the shared audit engine (280+ checks)
-import { runFullAudit, urlSafetyDatabase } from '../_shared/audit/index.ts';
-import type { AuditReport, AuditIssue as EngineIssue } from '../_shared/audit/index.ts';
-
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+// Use Fly.io worker for audits (Edge Functions have resource limits)
+const WORKER_URL = Deno.env.get('AUDIT_WORKER_URL') || 'https://rankcli-audit-worker.fly.dev';
+const WORKER_SECRET = Deno.env.get('AUDIT_WORKER_SECRET') || '';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-// Flag to track if threat hashes have been loaded this session
-let threatHashesLoaded = false;
-
-/**
- * Load threat hashes from Supabase (domain hashes only for performance)
- */
-async function loadThreatHashes(supabase: ReturnType<typeof createClient>): Promise<number> {
-  if (threatHashesLoaded && urlSafetyDatabase.isPopulated()) {
-    return 0;
-  }
-
-  const { data: hashes, error } = await supabase
-    .from('threat_hashes')
-    .select('hash_prefix, hash_type')
-    .eq('is_active', true)
-    .eq('hash_type', 'domain')
-    .limit(10000);
-
-  if (error || !hashes || hashes.length === 0) {
-    return 0;
-  }
-
-  const count = urlSafetyDatabase.loadHashPrefixes(hashes);
-  threatHashesLoaded = true;
-  return count;
-}
 
 // Rate limit: 10 requests per IP per hour
 const RATE_LIMIT = 10;
@@ -46,7 +19,6 @@ const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 // Free tier limits - show a subset of issues to encourage signup
 const FREE_TIER_MAX_ISSUES = 10;
-const FREE_TIER_CHECKS_SHOWN = 50;
 
 interface FreeAuditIssue {
   code: string;
@@ -56,15 +28,31 @@ interface FreeAuditIssue {
   description?: string;
 }
 
-// Convert engine issues to free audit format
-function convertToFreeIssue(issue: EngineIssue): FreeAuditIssue {
-  return {
-    code: issue.code,
-    severity: issue.severity,
-    title: issue.title,
-    category: issue.category,
-    description: issue.description || undefined,
+interface WorkerAuditResponse {
+  score?: number;
+  issues?: Array<{
+    code: string;
+    severity: string;
+    title: string;
+    category: string;
+    description?: string;
+  }>;
+  healthScore?: {
+    overall: number;
+    crawlability: number;
+    onPage: number;
+    content: number;
+    performance: number;
+    security: number;
+    social: number;
+    aiReadiness: number;
   };
+  summary?: {
+    passed: number;
+    errors: number;
+    warnings: number;
+  };
+  error?: string;
 }
 
 serve(async (req) => {
@@ -132,38 +120,85 @@ serve(async (req) => {
       });
     }
 
-    // ========== LOAD THREAT HASHES FOR URL SAFETY (with timeout) ==========
-    const threatHashPromise = loadThreatHashes(supabase).catch(() => 0);
-    const timeoutPromise = new Promise<number>(resolve => setTimeout(() => resolve(0), 3000));
-    await Promise.race([threatHashPromise, timeoutPromise]);
+    // ========== CALL FLY.IO WORKER FOR AUDIT ==========
+    console.log(`Running free audit via worker on ${targetUrl}...`);
 
-    // ========== RUN FULL AUDIT ENGINE (280+ CHECKS) ==========
-    console.log(`Running free audit on ${targetUrl}...`);
-
-    let auditReport: AuditReport | undefined;
     let allIssues: FreeAuditIssue[] = [];
+    let score = 85;
+    let healthScore = {
+      overall: 85,
+      crawlability: 100,
+      onPage: 100,
+      content: 100,
+      performance: 100,
+      security: 100,
+      social: 100,
+      aiReadiness: 100,
+    };
+    let totalChecksRun = 280;
 
     try {
-      // Add timeout for the audit (30 seconds max)
-      const auditPromise = runFullAudit({
-        url: targetUrl,
-        maxPages: 1,
+      // Call the Fly.io worker with a timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 second timeout
+
+      const workerResponse = await fetch(`${WORKER_URL}/audit/quick`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${WORKER_SECRET}`,
+        },
+        body: JSON.stringify({
+          url: targetUrl,
+          maxPages: 1,
+          checksLimit: 280,
+          enableAI: false,
+        }),
+        signal: controller.signal,
       });
-      const timeoutPromise = new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Audit timed out after 30 seconds')), 30000)
-      );
 
-      auditReport = await Promise.race([auditPromise, timeoutPromise]);
+      clearTimeout(timeoutId);
 
-      // Convert all issues
-      allIssues = auditReport.issues.map(convertToFreeIssue);
+      if (!workerResponse.ok) {
+        const errorText = await workerResponse.text();
+        console.error('Worker error response:', workerResponse.status, errorText);
+        throw new Error(`Worker returned ${workerResponse.status}: ${errorText}`);
+      }
+
+      const auditResult: WorkerAuditResponse = await workerResponse.json();
+      
+      if (auditResult.error) {
+        throw new Error(auditResult.error);
+      }
+
+      // Extract issues
+      if (auditResult.issues) {
+        allIssues = auditResult.issues.map(issue => ({
+          code: issue.code,
+          severity: (issue.severity as 'error' | 'warning' | 'notice') || 'notice',
+          title: issue.title,
+          category: issue.category,
+          description: issue.description,
+        }));
+      }
+
+      // Extract scores
+      if (auditResult.healthScore) {
+        healthScore = auditResult.healthScore;
+        score = healthScore.overall;
+      } else if (auditResult.score !== undefined) {
+        score = auditResult.score;
+      }
 
       // Get checks run from summary
-      const checksFromSummary = auditReport.summary.passed + auditReport.summary.errors + auditReport.summary.warnings;
-      console.log(`Audit complete: ${auditReport.issues.length} issues found from ${checksFromSummary} checks`);
+      if (auditResult.summary) {
+        totalChecksRun = auditResult.summary.passed + auditResult.summary.errors + auditResult.summary.warnings;
+      }
+
+      console.log(`Audit complete: ${allIssues.length} issues found from ${totalChecksRun} checks`);
 
     } catch (err) {
-      console.error('Audit engine error:', err.message);
+      console.error('Worker audit error:', err.message);
       // If audit fails, add a fetch error
       allIssues.push({
         code: 'FETCH_ERROR',
@@ -183,28 +218,21 @@ serve(async (req) => {
     const displayedIssues = sortedIssues.slice(0, FREE_TIER_MAX_ISSUES);
     const hiddenIssueCount = Math.max(0, allIssues.length - FREE_TIER_MAX_ISSUES);
 
-    // Calculate category scores using engine's health scores
+    // Calculate category scores
     const categories = {
-      crawlability: auditReport?.healthScore?.crawlability ?? 100,
-      onPage: auditReport?.healthScore?.onPage ?? 100,
-      content: auditReport?.healthScore?.content ?? 100,
-      performance: auditReport?.healthScore?.performance ?? 100,
-      security: auditReport?.healthScore?.security ?? 100,
-      socialMeta: auditReport?.healthScore?.social ?? 100,
-      aiReadiness: auditReport?.healthScore?.aiReadiness ?? 100,
-      mobile: 100, // Not in HealthScore interface
+      crawlability: healthScore.crawlability,
+      onPage: healthScore.onPage,
+      content: healthScore.content,
+      performance: healthScore.performance,
+      security: healthScore.security,
+      socialMeta: healthScore.social,
+      aiReadiness: healthScore.aiReadiness,
     };
-
-    // Use overall score from engine
-    const score = auditReport?.healthScore?.overall ?? 85;
 
     // Summary counts from all issues
     const errors = allIssues.filter(i => i.severity === 'error').length;
     const warnings = allIssues.filter(i => i.severity === 'warning').length;
     const notices = allIssues.filter(i => i.severity === 'notice').length;
-    const totalChecksRun = auditReport?.summary
-      ? auditReport.summary.passed + auditReport.summary.errors + auditReport.summary.warnings
-      : 280;
 
     // Save to database for lead tracking (non-blocking)
     const domain = new URL(targetUrl).hostname;
@@ -248,7 +276,7 @@ serve(async (req) => {
       issues: displayedIssues,
       categories,
       checksRun: totalChecksRun,
-      totalChecks: totalChecksRun, // Full engine check count
+      totalChecks: totalChecksRun,
       totalIssues: allIssues.length,
       displayedIssues: displayedIssues.length,
       hiddenIssues: hiddenIssueCount,
