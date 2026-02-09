@@ -40,7 +40,7 @@ jobs:
 
       - name: Run tests
         working-directory: packages/agent-runtime
-        run: pnpm test:run
+        run: pnpm test
 
       - name: Build
         working-directory: packages/agent-runtime
