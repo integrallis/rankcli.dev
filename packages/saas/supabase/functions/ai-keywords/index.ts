@@ -725,6 +725,29 @@ serve(async (req) => {
         upgradeMessage: `Unlock ${recommendations.length} keyword recommendations and ${freeToolIdeas.length} free tool ideas. Upgrade to Solo ($9/mo) for full AI-powered keyword research.`,
       };
 
+      // Save to database (even for free tier, for history)
+      if (projectId) {
+        console.log('[ai-keywords] Saving free tier results to database for project:', projectId);
+        const { error: insertError } = await supabase.from('keyword_research_results').insert({
+          project_id: projectId,
+          user_id: userId,
+          url,
+          site_summary: summary,
+          uncertainty,
+          recommendations, // Save full recommendations (for future upgrade)
+          free_tool_ideas: freeToolIdeas,
+          wizard_responses: wizardResponses || null,
+          confidence: uncertainty.overallConfidence,
+          created_at: new Date().toISOString(),
+        });
+        
+        if (insertError) {
+          console.error('[ai-keywords] Failed to save free tier results:', insertError);
+        } else {
+          console.log('[ai-keywords] Free tier results saved successfully');
+        }
+      }
+
       return new Response(JSON.stringify({
         success: true,
         tier: 'free',
