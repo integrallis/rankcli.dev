@@ -21,7 +21,9 @@ import { useAIVisibilitySSE } from '@/hooks/useAIVisibilitySSE';
 export function ChatGPTCheckerPage() {
   const [searchParams] = useSearchParams();
   const urlParam = searchParams.get('url');
-  const brandParam = searchParams.get('brand');
+  // brandParam available for future use (e.g., showing context)
+  const _brandParam = searchParams.get('brand');
+  void _brandParam; // Suppress unused warning
   
   const [url, setUrl] = useState(urlParam || '');
   const [autoStarted, setAutoStarted] = useState(false);

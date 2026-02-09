@@ -52,7 +52,7 @@ export function AIVisibilityCheckerPage() {
   
   const [url, setUrl] = useState(domainParam ? `https://${domainParam}` : '');
   const [historicalChecks, setHistoricalChecks] = useState<HistoricalCheck[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [, setLoadingHistory] = useState(false);
   
   // Load historical checks if we have a projectId
   useEffect(() => {
