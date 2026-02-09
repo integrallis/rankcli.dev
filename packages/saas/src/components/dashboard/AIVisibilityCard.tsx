@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -48,6 +48,47 @@ export function AIVisibilityCard({
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(initialData);
   const [error, setError] = useState<string | null>(null);
+  const [isLoadingInitial, setIsLoadingInitial] = useState(!initialData);
+
+  // Fetch latest check on mount if no initial data
+  useEffect(() => {
+    if (initialData || !projectId) return;
+
+    const fetchLatest = async () => {
+      try {
+        const { data: latestCheck } = await supabase
+          .from('ai_visibility_checks')
+          .select('*')
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (latestCheck) {
+          // Parse providers from JSONB or reconstruct from columns
+          const providers = latestCheck.providers || [
+            { provider: 'openai', name: 'ChatGPT', mentioned: latestCheck.openai_mentioned, position: latestCheck.openai_position, sentiment: null },
+            { provider: 'anthropic', name: 'Claude', mentioned: latestCheck.anthropic_mentioned, position: latestCheck.anthropic_position, sentiment: null },
+            { provider: 'google', name: 'Gemini', mentioned: latestCheck.google_mentioned, position: latestCheck.google_position, sentiment: null },
+            { provider: 'perplexity', name: 'Perplexity', mentioned: latestCheck.perplexity_mentioned, position: latestCheck.perplexity_position, sentiment: null },
+          ];
+
+          setData({
+            score: latestCheck.overall_score,
+            providers,
+            lastChecked: latestCheck.created_at,
+          });
+        }
+      } catch (err) {
+        // No previous check found, that's fine
+        console.log('No previous AI visibility check found');
+      } finally {
+        setIsLoadingInitial(false);
+      }
+    };
+
+    fetchLatest();
+  }, [projectId, initialData]);
 
   const checkVisibility = async () => {
     setLoading(true);
@@ -124,7 +165,7 @@ export function AIVisibilityCard({
           <div className="text-sm text-red-500 mb-4">{error}</div>
         )}
 
-        {!data && !loading && (
+        {!data && !loading && !isLoadingInitial && (
           <div className="text-center py-4">
             <p className="text-sm text-muted-foreground mb-3">
               Check if AI assistants recommend {brand}
@@ -136,10 +177,12 @@ export function AIVisibilityCard({
           </div>
         )}
 
-        {loading && !data && (
+        {(loading || isLoadingInitial) && !data && (
           <div className="text-center py-6">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
-            <p className="text-sm text-muted-foreground">Checking 4 AI models...</p>
+            <p className="text-sm text-muted-foreground">
+              {loading ? 'Checking 4 AI models...' : 'Loading...'}
+            </p>
           </div>
         )}
 

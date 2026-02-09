@@ -41,7 +41,7 @@ serve(async (req) => {
   }
 
   try {
-    const { url } = await req.json();
+    const { url, projectId } = await req.json();
 
     if (!url) {
       return new Response(JSON.stringify({ error: 'URL required' }), {
@@ -139,6 +139,8 @@ serve(async (req) => {
       perplexity_position: results[3].position,
       queries_tested: queries,
       ip_hash: ipHash,
+      project_id: projectId || null,
+      providers: results,
     });
 
     const response: AIVisibilityResult = {
