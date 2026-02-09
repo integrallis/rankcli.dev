@@ -105,13 +105,24 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const oneHourAgo = new Date(Date.now() - RATE_WINDOW_MS).toISOString();
-    const { count } = await supabase
-      .from('free_audits')
-      .select('*', { count: 'exact', head: true })
-      .eq('ip_hash', ipHash)
-      .gte('created_at', oneHourAgo);
+    let rateLimitCount = 0;
+    try {
+      const { count, error: rateLimitError } = await supabase
+        .from('free_audits')
+        .select('*', { count: 'exact', head: true })
+        .eq('ip_hash', ipHash)
+        .gte('created_at', oneHourAgo);
 
-    if (count && count >= RATE_LIMIT) {
+      if (rateLimitError) {
+        console.warn('Rate limit check failed (continuing anyway):', rateLimitError.message);
+      } else {
+        rateLimitCount = count || 0;
+      }
+    } catch (rateLimitErr) {
+      console.warn('Rate limit check exception (continuing anyway):', rateLimitErr.message);
+    }
+
+    if (rateLimitCount >= RATE_LIMIT) {
       return new Response(JSON.stringify({
         error: 'Rate limit exceeded. Sign up for unlimited audits.',
         retryAfter: RATE_WINDOW_MS,
@@ -129,15 +140,20 @@ serve(async (req) => {
     // ========== RUN FULL AUDIT ENGINE (280+ CHECKS) ==========
     console.log(`Running free audit on ${targetUrl}...`);
 
-    let auditReport: AuditReport;
+    let auditReport: AuditReport | undefined;
     let allIssues: FreeAuditIssue[] = [];
 
     try {
-      // Call runFullAudit with options object (correct signature)
-      auditReport = await runFullAudit({
+      // Add timeout for the audit (30 seconds max)
+      const auditPromise = runFullAudit({
         url: targetUrl,
         maxPages: 1,
       });
+      const timeoutPromise = new Promise<never>((_, reject) => 
+        setTimeout(() => reject(new Error('Audit timed out after 30 seconds')), 30000)
+      );
+
+      auditReport = await Promise.race([auditPromise, timeoutPromise]);
 
       // Convert all issues
       allIssues = auditReport.issues.map(convertToFreeIssue);
@@ -147,11 +163,12 @@ serve(async (req) => {
       console.log(`Audit complete: ${auditReport.issues.length} issues found from ${checksFromSummary} checks`);
 
     } catch (err) {
+      console.error('Audit engine error:', err.message);
       // If audit fails, add a fetch error
       allIssues.push({
         code: 'FETCH_ERROR',
         severity: 'error',
-        title: `Failed to fetch page: ${err.message}`,
+        title: `Failed to audit page: ${err.message}`,
         category: 'Crawlability',
       });
     }
@@ -189,25 +206,32 @@ serve(async (req) => {
       ? auditReport.summary.passed + auditReport.summary.errors + auditReport.summary.warnings
       : 280;
 
-    // Save to database for lead tracking
+    // Save to database for lead tracking (non-blocking)
     const domain = new URL(targetUrl).hostname;
-    await supabase.from('free_audits').insert({
-      url: targetUrl,
-      domain,
-      score,
-      issues_summary: {
-        errors,
-        warnings,
-        notices,
-        total: allIssues.length,
-        displayed: displayedIssues.length,
-      },
-      top_issues: displayedIssues,
-      email: email || null,
-      ip_hash: ipHash,
-      user_agent: req.headers.get('user-agent'),
-      referrer: req.headers.get('referer'),
-    });
+    try {
+      const { error: insertError } = await supabase.from('free_audits').insert({
+        url: targetUrl,
+        domain,
+        score,
+        issues_summary: {
+          errors,
+          warnings,
+          notices,
+          total: allIssues.length,
+          displayed: displayedIssues.length,
+        },
+        top_issues: displayedIssues,
+        email: email || null,
+        ip_hash: ipHash,
+        user_agent: req.headers.get('user-agent'),
+        referrer: req.headers.get('referer'),
+      });
+      if (insertError) {
+        console.warn('Failed to save audit result (non-blocking):', insertError.message);
+      }
+    } catch (saveErr) {
+      console.warn('Exception saving audit result (non-blocking):', saveErr.message);
+    }
 
     // Determine upsell message based on results
     let message: string;
@@ -235,7 +259,11 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error running free audit:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('Error stack:', error.stack);
+    return new Response(JSON.stringify({ 
+      error: `Audit failed: ${error.message}`,
+      details: error.stack?.split('\n').slice(0, 3).join(' | ') || 'No stack trace'
+    }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
