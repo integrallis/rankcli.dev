@@ -121,16 +121,28 @@ export function useKeywords(projectId: string | undefined) {
 
   // Fetch existing keyword research results
   const fetchHistory = useCallback(async () => {
-    if (!projectId || !user) return;
+    if (!projectId || !user) {
+      console.log('[useKeywords] fetchHistory skipped:', { projectId, userId: user?.id });
+      return;
+    }
 
+    console.log('[useKeywords] fetchHistory starting:', { projectId, userId: user.id });
     setIsLoadingHistory(true);
     try {
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError, status, statusText } = await supabase
         .from('keyword_research_results')
         .select('*')
         .eq('project_id', projectId)
         .order('created_at', { ascending: false })
         .limit(10);
+
+      console.log('[useKeywords] fetchHistory response:', { 
+        status, 
+        statusText,
+        error: fetchError?.message,
+        errorCode: fetchError?.code,
+        dataLength: data?.length ?? 0,
+      });
 
       if (fetchError) throw fetchError;
       setHistory(data || []);
@@ -138,6 +150,7 @@ export function useKeywords(projectId: string | undefined) {
       // Set the most recent result as current
       if (data && data.length > 0) {
         const latest = data[0];
+        console.log('[useKeywords] Setting latest result:', latest.id);
         setResult({
           success: true,
           tier: 'paid', // Assume paid if we have stored results
@@ -148,9 +161,11 @@ export function useKeywords(projectId: string | undefined) {
           wizardQuestions: [],
           needsWizard: latest.confidence < 0.7,
         });
+      } else {
+        console.log('[useKeywords] No history found for project');
       }
     } catch (err) {
-      console.error('Failed to fetch keyword history:', err);
+      console.error('[useKeywords] Failed to fetch keyword history:', err);
     } finally {
       setIsLoadingHistory(false);
     }
