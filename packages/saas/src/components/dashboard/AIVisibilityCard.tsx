@@ -256,13 +256,19 @@ export function AIVisibilityCard({
 
             {/* Actions */}
             <div className="flex gap-2 pt-2">
-              <Link to="/tools/ai-visibility" className="flex-1">
+              <Link 
+                to={`/tools/ai-visibility?projectId=${projectId}&domain=${encodeURIComponent(domain)}&brand=${encodeURIComponent(brand)}`} 
+                className="flex-1"
+              >
                 <Button variant="outline" size="sm" className="w-full">
                   <ExternalLink className="h-3 w-3 mr-1" />
                   Details
                 </Button>
               </Link>
-              <Link to="/tools/chatgpt-checker" className="flex-1">
+              <Link 
+                to={`/tools/chatgpt-checker?url=${encodeURIComponent(`https://${domain}`)}&brand=${encodeURIComponent(brand)}`} 
+                className="flex-1"
+              >
                 <Button variant="outline" size="sm" className="w-full">
                   ChatGPT Check
                 </Button>

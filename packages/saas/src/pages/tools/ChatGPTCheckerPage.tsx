@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useSearchParams, Link } from 'react-router-dom';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
@@ -15,11 +16,15 @@ import {
   TrendingUp,
   ExternalLink,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { useAIVisibilitySSE } from '@/hooks/useAIVisibilitySSE';
 
 export function ChatGPTCheckerPage() {
-  const [url, setUrl] = useState('');
+  const [searchParams] = useSearchParams();
+  const urlParam = searchParams.get('url');
+  const brandParam = searchParams.get('brand');
+  
+  const [url, setUrl] = useState(urlParam || '');
+  const [autoStarted, setAutoStarted] = useState(false);
 
   const {
     status,
@@ -29,6 +34,14 @@ export function ChatGPTCheckerPage() {
     isLoading,
     error,
   } = useAIVisibilitySSE();
+
+  // Auto-start check if URL is provided via query param
+  useEffect(() => {
+    if (urlParam && !autoStarted && status === 'idle') {
+      setAutoStarted(true);
+      checkVisibility(urlParam);
+    }
+  }, [urlParam, autoStarted, status, checkVisibility]);
 
   // Get the OpenAI result specifically
   const chatgptResult = useMemo(() => {

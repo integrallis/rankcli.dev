@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
@@ -15,22 +16,70 @@ import {
   AlertTriangle,
   ExternalLink,
   Sparkles,
+  ArrowLeft,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { useAIVisibilitySSE } from '@/hooks/useAIVisibilitySSE';
+import { supabase } from '@/integrations/supabase/client';
 
-const PROVIDER_INFO: Record<string, { name: string; icon: string; color: string }> = {
-  openai: { name: 'ChatGPT', icon: '', color: 'bg-green-500' },
-  anthropic: { name: 'Claude', icon: '', color: 'bg-orange-500' },
-  google: { name: 'Gemini', icon: '', color: 'bg-blue-500' },
-  perplexity: { name: 'Perplexity', icon: '', color: 'bg-purple-500' },
+const PROVIDER_INFO: Record<string, { name: string; icon: string; color: string; configured: boolean }> = {
+  openai: { name: 'ChatGPT', icon: '', color: 'bg-green-500', configured: true },
+  anthropic: { name: 'Claude', icon: '', color: 'bg-orange-500', configured: true },
+  google: { name: 'Gemini', icon: '', color: 'bg-blue-500', configured: true },
+  perplexity: { name: 'Perplexity', icon: '', color: 'bg-purple-500', configured: false }, // Not configured in production
 };
 
 // Provider order for display
 const PROVIDER_ORDER = ['openai', 'anthropic', 'google', 'perplexity'];
 
+interface HistoricalCheck {
+  id: string;
+  created_at: string;
+  overall_score: number;
+  openai_mentioned: boolean;
+  anthropic_mentioned: boolean;
+  google_mentioned: boolean;
+  perplexity_mentioned: boolean;
+}
+
 export function AIVisibilityCheckerPage() {
-  const [url, setUrl] = useState('');
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  // Get project context from query params
+  const projectId = searchParams.get('projectId');
+  const domainParam = searchParams.get('domain');
+  const brandParam = searchParams.get('brand');
+  
+  const [url, setUrl] = useState(domainParam ? `https://${domainParam}` : '');
+  const [historicalChecks, setHistoricalChecks] = useState<HistoricalCheck[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  
+  // Load historical checks if we have a projectId
+  useEffect(() => {
+    if (!projectId) return;
+    
+    const loadHistory = async () => {
+      setLoadingHistory(true);
+      try {
+        const { data } = await supabase
+          .from('ai_visibility_checks')
+          .select('id, created_at, overall_score, openai_mentioned, anthropic_mentioned, google_mentioned, perplexity_mentioned')
+          .eq('project_id', projectId)
+          .order('created_at', { ascending: false })
+          .limit(10);
+        
+        if (data) {
+          setHistoricalChecks(data);
+        }
+      } catch (err) {
+        console.error('Failed to load history:', err);
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+    
+    loadHistory();
+  }, [projectId]);
 
   const {
     status,
@@ -143,17 +192,41 @@ export function AIVisibilityCheckerPage() {
 
       <main className="container py-12">
         <div className="max-w-4xl mx-auto">
+          {/* Project Context Header */}
+          {projectId && (
+            <div className="mb-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(`/dashboard/projects/${projectId}`)}
+                className="mb-4"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to {brandParam || 'Project'}
+              </Button>
+              <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                <p className="text-sm text-muted-foreground">
+                  Viewing AI visibility details for <strong>{brandParam}</strong> ({domainParam})
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Header */}
           <div className="text-center mb-8">
-            <Badge variant="secondary" className="mb-4">
-              Free Tool
-            </Badge>
+            {!projectId && (
+              <Badge variant="secondary" className="mb-4">
+                Free Tool
+              </Badge>
+            )}
             <h1 className="text-3xl md:text-4xl font-bold mb-4">
-              AI Visibility Checker
+              {projectId ? `AI Visibility for ${brandParam}` : 'AI Visibility Checker'}
             </h1>
             <p className="text-lg text-muted-foreground">
-              Check if ChatGPT, Claude, Gemini, and Perplexity recommend your website.
-              AI visibility is the new SEO battleground.
+              {projectId 
+                ? 'See how AI assistants recommend your brand across ChatGPT, Claude, and Gemini.'
+                : 'Check if ChatGPT, Claude, Gemini, and Perplexity recommend your website. AI visibility is the new SEO battleground.'
+              }
             </p>
           </div>
 
@@ -258,7 +331,9 @@ export function AIVisibilityCheckerPage() {
                           <div>
                             <h3 className="font-semibold">{info.name}</h3>
                             <p className="text-sm text-muted-foreground">
-                              {isPending ? (
+                              {!info.configured ? (
+                                <span className="text-yellow-600">Not configured</span>
+                              ) : isPending ? (
                                 <span className="text-muted-foreground">Checking...</span>
                               ) : isChecked && provider.mentioned ? (
                                 `Position #${provider.position || '?'}`
@@ -291,7 +366,14 @@ export function AIVisibilityCheckerPage() {
                         </div>
                       )}
 
-                      {isChecked && !provider.mentioned && !provider.error && (
+                      {!info.configured && (
+                        <div className="flex items-center gap-2 text-sm text-yellow-600">
+                          <AlertTriangle className="h-4 w-4" />
+                          <span>API not configured - check skipped</span>
+                        </div>
+                      )}
+
+                      {info.configured && isChecked && !provider.mentioned && !provider.error && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <AlertTriangle className="h-4 w-4" />
                           <span>Not mentioned in recommendations</span>
@@ -309,8 +391,8 @@ export function AIVisibilityCheckerPage() {
                 })}
               </div>
 
-              {/* CTA (only when complete) */}
-              {isComplete && (
+              {/* CTA (only when complete and not from project) */}
+              {isComplete && !projectId && (
                 <div className="p-6 rounded-xl bg-primary/5 border border-primary/20 text-center">
                   <h3 className="text-lg font-semibold mb-2">Track Your AI Visibility Over Time</h3>
                   <p className="text-muted-foreground mb-4">
@@ -329,6 +411,46 @@ export function AIVisibilityCheckerPage() {
               )}
             </div>
           )}
+
+          {/* Historical Checks (when viewing from project) */}
+          {projectId && historicalChecks.length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-lg font-semibold mb-4">Previous Checks</h2>
+              <div className="space-y-2">
+                {historicalChecks.map((check) => (
+                  <div
+                    key={check.id}
+                    className="p-4 rounded-lg border bg-card flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="text-sm font-medium">
+                        Score: <span className={getScoreColor(check.overall_score)}>{check.overall_score}%</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(check.created_at).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      {check.openai_mentioned && (
+                        <Badge variant="secondary" className="bg-green-500/20 text-green-600">ChatGPT</Badge>
+                      )}
+                      {check.anthropic_mentioned && (
+                        <Badge variant="secondary" className="bg-orange-500/20 text-orange-600">Claude</Badge>
+                      )}
+                      {check.google_mentioned && (
+                        <Badge variant="secondary" className="bg-blue-500/20 text-blue-600">Gemini</Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
           {/* Info Section (when no result and not loading) */}
           {status === 'idle' && (
