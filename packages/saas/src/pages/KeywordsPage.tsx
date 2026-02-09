@@ -45,6 +45,18 @@ export function KeywordsPage() {
     selectHistoryItem,
   } = useKeywords(projectId);
 
+  // Debug logging
+  console.log('[KeywordsPage] render:', {
+    projectId,
+    projectLoading,
+    hasProject: !!project,
+    projectName: project?.name,
+    isLoadingHistory,
+    historyLength: history?.length ?? 0,
+    hasResult: !!result,
+    error,
+  });
+
   const [showWizard, setShowWizard] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [currentAnswer, setCurrentAnswer] = useState('');

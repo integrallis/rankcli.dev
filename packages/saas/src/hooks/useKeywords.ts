@@ -119,6 +119,16 @@ export function useKeywords(projectId: string | undefined) {
   const [history, setHistory] = useState<KeywordResearchRecord[]>([]);
   const [wizardResponses, setWizardResponses] = useState<Record<string, string>>({});
 
+  // Debug: Log on every render
+  console.log('[useKeywords] hook state:', {
+    projectId,
+    userId: user?.id,
+    userEmail: user?.email,
+    hasUser: !!user,
+    historyLength: history.length,
+    isLoadingHistory,
+  });
+
   // Fetch existing keyword research results
   const fetchHistory = useCallback(async () => {
     if (!projectId || !user) {
