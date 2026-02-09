@@ -656,6 +656,8 @@ serve(async (req) => {
       minConfidence = 0.7, // For CI mode
     } = body;
 
+    console.log('[ai-keywords] Request params:', { url, projectId, mode, hasWizardResponses: !!wizardResponses });
+
     if (!url) {
       return new Response(JSON.stringify({ error: 'URL is required' }), {
         status: 400,
@@ -801,7 +803,8 @@ serve(async (req) => {
 
     // Save to database
     if (projectId) {
-      await supabase.from('keyword_research_results').insert({
+      console.log('[ai-keywords] Saving results to database for project:', projectId);
+      const { error: insertError } = await supabase.from('keyword_research_results').insert({
         project_id: projectId,
         user_id: userId,
         url,
@@ -813,6 +816,14 @@ serve(async (req) => {
         confidence: uncertainty.overallConfidence,
         created_at: new Date().toISOString(),
       });
+      
+      if (insertError) {
+        console.error('[ai-keywords] Failed to save results:', insertError);
+      } else {
+        console.log('[ai-keywords] Results saved successfully');
+      }
+    } else {
+      console.warn('[ai-keywords] No projectId provided, skipping database save');
     }
 
     const result: AIKeywordResult = {
