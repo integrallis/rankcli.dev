@@ -5,6 +5,12 @@ on:
     paths:
       - 'packages/saas/**'
       - '.github/workflows/ci-saas.yml'
+  workflow_dispatch:
+    inputs:
+      run_e2e_tests:
+        description: 'Run E2E database tests'
+        type: boolean
+        default: true
 
 jobs:
   # ============================================
@@ -146,3 +152,42 @@ jobs:
         run: pnpm lint
         working-directory: packages/saas
         continue-on-error: true  # Don't fail on lint warnings for now
+
+  # ============================================
+  # E2E Database Tests (Keyword Persistence)
+  # ============================================
+  e2e-database:
+    name: E2E Database Tests
+    runs-on: ubuntu-latest
+    # Run on workflow_dispatch or if secrets are available
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && vars.SUPABASE_PROJECT_REF != '')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: packages/saas
+
+      - name: Install Playwright
+        run: npx playwright install chromium
+        working-directory: packages/saas
+
+      - name: Run Keyword Persistence Tests
+        run: npx playwright test keyword-persistence --reporter=list
+        working-directory: packages/saas
+        env:
+          VITE_SUPABASE_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
