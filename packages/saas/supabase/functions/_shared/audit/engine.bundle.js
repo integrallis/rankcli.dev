@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-02-17T19:09:09.759Z
+// Generated: 2026-02-17T20:52:31.964Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -17315,7 +17315,7 @@ function createReport(url, domain, issues, pages) {
   };
 }
 function calculateHealthScore(issues) {
-  const weights = { error: 10, warning: 3, notice: 1 };
+  const weights = { critical: 15, error: 10, warning: 3, info: 1, notice: 1 };
   const categoryDeductions = {
     crawlability: 0,
     indexability: 0,
@@ -17439,8 +17439,8 @@ function groupIssuesByCategory(issues) {
   }
   for (const category of Object.keys(grouped)) {
     grouped[category].sort((a, b) => {
-      const order = { error: 0, warning: 1, notice: 2 };
-      return order[a.severity] - order[b.severity];
+      const order = { critical: 0, error: 1, warning: 2, info: 3, notice: 4 };
+      return (order[a.severity] ?? 5) - (order[b.severity] ?? 5);
     });
   }
   return grouped;
