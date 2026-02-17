@@ -7,11 +7,11 @@ import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ui/scr
 const differentiators = [
   {
     icon: Bot,
-    title: 'AI Visibility Tracking',
-    description: 'Track if ChatGPT, Claude, Gemini, and Perplexity recommend your brand.',
-    detail: 'The only SEO tool that monitors AI chatbot mentions.',
-    badge: 'Unique',
-    cta: { text: 'Try AI Checker', link: '/tools/ai-visibility' },
+    title: 'GEO Analysis',
+    description: 'Check if GPTBot, ClaudeBot, and PerplexityBot can access your site.',
+    detail: 'First CLI tool with Generative Engine Optimization.',
+    badge: 'New',
+    cta: { text: 'Try GEO Check', link: '/docs' },
   },
   {
     icon: Terminal,
@@ -29,14 +29,15 @@ const differentiators = [
   },
   {
     icon: Plug,
-    title: 'Framework Plugins',
-    description: 'Native support for Vite, Next.js, and Astro.',
-    detail: 'Dev server integration with real-time feedback.',
-    cta: { text: 'View Plugins', link: '/docs' },
+    title: 'MCP Server',
+    description: 'Let AI assistants run SEO audits directly.',
+    detail: 'Claude Desktop integration via Model Context Protocol.',
+    badge: 'New',
+    cta: { text: 'View MCP Docs', link: '/docs' },
   },
   {
     icon: Search,
-    title: '200+ Checks',
+    title: '300+ Checks',
     description: 'Most comprehensive audit in the market.',
     detail: 'Technical SEO, content, security, performance, AI readiness.',
     cta: { text: 'Try Free Audit', link: '/free-audit' },

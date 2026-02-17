@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArrowRight, Github } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LandingTerminalDemo } from '@/components/terminal/TerminalOutput';
@@ -35,9 +35,9 @@ export function Hero() {
             </p>
             {/* Brand definition for AI extraction */}
             <p className="text-sm text-muted-foreground/80 mb-6 max-w-2xl leading-relaxed">
-              RankCLI is a developer-first SEO platform with 200+ checks, auto-fix PRs, 
-              framework-specific code generation for 25+ frameworks, and the industry's first 
-              MCP server for AI assistants. $15/mo vs $99+ competitors.
+              RankCLI is a developer-first SEO platform with 300+ checks, framework-specific 
+              code generation for React, Next.js, Vue, Nuxt, Astro, SvelteKit, Angular, Rails, 
+              Django, Laravel, and WordPress, plus MCP server for AI assistants.
             </p>
           </ScrollReveal>
 
@@ -50,16 +50,12 @@ export function Hero() {
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <a
-                href="https://github.com/rankcli/rankcli"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <Link to="/docs">
                 <Button size="lg" variant="outline" className="gap-2">
-                  <Github className="h-4 w-4" />
-                  GitHub
+                  View Docs
+                  <ArrowRight className="h-4 w-4" />
                 </Button>
-              </a>
+              </Link>
             </div>
           </ScrollReveal>
 

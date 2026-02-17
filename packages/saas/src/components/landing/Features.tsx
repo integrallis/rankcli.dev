@@ -34,9 +34,9 @@ const features = [
   },
   {
     icon: GitPullRequest,
-    title: '25+ Framework Fixes',
+    title: '11 Framework Recipes',
     description:
-      'Auto-generate SEO fixes for Next.js, Nuxt, Astro, Rails, Django, Laravel, Hugo, and 18 more frameworks. Copy-paste ready.',
+      'Auto-generate SEO fixes for Next.js, Nuxt, Vue, Astro, SvelteKit, Angular, Rails, Django, Laravel, WordPress, and React. Copy-paste ready.',
   },
   {
     icon: Terminal,
@@ -64,9 +64,9 @@ const features = [
   },
   {
     icon: Globe,
-    title: 'Framework Plugins',
+    title: 'CI/CD Integration',
     description:
-      'Native plugins for Vite, Next.js, and Astro. Zero-config integration with your existing stack.',
+      'GitHub Actions workflow, JSON output for pipelines, and pre-commit hooks. Integrates with your existing DevOps stack.',
   },
 ];
 
@@ -79,7 +79,7 @@ export function Features() {
             The SEO tool that makes competitors look outdated
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            GEO, MCP, 25+ frameworks. Built for developers who ship fast.
+            GEO, MCP, 11 frameworks, 300+ checks. Built for developers who ship fast.
           </p>
         </ScrollReveal>
 

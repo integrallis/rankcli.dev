@@ -12,7 +12,7 @@ const steps = [
   {
     icon: Scan,
     title: 'Run the Audit',
-    description: '200+ SEO checks in seconds. Works with any framework.',
+    description: '300+ SEO checks in seconds. Works with any framework.',
     code: 'rankcli audit --url yoursite.com',
   },
   {
@@ -29,7 +29,7 @@ const approaches = [
     description: 'No repo access needed. Run locally, push when ready.',
     icon: Upload,
     commands: [
-      { cmd: 'rankcli audit', desc: 'Run 200+ checks' },
+      { cmd: 'rankcli audit', desc: 'Run 300+ checks' },
       { cmd: 'rankcli apply --auto', desc: 'Apply fixes locally' },
       { cmd: 'git push', desc: 'Push when ready' },
     ],

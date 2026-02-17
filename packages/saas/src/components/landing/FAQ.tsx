@@ -10,7 +10,7 @@ const faqs = [
   {
     question: 'What SEO checks does it run?',
     answer:
-      'We run 200+ checks covering technical SEO (meta tags, schema, canonicals), content quality (headings, word count, readability), performance (Core Web Vitals, page speed), security (HTTPS, headers), and more. The same checks you\'d get from Ahrefs or Screaming Frog.',
+      'We run 300+ checks covering technical SEO (meta tags, schema, canonicals), content quality (headings, word count, readability), performance (Core Web Vitals, page speed), security (HTTPS, headers), and more. The same checks you\'d get from Ahrefs or Screaming Frog.',
   },
   {
     question: 'How does the GitHub integration work?',
@@ -25,7 +25,7 @@ const faqs = [
   {
     question: 'What frameworks do you support?',
     answer:
-      'We support all major frameworks: Next.js, React, Vue, Vite, Astro, Gatsby, plain HTML, and more. The CLI auto-detects your framework and generates appropriate fixes.',
+      'We support 11 frameworks: Next.js, React, Vue, Nuxt, Astro, SvelteKit, Angular, Rails, Django, Laravel, and WordPress. The CLI auto-detects your framework and generates appropriate fixes.',
   },
   {
     question: 'Is there a free tier?',
