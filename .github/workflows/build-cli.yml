@@ -20,6 +20,7 @@ on:
     paths:
       - 'packages/cli/**'
       - 'packages/agent-runtime/**'
+      - 'packages/mcp-server/**'
   release:
     types: [published]
   workflow_dispatch:
@@ -195,6 +196,30 @@ jobs:
             echo "ℹ️ @rankcli/agent-runtime@$CURRENT_VERSION already published, skipping"
           else
             echo "📦 Publishing @rankcli/agent-runtime@$CURRENT_VERSION"
+            npm publish --access public
+          fi
+
+      - name: Build MCP server
+        working-directory: packages/mcp-server
+        run: pnpm build
+
+      - name: Fix MCP server workspace dependency
+        working-directory: packages/mcp-server
+        run: |
+          RUNTIME_VERSION=$(cd ../agent-runtime && node -p "require('./package.json').version")
+          echo "Replacing workspace:* with ^$RUNTIME_VERSION"
+          sed -i "s|\"workspace:\\*\"|\"^$RUNTIME_VERSION\"|g" package.json
+
+      - name: Publish MCP server
+        working-directory: packages/mcp-server
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          CURRENT_VERSION=$(node -p "require('./package.json').version")
+          if npm view @rankcli/mcp-server@$CURRENT_VERSION version 2>/dev/null; then
+            echo "ℹ️ @rankcli/mcp-server@$CURRENT_VERSION already published, skipping"
+          else
+            echo "📦 Publishing @rankcli/mcp-server@$CURRENT_VERSION"
             npm publish --access public
           fi
 
