@@ -715,13 +715,13 @@ rankcli whoami              Show current logged in user`}
           code={`rankcli audit [options]
 
 Options:
-  -u, --url <url>        URL to audit
-  -o, --output <format>  Output format: json, markdown (default: console)
-  --max-pages <n>        Max pages to crawl (default: 5)
-  --check-links          Also check for broken links
-  --ai                   Enable AI-powered analysis
-  --ai-provider <p>      AI provider: openai or anthropic
-  --ai-key <key>         API key (or use env var)`}
+  -u, --url <url>           URL to audit
+  -o, --output <format>     Output format (json, console) (default: console)
+  --max-pages <n>           Max pages to crawl (default: 5)
+  --check-links             Check for broken internal/external links (slower)
+  --ai                      Enable AI analysis
+  --ai-provider <provider>  AI provider: openai or anthropic
+  --ai-key <key>            API key (or set OPENAI_API_KEY/ANTHROPIC_API_KEY)`}
         />
         <h4 className="font-medium mt-6 mb-2">Examples</h4>
         <CodeBlock code="# Basic audit" />
@@ -732,8 +732,8 @@ Options:
         <CodeBlock code="rankcli audit --url https://example.com --ai" />
       </section>
 
-      {/* rankcli fix */}
-      <section id="fix">
+      {/* rankcli apply */}
+      <section id="apply">
         <h2 className="text-xl font-semibold mb-4">rankcli apply</h2>
         <p className="text-muted-foreground mb-4">
           Generate and apply SEO fixes to your local codebase. Detects your framework
@@ -765,21 +765,6 @@ Options:
             SvelteKit, and more. For best results, run from your project root.
           </p>
         </div>
-      </section>
-
-      {/* rankcli link */}
-      <section id="link">
-        <h2 className="text-xl font-semibold mb-4">rankcli link</h2>
-        <p className="text-muted-foreground mb-4">
-          Link your local repository to a RankCLI project for cloud sync.
-        </p>
-        <CodeBlock
-          code={`rankcli link [options]
-
-Options:
-  --project <id>       Link to a specific project ID
-  --create             Create a new project if none exists`}
-        />
       </section>
 
       {/* rankcli keywords */}
