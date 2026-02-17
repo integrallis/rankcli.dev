@@ -392,14 +392,16 @@ function GEOSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
           {[
-            { name: 'GPTBot', company: 'OpenAI', desc: 'Powers ChatGPT web browsing' },
-            { name: 'ClaudeBot', company: 'Anthropic', desc: 'Powers Claude web search' },
-            { name: 'PerplexityBot', company: 'Perplexity AI', desc: 'AI-native search engine' },
-            { name: 'Google-Extended', company: 'Google', desc: 'AI training & Gemini' },
-            { name: 'Amazonbot', company: 'Amazon', desc: 'Alexa and Amazon Q' },
+            { name: 'GPTBot', company: 'OpenAI', desc: 'ChatGPT training & browsing' },
+            { name: 'ChatGPT-User', company: 'OpenAI', desc: 'ChatGPT browsing feature' },
+            { name: 'Claude-Web', company: 'Anthropic', desc: 'Claude web access' },
+            { name: 'PerplexityBot', company: 'Perplexity', desc: 'Perplexity AI search' },
+            { name: 'Google-Extended', company: 'Google', desc: 'Bard/Gemini training' },
+            { name: 'bingbot', company: 'Microsoft', desc: 'Bing Chat/Copilot' },
             { name: 'Applebot-Extended', company: 'Apple', desc: 'Apple Intelligence' },
-            { name: 'Meta-ExternalAgent', company: 'Meta', desc: 'Meta AI assistant' },
-            { name: 'cohere-ai', company: 'Cohere', desc: 'Enterprise AI' },
+            { name: 'Amazonbot', company: 'Amazon', desc: 'Alexa/Amazon AI' },
+            { name: 'meta-externalagent', company: 'Meta', desc: 'Meta AI training' },
+            { name: 'cohere-ai', company: 'Cohere', desc: 'Cohere training' },
           ].map((crawler) => (
             <div key={crawler.name} className="p-3 border rounded-lg">
               <div className="flex items-center justify-between mb-1">
@@ -620,7 +622,7 @@ function MCPServerSection() {
           Available Tools
         </h2>
         <p className="text-muted-foreground mb-4">
-          The MCP server provides 12 SEO tools:
+          The MCP server provides 13 SEO tools:
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -637,6 +639,7 @@ function MCPServerSection() {
             { name: 'seo_images', desc: 'Image optimization analysis' },
             { name: 'seo_internal_links', desc: 'Internal linking analysis' },
             { name: 'seo_mobile', desc: 'Mobile SEO & PWA readiness' },
+            { name: 'seo_ai_crawlers', desc: 'List all known AI crawlers info' },
           ].map((tool) => (
             <div key={tool.name} className="p-3 border rounded-lg">
               <h5 className="font-medium text-sm font-mono">{tool.name}</h5>
