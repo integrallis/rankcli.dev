@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-01-25T22:47:31.139Z
+// Generated: 2026-02-17T18:13:45.329Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -287,6 +287,15 @@ var ISSUE_DEFINITIONS = {
     description: "External link points to a page that returns 4XX error.",
     impact: "Poor user experience and potential trust issues.",
     howToFix: "Update or remove the broken external link."
+  },
+  JS_ONLY_NAVIGATION: {
+    code: "JS_ONLY_NAVIGATION",
+    severity: "warning",
+    category: "links",
+    title: "JavaScript-only navigation detected",
+    description: "Navigation elements use onClick handlers without proper <a href> links.",
+    impact: "Search engine crawlers cannot follow JavaScript-only navigation. These links are invisible to crawlers, preventing page discovery and indexing.",
+    howToFix: "Replace onClick navigation with proper <a href> or <Link> components. In React, use react-router Link instead of navigate() in onClick handlers. Ensure all navigation renders as real anchor tags with href attributes."
   },
   TOO_MANY_LINKS: {
     code: "TOO_MANY_LINKS",
@@ -2321,6 +2330,7 @@ async function analyzeLinks(html, baseUrl, checkBroken = false) {
   const external = [];
   const brokenInternal = [];
   const brokenExternal = [];
+  const jsOnlyNavigation = [];
   $("a[href]").each((_, el) => {
     const href = $(el).attr("href") || "";
     const text = $(el).text().trim();
@@ -2349,6 +2359,56 @@ async function analyzeLinks(html, baseUrl, checkBroken = false) {
     }
   });
   const totalLinks = internal.length + external.length;
+  const navPatterns = /navigate|router|history\.push|location\.href|window\.location|goto|redirect/i;
+  const navTextPatterns = /^(home|about|contact|pricing|blog|docs|features|products?|services?|sign\s*up|log\s*in|register|dashboard|account|settings|help|faq|support|menu|nav)$/i;
+  $("button[onclick], div[onclick], span[onclick], li[onclick]").each((_, el) => {
+    const $el = $(el);
+    const onclick = $el.attr("onclick") || "";
+    const text = $el.text().trim().substring(0, 50);
+    if (navPatterns.test(onclick) || navTextPatterns.test(text)) {
+      jsOnlyNavigation.push({
+        element: el.tagName.toLowerCase(),
+        text: text || "(no text)",
+        reason: "Element uses onClick for navigation instead of <a href>"
+      });
+    }
+  });
+  $("a[onclick]").each((_, el) => {
+    const $el = $(el);
+    const href = $el.attr("href") || "";
+    const onclick = $el.attr("onclick") || "";
+    const text = $el.text().trim().substring(0, 50);
+    if ((href === "#" || href === "" || href.startsWith("javascript:")) && onclick) {
+      jsOnlyNavigation.push({
+        element: "a",
+        text: text || "(no text)",
+        reason: `Link has href="${href}" with onClick - crawlers cannot follow this`
+      });
+    }
+  });
+  $("[data-href], [data-to], [data-link], [data-route]").each((_, el) => {
+    const $el = $(el);
+    const tagName = el.tagName.toLowerCase();
+    const text = $el.text().trim().substring(0, 50);
+    if (tagName !== "a" || !$el.attr("href") || $el.attr("href") === "#") {
+      jsOnlyNavigation.push({
+        element: tagName,
+        text: text || "(no text)",
+        reason: "Uses data attribute for routing instead of real href"
+      });
+    }
+  });
+  if (jsOnlyNavigation.length > 0) {
+    const uniqueNav = jsOnlyNavigation.slice(0, 10);
+    issues.push({
+      ...ISSUE_DEFINITIONS.JS_ONLY_NAVIGATION,
+      affectedUrls: [baseUrl],
+      details: {
+        count: jsOnlyNavigation.length,
+        examples: uniqueNav
+      }
+    });
+  }
   const internalCount = internal.length;
   const externalCount = external.length;
   const internalToExternalRatio = externalCount > 0 ? internalCount / externalCount : null;
@@ -2456,6 +2516,7 @@ async function analyzeLinks(html, baseUrl, checkBroken = false) {
       totalLinks,
       brokenInternal,
       brokenExternal,
+      jsOnlyNavigation,
       ratio: {
         internal: internalCount,
         external: externalCount,
@@ -7815,6 +7876,12 @@ function analyzeContentScience(html, url, targetKeywords = []) {
 // src/audit/checks/site-maturity.ts
 import * as cheerio28 from "https://esm.sh/cheerio@1.0.0";
 async function getSSLCertificateAge(url) {
+  let https;
+  try {
+    https = await import("https");
+  } catch {
+    return null;
+  }
   return new Promise((resolve) => {
     try {
       const parsedUrl = new URL(url);
@@ -14556,7 +14623,7 @@ function analyzeStructure(content) {
 import * as cheerio49 from "https://esm.sh/cheerio@1.0.0";
 async function analyzeHtmlCompliance(html, url, headers) {
   const issues = [];
-  const $ = cheerio49.load(html, { decodeEntities: false });
+  const $ = cheerio49.load(html);
   const parsedUrl = new URL(url);
   const doctypeMatch = html.match(/<!DOCTYPE\s+([^>]+)>/i);
   const hasDoctype = doctypeMatch !== null;
