@@ -207,6 +207,14 @@ jobs:
           sed -i "s|\"workspace:\\*\"|\"^$RUNTIME_VERSION\"|g" package.json
           cat package.json | grep agent-runtime
 
+      - name: Inject production config
+        working-directory: packages/cli
+        env:
+          RANKCLI_SUPABASE_URL: ${{ secrets.RANKCLI_SUPABASE_URL }}
+          RANKCLI_SUPABASE_ANON_KEY: ${{ secrets.RANKCLI_SUPABASE_ANON_KEY }}
+          RANKCLI_WEB_URL: https://rankcli.dev
+        run: node scripts/inject-config.js
+
       - name: Publish CLI to npm
         working-directory: packages/cli
         env:
