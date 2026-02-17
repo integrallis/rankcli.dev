@@ -17,6 +17,8 @@ import {
   AlertTriangle,
   FileCode,
   Layers,
+  Bot,
+  Search,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +28,18 @@ const sections = [
     title: 'Getting Started',
     icon: Terminal,
     subsections: ['installation', 'authentication', 'first-audit'],
+  },
+  {
+    id: 'geo',
+    title: 'GEO (AI Search)',
+    icon: Search,
+    subsections: ['what-is-geo', 'ai-crawlers', 'geo-command', 'optimization'],
+  },
+  {
+    id: 'mcp-server',
+    title: 'MCP Server',
+    icon: Bot,
+    subsections: ['what-is-mcp', 'installation-mcp', 'claude-desktop', 'available-tools'],
   },
   {
     id: 'cli-reference',
@@ -97,6 +111,8 @@ export function DocsPage() {
           {/* Main Content */}
           <main className="flex-1 min-w-0">
             {activeSection === 'getting-started' && <GettingStartedSection />}
+            {activeSection === 'geo' && <GEOSection />}
+            {activeSection === 'mcp-server' && <MCPServerSection />}
             {activeSection === 'cli-reference' && <CLIReferenceSection />}
             {activeSection === 'dashboard' && <DashboardSection />}
             {activeSection === 'github' && <GitHubSection />}
@@ -292,6 +308,358 @@ function GettingStartedSection() {
         <p className="text-sm text-muted-foreground mt-2">
           Requires an OpenAI API key set as <code className="bg-muted px-1 rounded">OPENAI_API_KEY</code> environment variable.
         </p>
+      </section>
+    </div>
+  );
+}
+
+function GEOSection() {
+  return (
+    <div className="space-y-12">
+      <div>
+        <h1 className="text-3xl font-bold mb-4">GEO: Generative Engine Optimization</h1>
+        <p className="text-muted-foreground text-lg">
+          Optimize your site for AI search engines like ChatGPT, Perplexity, Claude, and Google AI Overviews.
+        </p>
+      </div>
+
+      {/* What is GEO */}
+      <section id="what-is-geo">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Search className="h-5 w-5" />
+          What is GEO?
+        </h2>
+        <p className="text-muted-foreground mb-4">
+          <strong>Generative Engine Optimization (GEO)</strong> is SEO for AI-powered search engines.
+          As users shift from traditional search to AI assistants, your content needs to be optimized
+          for how LLMs discover, understand, and cite information.
+        </p>
+
+        <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg mb-4">
+          <h4 className="font-medium text-blue-600 dark:text-blue-400 mb-2">Why GEO Matters</h4>
+          <ul className="text-sm text-muted-foreground space-y-1">
+            <li>• <strong>527% YoY growth</strong> in AI search traffic (2024-2025)</li>
+            <li>• <strong>63% of JavaScript sites</strong> are invisible to AI crawlers</li>
+            <li>• AI assistants are becoming the primary way people find information</li>
+          </ul>
+        </div>
+
+        <h4 className="font-medium mt-6 mb-2">Traditional SEO vs GEO</h4>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 pr-4">Aspect</th>
+                <th className="text-left py-2 px-4">Traditional SEO</th>
+                <th className="text-left py-2 px-4">GEO</th>
+              </tr>
+            </thead>
+            <tbody className="text-muted-foreground">
+              <tr className="border-b">
+                <td className="py-2 pr-4 font-medium">Goal</td>
+                <td className="py-2 px-4">Rank #1 in search results</td>
+                <td className="py-2 px-4">Get cited by AI assistants</td>
+              </tr>
+              <tr className="border-b">
+                <td className="py-2 pr-4 font-medium">Content</td>
+                <td className="py-2 px-4">Keyword-optimized</td>
+                <td className="py-2 px-4">Fact-dense, citable</td>
+              </tr>
+              <tr className="border-b">
+                <td className="py-2 pr-4 font-medium">Structure</td>
+                <td className="py-2 px-4">H1-H6 hierarchy</td>
+                <td className="py-2 px-4">FAQ, definitions, statistics</td>
+              </tr>
+              <tr className="border-b">
+                <td className="py-2 pr-4 font-medium">Rendering</td>
+                <td className="py-2 px-4">Googlebot handles JS</td>
+                <td className="py-2 px-4">Many AI crawlers skip JS</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* AI Crawlers */}
+      <section id="ai-crawlers">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Bot className="h-5 w-5" />
+          AI Crawlers
+        </h2>
+        <p className="text-muted-foreground mb-4">
+          RankCLI tracks access for all major AI crawlers:
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+          {[
+            { name: 'GPTBot', company: 'OpenAI', desc: 'Powers ChatGPT web browsing' },
+            { name: 'ClaudeBot', company: 'Anthropic', desc: 'Powers Claude web search' },
+            { name: 'PerplexityBot', company: 'Perplexity AI', desc: 'AI-native search engine' },
+            { name: 'Google-Extended', company: 'Google', desc: 'AI training & Gemini' },
+            { name: 'Amazonbot', company: 'Amazon', desc: 'Alexa and Amazon Q' },
+            { name: 'Applebot-Extended', company: 'Apple', desc: 'Apple Intelligence' },
+            { name: 'Meta-ExternalAgent', company: 'Meta', desc: 'Meta AI assistant' },
+            { name: 'cohere-ai', company: 'Cohere', desc: 'Enterprise AI' },
+          ].map((crawler) => (
+            <div key={crawler.name} className="p-3 border rounded-lg">
+              <div className="flex items-center justify-between mb-1">
+                <h5 className="font-medium text-sm">{crawler.name}</h5>
+                <span className="text-xs bg-muted px-2 py-0.5 rounded">{crawler.company}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">{crawler.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
+          <h4 className="font-medium text-yellow-600 dark:text-yellow-400 mb-2 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            robots.txt Matters
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            Many sites accidentally block AI crawlers in robots.txt. RankCLI checks if your
+            robots.txt allows or blocks each AI crawler and generates optimized rules.
+          </p>
+        </div>
+      </section>
+
+      {/* GEO Command */}
+      <section id="geo-command">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Terminal className="h-5 w-5" />
+          Using rankcli geo
+        </h2>
+        <p className="text-muted-foreground mb-4">
+          Run a GEO analysis on any URL:
+        </p>
+        <CodeBlock code="rankcli geo --url https://yoursite.com" />
+
+        <h4 className="font-medium mt-6 mb-2">What Gets Analyzed</h4>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
+          {[
+            { name: 'AI Crawler Access', desc: 'robots.txt rules for each AI bot' },
+            { name: 'JS Rendering', desc: 'SSR vs CSR detection' },
+            { name: 'Content Clarity', desc: 'How clear is your content to LLMs' },
+            { name: 'Fact Density', desc: 'Statistics, dates, numbers' },
+            { name: 'Structure Quality', desc: 'Headings, lists, definitions' },
+            { name: 'Citation Readiness', desc: 'Trust signals, author info' },
+          ].map((check) => (
+            <div key={check.name} className="p-3 border rounded-lg">
+              <h5 className="font-medium text-sm">{check.name}</h5>
+              <p className="text-xs text-muted-foreground">{check.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <h4 className="font-medium mt-6 mb-2">JSON Output for CI</h4>
+        <CodeBlock code="rankcli geo --url https://yoursite.com --output json" />
+      </section>
+
+      {/* Optimization Tips */}
+      <section id="optimization">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <CheckCircle className="h-5 w-5" />
+          GEO Optimization Tips
+        </h2>
+
+        <div className="space-y-4">
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-medium mb-2">1. Allow AI Crawlers</h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              Update your robots.txt to allow AI bots:
+            </p>
+            <CodeBlock code={`User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /`} />
+          </div>
+
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-medium mb-2">2. Use Server-Side Rendering</h4>
+            <p className="text-sm text-muted-foreground">
+              Most AI crawlers don't execute JavaScript. If your content is client-rendered,
+              AI assistants see a blank page. Use SSR, SSG, or prerendering.
+            </p>
+          </div>
+
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-medium mb-2">3. Add Structured Data</h4>
+            <p className="text-sm text-muted-foreground mb-2">
+              JSON-LD helps AI understand your content:
+            </p>
+            <CodeBlock code={`<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [...]
+}
+</script>`} />
+          </div>
+
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-medium mb-2">4. Write for Citation</h4>
+            <p className="text-sm text-muted-foreground">
+              Include specific facts, statistics, and definitions that AI can quote directly.
+              Add author information and publication dates for credibility.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function MCPServerSection() {
+  return (
+    <div className="space-y-12">
+      <div>
+        <h1 className="text-3xl font-bold mb-4">MCP Server for AI Assistants</h1>
+        <p className="text-muted-foreground text-lg">
+          Let Claude, ChatGPT, and other AI assistants run SEO audits directly using the Model Context Protocol.
+        </p>
+      </div>
+
+      {/* What is MCP */}
+      <section id="what-is-mcp">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Bot className="h-5 w-5" />
+          What is MCP?
+        </h2>
+        <p className="text-muted-foreground mb-4">
+          The <strong>Model Context Protocol (MCP)</strong> is an open standard that lets AI assistants
+          use external tools. RankCLI's MCP server gives AI assistants direct access to SEO analysis capabilities.
+        </p>
+
+        <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg mb-4">
+          <h4 className="font-medium text-blue-600 dark:text-blue-400 mb-2">Why This Matters</h4>
+          <p className="text-sm text-muted-foreground">
+            Instead of copy-pasting audit results, you can ask Claude:
+            <em> "Run an SEO audit on my homepage and fix the critical issues."</em>
+            Claude calls the MCP tools and generates fixes directly.
+          </p>
+        </div>
+
+        <h4 className="font-medium mt-6 mb-2">Use Cases</h4>
+        <ul className="list-disc list-inside text-muted-foreground space-y-1">
+          <li>Ask Claude to audit a URL during code review</li>
+          <li>Generate robots.txt or structured data on demand</li>
+          <li>Check AI crawler visibility while building</li>
+          <li>Automate SEO checks in AI-powered workflows</li>
+        </ul>
+      </section>
+
+      {/* Installation */}
+      <section id="installation-mcp">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Terminal className="h-5 w-5" />
+          Installation
+        </h2>
+        <p className="text-muted-foreground mb-4">
+          Install the MCP server package:
+        </p>
+        <CodeBlock code="npm install -g @rankcli/mcp-server" />
+        <p className="text-muted-foreground mt-4">
+          Or run directly with npx:
+        </p>
+        <CodeBlock code="npx @rankcli/mcp-server" />
+      </section>
+
+      {/* Claude Desktop Setup */}
+      <section id="claude-desktop">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Settings className="h-5 w-5" />
+          Claude Desktop Setup
+        </h2>
+        <p className="text-muted-foreground mb-4">
+          Add RankCLI to your Claude Desktop configuration:
+        </p>
+
+        <h4 className="font-medium mt-4 mb-2">macOS</h4>
+        <p className="text-sm text-muted-foreground mb-2">
+          Edit <code className="bg-muted px-1 rounded">~/Library/Application Support/Claude/claude_desktop_config.json</code>:
+        </p>
+        <CodeBlock code={`{
+  "mcpServers": {
+    "rankcli": {
+      "command": "npx",
+      "args": ["@rankcli/mcp-server"]
+    }
+  }
+}`} />
+
+        <h4 className="font-medium mt-6 mb-2">Windows</h4>
+        <p className="text-sm text-muted-foreground mb-2">
+          Edit <code className="bg-muted px-1 rounded">%APPDATA%\\Claude\\claude_desktop_config.json</code>:
+        </p>
+        <CodeBlock code={`{
+  "mcpServers": {
+    "rankcli": {
+      "command": "npx",
+      "args": ["@rankcli/mcp-server"]
+    }
+  }
+}`} />
+
+        <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+          <h4 className="font-medium mb-2">After Configuration</h4>
+          <p className="text-sm text-muted-foreground">
+            Restart Claude Desktop. You'll see a hammer icon 🔨 indicating tools are available.
+            Ask Claude: <em>"What SEO tools do you have?"</em>
+          </p>
+        </div>
+      </section>
+
+      {/* Available Tools */}
+      <section id="available-tools">
+        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Code className="h-5 w-5" />
+          Available Tools
+        </h2>
+        <p className="text-muted-foreground mb-4">
+          The MCP server provides 12 SEO tools:
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[
+            { name: 'seo_analyze', desc: 'Comprehensive SEO audit (200+ checks)' },
+            { name: 'seo_geo_check', desc: 'GEO analysis for AI search visibility' },
+            { name: 'seo_robots_ai', desc: 'Check robots.txt AI crawler rules' },
+            { name: 'seo_generate_robots', desc: 'Generate AI-friendly robots.txt' },
+            { name: 'seo_core_web_vitals', desc: 'Estimate LCP, CLS, INP, TTFB' },
+            { name: 'seo_structured_data', desc: 'Validate JSON-LD schemas' },
+            { name: 'seo_generate_schema', desc: 'Generate schema.org templates' },
+            { name: 'seo_security_headers', desc: 'Security header analysis (A+ to F)' },
+            { name: 'seo_generate_security_headers', desc: 'Generate security headers' },
+            { name: 'seo_images', desc: 'Image optimization analysis' },
+            { name: 'seo_internal_links', desc: 'Internal linking analysis' },
+            { name: 'seo_mobile', desc: 'Mobile SEO & PWA readiness' },
+          ].map((tool) => (
+            <div key={tool.name} className="p-3 border rounded-lg">
+              <h5 className="font-medium text-sm font-mono">{tool.name}</h5>
+              <p className="text-xs text-muted-foreground">{tool.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        <h4 className="font-medium mt-6 mb-2">Example Prompts</h4>
+        <div className="space-y-3">
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <p className="text-sm italic">"Run a comprehensive SEO audit on https://example.com"</p>
+          </div>
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <p className="text-sm italic">"Check if my site is visible to ChatGPT and other AI search engines"</p>
+          </div>
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <p className="text-sm italic">"Generate an AI-friendly robots.txt for my domain"</p>
+          </div>
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <p className="text-sm italic">"What structured data should I add to my blog posts?"</p>
+          </div>
+        </div>
       </section>
     </div>
   );
