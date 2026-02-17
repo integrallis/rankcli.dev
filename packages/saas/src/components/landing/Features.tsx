@@ -5,46 +5,68 @@ import {
   Globe,
   Bot,
   Terminal,
+  Shield,
+  Smartphone,
+  Cpu,
 } from 'lucide-react';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ui/scroll-reveal';
 
 const features = [
   {
     icon: Bot,
-    title: 'AI Visibility Tracking',
+    title: 'GEO (AI Search Optimization)',
     description:
-      'Track if ChatGPT, Claude, Gemini, and Perplexity recommend your brand. The new SEO frontier.',
+      'First tool with Generative Engine Optimization. Check if GPTBot, ClaudeBot, and PerplexityBot can access your site. Track AI visibility.',
+    highlight: true,
+  },
+  {
+    icon: Cpu,
+    title: 'MCP Server for AI',
+    description:
+      'Industry-first: Claude and other AI assistants can run SEO audits directly via Model Context Protocol. AI doing SEO for you.',
     highlight: true,
   },
   {
     icon: Search,
-    title: '200+ SEO Checks',
+    title: '7 Deep Analyzers',
     description:
-      'Technical audits covering meta tags, schema, Core Web Vitals, security, and more.',
+      'GEO, Core Web Vitals, Security Headers, Structured Data, Images, Internal Linking, and Mobile SEO. Enterprise-grade depth.',
   },
   {
     icon: GitPullRequest,
-    title: 'Auto-Fix PRs',
+    title: '25+ Framework Fixes',
     description:
-      'Connect GitHub and get PRs with fixes automatically. Just review and merge.',
+      'Auto-generate SEO fixes for Next.js, Nuxt, Astro, Rails, Django, Laravel, Hugo, and 18 more frameworks. Copy-paste ready.',
   },
   {
     icon: Terminal,
-    title: 'CLI-First',
+    title: 'CLI-First, CI/CD Native',
     description:
-      'Run audits from your terminal with `rankcli audit`. JSON output, scriptable, CI/CD ready.',
+      'Run `rankcli audit` from terminal. JSON output, GitHub Actions, pre-commit hooks. Built for developer workflows.',
+  },
+  {
+    icon: Shield,
+    title: 'Security Header Grading',
+    description:
+      'HTTPS, HSTS, CSP, X-Frame-Options analysis with A+ through F grades. Security matters for SEO and AI trust.',
+  },
+  {
+    icon: Smartphone,
+    title: 'Mobile & PWA Ready',
+    description:
+      'Viewport, touch targets, font sizes, manifest detection. Complete mobile-first indexing audit.',
   },
   {
     icon: Zap,
-    title: 'Fast Audits',
+    title: 'Core Web Vitals',
     description:
-      'Parallel crawling and analysis. 50-page site audited in under 30 seconds.',
+      'LCP, CLS, INP, TTFB estimation from HTML. Detect lazy-loaded heroes, missing dimensions, blocking resources.',
   },
   {
     icon: Globe,
     title: 'Framework Plugins',
     description:
-      'Native plugins for Vite, Next.js, and Astro. Seamless integration with your stack.',
+      'Native plugins for Vite, Next.js, and Astro. Zero-config integration with your existing stack.',
   },
 ];
 
@@ -54,14 +76,14 @@ export function Features() {
       <div className="container">
         <ScrollReveal className="text-center mb-16">
           <h2 className="text-2xl md:text-3xl font-semibold tracking-tighter mb-4">
-            Everything you need for SEO
+            The SEO tool that makes competitors look outdated
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Built by developers, for developers. No fluff, just the tools you need.
+            GEO, MCP, 25+ frameworks. Built for developers who ship fast.
           </p>
         </ScrollReveal>
 
-        <StaggerContainer className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10 max-w-4xl mx-auto">
+        <StaggerContainer className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10 max-w-5xl mx-auto">
           {features.map((feature, index) => (
             <StaggerItem key={index}>
               <div className={`flex gap-4 ${feature.highlight ? 'p-4 -m-4 rounded-lg bg-primary/5 border border-primary/20' : ''}`}>

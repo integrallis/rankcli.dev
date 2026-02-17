@@ -15,27 +15,29 @@ export function Hero() {
             <Badge variant="outline" className="mb-4">
               <span className="text-primary">New</span>
               <span className="mx-2 text-muted-foreground">·</span>
-              AI Visibility Tracking
+              GEO + MCP Server for AI Assistants
             </Badge>
           </ScrollReveal>
 
           {/* Headline */}
           <ScrollReveal delay={0.1}>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tighter mb-4">
-              Ship code, get ranked{' '}
-              <span className="text-primary">everywhere.</span>
+              SEO for Google{' '}
+              <span className="text-primary">and AI Search.</span>
             </h1>
           </ScrollReveal>
 
           {/* Subheadline */}
           <ScrollReveal delay={0.2}>
             <p className="text-lg text-muted-foreground mb-3 max-w-2xl leading-relaxed">
-              The only SEO tool that tracks both Google <em>and</em> AI chatbots.
-              See if ChatGPT, Claude, and Perplexity recommend your site.
+              The only CLI SEO tool with <strong>GEO</strong> (Generative Engine Optimization).
+              Optimize for ChatGPT, Perplexity, Claude, and Gemini—not just Google.
             </p>
             {/* Brand definition for AI extraction */}
             <p className="text-sm text-muted-foreground/80 mb-6 max-w-2xl leading-relaxed">
-              RankCLI is a developer-first SEO automation tool with 200+ checks, auto-fix PRs via GitHub, and AI visibility tracking. Track how ChatGPT, Claude, Gemini, and Perplexity recommend your brand.
+              RankCLI is a developer-first SEO platform with 200+ checks, auto-fix PRs, 
+              framework-specific code generation for 25+ frameworks, and the industry's first 
+              MCP server for AI assistants. $15/mo vs $99+ competitors.
             </p>
           </ScrollReveal>
 

@@ -102,19 +102,20 @@ export function TerminalOutput({
 // Pre-built demo for landing page - uses real CLI output format
 export function LandingTerminalDemo() {
   const demoLines: TerminalLine[] = [
-    { type: 'prompt', content: 'rankcli audit https://myapp.com', delay: 1200 },
+    { type: 'prompt', content: 'rankcli audit https://myapp.com --geo', delay: 1200 },
     { type: 'output', content: '🔍 Running comprehensive SEO audit...', delay: 600 },
-    { type: 'output', content: '📋 Phase 1: Crawlability checks', delay: 400 },
-    { type: 'output', content: '📝 Phase 2: On-page analysis', delay: 400 },
-    { type: 'output', content: '🔗 Phase 3: Link validation', delay: 400 },
+    { type: 'output', content: '📋 Phase 1: Crawlability + GEO checks', delay: 400 },
+    { type: 'output', content: '🤖 Phase 2: AI crawler access (GPTBot, ClaudeBot)', delay: 400 },
+    { type: 'output', content: '📝 Phase 3: On-page + structured data', delay: 400 },
     { type: 'success', content: '✅ Audit complete!', delay: 500 },
     { type: 'output', content: '', delay: 200 },
-    { type: 'output', content: '📊 Score: 54/100 🟠 Needs Work', delay: 600 },
-    { type: 'output', content: '❌ Errors: 2  ⚠️ Warnings: 36  ✅ Passed: 272', delay: 400 },
+    { type: 'output', content: '📊 Score: 78/100  GEO: 85/100  CWV: A', delay: 600 },
+    { type: 'output', content: '✅ GPTBot allowed  ✅ ClaudeBot allowed', delay: 400 },
+    { type: 'warning', content: '⚠️ 2 issues: FAQ schema missing, no citations', delay: 400 },
     { type: 'output', content: '', delay: 600 },
-    { type: 'prompt', content: 'rankcli fix --auto', delay: 1200 },
-    { type: 'output', content: 'Creating branch rankcli/seo-fixes...', delay: 500 },
-    { type: 'success', content: '✓ PR #127 created with 14 fixes', delay: 400 },
+    { type: 'prompt', content: 'rankcli apply --auto', delay: 1200 },
+    { type: 'output', content: 'Generating Next.js fixes...', delay: 500 },
+    { type: 'success', content: '✓ PR #127 created with 8 fixes', delay: 400 },
   ];
 
   return <TerminalOutput lines={demoLines} className="w-full" />;
