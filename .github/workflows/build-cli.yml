@@ -228,7 +228,8 @@ jobs:
           fi
 
           echo "📦 Publishing @rankcli/cli@$(node -p "require('./package.json').version")"
-          npm publish --access public
+          # Skip prepublishOnly since build is already done; inject-config already ran
+          npm publish --access public --ignore-scripts
 
       - name: Create publish summary
         run: |
