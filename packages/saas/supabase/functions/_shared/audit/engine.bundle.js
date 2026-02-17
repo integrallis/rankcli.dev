@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-02-17T18:13:45.329Z
+// Generated: 2026-02-17T18:32:54.592Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -17460,7 +17460,9 @@ var MEDIUM_PRIORITY_PATTERNS = [
 ];
 var EXCLUDE_PATTERNS = [
   /\.(png|jpg|jpeg|gif|svg|webp|ico|pdf|zip|tar|gz)$/i,
-  // Files
+  // Images & archives
+  /\.(json|xml|txt|webmanifest|rss|atom)$/i,
+  // Data files (not HTML)
   /^(mailto:|tel:|javascript:|#)/i,
   // Non-HTTP
   /\/(api|_next|static|assets|cdn)\//i,
