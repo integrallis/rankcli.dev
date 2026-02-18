@@ -792,7 +792,7 @@ export function AccountPage() {
                     <div className="mt-6 p-4 rounded-lg bg-muted/30 border">
                       <p className="text-sm font-medium mb-2">Quick Start</p>
                       <code className="text-xs text-muted-foreground block bg-background p-2 rounded">
-                        rankcli auth --token YOUR_API_KEY
+                        rankcli login --token YOUR_API_KEY
                       </code>
                     </div>
                   </CardContent>
