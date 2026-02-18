@@ -28,6 +28,42 @@ const AUDIT_TIMEOUT = 300000; // 5 minutes max per audit
 const PAGE_TIMEOUT = 30000;   // 30 seconds per page
 const MAX_PAGES = 20;         // Up to 20 pages for paid users
 
+// Email notification endpoint (Supabase Edge Function)
+const EMAIL_FUNCTION_URL = process.env.SUPABASE_URL
+  ? `${process.env.SUPABASE_URL}/functions/v1/send-audit-email`
+  : '';
+
+/**
+ * Send audit completion notification email via Supabase Edge Function.
+ * Non-blocking - failures are logged but don't affect the audit result.
+ */
+async function sendAuditNotification(auditId: string): Promise<void> {
+  if (!EMAIL_FUNCTION_URL || !SUPABASE_SERVICE_KEY) {
+    return;
+  }
+
+  try {
+    const response = await fetch(EMAIL_FUNCTION_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${WORKER_SECRET}`,
+      },
+      body: JSON.stringify({ auditId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.warn(`Email notification failed for audit ${auditId}:`, error);
+    } else {
+      const result = await response.json();
+      console.log(`Email notification sent for audit ${auditId}:`, result);
+    }
+  } catch (err) {
+    console.warn(`Email notification error for audit ${auditId}:`, err);
+  }
+}
+
 // SSE event types
 interface SseEvent {
   type: 'job_created' | 'job_started' | 'job_progress' | 'job_completed' | 'job_failed' | 'heartbeat' | 'provider_result';
@@ -574,6 +610,11 @@ async function runDeepAudit(
       pages: pagesToAudit.length,
       issues: mergedIssues.length
     }, 'Audit completed');
+
+    // Trigger email notification (non-blocking)
+    sendAuditNotification(job.auditId).catch(err => {
+      app.log.warn({ err, auditId: job.auditId }, 'Failed to send audit notification email');
+    });
 
     // Clean up job after 5 minutes
     setTimeout(() => jobs.delete(job.id), 300000);
