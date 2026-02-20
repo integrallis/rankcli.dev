@@ -84,7 +84,11 @@ The GitHub App enables:
 3. A `.pem` file will download
 4. Base64-encode it for storage:
    ```bash
-   cat rankcli.pem | base64 -w 0 > rankcli-key.b64
+   # macOS
+   base64 -i rankcli.pem -o rankcli-key.b64
+   
+   # Linux
+   base64 -w 0 rankcli.pem > rankcli-key.b64
    ```
 
 ### Step 3: Note the App ID
