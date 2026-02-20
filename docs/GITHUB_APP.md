@@ -68,7 +68,8 @@ The GitHub App enables:
    - `create`
    - `issues`
    - `issue_comment`
-   - `installation`
+
+   > **Note:** The `installation` event is automatically sent to all GitHub Apps when they are installed/uninstalled — you don't need to subscribe to it.
 
 5. **Where can this GitHub App be installed?**
    - Select "Any account" for production
