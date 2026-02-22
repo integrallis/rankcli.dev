@@ -1,0 +1,659 @@
+# RankCLI Manual Testing Guide
+
+Comprehensive manual testing script covering all user personas and features.
+
+---
+
+## Table of Contents
+
+1. [User Personas Overview](#user-personas-overview)
+2. [Test Environment Setup](#test-environment-setup)
+3. [Part 1: Free Users (No Login)](#part-1-free-users-no-login)
+4. [Part 2: Free Registered Users](#part-2-free-registered-users)
+5. [Part 3A: Paid Users - Web-Based](#part-3a-paid-users---web-based)
+6. [Part 3B: Paid Users - CLI Power Users](#part-3b-paid-users---cli-power-users)
+7. [Part 4: GitHub Integration](#part-4-github-integration)
+8. [Part 5: MCP Server (AI Assistants)](#part-5-mcp-server-ai-assistants)
+9. [Part 6: CI/CD Integration](#part-6-cicd-integration)
+10. [Appendix: Test URLs & Data](#appendix-test-urls--data)
+
+---
+
+## User Personas Overview
+
+| Persona | Access Level | Primary Interface | Key Features |
+|---------|--------------|-------------------|--------------|
+| **Free (No Login)** | Anonymous | Web | Free tools only |
+| **Free Registered** | Account | Web + CLI (limited) | 100 checks, 1 site, audit history |
+| **Solo ($9/mo)** | Paid | Web + CLI | 3 sites, 280 checks, weekly audits |
+| **Pro ($29/mo)** | Paid | Web + CLI | 10 sites, daily audits, GitHub PRs |
+| **Agency ($99/mo)** | Paid | Web + CLI | 50 sites, hourly sync, white-label |
+
+---
+
+## Test Environment Setup
+
+### Prerequisites
+
+```bash
+# Install CLI globally
+npm install -g @rankcli/cli
+
+# Verify installation
+rankcli --version
+# Expected: 0.0.15 (or current version)
+
+# For MCP testing, also install:
+npm install -g @rankcli/mcp-server
+```
+
+### Test URLs (use these throughout testing)
+
+| Purpose | URL | Notes |
+|---------|-----|-------|
+| **Production Site** | https://rankcli.dev | Our own site |
+| **Good SEO Site** | https://example.com | Baseline reference |
+| **SPA Site** | Pick a React/Vue SPA | Test JS rendering issues |
+| **E-commerce** | Pick a product page | Test structured data |
+| **Blog** | Pick an article page | Test content analysis |
+
+### Test Accounts
+
+| Type | Email | Notes |
+|------|-------|-------|
+| **Free Registered** | `test-free@example.com` | Create during testing |
+| **Pro Account** | `info@integrallis.com` | Existing Pro account |
+| **New Paid** | Create fresh | Test checkout flow |
+
+---
+
+## Part 1: Free Users (No Login)
+
+### 1.1 Landing Page
+
+**Location:** https://rankcli.dev
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 1.1.1 | Homepage loads | Navigate to https://rankcli.dev | Page loads with hero, features, pricing sections | ☐ |
+| 1.1.2 | Hero URL input | Enter URL in hero input, click "Analyze" | Redirects to /free-audit with URL pre-filled | ☐ |
+| 1.1.3 | Navigation links | Click Docs, Pricing, Blog links | Navigate to correct pages | ☐ |
+| 1.1.4 | Mobile responsive | View on mobile viewport (375px) | Layout adapts, menu collapses | ☐ |
+| 1.1.5 | Footer links | Click all footer links | All work, external links open new tab | ☐ |
+
+### 1.2 Free Audit Tool
+
+**Location:** https://rankcli.dev/free-audit
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 1.2.1 | Valid URL audit | Enter `https://rankcli.dev`, submit | Audit runs, shows score 0-100, categories, issues | ☐ |
+| 1.2.2 | URL without https | Enter `rankcli.dev`, submit | Auto-prepends https://, runs audit | ☐ |
+| 1.2.3 | Invalid URL | Enter `notaurl`, submit | Shows validation error | ☐ |
+| 1.2.4 | Loading state | Submit URL | Shows loading spinner during audit | ☐ |
+| 1.2.5 | Score display | Complete audit | Shows overall score prominently | ☐ |
+| 1.2.6 | Category breakdown | Complete audit | Shows 7 category scores (Crawl, OnPage, Content, Perf, Security, Social, AI) | ☐ |
+| 1.2.7 | Radar chart | Complete audit | Visual radar chart shows category distribution | ☐ |
+| 1.2.8 | Issues list | Complete audit | Shows top issues with severity (error/warning/notice) | ☐ |
+| 1.2.9 | Hidden issues count | Complete audit | Shows "X more issues - sign up to see all" | ☐ |
+| 1.2.10 | SERP preview | Complete audit | Shows Google SERP preview with title/description | ☐ |
+| 1.2.11 | Share results | Click share button | Opens share modal with URL/embed options | ☐ |
+| 1.2.12 | Sign up CTA | Visible after results | Clear CTA to create account for full report | ☐ |
+| 1.2.13 | Slow site handling | Audit a slow site | Doesn't timeout, shows results eventually | ☐ |
+| 1.2.14 | Error handling | Audit unreachable URL | Shows helpful error message | ☐ |
+
+### 1.3 AI Visibility Checker
+
+**Location:** https://rankcli.dev/tools/ai-visibility
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 1.3.1 | GEO analysis | Enter URL, submit | Shows AI crawler access status | ☐ |
+| 1.3.2 | Crawler breakdown | Complete analysis | Shows GPTBot, ClaudeBot, PerplexityBot, Google-Extended status | ☐ |
+| 1.3.3 | robots.txt analysis | Complete analysis | Shows which AI crawlers are blocked/allowed | ☐ |
+| 1.3.4 | JS rendering check | Complete analysis | Indicates if content requires JS rendering | ☐ |
+| 1.3.5 | Recommendations | Complete analysis | Provides actionable recommendations | ☐ |
+
+### 1.4 ChatGPT Checker
+
+**Location:** https://rankcli.dev/tools/chatgpt-checker
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 1.4.1 | GPTBot access | Enter URL, submit | Shows if GPTBot can crawl the site | ☐ |
+| 1.4.2 | Content analysis | Complete check | Shows what content ChatGPT can "see" | ☐ |
+| 1.4.3 | LLM signals | Complete check | Shows citation readiness, structured content | ☐ |
+
+### 1.5 OG Image Preview
+
+**Location:** https://rankcli.dev/tools/og-preview
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 1.5.1 | OG tags extraction | Enter URL, submit | Shows og:title, og:description, og:image | ☐ |
+| 1.5.2 | Preview cards | Complete extraction | Shows Twitter/Facebook/LinkedIn previews | ☐ |
+| 1.5.3 | Missing tags | Test page without OG tags | Clearly indicates what's missing | ☐ |
+| 1.5.4 | Image preview | Page with og:image | Shows actual image preview | ☐ |
+
+### 1.6 Meta Tag Analyzer
+
+**Location:** https://rankcli.dev/tools/meta-analyzer
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 1.6.1 | Title analysis | Enter URL, submit | Shows title tag, length, optimization tips | ☐ |
+| 1.6.2 | Description analysis | Complete analysis | Shows meta description, length, quality score | ☐ |
+| 1.6.3 | Character count | Complete analysis | Shows character counts with optimal ranges | ☐ |
+| 1.6.4 | Improvement suggestions | Complete analysis | Actionable suggestions for improvement | ☐ |
+
+### 1.7 Competitor Analyzer
+
+**Location:** https://rankcli.dev/tools/competitor
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 1.7.1 | Compare two sites | Enter your site + competitor | Shows side-by-side comparison | ☐ |
+| 1.7.2 | Score comparison | Complete analysis | Shows scores for both sites | ☐ |
+| 1.7.3 | Gap analysis | Complete analysis | Highlights where competitor is stronger | ☐ |
+
+### 1.8 Documentation
+
+**Location:** https://rankcli.dev/docs
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 1.8.1 | Docs page loads | Navigate to /docs | Shows documentation sections | ☐ |
+| 1.8.2 | Navigation | Click sidebar sections | Smooth scrolling to sections | ☐ |
+| 1.8.3 | Code examples | View CLI examples | Syntax highlighted, copyable | ☐ |
+| 1.8.4 | GEO section | Navigate to GEO docs | Complete GEO documentation | ☐ |
+| 1.8.5 | MCP section | Navigate to MCP docs | Complete MCP setup instructions | ☐ |
+
+---
+
+## Part 2: Free Registered Users
+
+### 2.1 Signup Flow
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 2.1.1 | Signup page loads | Navigate to /signup | Shows signup form with OAuth options | ☐ |
+| 2.1.2 | GitHub OAuth | Click "Continue with GitHub" | Redirects to GitHub, then back to dashboard | ☐ |
+| 2.1.3 | Google OAuth | Click "Continue with Google" | Redirects to Google, then back to dashboard | ☐ |
+| 2.1.4 | Email signup | Enter email/password | Account created, verification email sent | ☐ |
+| 2.1.5 | Email verification | Click link in email | Email verified, redirected to dashboard | ☐ |
+| 2.1.6 | Duplicate email | Try existing email | Shows "account exists" error | ☐ |
+| 2.1.7 | Weak password | Enter weak password | Shows password requirements | ☐ |
+
+### 2.2 Login Flow
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 2.2.1 | Login page loads | Navigate to /login | Shows login form with OAuth options | ☐ |
+| 2.2.2 | Valid credentials | Enter correct email/password | Redirected to dashboard | ☐ |
+| 2.2.3 | Invalid credentials | Enter wrong password | Shows error message | ☐ |
+| 2.2.4 | Forgot password | Click "Forgot password" | Shows password reset flow | ☐ |
+| 2.2.5 | Password reset | Complete reset flow | Able to login with new password | ☐ |
+
+### 2.3 Dashboard (Free User)
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 2.3.1 | Dashboard loads | Login, view dashboard | Shows empty state or existing projects | ☐ |
+| 2.3.2 | Stats display | View dashboard | Shows stats: sites, issues, avg score, audits | ☐ |
+| 2.3.3 | Add project button | Click "Add Project" | Opens add project modal | ☐ |
+| 2.3.4 | Add first project | Enter URL, submit | Project created, first audit runs | ☐ |
+| 2.3.5 | Site limit (1) | Try adding second site | Shows upgrade prompt (free = 1 site) | ☐ |
+| 2.3.6 | View project | Click project card | Navigates to project detail page | ☐ |
+
+### 2.4 Project Page (Free User)
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 2.4.1 | Project page loads | Navigate to project | Shows project info, score, issues | ☐ |
+| 2.4.2 | Score display | View project | Shows overall score and category breakdown | ☐ |
+| 2.4.3 | Issues list | View project | Shows all issues (up to 100 checks limit) | ☐ |
+| 2.4.4 | Issue details | Click on issue | Shows issue details with description | ☐ |
+| 2.4.5 | Run audit button | Click "Run Audit" | New audit runs, results update | ☐ |
+| 2.4.6 | Audit history | View audit history | Shows past audits with dates/scores | ☐ |
+| 2.4.7 | Gated features | Try to access paid features | Shows upgrade prompts | ☐ |
+| 2.4.8 | Connect GitHub | Try "Connect GitHub" | Shows upgrade prompt (Pro feature) | ☐ |
+
+### 2.5 Account Page (Free User)
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 2.5.1 | Account page loads | Navigate to /account | Shows account settings | ☐ |
+| 2.5.2 | Profile info | View profile section | Shows email, name, avatar | ☐ |
+| 2.5.3 | Current plan | View plan section | Shows "Free" plan with limits | ☐ |
+| 2.5.4 | Upgrade CTA | View upgrade section | Clear upgrade options with pricing | ☐ |
+| 2.5.5 | API key | View API section | Can generate/view API key | ☐ |
+| 2.5.6 | Logout | Click logout | Logged out, redirected to home | ☐ |
+
+### 2.6 CLI (Free Registered User)
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 2.6.1 | CLI login | `rankcli login` | Opens browser, completes auth | ☐ |
+| 2.6.2 | Whoami | `rankcli whoami` | Shows logged-in user info | ☐ |
+| 2.6.3 | Basic audit | `rankcli audit -u https://example.com` | Runs audit (100 checks limit) | ☐ |
+| 2.6.4 | Check limit | Complete audit | Results limited to 100 checks, shows upgrade prompt | ☐ |
+| 2.6.5 | CLI logout | `rankcli logout` | Logs out, confirms | ☐ |
+
+---
+
+## Part 3A: Paid Users - Web-Based
+
+### 3A.1 Checkout Flow
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3A.1.1 | Pricing page | Navigate to /pricing | Shows all tiers with features | ☐ |
+| 3A.1.2 | Monthly/Annual toggle | Toggle billing period | Prices update with annual discount | ☐ |
+| 3A.1.3 | LTD view | Toggle to Lifetime Deals | Shows LTD options with remaining count | ☐ |
+| 3A.1.4 | Select Solo plan | Click "Get Started" on Solo | Redirects to checkout | ☐ |
+| 3A.1.5 | Select Pro plan | Click "Get Started" on Pro | Redirects to checkout | ☐ |
+| 3A.1.6 | Stripe checkout | Complete checkout | Stripe checkout loads, can enter card | ☐ |
+| 3A.1.7 | Successful payment | Complete payment (test card) | Redirected to dashboard, plan upgraded | ☐ |
+| 3A.1.8 | LTD checkout | Select LTD tier | Shows LTD-specific checkout | ☐ |
+| 3A.1.9 | License count update | Complete LTD purchase | Remaining licenses decrease | ☐ |
+
+### 3A.2 Dashboard (Paid User)
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3A.2.1 | Paid dashboard | Login as paid user | Dashboard shows full features | ☐ |
+| 3A.2.2 | Multiple projects | Add multiple sites (up to plan limit) | All projects created successfully | ☐ |
+| 3A.2.3 | AI Visibility Card | View dashboard | Shows AI visibility metrics | ☐ |
+| 3A.2.4 | Widget generator | Click "Generate Widget" | Opens widget customization modal | ☐ |
+
+### 3A.3 Project Management (Paid User)
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3A.3.1 | Full audit | Run audit on project | 280+ checks run | ☐ |
+| 3A.3.2 | All issues visible | View issues | All issues shown (no "hidden" count) | ☐ |
+| 3A.3.3 | Issue categories | Filter by category | Filtering works correctly | ☐ |
+| 3A.3.4 | Issue severity | Filter by severity | Shows errors/warnings/notices | ☐ |
+| 3A.3.5 | Project settings | Click settings gear | Opens project settings modal | ☐ |
+| 3A.3.6 | Delete project | Delete a project | Project removed, confirmation shown | ☐ |
+| 3A.3.7 | Framework detection | View project | Shows detected framework (Next.js, etc.) | ☐ |
+
+### 3A.4 GitHub Integration (Pro+)
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3A.4.1 | Connect GitHub button | Click "Connect GitHub" | Opens GitHub connection modal | ☐ |
+| 3A.4.2 | Install GitHub App | Click "Install GitHub App" | Redirects to GitHub App installation | ☐ |
+| 3A.4.3 | Grant repo access | Select repos in GitHub | App installed with selected repos | ☐ |
+| 3A.4.4 | Select repository | Choose repo in modal | Repository connected to project | ☐ |
+| 3A.4.5 | Repo shows connected | View project | Shows connected repo badge | ☐ |
+| 3A.4.6 | Disconnect repo | Disconnect repository | Repo unlinked from project | ☐ |
+
+### 3A.5 Auto-Fix PRs (Pro+)
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3A.5.1 | Generate Fix button | Click "Generate Fix" on issue | Shows fix preview | ☐ |
+| 3A.5.2 | Fix preview | View fix preview | Shows code changes for framework | ☐ |
+| 3A.5.3 | Create PR | Click "Create PR" | PR created on GitHub | ☐ |
+| 3A.5.4 | PR content | View PR on GitHub | Has proper title, description, co-author | ☐ |
+| 3A.5.5 | Multiple fixes | Select multiple issues | Single PR with all fixes | ☐ |
+| 3A.5.6 | Dry run | Preview without creating | Shows diff without creating PR | ☐ |
+
+### 3A.6 Scheduled Audits
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3A.6.1 | Weekly audit (Solo) | Wait for schedule | Audit runs weekly automatically | ☐ |
+| 3A.6.2 | Daily audit (Pro) | Wait for schedule | Audit runs daily automatically | ☐ |
+| 3A.6.3 | Audit history | View history | Shows all scheduled audits | ☐ |
+| 3A.6.4 | Score trends | View trends | Shows score changes over time | ☐ |
+
+### 3A.7 Alerts & Notifications (Pro+)
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3A.7.1 | Email notifications | Enable in settings | Receives email on new issues | ☐ |
+| 3A.7.2 | Slack integration | Connect Slack | Receives Slack alerts | ☐ |
+| 3A.7.3 | Discord integration | Connect Discord | Receives Discord alerts | ☐ |
+| 3A.7.4 | Alert customization | Configure alert types | Only selected alerts fire | ☐ |
+
+### 3A.8 Reports & Export
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3A.8.1 | Export PDF | Click "Export PDF" | PDF downloads with full report | ☐ |
+| 3A.8.2 | Export JSON | Click "Export JSON" | JSON file downloads | ☐ |
+| 3A.8.3 | White-label (Agency) | Enable white-label | Reports have custom branding | ☐ |
+
+### 3A.9 Keywords & Content (Paid)
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3A.9.1 | Keywords page | Navigate to /keywords | Shows keyword research interface | ☐ |
+| 3A.9.2 | Seed keywords | Enter seed keywords | Generates keyword suggestions | ☐ |
+| 3A.9.3 | Search volume | View results | Shows estimated search volume | ☐ |
+| 3A.9.4 | Keyword difficulty | View results | Shows KD scores | ☐ |
+| 3A.9.5 | Competitor keywords | Enter competitor | Shows competitor keyword gaps | ☐ |
+
+### 3A.10 Account Management (Paid)
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3A.10.1 | View subscription | Navigate to account | Shows current plan details | ☐ |
+| 3A.10.2 | Usage stats | View usage | Shows limits and current usage | ☐ |
+| 3A.10.3 | Upgrade plan | Click upgrade | Shows upgrade options | ☐ |
+| 3A.10.4 | Downgrade plan | Click downgrade | Shows confirmation with implications | ☐ |
+| 3A.10.5 | Cancel subscription | Click cancel | Shows cancellation flow | ☐ |
+| 3A.10.6 | Billing history | View billing | Shows past invoices | ☐ |
+| 3A.10.7 | Update payment | Update card | Can update payment method | ☐ |
+
+---
+
+## Part 3B: Paid Users - CLI Power Users
+
+### 3B.1 Authentication
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3B.1.1 | Browser login | `rankcli login` | Opens browser, authenticates | ☐ |
+| 3B.1.2 | Token login | `rankcli login --token rankcli_xxx` | Authenticates with API key | ☐ |
+| 3B.1.3 | Env var auth | `export RANKCLI_API_KEY=xxx` | Commands authenticate automatically | ☐ |
+| 3B.1.4 | Whoami | `rankcli whoami` | Shows user info and plan | ☐ |
+| 3B.1.5 | Multiple machines | Login on different machine | Both machines work | ☐ |
+
+### 3B.2 Audit Command
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3B.2.1 | Basic audit | `rankcli audit -u https://example.com` | Full 280+ check audit runs | ☐ |
+| 3B.2.2 | Console output | Default output | Formatted console output with colors | ☐ |
+| 3B.2.3 | JSON output | `rankcli audit -u https://example.com -o json` | Valid JSON output | ☐ |
+| 3B.2.4 | Max pages | `rankcli audit -u https://example.com --max-pages 10` | Crawls up to 10 pages | ☐ |
+| 3B.2.5 | Check links | `rankcli audit -u https://example.com --check-links` | Includes broken link checking | ☐ |
+| 3B.2.6 | AI analysis | `rankcli audit -u https://example.com --ai` | AI-enhanced analysis (requires API key) | ☐ |
+| 3B.2.7 | OpenAI provider | `rankcli audit --ai --ai-provider openai` | Uses OpenAI for AI analysis | ☐ |
+| 3B.2.8 | Anthropic provider | `rankcli audit --ai --ai-provider anthropic` | Uses Anthropic for AI analysis | ☐ |
+| 3B.2.9 | Score output | Complete audit | Shows score 0-100 prominently | ☐ |
+| 3B.2.10 | Category scores | Complete audit | Shows all 7 category scores | ☐ |
+| 3B.2.11 | Issues table | Complete audit | Shows issues in formatted table | ☐ |
+| 3B.2.12 | Error handling | Audit unreachable URL | Shows clear error message | ☐ |
+
+### 3B.3 GEO Command
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3B.3.1 | Basic GEO | `rankcli geo -u https://example.com` | Shows AI crawler analysis | ☐ |
+| 3B.3.2 | Crawler status | Complete GEO | Shows GPTBot, ClaudeBot, PerplexityBot, Google-Extended | ☐ |
+| 3B.3.3 | robots.txt analysis | Complete GEO | Shows what robots.txt allows/blocks | ☐ |
+| 3B.3.4 | JS rendering | Complete GEO | Indicates SSR vs CSR | ☐ |
+| 3B.3.5 | LLM signals | Complete GEO | Shows content structure analysis | ☐ |
+| 3B.3.6 | JSON output | `rankcli geo -u https://example.com -o json` | Valid JSON output | ☐ |
+
+### 3B.4 Apply Command (Auto-Fix)
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3B.4.1 | Dry run | `rankcli apply -u https://mysite.com --dry-run` | Shows fixes without applying | ☐ |
+| 3B.4.2 | Framework detection | Run apply | Detects framework (Next.js, etc.) | ☐ |
+| 3B.4.3 | Fix preview | View dry run | Shows code diffs for each fix | ☐ |
+| 3B.4.4 | Interactive apply | `rankcli apply -u https://mysite.com` | Prompts for confirmation | ☐ |
+| 3B.4.5 | Auto apply | `rankcli apply -u https://mysite.com --auto` | Applies without prompts | ☐ |
+| 3B.4.6 | Git changes | After apply | Creates proper git changes | ☐ |
+| 3B.4.7 | Multiple frameworks | Test with Next.js, Astro, Rails | Framework-specific fixes | ☐ |
+
+### 3B.5 Keywords Command
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3B.5.1 | Basic keywords | `rankcli keywords -u https://mysite.com` | Interactive keyword research | ☐ |
+| 3B.5.2 | Quick mode | `rankcli keywords -u https://mysite.com --quick` | Skips prompts, uses defaults | ☐ |
+| 3B.5.3 | Seed keywords | `rankcli keywords -u https://mysite.com -s "seo,tools"` | Uses provided seeds | ☐ |
+| 3B.5.4 | Auto-extract | `rankcli keywords -u https://mysite.com --auto` | Extracts seeds from page | ☐ |
+| 3B.5.5 | AI keywords | `rankcli keywords -u https://mysite.com --ai` | GPT-4 enhanced analysis | ☐ |
+| 3B.5.6 | Competitor mode | `rankcli keywords -u https://mysite.com --competitor -c competitor.com -s seo` | Gap analysis | ☐ |
+| 3B.5.7 | Local processing | `rankcli keywords -u https://mysite.com --ai --local` | Forces local processing | ☐ |
+
+### 3B.6 Content Command
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3B.6.1 | Full analysis | `rankcli content -u https://mysite.com/blog` | Complete content analysis | ☐ |
+| 3B.6.2 | With keyword | `rankcli content -u https://mysite.com/blog -k "seo tips"` | Keyword-targeted analysis | ☐ |
+| 3B.6.3 | Readability mode | `rankcli content -u https://mysite.com --mode readability` | Readability scores only | ☐ |
+| 3B.6.4 | Headline analysis | `rankcli content --headline "10 SEO Tips"` | Analyzes headline quality | ☐ |
+| 3B.6.5 | Snippet mode | `rankcli content -u https://mysite.com --mode snippet` | Featured snippet analysis | ☐ |
+| 3B.6.6 | Density mode | `rankcli content -u https://mysite.com --mode density` | Keyword density analysis | ☐ |
+
+### 3B.7 Intent Command
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3B.7.1 | Intent classification | `rankcli intent "buy running shoes"` | Classifies as transactional | ☐ |
+| 3B.7.2 | Informational intent | `rankcli intent "how to tie shoes"` | Classifies as informational | ☐ |
+| 3B.7.3 | Navigational intent | `rankcli intent "nike website"` | Classifies as navigational | ☐ |
+
+### 3B.8 Setup Command
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3B.8.1 | Setup wizard | `rankcli setup --all` | Interactive setup for all integrations | ☐ |
+| 3B.8.2 | GA4 setup | `rankcli setup --ga4 G-XXXXXXXXXX` | Configures Google Analytics | ☐ |
+| 3B.8.3 | GSC setup | `rankcli setup --gsc <code>` | Configures Search Console | ☐ |
+| 3B.8.4 | GitHub Action | `rankcli setup --github-action` | Creates workflow file | ☐ |
+| 3B.8.5 | Custom schedule | `rankcli setup --github-action --schedule daily` | Sets daily schedule | ☐ |
+| 3B.8.6 | GSC instructions | `rankcli gsc-setup` | Shows GSC API setup steps | ☐ |
+
+### 3B.9 Init Command
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3B.9.1 | Interactive init | `rankcli init` | Prompts for project config | ☐ |
+| 3B.9.2 | Default init | `rankcli init -y` | Uses defaults, no prompts | ☐ |
+| 3B.9.3 | Config file | After init | Creates rankcli.config.js or similar | ☐ |
+
+### 3B.10 Analyze Command
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 3B.10.1 | Codebase analysis | `rankcli analyze` | AI analyzes local codebase | ☐ |
+| 3B.10.2 | Verbose mode | `rankcli analyze -v` | Shows detailed output | ☐ |
+| 3B.10.3 | SEO opportunities | Complete analysis | Lists SEO improvement opportunities | ☐ |
+
+---
+
+## Part 4: GitHub Integration
+
+### 4.1 GitHub App Installation
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 4.1.1 | App install page | Visit GitHub App install URL | Shows app permissions | ☐ |
+| 4.1.2 | Select repositories | Choose repos during install | App installed on selected repos | ☐ |
+| 4.1.3 | All repositories | Select "All repositories" | App installed on all repos | ☐ |
+| 4.1.4 | Installation webhook | Complete install | Webhook fires to our backend | ☐ |
+
+### 4.2 Webhook Events
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 4.2.1 | Push event | Push to connected repo | Audit triggers if SEO files changed | ☐ |
+| 4.2.2 | PR opened | Open PR in repo | PR comment with audit results | ☐ |
+| 4.2.3 | Deployment success | Vercel/Netlify deployment | Post-deployment audit runs | ☐ |
+| 4.2.4 | Issue command | Comment `/rankcli audit` | Audit runs, posts results | ☐ |
+
+### 4.3 Auto-Fix PR Creation
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 4.3.1 | Single issue fix | Generate fix for one issue | PR with single fix | ☐ |
+| 4.3.2 | Multiple issues | Generate fix for multiple | PR with multiple commits | ☐ |
+| 4.3.3 | PR title | View created PR | Follows convention: `fix(seo): description` | ☐ |
+| 4.3.4 | PR description | View created PR | Detailed description with issue refs | ☐ |
+| 4.3.5 | Co-author | View PR | Includes RankCLI as co-author | ☐ |
+| 4.3.6 | Framework-specific | Test Next.js repo | Changes are Next.js-appropriate | ☐ |
+| 4.3.7 | Framework-specific | Test Astro repo | Changes are Astro-appropriate | ☐ |
+
+### 4.4 GitHub Action
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 4.4.1 | Action marketplace | Search for rankcli | Action listed and documented | ☐ |
+| 4.4.2 | Basic workflow | Add workflow to repo | Action runs on push/PR | ☐ |
+| 4.4.3 | PR comment | Run on PR | Posts comment with results | ☐ |
+| 4.4.4 | Score threshold | Set threshold, score below | Workflow fails | ☐ |
+| 4.4.5 | Score threshold | Set threshold, score above | Workflow passes | ☐ |
+| 4.4.6 | Auto-fix PR | Enable create-pr | Creates fix PR automatically | ☐ |
+| 4.4.7 | Slack notification | Configure webhook | Sends Slack alert | ☐ |
+| 4.4.8 | GitHub summary | View workflow | Shows summary in Actions tab | ☐ |
+| 4.4.9 | JSON output | View outputs | outputs.report-json is valid JSON | ☐ |
+
+---
+
+## Part 5: MCP Server (AI Assistants)
+
+### 5.1 Installation
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 5.1.1 | npm install | `npm install -g @rankcli/mcp-server` | Installs successfully | ☐ |
+| 5.1.2 | npx run | `npx @rankcli/mcp-server` | Server starts | ☐ |
+
+### 5.2 Claude Desktop Integration
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 5.2.1 | Config file | Add to claude_desktop_config.json | Config accepted | ☐ |
+| 5.2.2 | Claude restart | Restart Claude Desktop | MCP server loads | ☐ |
+| 5.2.3 | Tools available | Check Claude tools | Shows 13 SEO tools | ☐ |
+
+### 5.3 MCP Tools
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 5.3.1 | seo_analyze | Ask Claude to analyze site | Full audit results | ☐ |
+| 5.3.2 | seo_geo_check | Ask about AI visibility | GEO analysis results | ☐ |
+| 5.3.3 | seo_robots_ai | Ask about robots.txt | AI crawler analysis | ☐ |
+| 5.3.4 | seo_generate_robots | Ask to generate robots.txt | AI-friendly robots.txt | ☐ |
+| 5.3.5 | seo_core_web_vitals | Ask about CWV | LCP, CLS, INP, TTFB | ☐ |
+| 5.3.6 | seo_structured_data | Ask about schema | JSON-LD validation | ☐ |
+| 5.3.7 | seo_generate_schema | Ask to generate schema | Schema template | ☐ |
+| 5.3.8 | seo_security_headers | Ask about security | Security header grades | ☐ |
+| 5.3.9 | seo_generate_security_headers | Ask to generate headers | Recommended headers | ☐ |
+| 5.3.10 | seo_images | Ask about images | Image optimization analysis | ☐ |
+| 5.3.11 | seo_internal_links | Ask about links | Internal linking analysis | ☐ |
+| 5.3.12 | seo_mobile | Ask about mobile | Mobile SEO analysis | ☐ |
+| 5.3.13 | seo_ai_crawlers | Ask about AI crawlers | Crawler reference info | ☐ |
+
+---
+
+## Part 6: CI/CD Integration
+
+### 6.1 Environment Variables
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 6.1.1 | RANKCLI_API_KEY | Set in CI | Commands authenticate | ☐ |
+| 6.1.2 | OPENAI_API_KEY | Set for AI features | AI analysis works | ☐ |
+| 6.1.3 | ANTHROPIC_API_KEY | Set for AI features | AI analysis works with Anthropic | ☐ |
+
+### 6.2 CI Pipeline Integration
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 6.2.1 | GitHub Actions | Add audit step | Audit runs in CI | ☐ |
+| 6.2.2 | GitLab CI | Add audit job | Audit runs in GitLab | ☐ |
+| 6.2.3 | Circle CI | Add audit step | Audit runs in Circle | ☐ |
+| 6.2.4 | JSON parsing | `jq '.issues | length'` | Can parse JSON output | ☐ |
+| 6.2.5 | Exit codes | Audit with errors | Non-zero exit on critical errors | ☐ |
+| 6.2.6 | Preview URLs | Audit Vercel preview | Works with dynamic URLs | ☐ |
+
+### 6.3 Vercel Integration
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 6.3.1 | Deployment hook | Configure deployment_status trigger | Audit runs after deploy | ☐ |
+| 6.3.2 | Preview URL | Use deployment target_url | Audits preview deployment | ☐ |
+| 6.3.3 | Production only | Filter for production | Only audits production | ☐ |
+
+### 6.4 Netlify Integration
+
+| # | Test Case | Steps | Expected Result | Status |
+|---|-----------|-------|-----------------|--------|
+| 6.4.1 | Build plugin | Install Netlify plugin | Audit runs post-build | ☐ |
+| 6.4.2 | Deploy preview | Audit deploy preview | Works with preview URLs | ☐ |
+
+---
+
+## Appendix: Test URLs & Data
+
+### Recommended Test Sites
+
+| Type | URL | Why |
+|------|-----|-----|
+| Well-optimized | https://web.dev | Good SEO baseline |
+| E-commerce | (pick one) | Test product schema |
+| Blog/Article | (pick one) | Test article schema |
+| SPA/React | (pick one) | Test JS rendering issues |
+| Poor SEO | (pick one) | Verify issue detection |
+
+### Test Stripe Cards
+
+| Card Number | Result |
+|-------------|--------|
+| 4242424242424242 | Success |
+| 4000000000000002 | Declined |
+| 4000002500003155 | Requires authentication |
+
+### API Key Format
+
+- Pattern: `rankcli_` + 32 alphanumeric characters
+- Example: `rankcli_abc123def456ghi789jkl012mno345pq`
+
+### Issue Codes Reference
+
+Common issue codes to verify detection:
+
+| Code | Description |
+|------|-------------|
+| META_DESC_MISSING | No meta description |
+| TITLE_MISSING | No title tag |
+| H1_MISSING | No H1 tag |
+| CANONICAL_MISSING | No canonical URL |
+| VIEWPORT_MISSING | No viewport meta |
+| SITEMAP_MISSING | No sitemap.xml |
+| ROBOTS_MISSING | No robots.txt |
+| OG_TAGS_MISSING | No Open Graph tags |
+| IMG_ALT_MISSING | Images missing alt text |
+| HTTPS_REDIRECT_MISSING | No HTTP → HTTPS redirect |
+
+---
+
+## Testing Checklist Summary
+
+### Before Release
+
+- [ ] All Part 1 (Free) tests pass
+- [ ] All Part 2 (Free Registered) tests pass
+- [ ] All Part 3A (Paid Web) tests pass
+- [ ] All Part 3B (Paid CLI) tests pass
+- [ ] All Part 4 (GitHub) tests pass
+- [ ] All Part 5 (MCP) tests pass
+- [ ] All Part 6 (CI/CD) tests pass
+
+### Quick Smoke Test
+
+For rapid validation, run these critical paths:
+
+1. [ ] Free audit works: `/free-audit` → enter URL → get results
+2. [ ] Signup works: Create account → land on dashboard
+3. [ ] CLI works: `rankcli audit -u https://example.com`
+4. [ ] GEO works: `rankcli geo -u https://example.com`
+5. [ ] Paid checkout works: Select plan → complete payment
+6. [ ] GitHub PR works: Connect repo → create fix PR
+7. [ ] MCP works: Claude can run `seo_analyze`
+
+---
+
+*Last Updated: 2026-02-22*
+*Version: 1.0.0*
