@@ -27,8 +27,8 @@ importers:
         specifier: ^0.52.0
         version: 0.52.0
       cheerio:
-        specifier: ^1.0.0
-        version: 1.2.0
+        specifier: 1.1.0
+        version: 1.1.0
       openai:
         specifier: ^6.16.0
         version: 6.16.0
@@ -4440,7 +4440,7 @@ packages:
       '@vscode/vsce-sign': 2.0.9
       azure-devops-node-api: 12.5.0
       chalk: 2.4.2
-      cheerio: 1.2.0
+      cheerio: 1.1.0
       cockatiel: 3.2.1
       commander: 6.2.1
       form-data: 4.0.5
@@ -5118,6 +5118,22 @@ packages:
       parse5: 3.0.3
     dev: true
 
+  /cheerio@1.1.0:
+    resolution: {integrity: sha512-+0hMx9eYhJvWbgpKV9hN7jg0JcwydpopZE4hgi+KvQtByZXPp04NiCWU0LzcAbP63abZckIHkTQaXVF52mX3xQ==}
+    engines: {node: '>=18.17'}
+    dependencies:
+      cheerio-select: 2.1.0
+      dom-serializer: 2.0.0
+      domhandler: 5.0.3
+      domutils: 3.2.2
+      encoding-sniffer: 0.2.1
+      htmlparser2: 10.1.0
+      parse5: 7.3.0
+      parse5-htmlparser2-tree-adapter: 7.1.0
+      parse5-parser-stream: 7.1.2
+      undici: 7.19.1
+      whatwg-mimetype: 4.0.0
+
   /cheerio@1.2.0:
     resolution: {integrity: sha512-WDrybc/gKFpTYQutKIK6UvfcuxijIZfMfXaYm8NMsPQxSYvf+13fXUJ4rztGGbJcBQ/GF55gvrZ0Bc0bj/mqvg==}
     engines: {node: '>=20.18.1'}
@@ -5133,6 +5149,7 @@ packages:
       parse5-parser-stream: 7.1.2
       undici: 7.19.1
       whatwg-mimetype: 4.0.0
+    dev: false
 
   /chokidar@3.6.0:
     resolution: {integrity: sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==}
