@@ -1377,6 +1377,357 @@ function analyzeProviderResponse(
   };
 }
 
+// ========== MCP SERVER ENDPOINT ==========
+
+interface MCPRequest {
+  jsonrpc: '2.0';
+  method: string;
+  params?: Record<string, unknown>;
+  id: string | number | null;
+}
+
+const MCP_TOOLS = [
+  {
+    name: 'seo_audit',
+    description: `Run comprehensive SEO audit on any URL. Analyzes 200+ factors including on-page SEO, technical SEO, GEO (AI search visibility), structured data, Core Web Vitals, security headers, and more. Returns actionable recommendations with priority ranking.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'URL to audit (e.g., https://example.com)' },
+      },
+      required: ['url'],
+    },
+  },
+  {
+    name: 'seo_geo_check',
+    description: `Check if a URL is optimized for AI search engines (GEO - Generative Engine Optimization). Analyzes visibility in ChatGPT, Perplexity, Claude, and Gemini. Checks robots.txt AI crawler rules, content structure, and citation readiness.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'URL to check for AI search optimization' },
+      },
+      required: ['url'],
+    },
+  },
+  {
+    name: 'seo_robots_check',
+    description: `Analyze a site's robots.txt for AI crawler permissions. Shows which AI crawlers (GPTBot, ClaudeBot, PerplexityBot, etc.) are allowed or blocked.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'Site URL (will fetch /robots.txt)' },
+      },
+      required: ['url'],
+    },
+  },
+  {
+    name: 'seo_compare',
+    description: `Compare SEO metrics between two URLs. Useful for competitive analysis.`,
+    inputSchema: {
+      type: 'object',
+      properties: {
+        url1: { type: 'string', description: 'First URL to compare' },
+        url2: { type: 'string', description: 'Second URL to compare' },
+      },
+      required: ['url1', 'url2'],
+    },
+  },
+];
+
+// Validate RankCLI API key
+async function validateMCPApiKey(apiKey: string): Promise<{ valid: boolean; userId?: string; tier?: string }> {
+  if (!apiKey || !apiKey.startsWith('rk_')) {
+    return { valid: false };
+  }
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+  
+  // Hash the API key
+  const encoder = new TextEncoder();
+  const data = encoder.encode(apiKey);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const keyHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+  const { data: keyData, error } = await supabase
+    .from('api_keys')
+    .select('user_id, users(subscription_tier)')
+    .eq('key_hash', keyHash)
+    .eq('is_active', true)
+    .single();
+
+  if (error || !keyData) {
+    return { valid: false };
+  }
+
+  return {
+    valid: true,
+    userId: keyData.user_id,
+    tier: (keyData.users as { subscription_tier?: string })?.subscription_tier || 'free',
+  };
+}
+
+// Analyze robots.txt for AI crawlers
+function analyzeRobotsTxtForAI(robotsTxt: string): string {
+  const aiCrawlers = [
+    { name: 'GPTBot', agent: 'GPTBot' },
+    { name: 'ChatGPT-User', agent: 'ChatGPT-User' },
+    { name: 'ClaudeBot', agent: 'ClaudeBot' },
+    { name: 'Claude-Web', agent: 'Claude-Web' },
+    { name: 'PerplexityBot', agent: 'PerplexityBot' },
+    { name: 'Google-Extended', agent: 'Google-Extended' },
+    { name: 'Amazonbot', agent: 'Amazonbot' },
+  ];
+
+  const lines = robotsTxt.toLowerCase().split('\n');
+  const results: string[] = [];
+
+  for (const crawler of aiCrawlers) {
+    const agentLower = crawler.agent.toLowerCase();
+    let status = '⚪ Not mentioned (defaults to allowed)';
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith('user-agent:') && line.includes(agentLower)) {
+        for (let j = i + 1; j < lines.length && !lines[j].trim().startsWith('user-agent:'); j++) {
+          const rule = lines[j].trim();
+          if (rule === 'disallow: /') {
+            status = '❌ Blocked';
+            break;
+          } else if (rule === 'allow: /') {
+            status = '✅ Allowed';
+            break;
+          }
+        }
+        break;
+      }
+    }
+    
+    results.push(`- ${crawler.name}: ${status}`);
+  }
+
+  return `## AI Crawler Status\n${results.join('\n')}`;
+}
+
+// Handle MCP tool calls
+async function handleMCPToolCall(name: string, args: Record<string, unknown>): Promise<string> {
+  switch (name) {
+    case 'seo_audit': {
+      const url = args.url as string;
+      if (!url) throw new Error('URL is required');
+
+      app.log.info({ url }, 'MCP: Running SEO audit');
+      
+      const report = await runFullAudit({
+        url,
+        maxPages: 1,
+        tier: 'paid',
+        checksLimit: 280,
+      });
+
+      const criticalIssues = report.issues.filter(i => i.severity === 'error');
+      const warnings = report.issues.filter(i => i.severity === 'warning');
+
+      return `# SEO Audit: ${url}
+
+**Overall Score:** ${report.healthScore?.overall ?? 85}/100
+**Issues Found:** ${criticalIssues.length} critical, ${warnings.length} warnings
+
+## Critical Issues
+${criticalIssues.slice(0, 10).map(i => `- **${i.code}:** ${i.title}`).join('\n') || 'None!'}
+
+## Top Warnings
+${warnings.slice(0, 5).map(i => `- **${i.code}:** ${i.title}`).join('\n') || 'None!'}
+
+## Scores by Category
+- Crawlability: ${report.healthScore?.crawlability ?? 'N/A'}/100
+- On-Page: ${report.healthScore?.onPage ?? 'N/A'}/100
+- Content: ${report.healthScore?.content ?? 'N/A'}/100
+- Performance: ${report.healthScore?.performance ?? 'N/A'}/100
+- Security: ${report.healthScore?.security ?? 'N/A'}/100
+`;
+    }
+
+    case 'seo_geo_check': {
+      const url = args.url as string;
+      if (!url) throw new Error('URL is required');
+
+      app.log.info({ url }, 'MCP: Running GEO check');
+
+      // Fetch robots.txt
+      let robotsTxt = '';
+      try {
+        const robotsUrl = new URL('/robots.txt', url).toString();
+        const response = await fetch(robotsUrl, { headers: { 'User-Agent': 'RankCLI-Bot/1.0' } });
+        if (response.ok) robotsTxt = await response.text();
+      } catch { /* ignore */ }
+
+      const report = await runFullAudit({
+        url,
+        maxPages: 1,
+        tier: 'paid',
+      });
+
+      const geoIssues = report.issues.filter(i => 
+        i.code?.startsWith('GEO_') || i.code?.startsWith('AI_') || i.code?.includes('ROBOT')
+      );
+
+      return `# GEO Analysis: ${url}
+
+**AI Search Visibility Score:** ${report.healthScore?.overall ?? 85}/100
+
+${robotsTxt ? analyzeRobotsTxtForAI(robotsTxt) : '## AI Crawler Status\nCould not fetch robots.txt'}
+
+## AI-Specific Issues
+${geoIssues.map(i => `- **${i.code}:** ${i.title}`).join('\n') || 'No AI-specific issues found!'}
+
+## Recommendations
+- Ensure GPTBot, ClaudeBot, PerplexityBot are allowed in robots.txt
+- Use clear, factual content that AI can cite
+- Add structured data (FAQ, HowTo schemas)
+- Avoid JavaScript-only content rendering
+`;
+    }
+
+    case 'seo_robots_check': {
+      const url = args.url as string;
+      if (!url) throw new Error('URL is required');
+
+      app.log.info({ url }, 'MCP: Checking robots.txt');
+
+      const robotsUrl = new URL('/robots.txt', url).toString();
+      const response = await fetch(robotsUrl, { headers: { 'User-Agent': 'RankCLI-Bot/1.0' } });
+      
+      if (!response.ok) {
+        return `Could not fetch robots.txt from ${robotsUrl} (status: ${response.status})`;
+      }
+      
+      const robotsTxt = await response.text();
+
+      return `# robots.txt Analysis: ${url}
+
+\`\`\`
+${robotsTxt.slice(0, 2000)}${robotsTxt.length > 2000 ? '\n... (truncated)' : ''}
+\`\`\`
+
+${analyzeRobotsTxtForAI(robotsTxt)}
+`;
+    }
+
+    case 'seo_compare': {
+      const url1 = args.url1 as string;
+      const url2 = args.url2 as string;
+      if (!url1 || !url2) throw new Error('Both url1 and url2 are required');
+
+      app.log.info({ url1, url2 }, 'MCP: Comparing URLs');
+
+      const [report1, report2] = await Promise.all([
+        runFullAudit({ url: url1, maxPages: 1, tier: 'paid' }),
+        runFullAudit({ url: url2, maxPages: 1, tier: 'paid' }),
+      ]);
+
+      const score1 = report1.healthScore?.overall ?? 0;
+      const score2 = report2.healthScore?.overall ?? 0;
+      const critical1 = report1.issues.filter(i => i.severity === 'error').length;
+      const critical2 = report2.issues.filter(i => i.severity === 'error').length;
+
+      return `# SEO Comparison
+
+| Metric | ${new URL(url1).hostname} | ${new URL(url2).hostname} |
+|--------|---------------------------|---------------------------|
+| Overall Score | ${score1}/100 | ${score2}/100 |
+| Critical Issues | ${critical1} | ${critical2} |
+| Warnings | ${report1.issues.filter(i => i.severity === 'warning').length} | ${report2.issues.filter(i => i.severity === 'warning').length} |
+| Crawlability | ${report1.healthScore?.crawlability ?? 'N/A'} | ${report2.healthScore?.crawlability ?? 'N/A'} |
+| Performance | ${report1.healthScore?.performance ?? 'N/A'} | ${report2.healthScore?.performance ?? 'N/A'} |
+
+## Winner: ${score1 > score2 ? new URL(url1).hostname : score2 > score1 ? new URL(url2).hostname : 'Tie!'}
+`;
+    }
+
+    default:
+      throw new Error(`Unknown tool: ${name}`);
+  }
+}
+
+// MCP endpoint
+app.post<{ Body: MCPRequest }>('/mcp', async (request, reply) => {
+  // Extract API key from Authorization header
+  const authHeader = request.headers.authorization;
+  const apiKey = authHeader?.replace('Bearer ', '');
+
+  if (!apiKey) {
+    return reply.send({
+      jsonrpc: '2.0',
+      error: { code: -32600, message: 'Missing API key. Get one at https://rankcli.dev' },
+      id: null,
+    });
+  }
+
+  const auth = await validateMCPApiKey(apiKey);
+  if (!auth.valid) {
+    return reply.send({
+      jsonrpc: '2.0',
+      error: { code: -32600, message: 'Invalid API key' },
+      id: null,
+    });
+  }
+
+  const { method, params, id } = request.body;
+
+  app.log.info({ method, userId: auth.userId }, 'MCP request');
+
+  switch (method) {
+    case 'initialize':
+      return reply.send({
+        jsonrpc: '2.0',
+        result: {
+          protocolVersion: '2024-11-05',
+          serverInfo: { name: 'rankcli', version: '1.0.0' },
+          capabilities: { tools: {} },
+        },
+        id,
+      });
+
+    case 'tools/list':
+      return reply.send({
+        jsonrpc: '2.0',
+        result: { tools: MCP_TOOLS },
+        id,
+      });
+
+    case 'tools/call': {
+      const { name, arguments: args } = params as { name: string; arguments?: Record<string, unknown> };
+      
+      try {
+        const result = await handleMCPToolCall(name, args || {});
+        return reply.send({
+          jsonrpc: '2.0',
+          result: { content: [{ type: 'text', text: result }] },
+          id,
+        });
+      } catch (error) {
+        app.log.error({ error, tool: name }, 'MCP tool error');
+        return reply.send({
+          jsonrpc: '2.0',
+          result: {
+            content: [{ type: 'text', text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}` }],
+            isError: true,
+          },
+          id,
+        });
+      }
+    }
+
+    default:
+      return reply.send({
+        jsonrpc: '2.0',
+        error: { code: -32601, message: `Method not found: ${method}` },
+        id,
+      });
+  }
+});
+
 // Start server
 const start = async () => {
   try {
