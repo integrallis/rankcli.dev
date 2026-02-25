@@ -179,7 +179,21 @@ jobs:
           path: packages/cli/
 
       - name: Install dependencies
-        run: pnpm install
+        run: |
+          max_attempts=10
+          attempt=1
+          while [ $attempt -le $max_attempts ]; do
+            echo "📦 pnpm install attempt $attempt/$max_attempts"
+            if pnpm install; then
+              echo "✅ Install succeeded on attempt $attempt"
+              exit 0
+            fi
+            echo "❌ Attempt $attempt failed, waiting before retry..."
+            sleep $((attempt * 5))  # Exponential backoff: 5s, 10s, 15s...
+            attempt=$((attempt + 1))
+          done
+          echo "💀 All $max_attempts attempts failed"
+          exit 1
 
       - name: Build agent-runtime
         working-directory: packages/agent-runtime
