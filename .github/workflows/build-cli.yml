@@ -240,32 +240,34 @@ jobs:
           RANKCLI_WEB_URL: https://rankcli.dev
         run: node scripts/inject-config.js
 
+      - name: Set CLI version from release tag
+        if: github.event_name == 'release'
+        working-directory: packages/cli
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
+          echo "Setting version to $VERSION"
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+
+      - name: Final workspace dependency fix
+        working-directory: packages/cli
+        run: |
+          echo "Before fix:"
+          cat package.json | grep -A2 '"dependencies"'
+          
+          RUNTIME_VERSION=$(cd ../agent-runtime && node -p "require('./package.json').version")
+          echo "Runtime version: $RUNTIME_VERSION"
+          sed -i "s|\"workspace:\\*\"|\"^$RUNTIME_VERSION\"|g" package.json
+          
+          echo "After fix:"
+          cat package.json | grep -A2 '"dependencies"'
+
       - name: Publish CLI to npm
         working-directory: packages/cli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          # Set version from release tag if available
-          if [ "${{ github.event_name }}" == "release" ]; then
-            VERSION="${{ github.event.release.tag_name }}"
-            VERSION="${VERSION#v}"  # Remove 'v' prefix if present
-            npm version "$VERSION" --no-git-tag-version --allow-same-version
-          fi
-
-          # Fix workspace dependency AFTER npm version (which may regenerate package.json)
-          echo "Current package.json deps:"
-          grep agent-runtime package.json || true
-          
-          RUNTIME_VERSION=$(cd ../agent-runtime && node -p "require('./package.json').version")
-          echo "Agent runtime version: $RUNTIME_VERSION"
-          echo "Fixing workspace:* to ^$RUNTIME_VERSION"
-          sed -i "s|\"workspace:\\*\"|\"^$RUNTIME_VERSION\"|g" package.json
-          
-          echo "After fix:"
-          grep agent-runtime package.json || true
-
           echo "Publishing @rankcli/cli@$(node -p "require('./package.json').version")"
-          # Skip prepublishOnly since build is already done; inject-config already ran
           npm publish --access public --ignore-scripts
 
       - name: Create publish summary
