@@ -415,6 +415,69 @@ async function runDeepAudit(
 
         app.log.info({ jobId: job.id, domains: uniqueDomains.size, limit: domainsPerMonth }, 'Domain check passed');
       }
+
+      // ========== CHECK SCHEDULE LIMIT (TIER-BASED) ==========
+      // Solo: weekly, Pro: daily, Agency: hourly
+      if (subDetails?.plan_id) {
+        const { data: scheduleCheck, error: scheduleError } = await supabase.rpc('check_audit_schedule', {
+          p_user_id: project.user_id,
+          p_project_id: job.projectId,
+          p_plan_id: subDetails.plan_id,
+        });
+
+        if (scheduleError) {
+          app.log.warn({ err: scheduleError, jobId: job.id }, 'Schedule check failed (continuing anyway)');
+        } else if (scheduleCheck && scheduleCheck.length > 0) {
+          const check = scheduleCheck[0];
+          
+          if (!check.allowed) {
+            const scheduleNames: Record<number, string> = {
+              1: 'hourly',
+              24: 'daily',
+              168: 'weekly',
+            };
+            const scheduleName = scheduleNames[check.interval_hours] || `every ${check.interval_hours}h`;
+            
+            app.log.warn({ 
+              jobId: job.id, 
+              lastAudit: check.last_audit_at, 
+              nextAllowed: check.next_allowed_at,
+              interval: check.interval_hours,
+            }, 'Schedule limit reached');
+
+            // Mark audit as failed with schedule error
+            await supabase
+              .from('audits')
+              .update({
+                status: 'failed',
+                error_message: `Schedule limit reached. Your plan allows ${scheduleName} audits. Next audit allowed at ${check.next_allowed_at}`,
+                completed_at: new Date().toISOString()
+              })
+              .eq('id', job.auditId);
+
+            job.status = 'failed';
+            job.error = JSON.stringify({
+              code: 'schedule_exceeded',
+              tier: subDetails.plan_id,
+              allowed_schedule: scheduleName,
+              last_audit_at: check.last_audit_at,
+              next_allowed_at: check.next_allowed_at,
+              upgrade_url: 'https://rankcli.dev/pricing?from=schedule_exceeded',
+            });
+
+            broadcastEvent(job.auditId, {
+              type: 'job_failed',
+              job_id: job.id,
+              audit_id: job.auditId,
+              error: `Schedule limit reached. Next audit allowed at ${check.next_allowed_at}`,
+            });
+
+            return;
+          }
+
+          app.log.info({ jobId: job.id, interval: check.interval_hours }, 'Schedule check passed');
+        }
+      }
     }
 
     job.status = 'running';
@@ -582,12 +645,14 @@ async function runDeepAudit(
       await supabase.from('audit_issues').insert(issueRecords);
     }
 
-    // Update project
+    // Update project and schedule timestamp
     await supabase
       .from('projects')
       .update({
         last_audit_at: new Date().toISOString(),
         last_audit_score: overallScore,
+        last_scheduled_audit_at: new Date().toISOString(),
+        scheduled_audit_source: 'worker',
       })
       .eq('id', job.projectId);
 
