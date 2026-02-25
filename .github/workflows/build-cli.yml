@@ -252,6 +252,11 @@ jobs:
             npm version "$VERSION" --no-git-tag-version --allow-same-version
           fi
 
+          # Fix workspace dependency AFTER npm version (which may regenerate package.json)
+          RUNTIME_VERSION=$(cd ../agent-runtime && node -p "require('./package.json').version")
+          echo "Fixing workspace:* → ^$RUNTIME_VERSION"
+          sed -i "s|\"workspace:\\*\"|\"^$RUNTIME_VERSION\"|g" package.json
+
           echo "📦 Publishing @rankcli/cli@$(node -p "require('./package.json').version")"
           # Skip prepublishOnly since build is already done; inject-config already ran
           npm publish --access public --ignore-scripts
