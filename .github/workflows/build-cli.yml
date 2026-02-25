@@ -223,15 +223,6 @@ jobs:
             npm publish --access public
           fi
 
-      - name: Fix workspace dependency in CLI
-        working-directory: packages/cli
-        run: |
-          # Replace workspace:* with actual version
-          RUNTIME_VERSION=$(cd ../agent-runtime && node -p "require('./package.json').version")
-          echo "Replacing workspace:* with ^$RUNTIME_VERSION"
-          sed -i "s|\"workspace:\\*\"|\"^$RUNTIME_VERSION\"|g" package.json
-          cat package.json | grep agent-runtime
-
       - name: Inject production config
         working-directory: packages/cli
         env:
@@ -239,15 +230,6 @@ jobs:
           RANKCLI_SUPABASE_ANON_KEY: ${{ secrets.RANKCLI_SUPABASE_ANON_KEY }}
           RANKCLI_WEB_URL: https://rankcli.dev
         run: node scripts/inject-config.js
-
-      - name: Set CLI version from release tag
-        if: github.event_name == 'release'
-        working-directory: packages/cli
-        run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          VERSION="${VERSION#v}"
-          echo "Setting version to $VERSION"
-          npm version "$VERSION" --no-git-tag-version --allow-same-version
 
       - name: Final workspace dependency fix
         working-directory: packages/cli
@@ -261,6 +243,15 @@ jobs:
           
           echo "After fix:"
           cat package.json | grep -A2 '"dependencies"'
+
+      - name: Set CLI version from release tag
+        if: github.event_name == 'release'
+        working-directory: packages/cli
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
+          echo "Setting version to $VERSION"
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
 
       - name: Publish CLI to npm
         working-directory: packages/cli
