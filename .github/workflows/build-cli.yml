@@ -265,7 +265,9 @@ jobs:
           VERSION="${{ github.event.release.tag_name }}"
           VERSION="${VERSION#v}"
           echo "Setting version to $VERSION"
-          npm version "$VERSION" --no-git-tag-version --allow-same-version
+          # Use sed instead of npm version to avoid workspace:* resolution issues
+          sed -i "s|\"version\": \"[^\"]*\"|\"version\": \"$VERSION\"|" package.json
+          echo "Version set to: $(node -p "require('./package.json').version")"
 
       - name: Publish CLI to npm
         working-directory: packages/cli
