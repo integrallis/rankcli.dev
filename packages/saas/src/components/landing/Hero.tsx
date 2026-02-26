@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { LandingTerminalDemo } from '@/components/terminal/TerminalOutput';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
+import { SocialProof } from '@/components/landing/SocialProof';
 
 export function Hero() {
   return (
@@ -94,6 +95,9 @@ export function Hero() {
               </svg>
             </button>
           </ScrollReveal>
+
+          {/* Social Proof - only shows once checks > 1000 */}
+          <SocialProof />
         </div>
       </div>
     </section>
