@@ -31,7 +31,7 @@ export function Hero() {
           <ScrollReveal delay={0.2}>
             <p className="text-lg text-muted-foreground mb-3 max-w-2xl leading-relaxed">
               SEO meets CI/CD. 300+ automated checks. Auto-fix PRs. GitHub integration.{' '}
-              <strong>Engineering as marketing.</strong>
+              <span className="text-primary font-semibold">Engineering as Marketing.</span>
             </p>
             {/* Brand definition for AI extraction */}
             <p className="text-sm text-muted-foreground/80 mb-6 max-w-2xl leading-relaxed">
