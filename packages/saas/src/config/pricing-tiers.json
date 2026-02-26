@@ -69,13 +69,10 @@
         "keyword_research": true,
         "content_optimizer": true,
         "competitor_intel": false,
-        "backlink_finder": false,
-        "local_seo": false,
-        "tool_opportunities": false,
+        "local_seo": true,
         "white_label": false,
         "gsc_integration": true,
-        "metrics_sync": true,
-        "bing_webmaster": false
+        "metrics_sync": true
       },
       "highlights": [
         "3 sites monitored",
@@ -83,7 +80,7 @@
         "Weekly automated audits",
         "API access (100 req/day)",
         "Local auto-fix via CLI",
-        "Export PDF reports"
+        "Local SEO analysis"
       ]
     },
     {
@@ -105,7 +102,6 @@
         "keyword_research_per_month": 25,
         "content_optimizations_per_month": 15,
         "competitor_analyses_per_month": 5,
-        "backlink_reports_per_month": 3,
         "gsc_sync_interval_hours": 24,
         "keyword_tracking": 500
       },
@@ -123,13 +119,10 @@
         "keyword_research": true,
         "content_optimizer": true,
         "competitor_intel": true,
-        "backlink_finder": true,
         "local_seo": true,
-        "tool_opportunities": false,
         "white_label": false,
         "gsc_integration": true,
-        "metrics_sync": true,
-        "bing_webmaster": true
+        "metrics_sync": true
       },
       "highlights": [
         "10 sites monitored",
@@ -159,8 +152,6 @@
         "keyword_research_per_month": null,
         "content_optimizations_per_month": null,
         "competitor_analyses_per_month": null,
-        "backlink_reports_per_month": null,
-        "tool_opportunities_per_month": 10,
         "gsc_sync_interval_hours": 1,
         "keyword_tracking": null
       },
@@ -180,14 +171,9 @@
         "keyword_research": true,
         "content_optimizer": true,
         "competitor_intel": true,
-        "backlink_finder": true,
         "local_seo": true,
-        "tool_opportunities": true,
-        "seo_api_integration": true,
         "gsc_integration": true,
-        "metrics_sync": true,
-        "bing_webmaster": true,
-        "dataforseo_integration": true
+        "metrics_sync": true
       },
       "highlights": [
         "50 sites monitored",
@@ -321,8 +307,8 @@
     "github_auto_fix": "Automatically create fix PRs via GitHub App integration. No manual intervention required.",
     "gsc_integration": "Connect Google Search Console to track impressions, clicks, CTR, and average position. See which queries drive traffic and monitor keyword rankings.",
     "metrics_sync": "Automatic sync of SEO metrics from connected sources. Frequency varies by plan: Solo (weekly), Pro (daily), Agency (hourly).",
-    "bing_webmaster": "Bing Webmaster Tools integration for Bing/Yahoo search metrics. Track your visibility across all major search engines.",
-    "dataforseo_integration": "Real-time SERP data via DataForSEO API. Get accurate keyword positions, search volumes, and SERP features without delays."
+    "local_seo": "Local SEO analysis including NAP consistency detection, LocalBusiness schema validation, address/phone detection, and social profile linking.",
+    "slack_alerts": "Receive Slack or Discord notifications when audits complete, critical issues are found, or fix PRs are created."
   },
   "seo_modules": {
     "metrics_tracking": {
@@ -355,25 +341,10 @@
       "description": "Deep competitor analysis, keyword gaps, strategic recommendations",
       "tiers": ["pro", "agency"]
     },
-    "backlink_finder": {
-      "name": "Backlink Opportunity Finder",
-      "description": "Link building opportunities, outreach templates, prioritized plan",
-      "tiers": ["pro", "agency"]
-    },
     "local_seo": {
       "name": "Local SEO Analyzer",
-      "description": "NAP consistency, GBP optimization, local keywords, citations",
-      "tiers": ["pro", "agency"]
-    },
-    "tool_opportunities": {
-      "name": "Tool Opportunity Finder",
-      "description": "Engineering as Marketing - find free tool opportunities",
-      "tiers": ["agency"]
-    },
-    "seo_api_integration": {
-      "name": "SEO API Integration",
-      "description": "Connect Ahrefs, Semrush, DataForSEO for real keyword data",
-      "tiers": ["agency"]
+      "description": "NAP consistency, LocalBusiness schema, address/phone detection, social profiles",
+      "tiers": ["solo", "pro", "agency"]
     }
   }
 }
