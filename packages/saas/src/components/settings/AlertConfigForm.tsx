@@ -5,13 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select } from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -236,24 +230,12 @@ export function AlertConfigForm({ projectId }: AlertConfigFormProps) {
             <div className="p-4 rounded-lg border border-dashed space-y-4">
               <div className="space-y-2">
                 <Label>Channel</Label>
-                <Select value={newChannel} onValueChange={(v) => setNewChannel(v as AlertChannel)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="slack">
-                      <div className="flex items-center gap-2">
-                        <Slack className="h-4 w-4" />
-                        Slack
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="discord">
-                      <div className="flex items-center gap-2">
-                        <DiscordIcon className="h-4 w-4" />
-                        Discord
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
+                <Select 
+                  value={newChannel} 
+                  onChange={(e) => setNewChannel(e.target.value as AlertChannel)}
+                >
+                  <option value="slack">Slack</option>
+                  <option value="discord">Discord</option>
                 </Select>
               </div>
 

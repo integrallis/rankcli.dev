@@ -2,13 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 
 // Mock Supabase client
-const mockFrom = vi.fn();
 const mockSelect = vi.fn();
 const mockInsert = vi.fn();
 const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
-const mockEq = vi.fn();
-const mockSingle = vi.fn();
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
