@@ -23,6 +23,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import pricingTiers from '@/config/pricing-tiers.json';
 import { useUserLTD } from '@/hooks/useLTD';
+import { AlertConfigForm } from '@/components/settings/AlertConfigForm';
 
 interface UserSubscription {
   plan_id: string | null;
@@ -801,11 +802,16 @@ export function AccountPage() {
             )}
 
             {activeTab === 'notifications' && (
+              <div className="space-y-6">
+              {/* Webhook Notifications */}
+              <AlertConfigForm />
+
+              {/* Email Notifications */}
               <Card>
                 <CardHeader>
                   <CardTitle>Email Notifications</CardTitle>
                   <CardDescription>
-                    Configure how you receive alerts and updates
+                    Configure how you receive email alerts
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -893,6 +899,7 @@ export function AccountPage() {
                   )}
                 </CardContent>
               </Card>
+              </div>
             )}
           </div>
         </div>
