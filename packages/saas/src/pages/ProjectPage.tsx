@@ -30,6 +30,7 @@ import { ConnectGitHubModal } from '@/components/project/ConnectGitHubModal';
 import { ProjectSettingsModal } from '@/components/project/ProjectSettingsModal';
 import { IssuesList } from '@/components/project/IssuesList';
 import { AIVisibilityCard } from '@/components/dashboard/AIVisibilityCard';
+import { CategoryRadarChart } from '@/components/audit/CategoryRadarChart';
 import {
   Tooltip,
   TooltipContent,
@@ -402,42 +403,58 @@ export function ProjectPage() {
           </div>
         </div>
 
-        {/* Score Card */}
+        {/* Score Card with Radar Chart */}
         <Card className="mb-6">
           <CardContent className="py-5">
-            <div className="grid md:grid-cols-6 gap-6">
+            <div className="grid md:grid-cols-3 gap-6">
               {/* Main Score */}
-              <div className="md:col-span-1 text-center md:border-r md:border-border">
+              <div className="flex flex-col items-center justify-center md:border-r md:border-border">
                 <div
                   className={cn(
-                    'text-4xl font-semibold tracking-tight tabular-nums',
+                    'text-5xl font-bold tracking-tight tabular-nums',
                     getScoreColor(project.last_audit_score)
                   )}
                 >
                   {project.last_audit_score ?? '-'}
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">Overall</p>
+                <p className="text-sm text-muted-foreground mt-1">SEO Health Score</p>
+              </div>
+
+              {/* Radar Chart */}
+              <div className="flex items-center justify-center">
+                <CategoryRadarChart
+                  categories={{
+                    crawlability: healthScores.crawlability ?? 0,
+                    onPage: healthScores.onPage ?? 0,
+                    content: healthScores.content ?? 0,
+                    performance: healthScores.performance ?? 0,
+                    security: healthScores.security ?? 0,
+                    socialMeta: healthScores.socialMeta ?? healthScores.social ?? 0,
+                    aiReadiness: healthScores.aiReadiness ?? 0,
+                  }}
+                />
               </div>
 
               {/* Category Scores */}
-              <div className="md:col-span-5 grid grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 gap-3 content-center">
                 {[
                   { key: 'crawlability', label: 'Crawlability' },
                   { key: 'onPage', label: 'On-Page' },
                   { key: 'content', label: 'Content' },
                   { key: 'performance', label: 'Performance' },
                   { key: 'security', label: 'Security' },
+                  { key: 'aiReadiness', label: 'AI Ready' },
                 ].map(({ key, label }) => (
-                  <div key={key} className="text-center">
-                    <div
+                  <div key={key} className="flex items-center justify-between px-2 py-1 rounded bg-muted/50">
+                    <span className="text-xs text-muted-foreground">{label}</span>
+                    <span
                       className={cn(
-                        'text-xl font-medium tabular-nums',
+                        'text-sm font-medium tabular-nums',
                         getScoreColor(healthScores[key] ?? null)
                       )}
                     >
                       {healthScores[key] ?? '-'}
-                    </div>
-                    <p className="text-xs text-muted-foreground">{label}</p>
+                    </span>
                   </div>
                 ))}
               </div>
