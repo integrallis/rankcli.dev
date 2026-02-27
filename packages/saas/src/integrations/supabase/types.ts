@@ -93,6 +93,7 @@ export interface Audit {
     structuredData?: number;
   } | null;
   summary: Record<string, unknown> | null;
+  error_message: string | null;
   started_at: string | null;
   completed_at: string | null;
   duration_ms: number | null;

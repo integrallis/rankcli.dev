@@ -15,6 +15,7 @@ import {
   GitPullRequest,
   X,
   XCircle,
+  Clock,
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { useProject } from '@/hooks/useProjects';
 import { useAuditSSE } from '@/hooks/useAuditSSE';
 import { cn } from '@/lib/utils';
+import { formatLocalDate, formatCountdown, parseNextAllowedAt, getTimeRemaining } from '@/lib/date-utils';
 import type { Project } from '@/integrations/supabase/types';
 import { ConnectGitHubModal } from '@/components/project/ConnectGitHubModal';
 import { ProjectSettingsModal } from '@/components/project/ProjectSettingsModal';
@@ -75,6 +77,10 @@ export function ProjectPage() {
     pagesTotal: number;
   } | null>(null);
 
+  // Track schedule limit countdown
+  const [nextAllowedAt, setNextAllowedAt] = useState<string | null>(null);
+  const [countdown, setCountdown] = useState<string>('');
+
   // SSE connection for real-time audit updates (paid users using worker)
   useAuditSSE({
     auditId: pendingAuditId,
@@ -88,13 +94,54 @@ export function ProjectPage() {
       // Refetch project data to get updated audit status
       refetch();
     },
-    onFailed: () => {
+    onFailed: (_auditId, errorMsg) => {
       setPendingAuditId(null);
       setAuditProgress(null);
+      // Check for schedule limit and extract next_allowed_at
+      const nextAt = parseNextAllowedAt(errorMsg);
+      if (nextAt) {
+        setNextAllowedAt(nextAt);
+      }
       // Refetch to update UI state
       refetch();
     },
   });
+
+  // Update countdown timer every second when schedule limited
+  useEffect(() => {
+    if (!nextAllowedAt) {
+      setCountdown('');
+      return;
+    }
+
+    const updateCountdown = () => {
+      const time = getTimeRemaining(nextAllowedAt);
+      if (time.isPast) {
+        setNextAllowedAt(null);
+        setCountdown('');
+      } else {
+        setCountdown(formatCountdown(nextAllowedAt));
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [nextAllowedAt]);
+
+  // Check latest failed audit for schedule limit on mount
+  useEffect(() => {
+    const failedAudit = audits.find((a) => a.status === 'failed' && a.error_message?.includes('Schedule limit'));
+    if (failedAudit?.error_message) {
+      const nextAt = parseNextAllowedAt(failedAudit.error_message);
+      if (nextAt) {
+        const time = getTimeRemaining(nextAt);
+        if (!time.isPast) {
+          setNextAllowedAt(nextAt);
+        }
+      }
+    }
+  }, [audits]);
 
   // Auto-dismiss notification after 10 seconds
   useEffect(() => {
@@ -333,12 +380,17 @@ export function ProjectPage() {
             <Button
               className="gap-2"
               onClick={handleRunAudit}
-              disabled={!!pendingAudit}
+              disabled={!!pendingAudit || !!nextAllowedAt}
             >
               {pendingAudit ? (
                 <>
                   <RefreshCw className="h-4 w-4 animate-spin" />
                   Running...
+                </>
+              ) : nextAllowedAt ? (
+                <>
+                  <Clock className="h-4 w-4" />
+                  Available in {countdown}
                 </>
               ) : (
                 <>
@@ -443,10 +495,44 @@ export function ProjectPage() {
               <p className="text-muted-foreground mb-4">
                 Run your first audit to see SEO issues and recommendations.
               </p>
-              <Button onClick={handleRunAudit} className="gap-2">
-                <Play className="h-4 w-4" />
-                Run First Audit
+              <Button onClick={handleRunAudit} className="gap-2" disabled={!!nextAllowedAt}>
+                {nextAllowedAt ? (
+                  <>
+                    <Clock className="h-4 w-4" />
+                    Available in {countdown}
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4" />
+                    Run First Audit
+                  </>
+                )}
               </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Schedule Limit Reached */}
+        {nextAllowedAt && !pendingAudit && (
+          <Card className="mb-8 border-yellow-500/50">
+            <CardContent className="py-6">
+              <div className="flex items-start gap-4">
+                <div className="p-3 rounded-full bg-yellow-500/10">
+                  <Clock className="h-6 w-6 text-yellow-500" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-1">Schedule limit reached</h3>
+                  <p className="text-muted-foreground text-sm mb-2">
+                    Your plan allows audits on a limited schedule. Next audit available:
+                  </p>
+                  <p className="font-medium">
+                    {formatLocalDate(nextAllowedAt)} ({countdown})
+                  </p>
+                  <Link to="/pricing" className="text-primary text-sm hover:underline mt-2 inline-block">
+                    Upgrade for more frequent audits →
+                  </Link>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
