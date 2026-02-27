@@ -472,7 +472,7 @@ export function ProjectPage() {
                 </div>
               ) : (
                 <p className="text-muted-foreground">
-                  Running 200+ SEO checks. This usually takes 30-60 seconds.
+                  Running 200+ SEO checks. This usually takes 1-3 minutes.
                 </p>
               )}
             </CardContent>
