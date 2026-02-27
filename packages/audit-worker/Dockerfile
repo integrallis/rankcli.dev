@@ -31,6 +31,9 @@ FROM node:20-alpine
 
 WORKDIR /app
 
+# Install CA certificates for TLS verification
+RUN apk add --no-cache ca-certificates
+
 # Install pnpm for workspace linking
 RUN npm install -g pnpm
 
