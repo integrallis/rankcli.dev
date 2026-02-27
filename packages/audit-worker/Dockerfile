@@ -31,8 +31,11 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Install CA certificates (Debian way)
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
+# Install CA certificates (Debian way) and curl for debugging
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/*
+
+# Point Node.js to system CA certificates
+ENV NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 
 # Install pnpm for workspace linking
 RUN npm install -g pnpm
