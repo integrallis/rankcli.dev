@@ -23,15 +23,42 @@ Comprehensive manual testing script covering all user personas and features.
 
 | Persona | Access Level | Primary Interface | Key Features |
 |---------|--------------|-------------------|--------------|
-| **Free (No Login)** | Anonymous | Web | Free tools only |
-| **Free Registered** | Account | Web + CLI (limited) | 100 checks, 1 site, audit history |
-| **Solo ($9/mo)** | Paid | Web + CLI | 3 sites, 280 checks, weekly audits |
-| **Pro ($29/mo)** | Paid | Web + CLI | 10 sites, daily audits, GitHub PRs |
-| **Agency ($99/mo)** | Paid | Web + CLI | 50 sites, hourly sync, white-label |
+| **Free (No Login)** | Anonymous | Web | Free tools only, 280 checks (limited results shown) |
+| **Free Registered** | Account | Web + CLI (limited) | 100 checks, 1 site, 2 domains/month, audit history |
+| **Solo ($9/mo)** | Paid | Web + CLI | 3 sites, 280 checks, weekly audits, 5 domains/cycle |
+| **Pro ($29/mo)** | Paid | Web + CLI | 10 sites, daily audits, GitHub PRs, Slack alerts, 15 domains/cycle |
+| **Agency ($99/mo)** | Paid | Web + CLI | 50 sites, hourly audits, white-label, unlimited domains |
+
+### Feature Matrix by Tier
+
+| Feature | Free | Free Registered | Solo | Pro | Agency |
+|---------|------|-----------------|------|-----|--------|
+| SEO Checks | 280 (10 shown) | 100 | 280 | 280 | 280 |
+| Sites/Projects | 0 | 1 | 3 | 10 | 50 |
+| Domains/Cycle | N/A | 2/month | 5 | 15 | Unlimited |
+| Audit Schedule | Manual only | Manual only | Weekly | Daily | Hourly |
+| GitHub Connect | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Auto-Fix PRs | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Slack/Discord Alerts | ❌ | ❌ | ❌ | ✅ | ✅ |
+| White-Label Reports | ❌ | ❌ | ❌ | ❌ | ✅ |
+| API Access | ❌ | ✅ | ✅ | ✅ | ✅ |
+| AI Analysis | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Keyword Research | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Competitor Tracking | ❌ | ❌ | ❌ | 3 competitors | 10 competitors |
 
 ---
 
 ## Test Environment Setup
+
+### Pre-Testing Checklist
+
+Before starting manual testing, verify these items:
+
+- [ ] Latest code is deployed (check GitHub Actions for recent successful deploy)
+- [ ] No stuck audits in database (pending/running >10 min should auto-cleanup on deploy)
+- [ ] Test accounts are accessible and in expected state
+- [ ] Browser cache cleared or use incognito mode
+- [ ] CLI is updated to latest version
 
 ### Prerequisites
 
@@ -41,10 +68,29 @@ npm install -g @rankcli/cli
 
 # Verify installation
 rankcli --version
-# Expected: 0.0.15 (or current version)
+# Expected: 0.0.19 (or current version)
 
 # For MCP testing, also install:
 npm install -g @rankcli/mcp-server
+```
+
+### Database Health Check (Admin)
+
+If you have database access, run these checks before testing:
+
+```sql
+-- Check for stuck audits (should be 0)
+SELECT COUNT(*) FROM audits 
+WHERE status IN ('pending', 'running') 
+AND created_at < NOW() - INTERVAL '10 minutes';
+
+-- Verify schedule_interval_hours is set correctly
+SELECT plan_id, features->>'schedule_interval_hours' as interval_hours 
+FROM subscription_plans;
+-- Expected: solo=168, pro=24, agency=1
+
+-- Clean up stuck audits if any
+SELECT cleanup_stuck_audits();
 ```
 
 ### Test URLs (use these throughout testing)
@@ -61,9 +107,20 @@ npm install -g @rankcli/mcp-server
 
 | Type | Email | Notes |
 |------|-------|-------|
-| **Free Registered** | `test-free@example.com` | Create during testing |
+| **Free Registered** | Create with `+free` suffix | e.g., `you+free@gmail.com` |
 | **Pro Account** | `info@integrallis.com` | Existing Pro account |
 | **New Paid** | Create fresh | Test checkout flow |
+
+### Important Timing Constraints
+
+| Plan | Audit Cooldown | Notes |
+|------|----------------|-------|
+| Free Registered | Manual only | No automatic scheduling |
+| Solo | 168 hours (7 days) | Weekly audits |
+| Pro | 24 hours | Daily audits |
+| Agency | 1 hour | Hourly audits |
+
+⚠️ **Note**: If you hit "Schedule limit reached", you must wait the cooldown period or use a different test project/domain.
 
 ---
 
@@ -92,10 +149,10 @@ npm install -g @rankcli/mcp-server
 | 1.2.3 | Invalid URL | Enter `notaurl`, submit | Shows validation error | ☐ |
 | 1.2.4 | Loading state | Submit URL | Shows loading spinner during audit | ☐ |
 | 1.2.5 | Score display | Complete audit | Shows overall score prominently | ☐ |
-| 1.2.6 | Category breakdown | Complete audit | Shows 7 category scores (Crawl, OnPage, Content, Perf, Security, Social, AI) | ☐ |
+| 1.2.6 | Category breakdown | Complete audit | Shows 7 category scores (Crawlability, OnPage, Content, Performance, Security, Social, AI Readiness) | ☐ |
 | 1.2.7 | Radar chart | Complete audit | Visual radar chart shows category distribution | ☐ |
-| 1.2.8 | Issues list | Complete audit | Shows top issues with severity (error/warning/notice) | ☐ |
-| 1.2.9 | Hidden issues count | Complete audit | Shows "X more issues - sign up to see all" | ☐ |
+| 1.2.8 | Issues list | Complete audit | Shows top 10 issues with severity (error/warning/notice) | ☐ |
+| 1.2.9 | Hidden issues count | Complete audit | Shows "X more issues - sign up to see all" (if total > 10) | ☐ |
 | 1.2.10 | SERP preview | Complete audit | Shows Google SERP preview with title/description | ☐ |
 | 1.2.11 | Share results | Click share button | Opens share modal with URL/embed options | ☐ |
 | 1.2.12 | Sign up CTA | Visible after results | Clear CTA to create account for full report | ☐ |
@@ -202,8 +259,9 @@ npm install -g @rankcli/mcp-server
 | 2.3.2 | Stats display | View dashboard | Shows stats: sites, issues, avg score, audits | ☐ |
 | 2.3.3 | Add project button | Click "Add Project" | Opens add project modal | ☐ |
 | 2.3.4 | Add first project | Enter URL, submit | Project created, first audit runs | ☐ |
-| 2.3.5 | Site limit (1) | Try adding second site | Shows upgrade prompt (free = 1 site) | ☐ |
-| 2.3.6 | View project | Click project card | Navigates to project detail page | ☐ |
+| 2.3.5 | Site limit (1) | Try adding second project | Shows upgrade prompt (free = 1 project) | ☐ |
+| 2.3.6 | Domain limit (2/mo) | Audit 3rd unique domain in a month | Shows "Domain limit reached" error | ☐ |
+| 2.3.7 | View project | Click project card | Navigates to project detail page | ☐ |
 
 ### 2.4 Project Page (Free User)
 
@@ -214,6 +272,8 @@ npm install -g @rankcli/mcp-server
 | 2.4.3 | Issues list | View project | Shows all issues (up to 100 checks limit) | ☐ |
 | 2.4.4 | Issue details | Click on issue | Shows issue details with description | ☐ |
 | 2.4.5 | Run audit button | Click "Run Audit" | New audit runs, results update | ☐ |
+| 2.4.5a | Audit in progress UI | While audit running | Shows spinner with progress (if SSE connected) | ☐ |
+| 2.4.5b | Audit completion | Audit finishes | Toast notification, results refresh | ☐ |
 | 2.4.6 | Audit history | View audit history | Shows past audits with dates/scores | ☐ |
 | 2.4.7 | Gated features | Try to access paid features | Shows upgrade prompts | ☐ |
 | 2.4.8 | Connect GitHub | Try "Connect GitHub" | Shows upgrade prompt (Pro feature) | ☐ |
@@ -235,8 +295,8 @@ npm install -g @rankcli/mcp-server
 |---|-----------|-------|-----------------|--------|
 | 2.6.1 | CLI login | `rankcli login` | Opens browser, completes auth | ☐ |
 | 2.6.2 | Whoami | `rankcli whoami` | Shows logged-in user info | ☐ |
-| 2.6.3 | Basic audit | `rankcli audit -u https://example.com` | Runs audit (100 checks limit) | ☐ |
-| 2.6.4 | Check limit | Complete audit | Results limited to 100 checks, shows upgrade prompt | ☐ |
+| 2.6.3 | Basic audit | `rankcli audit -u https://example.com` | Runs audit with 100 checks (free registered limit) | ☐ |
+| 2.6.4 | Upgrade prompt | Complete audit | Shows "Upgrade to unlock X more checks" message | ☐ |
 | 2.6.5 | CLI logout | `rankcli logout` | Logs out, confirms | ☐ |
 
 ---
@@ -278,18 +338,21 @@ npm install -g @rankcli/mcp-server
 | 3A.3.6 | Delete project | Delete a project | Project removed, confirmation shown | ☐ |
 | 3A.3.7 | Framework detection | View project | Shows detected framework (Next.js, etc.) | ☐ |
 
-### 3A.4 GitHub Integration (Pro+)
+### 3A.4 GitHub Integration (Pro & Agency ONLY)
+
+⚠️ **Note**: GitHub integration is NOT available on Solo plan. Solo users should see an upgrade prompt.
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 3A.4.1 | Connect GitHub button | Click "Connect GitHub" | Opens GitHub connection modal | ☐ |
+| 3A.4.0 | Solo user blocked | As Solo user, click "Connect GitHub" | Shows upgrade prompt to Pro | ☐ |
+| 3A.4.1 | Connect GitHub button | As Pro+ user, click "Connect GitHub" | Opens GitHub connection modal | ☐ |
 | 3A.4.2 | Install GitHub App | Click "Install GitHub App" | Redirects to GitHub App installation | ☐ |
 | 3A.4.3 | Grant repo access | Select repos in GitHub | App installed with selected repos | ☐ |
 | 3A.4.4 | Select repository | Choose repo in modal | Repository connected to project | ☐ |
 | 3A.4.5 | Repo shows connected | View project | Shows connected repo badge | ☐ |
 | 3A.4.6 | Disconnect repo | Disconnect repository | Repo unlinked from project | ☐ |
 
-### 3A.5 Auto-Fix PRs (Pro+)
+### 3A.5 Auto-Fix PRs (Pro & Agency ONLY)
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
@@ -300,23 +363,33 @@ npm install -g @rankcli/mcp-server
 | 3A.5.5 | Multiple fixes | Select multiple issues | Single PR with all fixes | ☐ |
 | 3A.5.6 | Dry run | Preview without creating | Shows diff without creating PR | ☐ |
 
-### 3A.6 Scheduled Audits
+### 3A.6 Audit Throttling & Scheduling
+
+⚠️ **Note**: "Scheduled audits" refers to the MINIMUM time between audits, not automatic execution. Users can run audits manually but must wait the cooldown period.
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 3A.6.1 | Weekly audit (Solo) | Wait for schedule | Audit runs weekly automatically | ☐ |
-| 3A.6.2 | Daily audit (Pro) | Wait for schedule | Audit runs daily automatically | ☐ |
-| 3A.6.3 | Audit history | View history | Shows all scheduled audits | ☐ |
-| 3A.6.4 | Score trends | View trends | Shows score changes over time | ☐ |
+| 3A.6.1 | Solo cooldown (168h) | Run audit, try again immediately | Shows "Schedule limit reached. Next audit in ~7 days" | ☐ |
+| 3A.6.2 | Pro cooldown (24h) | Run audit, try again immediately | Shows "Schedule limit reached. Next audit in ~24 hours" | ☐ |
+| 3A.6.3 | Agency cooldown (1h) | Run audit, try again immediately | Shows "Schedule limit reached. Next audit in ~1 hour" | ☐ |
+| 3A.6.4 | Cooldown button | While on cooldown | Button shows "Available in Xd Xh Xm" and is disabled | ☐ |
+| 3A.6.5 | Cooldown card | While on cooldown | Yellow card shows next available time in local timezone | ☐ |
+| 3A.6.6 | Cooldown expired | Wait for cooldown to expire | Button re-enables, can run audit | ☐ |
+| 3A.6.7 | Audit history | View history | Shows all past audits with dates/scores | ☐ |
+| 3A.6.8 | Score trends | View trends | Shows score changes over time | ☐ |
 
-### 3A.7 Alerts & Notifications (Pro+)
+### 3A.7 Alerts & Notifications (Pro & Agency ONLY)
+
+⚠️ **Note**: Slack/Discord alerts are NOT available on Solo or Free plans.
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
+| 3A.7.0 | Solo user blocked | As Solo user, try to set up alerts | Shows upgrade prompt to Pro | ☐ |
 | 3A.7.1 | Email notifications | Enable in settings | Receives email on new issues | ☐ |
-| 3A.7.2 | Slack integration | Connect Slack | Receives Slack alerts | ☐ |
-| 3A.7.3 | Discord integration | Connect Discord | Receives Discord alerts | ☐ |
-| 3A.7.4 | Alert customization | Configure alert types | Only selected alerts fire | ☐ |
+| 3A.7.2 | Slack integration | CLI: `rankcli alerts --channel slack` | Prompts for webhook URL | ☐ |
+| 3A.7.3 | Discord integration | CLI: `rankcli alerts --channel discord` | Prompts for webhook URL | ☐ |
+| 3A.7.4 | Test webhook | CLI: `rankcli alerts --test --webhook <url>` | Sends test notification | ☐ |
+| 3A.7.5 | Alert customization | Configure alert types | Only selected alerts fire | ☐ |
 
 ### 3A.8 Reports & Export
 
@@ -646,14 +719,47 @@ Common issue codes to verify detection:
 For rapid validation, run these critical paths:
 
 1. [ ] Free audit works: `/free-audit` → enter URL → get results
-2. [ ] Signup works: Create account → land on dashboard
-3. [ ] CLI works: `rankcli audit -u https://example.com`
-4. [ ] GEO works: `rankcli geo -u https://example.com`
-5. [ ] Paid checkout works: Select plan → complete payment
-6. [ ] GitHub PR works: Connect repo → create fix PR
-7. [ ] MCP works: Claude can run `seo_analyze`
+2. [ ] Signup works: Create account → land on dashboard  
+3. [ ] Project creation works: Add project → first audit runs
+4. [ ] CLI works: `rankcli audit -u https://example.com`
+5. [ ] GEO works: `rankcli geo -u https://example.com`
+6. [ ] Paid checkout works: Select plan → complete payment
+7. [ ] Schedule limit works: Run audit → try again → see cooldown message with local time
+8. [ ] GitHub PR works (Pro+): Connect repo → create fix PR
+9. [ ] MCP works: Claude can run `seo_analyze`
+
+### Critical Bug Checks
+
+These are issues that have occurred before - verify they're fixed:
+
+1. [ ] HTTPS detection: Audit `https://redis.io` → should NOT show "Page not served over HTTPS"
+2. [ ] Schedule limit dates: Error message shows local timezone (e.g., "Feb 28, 2026, 3:00 PM"), NOT ISO format
+3. [ ] Stuck audits: No audits stuck in "pending" or "running" state for >10 minutes
+4. [ ] Pro schedule: Pro users get 24h cooldown, NOT 168h (weekly)
 
 ---
 
-*Last Updated: 2026-02-22*
-*Version: 1.0.0*
+## Known Issues & Edge Cases
+
+### Schedule Limit Edge Cases
+- If an audit fails (e.g., site unreachable), it does NOT count against the schedule limit
+- The schedule limit is per-project, not per-domain
+- Dates shown in schedule limit messages should display in user's local timezone
+
+### GitHub Integration Edge Cases
+- If GitHub App is uninstalled, reconnection requires re-authentication
+- PRs are created with `seo-fixes` branch name - may conflict if branch already exists
+- Only public and private repos where the App is installed are accessible
+
+### Rate Limits
+- Free audit tool: 10 requests per IP per hour
+- API: Varies by plan (see API documentation)
+
+### Browser Compatibility
+- Minimum supported: Chrome 90+, Firefox 88+, Safari 14+, Edge 90+
+- SSE for real-time updates requires stable connection
+
+---
+
+*Last Updated: 2026-02-27*
+*Version: 1.1.0*
