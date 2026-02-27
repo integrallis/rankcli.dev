@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { formatLocalDate, parseNextAllowedAt } from '@/lib/date-utils';
 
 const WORKER_URL = import.meta.env.VITE_AUDIT_WORKER_URL || 'http://localhost:8080';
 
@@ -96,8 +97,15 @@ export function useAuditSSE(options: UseAuditSSEOptions) {
             // Invalidate queries
             queryClient.invalidateQueries({ queryKey: ['project'] });
 
+            // Format schedule limit errors with human-readable dates
+            let errorMessage = data.error ?? 'Unknown error';
+            const nextAllowedAt = parseNextAllowedAt(data.error);
+            if (nextAllowedAt && data.error?.includes('Schedule limit')) {
+              errorMessage = `Schedule limit reached. Next audit available: ${formatLocalDate(nextAllowedAt)}`;
+            }
+
             toast.error('Audit failed', {
-              description: data.error ?? 'Unknown error',
+              description: errorMessage,
             });
 
             onFailed?.(auditId, data.error ?? 'Unknown error');
