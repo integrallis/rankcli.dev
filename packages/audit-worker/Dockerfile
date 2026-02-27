@@ -1,5 +1,5 @@
-# Build stage
-FROM node:20-alpine AS builder
+# Build stage - use slim (Debian) instead of Alpine for better SSL support
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
@@ -26,17 +26,13 @@ RUN pnpm build
 WORKDIR /app/packages/audit-worker
 RUN pnpm build
 
-# Runtime stage
-FROM node:20-alpine
+# Runtime stage - use slim (Debian) for proper SSL/TLS support
+FROM node:20-slim
 
 WORKDIR /app
 
-# Install CA certificates for TLS verification and update them
-RUN apk add --no-cache ca-certificates && update-ca-certificates
-
-# Set SSL cert path for Node.js
-ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
-ENV NODE_OPTIONS="--use-openssl-ca"
+# Install CA certificates (Debian way)
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm for workspace linking
 RUN npm install -g pnpm
@@ -56,9 +52,9 @@ WORKDIR /app/packages/audit-worker
 # Expose port
 EXPOSE 8080
 
-# Health check
+# Health check (use curl on Debian, or node for portability)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1
+  CMD node -e "require('http').get('http://localhost:8080/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
 
 # Start
 CMD ["node", "dist/index.js"]
