@@ -31,8 +31,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install CA certificates for TLS verification
-RUN apk add --no-cache ca-certificates
+# Install CA certificates for TLS verification and update them
+RUN apk add --no-cache ca-certificates && update-ca-certificates
+
+# Set SSL cert path for Node.js
+ENV SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+ENV NODE_OPTIONS="--use-openssl-ca"
 
 # Install pnpm for workspace linking
 RUN npm install -g pnpm
