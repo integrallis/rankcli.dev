@@ -139,12 +139,31 @@ export function FreeAuditPage() {
   };
 
   const handleEmailCapture = async (email: string) => {
-    // Send email to edge function for PDF report
+    if (!result) return;
+    
+    // Extract domain from URL
+    let domain = '';
+    try {
+      const validUrl = url.startsWith('http') ? url : `https://${url}`;
+      domain = new URL(validUrl).hostname;
+    } catch {
+      domain = url;
+    }
+
+    // Send full audit data to email report function
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    fetch(`${supabaseUrl}/functions/v1/free-audit`, {
+    fetch(`${supabaseUrl}/functions/v1/send-free-audit-report`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, email }),
+      body: JSON.stringify({
+        email,
+        url: url.startsWith('http') ? url : `https://${url}`,
+        domain,
+        score: result.score,
+        categories: result.categories,
+        issues: result.issues,
+        checksRun: result.checksRun,
+      }),
     }).catch(console.error);
   };
 

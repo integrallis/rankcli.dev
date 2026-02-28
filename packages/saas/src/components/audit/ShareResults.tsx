@@ -86,10 +86,10 @@ export function ShareResults({ url, score, onEmailCapture }: ShareResultsProps) 
         <div className="p-4 rounded-lg bg-muted/50 border">
           <div className="flex items-center gap-2 mb-2">
             <Mail className="h-4 w-4" />
-            <span className="text-sm font-medium">Get Full PDF Report</span>
+            <span className="text-sm font-medium">Get Report via Email</span>
           </div>
           <p className="text-sm text-muted-foreground mb-3">
-            Enter your email to receive a detailed PDF report with all 200+ check results.
+            Enter your email to receive this audit report with detailed recommendations.
           </p>
           <div className="flex gap-2">
             <Input
