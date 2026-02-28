@@ -18,7 +18,8 @@
 # - AUDIT_WORKER_SECRET
 # - OPENAI_API_KEY
 #
-# Optional Secrets (for AI keyword research competitive analysis):
+# Optional Secrets:
+# - RESEND_API_KEY         (Resend.com - transactional emails, 3,000 free/month)
 # - BRAVE_API_KEY          (Brave Search API - 2,000 free/month)
 # - SERPER_API_KEY         (Serper.dev Google Search - 2,500 free/month)
 # - GITHUB_TOKEN_SEARCH    (GitHub PAT for increased rate limits - no scopes needed)
@@ -310,8 +311,11 @@ jobs:
             AUDIT_WORKER_URL="https://rankcli-audit-worker.fly.dev" \
             AUDIT_WORKER_SECRET="${{ secrets.AUDIT_WORKER_SECRET }}"
 
-          # Set optional competitive search API keys if configured
+          # Set optional secrets if configured
           OPTIONAL_SECRETS=""
+          if [ -n "${{ secrets.RESEND_API_KEY }}" ]; then
+            OPTIONAL_SECRETS="$OPTIONAL_SECRETS RESEND_API_KEY=\"${{ secrets.RESEND_API_KEY }}\""
+          fi
           if [ -n "${{ secrets.BRAVE_API_KEY }}" ]; then
             OPTIONAL_SECRETS="$OPTIONAL_SECRETS BRAVE_API_KEY=\"${{ secrets.BRAVE_API_KEY }}\""
           fi
