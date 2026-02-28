@@ -197,7 +197,7 @@ export function FreeAuditPage() {
               Free SEO Audit
             </h1>
             <p className="text-lg text-muted-foreground">
-              200+ SEO checks in seconds. No signup required.
+              200+ SEO checks. No signup required.
             </p>
           </div>
 
