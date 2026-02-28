@@ -6,9 +6,8 @@
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
-// Default sender - update to your verified domain
-// TODO: Change back to notifications@rankcli.dev once domain is verified in Resend
-const DEFAULT_FROM = 'RankCLI <onboarding@resend.dev>';
+// Default sender - must be from a verified domain in Resend
+const DEFAULT_FROM = 'RankCLI <notifications@rankcli.dev>';
 
 export interface EmailOptions {
   to: string | string[];
