@@ -6,13 +6,13 @@ import { Share2, Twitter, Linkedin, Link2, Check, Mail } from 'lucide-react';
 interface ShareResultsProps {
   url: string;
   score: number;
-  onEmailCapture?: (email: string) => void;
+  onEmailCapture?: (email: string) => Promise<boolean>;
 }
 
 export function ShareResults({ url, score, onEmailCapture }: ShareResultsProps) {
   const [copied, setCopied] = useState(false);
   const [email, setEmail] = useState('');
-  const [emailSubmitted, setEmailSubmitted] = useState(false);
+  const [emailStatus, setEmailStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
 
   // Extract domain for cleaner sharing
   let domain = '';
@@ -41,10 +41,15 @@ export function ShareResults({ url, score, onEmailCapture }: ShareResultsProps) 
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleEmailSubmit = () => {
-    if (email && email.includes('@')) {
-      onEmailCapture?.(email);
-      setEmailSubmitted(true);
+  const handleEmailSubmit = async () => {
+    if (email && email.includes('@') && onEmailCapture) {
+      setEmailStatus('sending');
+      try {
+        const success = await onEmailCapture(email);
+        setEmailStatus(success ? 'sent' : 'error');
+      } catch {
+        setEmailStatus('error');
+      }
     }
   };
 
@@ -82,7 +87,33 @@ export function ShareResults({ url, score, onEmailCapture }: ShareResultsProps) 
       </div>
 
       {/* Email Capture */}
-      {!emailSubmitted ? (
+      {emailStatus === 'sent' ? (
+        <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
+          <div className="flex items-center gap-2">
+            <Check className="h-5 w-5 text-green-500" />
+            <span className="font-medium text-green-600">
+              Report sent! Check your inbox.
+            </span>
+          </div>
+        </div>
+      ) : emailStatus === 'error' ? (
+        <div className="p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+          <div className="flex items-center gap-2">
+            <Mail className="h-5 w-5 text-red-500" />
+            <span className="font-medium text-red-600">
+              Failed to send report. Please try again.
+            </span>
+          </div>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mt-2"
+            onClick={() => setEmailStatus('idle')}
+          >
+            Try Again
+          </Button>
+        </div>
+      ) : (
         <div className="p-4 rounded-lg bg-muted/50 border">
           <div className="flex items-center gap-2 mb-2">
             <Mail className="h-4 w-4" />
@@ -98,19 +129,14 @@ export function ShareResults({ url, score, onEmailCapture }: ShareResultsProps) 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="flex-1"
+              disabled={emailStatus === 'sending'}
             />
-            <Button onClick={handleEmailSubmit} disabled={!email || !email.includes('@')}>
-              Send Report
+            <Button 
+              onClick={handleEmailSubmit} 
+              disabled={!email || !email.includes('@') || emailStatus === 'sending'}
+            >
+              {emailStatus === 'sending' ? 'Sending...' : 'Send Report'}
             </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="p-4 rounded-lg bg-green-500/10 border border-green-500/20">
-          <div className="flex items-center gap-2">
-            <Check className="h-5 w-5 text-green-500" />
-            <span className="font-medium text-green-600">
-              Report sent! Check your inbox.
-            </span>
           </div>
         </div>
       )}

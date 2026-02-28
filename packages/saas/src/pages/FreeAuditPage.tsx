@@ -138,8 +138,8 @@ export function FreeAuditPage() {
     },
   };
 
-  const handleEmailCapture = async (email: string) => {
-    if (!result) return;
+  const handleEmailCapture = async (email: string): Promise<boolean> => {
+    if (!result) return false;
     
     // Extract domain from URL
     let domain = '';
@@ -150,21 +150,29 @@ export function FreeAuditPage() {
       domain = url;
     }
 
-    // Send full audit data to email report function
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    fetch(`${supabaseUrl}/functions/v1/send-free-audit-report`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        url: url.startsWith('http') ? url : `https://${url}`,
-        domain,
-        score: result.score,
-        categories: result.categories,
-        issues: result.issues,
-        checksRun: result.checksRun,
-      }),
-    }).catch(console.error);
+    try {
+      // Send full audit data to email report function
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${supabaseUrl}/functions/v1/send-free-audit-report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          url: url.startsWith('http') ? url : `https://${url}`,
+          domain,
+          score: result.score,
+          categories: result.categories,
+          issues: result.issues,
+          checksRun: result.checksRun,
+        }),
+      });
+
+      const data = await response.json();
+      return response.ok && data.success;
+    } catch (err) {
+      console.error('Failed to send email report:', err);
+      return false;
+    }
   };
 
   return (
