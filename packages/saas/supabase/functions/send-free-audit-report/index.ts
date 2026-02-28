@@ -300,7 +300,7 @@ serve(async (req) => {
       text,
       tags: [
         { name: 'type', value: 'free-audit-report' },
-        { name: 'domain', value: data.domain },
+        { name: 'domain', value: data.domain.replace(/\./g, '_') },
       ],
     });
 

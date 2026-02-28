@@ -7,8 +7,7 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
 // Default sender - must be from a verified domain in Resend
-// Using test domain to debug 422 error
-const DEFAULT_FROM = 'RankCLI <onboarding@resend.dev>';
+const DEFAULT_FROM = 'RankCLI <notifications@rankcli.dev>';
 
 export interface EmailOptions {
   to: string | string[];
