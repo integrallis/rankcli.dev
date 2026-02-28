@@ -295,7 +295,7 @@ serve(async (req) => {
     // Send email
     const result = await sendEmail({
       to: data.email,
-      subject: `SEO Audit Report: ${data.domain} scored ${data.score}/100`,
+      subject: `RankCLI SEO Audit Report: ${data.domain} scored ${data.score}/100`,
       html,
       text,
       tags: [
