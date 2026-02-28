@@ -7,7 +7,8 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
 const RESEND_API_URL = 'https://api.resend.com/emails';
 
 // Default sender - must be from a verified domain in Resend
-const DEFAULT_FROM = 'RankCLI <notifications@rankcli.dev>';
+// Using test domain to debug 422 error
+const DEFAULT_FROM = 'RankCLI <onboarding@resend.dev>';
 
 export interface EmailOptions {
   to: string | string[];
@@ -53,9 +54,9 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResult> {
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error('Resend API error:', response.status, error);
-      return { success: false, error: `Resend API error: ${response.status}` };
+      const errorBody = await response.text();
+      console.error('Resend API error:', response.status, errorBody);
+      return { success: false, error: `Resend API error: ${response.status} - ${errorBody}` };
     }
 
     const data = await response.json() as { id: string };
