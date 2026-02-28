@@ -194,6 +194,7 @@ export function FreeAuditPage() {
                   onChange={(e) => setUrl(e.target.value)}
                   className="pl-10 h-12"
                   disabled={isLoading}
+                  autoFocus
                 />
               </div>
               <Button type="submit" size="lg" disabled={isLoading || !url}>
