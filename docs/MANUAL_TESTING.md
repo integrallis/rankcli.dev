@@ -460,7 +460,7 @@ SELECT cleanup_stuck_audits();
 | 3B.2.5 | Check links | `rankcli audit -u https://example.com --check-links` | Includes broken link checking | ✅ 2026-03-02 |
 | 3B.2.6 | AI analysis | `rankcli audit -u https://example.com --ai` | AI-enhanced analysis (requires API key) | ✅ 2026-03-02 |
 | 3B.2.7 | OpenAI provider | `rankcli audit --ai --ai-provider openai` | Uses OpenAI for AI analysis | ✅ 2026-03-02 |
-| 3B.2.8 | Anthropic provider | `rankcli audit --ai --ai-provider anthropic` | Uses Anthropic for AI analysis | ☐ (no key available) |
+| 3B.2.8 | Anthropic provider | `rankcli audit --ai --ai-provider anthropic` | Uses Anthropic for AI analysis | ✅ 2026-03-02 (use `--ai-key` explicitly - bug: CLI prefers OPENAI_API_KEY) |
 | 3B.2.9 | Score output | Complete audit | Shows score 0-100 prominently | ✅ 2026-03-02 |
 | 3B.2.10 | Category scores | Complete audit | Shows all 7 category scores | ✅ 2026-03-02 |
 | 3B.2.11 | Issues table | Complete audit | Shows issues in formatted table | ✅ 2026-03-02 |
@@ -849,6 +849,9 @@ These are issues that have occurred before - verify they're fixed:
 2. **react-snap removed** (commit `bab04c1`) - Puppeteer 1.8.0 (2018) couldn't parse modern JS
 3. **Vike recommendations** (commit `d95f104`) - Updated client-rendering.ts with modern SSR solution
 4. **Tool URLs corrected** - Test doc had wrong URLs; actual tools work fine
+
+#### Bugs Found (Not Yet Fixed)
+1. **CLI AI provider key precedence** - `--ai-provider anthropic` still uses `OPENAI_API_KEY` if set. Workaround: use `--ai-key` explicitly. Fix: check provider before falling back to env vars.
 
 #### Test Account Setup
 - **Pro account:** `samboddens@gmail.com` (upgraded via Supabase)
