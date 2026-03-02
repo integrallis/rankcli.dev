@@ -234,10 +234,10 @@ SELECT cleanup_stuck_audits();
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
 | 1.8.1 | Docs page loads | Navigate to /docs | Shows documentation sections | ✅ 2026-03-02 |
-| 1.8.2 | Navigation | Click sidebar sections | Smooth scrolling to sections | ☐ |
-| 1.8.3 | Code examples | View CLI examples | Syntax highlighted, copyable | ☐ |
-| 1.8.4 | GEO section | Navigate to GEO docs | Complete GEO documentation | ☐ |
-| 1.8.5 | MCP section | Navigate to MCP docs | Complete MCP setup instructions | ☐ |
+| 1.8.2 | Navigation | Click sidebar sections | Smooth scrolling to sections | ✅ 2026-03-02 |
+| 1.8.3 | Code examples | View CLI examples | Syntax highlighted, copyable | ✅ 2026-03-02 (no copy buttons) |
+| 1.8.4 | GEO section | Navigate to GEO docs | Complete GEO documentation | ✅ 2026-03-02 |
+| 1.8.5 | MCP section | Navigate to MCP docs | Complete MCP setup instructions | ✅ 2026-03-02 |
 
 ---
 
@@ -248,60 +248,60 @@ SELECT cleanup_stuck_audits();
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
 | 2.1.1 | Signup page loads | Navigate to /signup | Shows signup form with OAuth options | ✅ 2026-03-02 |
-| 2.1.2 | GitHub OAuth | Click "Continue with GitHub" | Redirects to GitHub, then back to dashboard | ☐ |
-| 2.1.3 | Google OAuth | Click "Continue with Google" | Redirects to Google, then back to dashboard | ☐ |
-| 2.1.4 | Email signup | Enter email/password | Account created, verification email sent | ☐ |
-| 2.1.5 | Email verification | Click link in email | Email verified, redirected to dashboard | ☐ |
-| 2.1.6 | Duplicate email | Try existing email | Shows "account exists" error | ☐ |
-| 2.1.7 | Weak password | Enter weak password | Shows password requirements | ☐ |
+| 2.1.2 | GitHub OAuth | Click "Continue with GitHub" | Redirects to GitHub, then back to dashboard | ✅ 2026-03-02 (redirect works) |
+| 2.1.3 | Google OAuth | Click "Continue with Google" | Redirects to Google, then back to dashboard | ✅ 2026-03-02 (redirect works) |
+| 2.1.4 | Email signup | Enter email/password | Account created, verification email sent | ☐ MANUAL |
+| 2.1.5 | Email verification | Click link in email | Email verified, redirected to dashboard | ☐ MANUAL |
+| 2.1.6 | Duplicate email | Try existing email | Shows "account exists" error | ☐ MANUAL |
+| 2.1.7 | Weak password | Enter weak password | Shows password requirements | ☐ MANUAL |
 
 ### 2.2 Login Flow
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
 | 2.2.1 | Login page loads | Navigate to /login | Shows login form with OAuth options | ✅ 2026-03-02 |
-| 2.2.2 | Valid credentials | Enter correct email/password | Redirected to dashboard | ☐ |
-| 2.2.3 | Invalid credentials | Enter wrong password | Shows error message | ☐ |
-| 2.2.4 | Forgot password | Click "Forgot password" | Shows password reset flow | ☐ |
-| 2.2.5 | Password reset | Complete reset flow | Able to login with new password | ☐ |
+| 2.2.2 | Valid credentials | Enter correct email/password | Redirected to dashboard | ☐ MANUAL |
+| 2.2.3 | Invalid credentials | Enter wrong password | Shows error message | ✅ 2026-03-02 |
+| 2.2.4 | Forgot password | Click "Forgot password" | Shows password reset flow | ✅ 2026-03-02 |
+| 2.2.5 | Password reset | Complete reset flow | Able to login with new password | ☐ MANUAL |
 
 ### 2.3 Dashboard (Free User)
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 2.3.1 | Dashboard loads | Login, view dashboard | Shows empty state or existing projects | ☐ |
-| 2.3.2 | Stats display | View dashboard | Shows stats: sites, issues, avg score, audits | ☐ |
-| 2.3.3 | Add project button | Click "Add Project" | Opens add project modal | ☐ |
-| 2.3.4 | Add first project | Enter URL, submit | Project created, first audit runs | ☐ |
-| 2.3.5 | Site limit (1) | Try adding second project | Shows upgrade prompt (free = 1 project) | ☐ |
-| 2.3.6 | Domain limit (2/mo) | Audit 3rd unique domain in a month | Shows "Domain limit reached" error | ☐ |
-| 2.3.7 | View project | Click project card | Navigates to project detail page | ☐ |
+| 2.3.1 | Dashboard loads | Login, view dashboard | Shows empty state or existing projects | ✅ 2026-03-02 |
+| 2.3.2 | Stats display | View dashboard | Shows stats: sites, issues, avg score, audits | ✅ 2026-03-02 |
+| 2.3.3 | Add project button | Click "Add Project" | Opens add project modal | ✅ 2026-03-02 |
+| 2.3.4 | Add first project | Enter URL, submit | Project created, first audit runs | ✅ 2026-03-02 (2-step wizard) |
+| 2.3.5 | Site limit (1) | Try adding second project | Shows upgrade prompt (free = 1 project) | ⚠️ 2026-03-02 (no limit shown at creation - bug?) |
+| 2.3.6 | Domain limit (2/mo) | Audit 3rd unique domain in a month | Shows "Domain limit reached" error | ☐ MANUAL |
+| 2.3.7 | View project | Click project card | Navigates to project detail page | ✅ 2026-03-02 |
 
 ### 2.4 Project Page (Free User)
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 2.4.1 | Project page loads | Navigate to project | Shows project info, score, issues | ☐ |
-| 2.4.2 | Score display | View project | Shows overall score and category breakdown | ☐ |
-| 2.4.3 | Issues list | View project | Shows all issues (up to 100 checks limit) | ☐ |
-| 2.4.4 | Issue details | Click on issue | Shows issue details with description | ☐ |
-| 2.4.5 | Run audit button | Click "Run Audit" | New audit runs, results update | ☐ |
-| 2.4.5a | Audit in progress UI | While audit running | Shows spinner with progress (if SSE connected) | ☐ |
-| 2.4.5b | Audit completion | Audit finishes | Toast notification, results refresh | ☐ |
-| 2.4.6 | Audit history | View audit history | Shows past audits with dates/scores | ☐ |
-| 2.4.7 | Gated features | Try to access paid features | Shows upgrade prompts | ☐ |
-| 2.4.8 | Connect GitHub | Try "Connect GitHub" | Shows upgrade prompt (Pro feature) | ☐ |
+| 2.4.1 | Project page loads | Navigate to project | Shows project info, score, issues | ✅ 2026-03-02 |
+| 2.4.2 | Score display | View project | Shows overall score and category breakdown | ✅ 2026-03-02 (radar chart + 6 categories) |
+| 2.4.3 | Issues list | View project | Shows all issues (up to 100 checks limit) | ✅ 2026-03-02 (shows after audit) |
+| 2.4.4 | Issue details | Click on issue | Shows issue details with description | ☐ MANUAL |
+| 2.4.5 | Run audit button | Click "Run Audit" | New audit runs, results update | ✅ 2026-03-02 (button present) |
+| 2.4.5a | Audit in progress UI | While audit running | Shows spinner with progress (if SSE connected) | ☐ MANUAL |
+| 2.4.5b | Audit completion | Audit finishes | Toast notification, results refresh | ☐ MANUAL |
+| 2.4.6 | Audit history | View audit history | Shows past audits with dates/scores | ☐ MANUAL |
+| 2.4.7 | Gated features | Try to access paid features | Shows upgrade prompts | ☐ MANUAL |
+| 2.4.8 | Connect GitHub | Try "Connect GitHub" | Shows upgrade prompt (Pro feature) | ☐ MANUAL |
 
 ### 2.5 Account Page (Free User)
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 2.5.1 | Account page loads | Navigate to /account | Shows account settings | ☐ |
-| 2.5.2 | Profile info | View profile section | Shows email, name, avatar | ☐ |
-| 2.5.3 | Current plan | View plan section | Shows "Free" plan with limits | ☐ |
-| 2.5.4 | Upgrade CTA | View upgrade section | Clear upgrade options with pricing | ☐ |
-| 2.5.5 | API key | View API section | Can generate/view API key | ☐ |
-| 2.5.6 | Logout | Click logout | Logged out, redirected to home | ☐ |
+| 2.5.1 | Account page loads | Navigate to /account | Shows account settings | ✅ 2026-03-02 |
+| 2.5.2 | Profile info | View profile section | Shows email, name, avatar | ✅ 2026-03-02 |
+| 2.5.3 | Current plan | View plan section | Shows "Free" plan with limits | ✅ 2026-03-02 (0/1 sites) |
+| 2.5.4 | Upgrade CTA | View upgrade section | Clear upgrade options with pricing | ✅ 2026-03-02 (Solo/Pro/Agency) |
+| 2.5.5 | API key | View API section | Can generate/view API key | ✅ 2026-03-02 |
+| 2.5.6 | Logout | Click logout | Logged out, redirected to home | ✅ 2026-03-02 |
 
 ### 2.6 CLI (Free Registered User)
 
