@@ -273,7 +273,7 @@ SELECT cleanup_stuck_audits();
 | 2.3.2 | Stats display | View dashboard | Shows stats: sites, issues, avg score, audits | ✅ 2026-03-02 |
 | 2.3.3 | Add project button | Click "Add Project" | Opens add project modal | ✅ 2026-03-02 |
 | 2.3.4 | Add first project | Enter URL, submit | Project created, first audit runs | ✅ 2026-03-02 (2-step wizard) |
-| 2.3.5 | Site limit (1) | Try adding second project | Shows upgrade prompt (free = 1 project) | ⚠️ 2026-03-02 (no limit shown at creation - bug?) |
+| 2.3.5 | Site limit (1) | Try adding second project | Shows upgrade prompt (free = 1 project) | ✅ 2026-03-02 (fixed: commit 883c015) |
 | 2.3.6 | Domain limit (2/mo) | Audit 3rd unique domain in a month | Shows "Domain limit reached" error | ☐ MANUAL |
 | 2.3.7 | View project | Click project card | Navigates to project detail page | ✅ 2026-03-02 |
 
