@@ -260,7 +260,7 @@ SELECT cleanup_stuck_audits();
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
 | 2.2.1 | Login page loads | Navigate to /login | Shows login form with OAuth options | ✅ 2026-03-02 |
-| 2.2.2 | Valid credentials | Enter correct email/password | Redirected to dashboard | ☐ MANUAL |
+| 2.2.2 | Valid credentials | Enter correct email/password | Redirected to dashboard | ✅ 2026-03-02 |
 | 2.2.3 | Invalid credentials | Enter wrong password | Shows error message | ✅ 2026-03-02 |
 | 2.2.4 | Forgot password | Click "Forgot password" | Shows password reset flow | ✅ 2026-03-02 |
 | 2.2.5 | Password reset | Complete reset flow | Able to login with new password | ☐ MANUAL |
@@ -274,7 +274,7 @@ SELECT cleanup_stuck_audits();
 | 2.3.3 | Add project button | Click "Add Project" | Opens add project modal | ✅ 2026-03-02 |
 | 2.3.4 | Add first project | Enter URL, submit | Project created, first audit runs | ✅ 2026-03-02 (2-step wizard) |
 | 2.3.5 | Site limit (1) | Try adding second project | Shows upgrade prompt (free = 1 project) | ✅ 2026-03-02 (fixed: commit 883c015) |
-| 2.3.6 | Domain limit (2/mo) | Audit 3rd unique domain in a month | Shows "Domain limit reached" error | ☐ MANUAL |
+| 2.3.6 | Domain limit (2/mo) | Audit 3rd unique domain in a month | Shows "Domain limit reached" error | ⚠️ Limit display works (X/Y on billing); enforcement needs 3+ domains |
 | 2.3.7 | View project | Click project card | Navigates to project detail page | ✅ 2026-03-02 |
 
 ### 2.4 Project Page (Free User)
@@ -289,7 +289,7 @@ SELECT cleanup_stuck_audits();
 | 2.4.5a | Audit in progress UI | While audit running | Shows spinner with progress (if SSE connected) | ☐ MANUAL |
 | 2.4.5b | Audit completion | Audit finishes | Toast notification, results refresh | ☐ MANUAL |
 | 2.4.6 | Audit history | View audit history | Shows past audits with dates/scores | ☐ MANUAL |
-| 2.4.7 | Gated features | Try to access paid features | Shows upgrade prompts | ☐ MANUAL |
+| 2.4.7 | Gated features | Try to access paid features | Shows upgrade prompts | ✅ 2026-03-02 (CLI shows upgrade prompt for checks) |
 | 2.4.8 | Connect GitHub | Try "Connect GitHub" | Shows upgrade prompt (Pro feature) | ☐ MANUAL |
 
 ### 2.5 Account Page (Free User)
@@ -307,11 +307,11 @@ SELECT cleanup_stuck_audits();
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 2.6.1 | CLI login | `rankcli login` | Opens browser, completes auth | ☐ |
-| 2.6.2 | Whoami | `rankcli whoami` | Shows logged-in user info | ☐ |
-| 2.6.3 | Basic audit | `rankcli audit -u https://example.com` | Runs audit with 100 checks (free registered limit) | ☐ |
-| 2.6.4 | Upgrade prompt | Complete audit | Shows "Upgrade to unlock X more checks" message | ☐ |
-| 2.6.5 | CLI logout | `rankcli logout` | Logs out, confirms | ☐ |
+| 2.6.1 | CLI login | `rankcli login --token <key>` | Authenticates with API key | ✅ 2026-03-02 |
+| 2.6.2 | Whoami | `rankcli whoami` | Shows logged-in user info | ✅ 2026-03-02 (Plan: Free, Sites: 1 allowed) |
+| 2.6.3 | Basic audit | `rankcli audit -u https://example.com` | Runs audit with 100 checks (free registered limit) | ✅ 2026-03-02 ("Running 100 of 280 available checks") |
+| 2.6.4 | Upgrade prompt | Complete audit | Shows "Upgrade to unlock X more checks" message | ✅ 2026-03-02 ("Unlock all 280+ checks with Solo") |
+| 2.6.5 | CLI logout | `rankcli logout` | Logs out, confirms | ✅ 2026-03-02 |
 
 ---
 
@@ -786,7 +786,7 @@ These are issues that have occurred before - verify they're fixed:
 #### Part 1: Free Users (No Login) - ALL PASS ✅
 | Test | Result |
 |------|--------|
-| 1.1.1-1.1.5 Homepage & nav | ✅ All pass |
+| 1.1.1-1.1.5 Homepage & nav | ✅ All pass (incl. mobile 375px) |
 | 1.2.1-1.2.14 Free Audit | ✅ All pass (score, radar chart, SERP preview, issues) |
 | 1.3.1-1.3.5 AI Visibility | ✅ All pass (LLM breakdown, sentiment, quotes) |
 | 1.4.1-1.4.5 ChatGPT Checker | ✅ All pass |
@@ -799,10 +799,11 @@ These are issues that have occurred before - verify they're fixed:
 | Test | Result |
 |------|--------|
 | 2.1.1-2.1.3 Signup (OAuth) | ✅ Redirects work |
-| 2.2.1-2.2.4 Login flow | ✅ Page loads, invalid creds handled, forgot password works |
+| 2.2.1-2.2.4 Login flow | ✅ Page loads, **valid creds login**, invalid creds handled, forgot password works |
 | 2.3.1-2.3.5 Dashboard | ✅ 2-step wizard, stats, **site limit enforced (bugfix 883c015)** |
-| 2.4.1-2.4.5 Project page | ✅ Radar chart, 6 categories, AI Visibility |
-| 2.5.1-2.5.6 Account page | ✅ Profile, billing (0/1 free limit), API keys |
+| 2.4.1-2.4.7 Project page | ✅ Radar chart, 6 categories, AI Visibility, **gated features show upgrade** |
+| 2.5.1-2.5.6 Account page | ✅ Profile, billing (0/10 Pro limit shown), API keys |
+| 2.6.1-2.6.5 CLI (Free) | ✅ Login, whoami (Free plan), audit (100 checks), **upgrade prompt**, logout |
 
 #### Part 3A: Paid Users - Web - PASS ✅
 | Test | Result |
