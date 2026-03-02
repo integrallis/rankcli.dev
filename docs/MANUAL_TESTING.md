@@ -163,13 +163,16 @@ SELECT cleanup_stuck_audits();
 
 **Location:** https://rankcli.dev/tools/ai-visibility
 
+> **Note:** This tool checks if LLMs (ChatGPT, Claude, Gemini, Perplexity) **mention/recommend** your site.
+> For **crawler access** checks (robots.txt, GPTBot), use the CLI: `rankcli geo -u <url>`
+
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 1.3.1 | GEO analysis | Enter URL, submit | Shows AI crawler access status | ✅ 2026-03-02 |
-| 1.3.2 | Crawler breakdown | Complete analysis | Shows GPTBot, ClaudeBot, PerplexityBot, Google-Extended status | ☐ |
-| 1.3.3 | robots.txt analysis | Complete analysis | Shows which AI crawlers are blocked/allowed | ☐ |
-| 1.3.4 | JS rendering check | Complete analysis | Indicates if content requires JS rendering | ☐ |
-| 1.3.5 | Recommendations | Complete analysis | Provides actionable recommendations | ☐ |
+| 1.3.1 | AI Visibility Score | Enter URL, submit | Shows AI Visibility Score (0-100) | ✅ 2026-03-02 |
+| 1.3.2 | LLM breakdown | Complete analysis | Shows ChatGPT, Claude, Gemini, Perplexity mention status | ✅ 2026-03-02 |
+| 1.3.3 | Position & sentiment | Complete analysis | Shows position ranking and sentiment (positive/neutral/negative) | ✅ 2026-03-02 |
+| 1.3.4 | Quote extraction | Complete analysis | Shows actual quote/snippet from LLM response | ✅ 2026-03-02 |
+| 1.3.5 | Tracking CTA | Complete analysis | Shows "Start Tracking Free" / "View Plans" options | ✅ 2026-03-02 |
 
 ### 1.4 ChatGPT Checker
 
