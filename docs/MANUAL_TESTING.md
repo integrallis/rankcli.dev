@@ -443,11 +443,11 @@ SELECT cleanup_stuck_audits();
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 3B.1.1 | Browser login | `rankcli login` | Opens browser, authenticates | ☐ |
-| 3B.1.2 | Token login | `rankcli login --token rankcli_xxx` | Authenticates with API key | ☐ |
-| 3B.1.3 | Env var auth | `export RANKCLI_API_KEY=xxx` | Commands authenticate automatically | ☐ |
+| 3B.1.1 | Browser login | `rankcli login` | Opens browser, authenticates | ☐ MANUAL |
+| 3B.1.2 | Token login | `rankcli login --token rankcli_xxx` | Authenticates with API key | ✅ 2026-03-02 |
+| 3B.1.3 | Env var auth | `export RANKCLI_API_KEY=xxx` | Commands authenticate automatically | ✅ 2026-03-02 |
 | 3B.1.4 | Whoami | `rankcli whoami` | Shows user info and plan | ✅ 2026-03-02 |
-| 3B.1.5 | Multiple machines | Login on different machine | Both machines work | ☐ |
+| 3B.1.5 | Multiple machines | Login on different machine | Both machines work | ☐ MANUAL |
 
 ### 3B.2 Audit Command
 
@@ -456,15 +456,15 @@ SELECT cleanup_stuck_audits();
 | 3B.2.1 | Basic audit | `rankcli audit -u https://example.com` | Full 280+ check audit runs | ✅ 2026-03-02 |
 | 3B.2.2 | Console output | Default output | Formatted console output with colors | ✅ 2026-03-02 |
 | 3B.2.3 | JSON output | `rankcli audit -u https://example.com -o json` | Valid JSON output | ✅ 2026-03-02 |
-| 3B.2.4 | Max pages | `rankcli audit -u https://example.com --max-pages 10` | Crawls up to 10 pages | ☐ |
-| 3B.2.5 | Check links | `rankcli audit -u https://example.com --check-links` | Includes broken link checking | ☐ |
-| 3B.2.6 | AI analysis | `rankcli audit -u https://example.com --ai` | AI-enhanced analysis (requires API key) | ☐ |
-| 3B.2.7 | OpenAI provider | `rankcli audit --ai --ai-provider openai` | Uses OpenAI for AI analysis | ☐ |
-| 3B.2.8 | Anthropic provider | `rankcli audit --ai --ai-provider anthropic` | Uses Anthropic for AI analysis | ☐ |
+| 3B.2.4 | Max pages | `rankcli audit -u https://example.com --max-pages 10` | Crawls up to 10 pages | ✅ 2026-03-02 |
+| 3B.2.5 | Check links | `rankcli audit -u https://example.com --check-links` | Includes broken link checking | ☐ MANUAL |
+| 3B.2.6 | AI analysis | `rankcli audit -u https://example.com --ai` | AI-enhanced analysis (requires API key) | ☐ MANUAL |
+| 3B.2.7 | OpenAI provider | `rankcli audit --ai --ai-provider openai` | Uses OpenAI for AI analysis | ☐ MANUAL |
+| 3B.2.8 | Anthropic provider | `rankcli audit --ai --ai-provider anthropic` | Uses Anthropic for AI analysis | ☐ MANUAL |
 | 3B.2.9 | Score output | Complete audit | Shows score 0-100 prominently | ✅ 2026-03-02 |
 | 3B.2.10 | Category scores | Complete audit | Shows all 7 category scores | ✅ 2026-03-02 |
 | 3B.2.11 | Issues table | Complete audit | Shows issues in formatted table | ✅ 2026-03-02 |
-| 3B.2.12 | Error handling | Audit unreachable URL | Shows clear error message | ☐ |
+| 3B.2.12 | Error handling | Audit unreachable URL | Shows clear error message | ✅ 2026-03-02 |
 
 ### 3B.3 GEO Command
 
@@ -475,7 +475,7 @@ SELECT cleanup_stuck_audits();
 | 3B.3.3 | robots.txt analysis | Complete GEO | Shows what robots.txt allows/blocks | ✅ 2026-03-02 |
 | 3B.3.4 | JS rendering | Complete GEO | Indicates SSR vs CSR | ✅ 2026-03-02 |
 | 3B.3.5 | LLM signals | Complete GEO | Shows content structure analysis | ✅ 2026-03-02 |
-| 3B.3.6 | JSON output | `rankcli geo -u https://example.com -o json` | Valid JSON output | ☐ |
+| 3B.3.6 | JSON output | `rankcli geo -u https://example.com -o json` | Valid JSON output | ✅ 2026-03-02 |
 
 ### 3B.4 Apply Command (Auto-Fix)
 
