@@ -7,15 +7,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { AddProjectModal } from '@/components/dashboard/AddProjectModal';
+import { UpgradeLimitModal } from '@/components/dashboard/UpgradeLimitModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjects } from '@/hooks/useProjects';
+import { useSubscription } from '@/hooks/useSubscription';
 import { cn } from '@/lib/utils';
 
 export function DashboardPage() {
   const { user } = useAuth();
   const { projects, isLoading, error, createProject } = useProjects();
+  const { getLimit, planName } = useSubscription();
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
+
+  const sitesLimit = getLimit('sites');
+  const hasReachedLimit = projects.length >= sitesLimit;
+
+  const handleAddProject = () => {
+    if (hasReachedLimit) {
+      setIsUpgradeModalOpen(true);
+    } else {
+      setIsAddModalOpen(true);
+    }
+  };
 
   const getScoreColor = (score: number | null) => {
     if (score === null) return 'text-muted-foreground';
@@ -87,7 +102,7 @@ export function DashboardPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Button className="gap-2" onClick={() => setIsAddModalOpen(true)}>
+            <Button className="gap-2" onClick={handleAddProject}>
               <Plus className="h-4 w-4" />
               Add Project
             </Button>
@@ -172,7 +187,7 @@ export function DashboardPage() {
               <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
                 Add your first website to start monitoring its SEO health.
               </p>
-              <Button onClick={() => setIsAddModalOpen(true)} className="gap-2">
+              <Button onClick={handleAddProject} className="gap-2">
                 <Plus className="h-4 w-4" />
                 Add Project
               </Button>
@@ -236,7 +251,7 @@ export function DashboardPage() {
             {/* Add Project Card */}
             <Card
               className="border-dashed hover:border-foreground/20 transition-colors cursor-pointer flex items-center justify-center min-h-[180px]"
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={handleAddProject}
             >
               <CardContent className="text-center py-6">
                 <Plus className="h-6 w-6 text-muted-foreground mx-auto mb-3" strokeWidth={1.5} />
@@ -264,6 +279,15 @@ export function DashboardPage() {
         open={isAddModalOpen}
         onOpenChange={setIsAddModalOpen}
         onSubmit={handleCreateProject}
+      />
+
+      {/* Upgrade Limit Modal */}
+      <UpgradeLimitModal
+        open={isUpgradeModalOpen}
+        onOpenChange={setIsUpgradeModalOpen}
+        currentPlan={planName}
+        limit={sitesLimit}
+        resource="Sites"
       />
     </div>
   );
