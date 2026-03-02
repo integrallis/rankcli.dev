@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-02-25T18:13:53.766Z
+// Generated: 2026-03-02T19:27:41.574Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -4673,7 +4673,13 @@ async function analyzeSecurityHeaders(url) {
       maxRedirects: 5
     });
     const headers = response.headers;
-    const isHttps = url.startsWith("https://");
+    let isHttps = false;
+    try {
+      const parsedUrl = new URL(url);
+      isHttps = parsedUrl.protocol === "https:";
+    } catch {
+      isHttps = url.toLowerCase().startsWith("https://");
+    }
     const getHeader = (name) => {
       const key = Object.keys(headers).find((k) => k.toLowerCase() === name.toLowerCase());
       return key ? headers[key] : null;
@@ -4745,10 +4751,17 @@ async function analyzeSecurityHeaders(url) {
       }
     };
   } catch (error) {
+    let isHttps = false;
+    try {
+      const parsedUrl = new URL(url);
+      isHttps = parsedUrl.protocol === "https:";
+    } catch {
+      isHttps = url.toLowerCase().startsWith("https://");
+    }
     return {
       issues,
       data: {
-        https: url.startsWith("https://"),
+        https: isHttps,
         headers: {
           hsts: null,
           csp: null,
@@ -8813,17 +8826,17 @@ function generateRecommendations2(renderingMethod, hasContentInHTML, charCount, 
     );
     if (framework === "React") {
       recommendations.push(
-        'Quick fix: Add react-snap to pre-render pages at build time (npm install -D react-snap, add "postbuild": "react-snap" to scripts)'
+        "Quick fix: Use Vike (vike.dev) for SSR/SSG - works with Vite, minimal config needed"
       );
       recommendations.push(
-        "Alternative: Use Vike (vite-plugin-ssr) for SSR/SSG without changing frameworks"
+        "Alternative: Migrate to Next.js or Remix for built-in SSR/SSG support"
       );
     } else if (framework === "Vue") {
       recommendations.push(
-        "Quick fix: Add prerender-spa-plugin to pre-render pages at build time"
+        "Quick fix: Use Vike (vike.dev) for SSR/SSG - works with Vite, minimal config needed"
       );
       recommendations.push(
-        "Alternative: Use Vike (vite-plugin-ssr) for SSR/SSG without changing frameworks"
+        "Alternative: Migrate to Nuxt for built-in SSR/SSG support"
       );
     } else if (framework === "Angular Universal") {
       recommendations.push(
@@ -8831,7 +8844,7 @@ function generateRecommendations2(renderingMethod, hasContentInHTML, charCount, 
       );
     } else {
       recommendations.push(
-        "Quick fix: Use a pre-rendering tool like react-snap or prerender-spa-plugin"
+        "Quick fix: Use Vike (vike.dev) for SSR/SSG with any Vite-based framework"
       );
     }
     recommendations.push(
@@ -8855,7 +8868,7 @@ function analyzeClientRendering(html, url) {
   const issues = [];
   const analysis = analyzeRendering(html);
   if (analysis.renderingMethod === "csr" && analysis.confidence !== "low") {
-    const howToFixByFramework = analysis.frameworkDetected === "React" ? 'Add react-snap to pre-render pages: npm install -D react-snap, then add "postbuild": "react-snap" to package.json scripts. No code changes needed.' : analysis.frameworkDetected === "Vue" ? "Add prerender-spa-plugin to pre-render pages at build time. Alternatively, use Vike for SSR/SSG." : "Pre-render your pages using react-snap, prerender-spa-plugin, or similar build-time tools.";
+    const howToFixByFramework = analysis.frameworkDetected === "React" ? "Use Vike (vike.dev) to add SSR/SSG to your Vite React app: npm install vike vike-react, then follow the setup guide. Alternatively, migrate to Next.js or Remix." : analysis.frameworkDetected === "Vue" ? "Use Vike (vike.dev) to add SSR/SSG to your Vite Vue app: npm install vike vike-vue, then follow the setup guide. Alternatively, migrate to Nuxt." : "Use Vike (vike.dev) for SSR/SSG with Vite-based frameworks, or use a framework with built-in SSR support (Next.js, Nuxt, Remix, SvelteKit).";
     issues.push({
       code: "CLIENT_SIDE_RENDERING",
       severity: "error",
@@ -8896,7 +8909,7 @@ function analyzeClientRendering(html, url) {
       title: `${analysis.frameworkDetected} detected without SSR markers`,
       description: `This appears to be a ${analysis.frameworkDetected} SPA without server-side rendering enabled.`,
       impact: "Single Page Applications without SSR have slower time-to-content for search crawlers.",
-      howToFix: analysis.frameworkDetected === "React" ? "Quick fix: Add react-snap (npm install -D react-snap) to pre-render at build time. Alternative: Use Vike for SSR/SSG." : "Quick fix: Add prerender-spa-plugin to pre-render at build time. Alternative: Use Vike for SSR/SSG.",
+      howToFix: analysis.frameworkDetected === "React" ? "Add SSR/SSG using Vike (vike.dev): npm install vike vike-react. Alternative: migrate to Next.js or Remix." : "Add SSR/SSG using Vike (vike.dev): npm install vike vike-vue. Alternative: migrate to Nuxt.",
       affectedUrls: [url],
       details: {
         framework: analysis.frameworkDetected,
@@ -17049,20 +17062,26 @@ async function runFullAudit(options) {
       timeout: 3e4,
       validateStatus: () => true
     }).catch((err) => {
+      console.error("Main page fetch failed:", err instanceof Error ? { message: err.message, cause: err.cause } : err);
       return { error: err, data: "", headers: {} };
     })
   ]);
   allIssues.push(...crawlabilityResult);
   if ("error" in fetchResult) {
+    const err = fetchResult.error;
+    const errorMsg = err instanceof Error ? err.message : "Unknown error";
+    const errorCause = err instanceof Error && err.cause ? ` (${String(err.cause)})` : "";
     allIssues.push({
       code: "FETCH_ERROR",
       severity: "error",
-      category: "crawlability",
-      title: "Failed to fetch page",
-      description: `Could not fetch the page: ${fetchResult.error instanceof Error ? fetchResult.error.message : "Unknown error"}`,
-      impact: "Cannot perform full audit without page content.",
-      howToFix: "Ensure the URL is accessible and the server is responding.",
-      affectedUrls: [url]
+      category: "indexability",
+      // Not crawlability - robots/sitemap checks may have succeeded
+      title: "Page fetch failed",
+      description: `Could not load page content: ${errorMsg}${errorCause}. Only robots.txt and sitemap checks were performed.`,
+      impact: "Cannot perform full SEO audit without page HTML content.",
+      howToFix: "Verify the URL is accessible, the server is responding, and there are no firewall/geo blocks.",
+      affectedUrls: [url],
+      details: { error: errorMsg, cause: errorCause || void 0 }
     });
     return createReport(url, domain, allIssues, pages);
   }
