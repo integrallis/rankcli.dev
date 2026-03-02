@@ -457,10 +457,10 @@ SELECT cleanup_stuck_audits();
 | 3B.2.2 | Console output | Default output | Formatted console output with colors | ✅ 2026-03-02 |
 | 3B.2.3 | JSON output | `rankcli audit -u https://example.com -o json` | Valid JSON output | ✅ 2026-03-02 |
 | 3B.2.4 | Max pages | `rankcli audit -u https://example.com --max-pages 10` | Crawls up to 10 pages | ✅ 2026-03-02 |
-| 3B.2.5 | Check links | `rankcli audit -u https://example.com --check-links` | Includes broken link checking | ☐ MANUAL |
-| 3B.2.6 | AI analysis | `rankcli audit -u https://example.com --ai` | AI-enhanced analysis (requires API key) | ☐ MANUAL |
-| 3B.2.7 | OpenAI provider | `rankcli audit --ai --ai-provider openai` | Uses OpenAI for AI analysis | ☐ MANUAL |
-| 3B.2.8 | Anthropic provider | `rankcli audit --ai --ai-provider anthropic` | Uses Anthropic for AI analysis | ☐ MANUAL |
+| 3B.2.5 | Check links | `rankcli audit -u https://example.com --check-links` | Includes broken link checking | ✅ 2026-03-02 |
+| 3B.2.6 | AI analysis | `rankcli audit -u https://example.com --ai` | AI-enhanced analysis (requires API key) | ✅ 2026-03-02 |
+| 3B.2.7 | OpenAI provider | `rankcli audit --ai --ai-provider openai` | Uses OpenAI for AI analysis | ✅ 2026-03-02 |
+| 3B.2.8 | Anthropic provider | `rankcli audit --ai --ai-provider anthropic` | Uses Anthropic for AI analysis | ☐ (no key available) |
 | 3B.2.9 | Score output | Complete audit | Shows score 0-100 prominently | ✅ 2026-03-02 |
 | 3B.2.10 | Category scores | Complete audit | Shows all 7 category scores | ✅ 2026-03-02 |
 | 3B.2.11 | Issues table | Complete audit | Shows issues in formatted table | ✅ 2026-03-02 |
@@ -493,11 +493,11 @@ SELECT cleanup_stuck_audits();
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 3B.5.1 | Basic keywords | `rankcli keywords -u https://mysite.com` | Interactive keyword research | ☐ |
-| 3B.5.2 | Quick mode | `rankcli keywords -u https://mysite.com --quick` | Skips prompts, uses defaults | ☐ |
-| 3B.5.3 | Seed keywords | `rankcli keywords -u https://mysite.com -s "seo,tools"` | Uses provided seeds | ☐ |
-| 3B.5.4 | Auto-extract | `rankcli keywords -u https://mysite.com --auto` | Extracts seeds from page | ☐ |
-| 3B.5.5 | AI keywords | `rankcli keywords -u https://mysite.com --ai` | GPT-4 enhanced analysis | ☐ |
+| 3B.5.1 | Basic keywords | `rankcli keywords -u https://mysite.com` | Interactive keyword research | ☐ MANUAL |
+| 3B.5.2 | Quick mode | `rankcli keywords -u https://mysite.com --quick` | Skips prompts, uses defaults | ✅ 2026-03-02 |
+| 3B.5.3 | Seed keywords | `rankcli keywords -u https://mysite.com -s "seo,tools"` | Uses provided seeds | ☐ MANUAL |
+| 3B.5.4 | Auto-extract | `rankcli keywords -u https://mysite.com --auto` | Extracts seeds from page | ☐ MANUAL |
+| 3B.5.5 | AI keywords | `rankcli keywords -u https://mysite.com --ai` | GPT-4 enhanced analysis | ☐ MANUAL |
 | 3B.5.6 | Competitor mode | `rankcli keywords -u https://mysite.com --competitor -c competitor.com -s seo` | Gap analysis | ☐ |
 | 3B.5.7 | Local processing | `rankcli keywords -u https://mysite.com --ai --local` | Forces local processing | ☐ |
 
