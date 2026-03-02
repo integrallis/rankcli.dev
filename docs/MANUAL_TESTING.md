@@ -321,36 +321,36 @@ SELECT cleanup_stuck_audits();
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 3A.1.1 | Pricing page | Navigate to /pricing | Shows all tiers with features | ☐ |
-| 3A.1.2 | Monthly/Annual toggle | Toggle billing period | Prices update with annual discount | ☐ |
-| 3A.1.3 | LTD view | Toggle to Lifetime Deals | Shows LTD options with remaining count | ☐ |
-| 3A.1.4 | Select Solo plan | Click "Get Started" on Solo | Redirects to checkout | ☐ |
-| 3A.1.5 | Select Pro plan | Click "Get Started" on Pro | Redirects to checkout | ☐ |
-| 3A.1.6 | Stripe checkout | Complete checkout | Stripe checkout loads, can enter card | ☐ |
-| 3A.1.7 | Successful payment | Complete payment (test card) | Redirected to dashboard, plan upgraded | ☐ |
-| 3A.1.8 | LTD checkout | Select LTD tier | Shows LTD-specific checkout | ☐ |
-| 3A.1.9 | License count update | Complete LTD purchase | Remaining licenses decrease | ☐ |
+| 3A.1.1 | Pricing page | Navigate to /pricing | Shows all tiers with features | ✅ (tested in 1.x) |
+| 3A.1.2 | Monthly/Annual toggle | Toggle billing period | Prices update with annual discount | ☐ MANUAL |
+| 3A.1.3 | LTD view | Toggle to Lifetime Deals | Shows LTD options with remaining count | ☐ MANUAL |
+| 3A.1.4 | Select Solo plan | Click "Get Started" on Solo | Redirects to checkout | ☐ MANUAL |
+| 3A.1.5 | Select Pro plan | Click "Get Started" on Pro | Redirects to checkout | ☐ MANUAL |
+| 3A.1.6 | Stripe checkout | Complete checkout | Stripe checkout loads, can enter card | ☐ SKIP (avoid real charges) |
+| 3A.1.7 | Successful payment | Complete payment (test card) | Redirected to dashboard, plan upgraded | ☐ SKIP (DB upgrade used) |
+| 3A.1.8 | LTD checkout | Select LTD tier | Shows LTD-specific checkout | ☐ MANUAL |
+| 3A.1.9 | License count update | Complete LTD purchase | Remaining licenses decrease | ☐ MANUAL |
 
 ### 3A.2 Dashboard (Paid User)
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 3A.2.1 | Paid dashboard | Login as paid user | Dashboard shows full features | ☐ |
-| 3A.2.2 | Multiple projects | Add multiple sites (up to plan limit) | All projects created successfully | ☐ |
-| 3A.2.3 | AI Visibility Card | View dashboard | Shows AI visibility metrics | ☐ |
-| 3A.2.4 | Widget generator | Click "Generate Widget" | Opens widget customization modal | ☐ |
+| 3A.2.1 | Paid dashboard | Login as paid user | Dashboard shows full features | ✅ 2026-03-02 |
+| 3A.2.2 | Multiple projects | Add multiple sites (up to plan limit) | All projects created successfully | ✅ 2026-03-02 (2 sites added) |
+| 3A.2.3 | AI Visibility Card | View dashboard | Shows AI visibility metrics | ✅ 2026-03-02 (on project page) |
+| 3A.2.4 | Widget generator | Click "Generate Widget" | Opens widget customization modal | ☐ MANUAL |
 
 ### 3A.3 Project Management (Paid User)
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 3A.3.1 | Full audit | Run audit on project | 280+ checks run | ☐ |
-| 3A.3.2 | All issues visible | View issues | All issues shown (no "hidden" count) | ☐ |
-| 3A.3.3 | Issue categories | Filter by category | Filtering works correctly | ☐ |
-| 3A.3.4 | Issue severity | Filter by severity | Shows errors/warnings/notices | ☐ |
-| 3A.3.5 | Project settings | Click settings gear | Opens project settings modal | ☐ |
-| 3A.3.6 | Delete project | Delete a project | Project removed, confirmation shown | ☐ |
-| 3A.3.7 | Framework detection | View project | Shows detected framework (Next.js, etc.) | ☐ |
+| 3A.3.1 | Full audit | Run audit on project | 280+ checks run | ☐ MANUAL (need to run audit) |
+| 3A.3.2 | All issues visible | View issues | All issues shown (no "hidden" count) | ✅ 2026-03-02 |
+| 3A.3.3 | Issue categories | Filter by category | Filtering works correctly | ☐ MANUAL |
+| 3A.3.4 | Issue severity | Filter by severity | Shows errors/warnings/notices | ☐ MANUAL |
+| 3A.3.5 | Project settings | Click settings gear | Opens project settings modal | ✅ 2026-03-02 |
+| 3A.3.6 | Delete project | Delete a project | Project removed, confirmation shown | ☐ MANUAL |
+| 3A.3.7 | Framework detection | View project | Shows detected framework (Next.js, etc.) | ⚠️ needs audit first |
 
 ### 3A.4 GitHub Integration (Pro & Agency ONLY)
 
@@ -358,13 +358,13 @@ SELECT cleanup_stuck_audits();
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 3A.4.0 | Solo user blocked | As Solo user, click "Connect GitHub" | Shows upgrade prompt to Pro | ☐ |
-| 3A.4.1 | Connect GitHub button | As Pro+ user, click "Connect GitHub" | Opens GitHub connection modal | ☐ |
-| 3A.4.2 | Install GitHub App | Click "Install GitHub App" | Redirects to GitHub App installation | ☐ |
-| 3A.4.3 | Grant repo access | Select repos in GitHub | App installed with selected repos | ☐ |
-| 3A.4.4 | Select repository | Choose repo in modal | Repository connected to project | ☐ |
-| 3A.4.5 | Repo shows connected | View project | Shows connected repo badge | ☐ |
-| 3A.4.6 | Disconnect repo | Disconnect repository | Repo unlinked from project | ☐ |
+| 3A.4.0 | Solo user blocked | As Solo user, click "Connect GitHub" | Shows upgrade prompt to Pro | ☐ MANUAL |
+| 3A.4.1 | Connect GitHub button | As Pro+ user, click "Connect GitHub" | Opens GitHub connection modal | ✅ 2026-03-02 |
+| 3A.4.2 | Install GitHub App | Click "Install GitHub App" | Redirects to GitHub App installation | ☐ MANUAL |
+| 3A.4.3 | Grant repo access | Select repos in GitHub | App installed with selected repos | ☐ MANUAL |
+| 3A.4.4 | Select repository | Choose repo in modal | Repository connected to project | ☐ MANUAL |
+| 3A.4.5 | Repo shows connected | View project | Shows connected repo badge | ☐ MANUAL |
+| 3A.4.6 | Disconnect repo | Disconnect repository | Repo unlinked from project | ☐ MANUAL |
 
 ### 3A.5 Auto-Fix PRs (Pro & Agency ONLY)
 
