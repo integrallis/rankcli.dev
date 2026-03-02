@@ -133,10 +133,10 @@ SELECT cleanup_stuck_audits();
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
 | 1.1.1 | Homepage loads | Navigate to https://rankcli.dev | Page loads with hero, features, pricing sections | ✅ 2026-03-02 |
-| 1.1.2 | Hero URL input | Enter URL in hero input, click "Analyze" | Redirects to /free-audit with URL pre-filled | ☐ |
+| 1.1.2 | Hero URL input | Enter URL in hero input, click "Analyze" | Redirects to /free-audit with URL pre-filled | ⚠️ **NOT IMPLEMENTED** - Hero has CTA button only, no URL input |
 | 1.1.3 | Navigation links | Click Docs, Pricing, Blog links | Navigate to correct pages | ✅ 2026-03-02 |
 | 1.1.4 | Mobile responsive | View on mobile viewport (375px) | Layout adapts, menu collapses | ☐ |
-| 1.1.5 | Footer links | Click all footer links | All work, external links open new tab | ☐ |
+| 1.1.5 | Footer links | Click all footer links | All work, external links open new tab | ✅ 2026-03-02 |
 
 ### 1.2 Free Audit Tool
 
