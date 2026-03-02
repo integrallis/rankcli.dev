@@ -135,7 +135,7 @@ SELECT cleanup_stuck_audits();
 | 1.1.1 | Homepage loads | Navigate to https://rankcli.dev | Page loads with hero, features, pricing sections | ✅ 2026-03-02 |
 | 1.1.2 | Hero URL input | Enter URL in hero input, click "Analyze" | Redirects to /free-audit with URL pre-filled | ⚠️ **NOT IMPLEMENTED** - Hero has CTA button only, no URL input |
 | 1.1.3 | Navigation links | Click Docs, Pricing, Blog links | Navigate to correct pages | ✅ 2026-03-02 |
-| 1.1.4 | Mobile responsive | View on mobile viewport (375px) | Layout adapts, menu collapses | ☐ |
+| 1.1.4 | Mobile responsive | View on mobile viewport (375px) | Layout adapts, menu collapses | ✅ 2026-03-02 (viewport meta, no overflow, readable fonts) |
 | 1.1.5 | Footer links | Click all footer links | All work, external links open new tab | ✅ 2026-03-02 |
 
 ### 1.2 Free Audit Tool
@@ -460,7 +460,7 @@ SELECT cleanup_stuck_audits();
 | 3B.2.5 | Check links | `rankcli audit -u https://example.com --check-links` | Includes broken link checking | ✅ 2026-03-02 |
 | 3B.2.6 | AI analysis | `rankcli audit -u https://example.com --ai` | AI-enhanced analysis (requires API key) | ✅ 2026-03-02 |
 | 3B.2.7 | OpenAI provider | `rankcli audit --ai --ai-provider openai` | Uses OpenAI for AI analysis | ✅ 2026-03-02 |
-| 3B.2.8 | Anthropic provider | `rankcli audit --ai --ai-provider anthropic` | Uses Anthropic for AI analysis | ✅ 2026-03-02 (use `--ai-key` explicitly - bug: CLI prefers OPENAI_API_KEY) |
+| 3B.2.8 | Anthropic provider | `rankcli audit --ai --ai-provider anthropic` | Uses Anthropic for AI analysis | ✅ 2026-03-02 (bug fixed in commit 5655814) |
 | 3B.2.9 | Score output | Complete audit | Shows score 0-100 prominently | ✅ 2026-03-02 |
 | 3B.2.10 | Category scores | Complete audit | Shows all 7 category scores | ✅ 2026-03-02 |
 | 3B.2.11 | Issues table | Complete audit | Shows issues in formatted table | ✅ 2026-03-02 |
@@ -505,7 +505,7 @@ SELECT cleanup_stuck_audits();
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 3B.6.1 | Full analysis | `rankcli content -u https://mysite.com/blog` | Complete content analysis | ☐ |
+| 3B.6.1 | Full analysis | `rankcli content -u https://mysite.com/blog` | Complete content analysis | ⚠️ 2026-03-02 (fetch fails on some URLs) |
 | 3B.6.2 | With keyword | `rankcli content -u https://mysite.com/blog -k "seo tips"` | Keyword-targeted analysis | ☐ |
 | 3B.6.3 | Readability mode | `rankcli content -u https://mysite.com --mode readability` | Readability scores only | ☐ |
 | 3B.6.4 | Headline analysis | `rankcli content --headline "10 SEO Tips"` | Analyzes headline quality | ☐ |
@@ -516,36 +516,36 @@ SELECT cleanup_stuck_audits();
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 3B.7.1 | Intent classification | `rankcli intent "buy running shoes"` | Classifies as transactional | ☐ |
-| 3B.7.2 | Informational intent | `rankcli intent "how to tie shoes"` | Classifies as informational | ☐ |
-| 3B.7.3 | Navigational intent | `rankcli intent "nike website"` | Classifies as navigational | ☐ |
+| 3B.7.1 | Intent classification | `rankcli intent "buy running shoes"` | Classifies as transactional | ✅ 2026-03-02 (100% confidence) |
+| 3B.7.2 | Informational intent | `rankcli intent "how to tie shoes"` | Classifies as informational | ✅ 2026-03-02 (100% confidence) |
+| 3B.7.3 | Navigational intent | `rankcli intent "nike website"` | Classifies as navigational | ✅ 2026-03-02 (100% confidence) |
 
 ### 3B.8 Setup Command
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 3B.8.1 | Setup wizard | `rankcli setup --all` | Interactive setup for all integrations | ☐ |
-| 3B.8.2 | GA4 setup | `rankcli setup --ga4 G-XXXXXXXXXX` | Configures Google Analytics | ☐ |
-| 3B.8.3 | GSC setup | `rankcli setup --gsc <code>` | Configures Search Console | ☐ |
-| 3B.8.4 | GitHub Action | `rankcli setup --github-action` | Creates workflow file | ☐ |
+| 3B.8.1 | Setup wizard | `rankcli setup --all` | Interactive setup for all integrations | ☐ MANUAL |
+| 3B.8.2 | GA4 setup | `rankcli setup --ga4 G-XXXXXXXXXX` | Configures Google Analytics | ☐ MANUAL |
+| 3B.8.3 | GSC setup | `rankcli setup --gsc <code>` | Configures Search Console | ☐ MANUAL |
+| 3B.8.4 | GitHub Action | `rankcli setup --github-action` | Creates workflow file | ✅ 2026-03-02 (creates .github/workflows/seo.yml) |
 | 3B.8.5 | Custom schedule | `rankcli setup --github-action --schedule daily` | Sets daily schedule | ☐ |
-| 3B.8.6 | GSC instructions | `rankcli gsc-setup` | Shows GSC API setup steps | ☐ |
+| 3B.8.6 | GSC instructions | `rankcli gsc-setup` | Shows GSC API setup steps | ✅ 2026-03-02 (shows Service Account + OAuth options) |
 
 ### 3B.9 Init Command
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 3B.9.1 | Interactive init | `rankcli init` | Prompts for project config | ☐ |
-| 3B.9.2 | Default init | `rankcli init -y` | Uses defaults, no prompts | ☐ |
-| 3B.9.3 | Config file | After init | Creates rankcli.config.js or similar | ☐ |
+| 3B.9.1 | Interactive init | `rankcli init` | Prompts for project config | ☐ MANUAL |
+| 3B.9.2 | Default init | `rankcli init -y` | Uses defaults, no prompts | ✅ 2026-03-02 (creates seo-autopilot.config.json) |
+| 3B.9.3 | Config file | After init | Creates rankcli.config.js or similar | ✅ 2026-03-02 (seo-autopilot.config.json) |
 
 ### 3B.10 Analyze Command
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 3B.10.1 | Codebase analysis | `rankcli analyze` | AI analyzes local codebase | ☐ |
+| 3B.10.1 | Codebase analysis | `rankcli analyze` | AI analyzes local codebase | ✅ 2026-03-02 (shows project analysis + suggestions) |
 | 3B.10.2 | Verbose mode | `rankcli analyze -v` | Shows detailed output | ☐ |
-| 3B.10.3 | SEO opportunities | Complete analysis | Lists SEO improvement opportunities | ☐ |
+| 3B.10.3 | SEO opportunities | Complete analysis | Lists SEO improvement opportunities | ✅ 2026-03-02 (5 suggestions shown) |
 
 ---
 
@@ -618,19 +618,19 @@ SELECT cleanup_stuck_audits();
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 5.3.1 | seo_analyze | Ask Claude to analyze site | Full audit results | ☐ |
-| 5.3.2 | seo_geo_check | Ask about AI visibility | GEO analysis results | ☐ |
-| 5.3.3 | seo_robots_ai | Ask about robots.txt | AI crawler analysis | ☐ |
-| 5.3.4 | seo_generate_robots | Ask to generate robots.txt | AI-friendly robots.txt | ☐ |
-| 5.3.5 | seo_core_web_vitals | Ask about CWV | LCP, CLS, INP, TTFB | ☐ |
-| 5.3.6 | seo_structured_data | Ask about schema | JSON-LD validation | ☐ |
-| 5.3.7 | seo_generate_schema | Ask to generate schema | Schema template | ☐ |
-| 5.3.8 | seo_security_headers | Ask about security | Security header grades | ☐ |
-| 5.3.9 | seo_generate_security_headers | Ask to generate headers | Recommended headers | ☐ |
-| 5.3.10 | seo_images | Ask about images | Image optimization analysis | ☐ |
-| 5.3.11 | seo_internal_links | Ask about links | Internal linking analysis | ☐ |
-| 5.3.12 | seo_mobile | Ask about mobile | Mobile SEO analysis | ☐ |
-| 5.3.13 | seo_ai_crawlers | Ask about AI crawlers | Crawler reference info | ☐ |
+| 5.3.1 | seo_analyze | Ask Claude to analyze site | Full audit results | ✅ 2026-03-02 |
+| 5.3.2 | seo_geo_check | Ask about AI visibility | GEO analysis results | ✅ 2026-03-02 |
+| 5.3.3 | seo_robots_ai | Ask about robots.txt | AI crawler analysis | ✅ 2026-03-02 |
+| 5.3.4 | seo_generate_robots | Ask to generate robots.txt | AI-friendly robots.txt | ✅ 2026-03-02 |
+| 5.3.5 | seo_core_web_vitals | Ask about CWV | LCP, CLS, INP, TTFB | ✅ 2026-03-02 |
+| 5.3.6 | seo_structured_data | Ask about schema | JSON-LD validation | ✅ 2026-03-02 |
+| 5.3.7 | seo_generate_schema | Ask to generate schema | Schema template | ✅ 2026-03-02 |
+| 5.3.8 | seo_security_headers | Ask about security | Security header grades | ✅ 2026-03-02 |
+| 5.3.9 | seo_generate_security_headers | Ask to generate headers | Recommended headers | ✅ 2026-03-02 |
+| 5.3.10 | seo_images | Ask about images | Image optimization analysis | ✅ 2026-03-02 |
+| 5.3.11 | seo_internal_links | Ask about links | Internal linking analysis | ✅ 2026-03-02 |
+| 5.3.12 | seo_mobile | Ask about mobile | Mobile SEO analysis | ✅ 2026-03-02 |
+| 5.3.13 | seo_ai_crawlers | Ask about AI crawlers | Crawler reference info | ✅ 2026-03-02 |
 
 ---
 
@@ -817,10 +817,15 @@ These are issues that have occurred before - verify they're fixed:
 | 3B.1.2 Token login | ✅ `rankcli login --token <key>` |
 | 3B.1.3 Env var auth | ✅ `RANKCLI_API_KEY=xxx rankcli whoami` |
 | 3B.1.4 Whoami | ✅ Shows Pro plan, 10 sites |
-| 3B.2.1-3B.2.12 Audit cmd | ✅ Basic, JSON, max-pages, check-links, AI analysis, error handling |
+| 3B.2.1-3B.2.12 Audit cmd | ✅ Basic, JSON, max-pages, check-links, AI analysis (OpenAI + Anthropic), error handling |
 | 3B.3.1-3B.3.6 GEO cmd | ✅ Crawler status, robots.txt, JS rendering, LLM signals, JSON output |
 | 3B.4.1 Apply --dry-run | ✅ Shows fixes without applying |
 | 3B.5.2 Keywords --quick | ✅ Auto-extracts seeds, finds 50 opportunities |
+| 3B.7.1-3B.7.3 Intent cmd | ✅ Transactional, informational, navigational (100% confidence) |
+| 3B.8.4 Setup GitHub Action | ✅ Creates .github/workflows/seo.yml |
+| 3B.8.6 GSC Setup | ✅ Shows Service Account + OAuth setup |
+| 3B.9.2-3B.9.3 Init cmd | ✅ Creates seo-autopilot.config.json |
+| 3B.10.1, 3B.10.3 Analyze | ✅ Codebase analysis with suggestions |
 
 #### Part 5: MCP Server - ALL PASS ✅
 | Test | Result |
@@ -850,8 +855,8 @@ These are issues that have occurred before - verify they're fixed:
 3. **Vike recommendations** (commit `d95f104`) - Updated client-rendering.ts with modern SSR solution
 4. **Tool URLs corrected** - Test doc had wrong URLs; actual tools work fine
 
-#### Bugs Found (Not Yet Fixed)
-1. **CLI AI provider key precedence** - `--ai-provider anthropic` still uses `OPENAI_API_KEY` if set. Workaround: use `--ai-key` explicitly. Fix: check provider before falling back to env vars.
+#### Bugs Found & Fixed
+1. **CLI AI provider key precedence** (commit `5655814`) - `--ai-provider anthropic` now correctly prefers `ANTHROPIC_API_KEY` when specified.
 
 #### Test Account Setup
 - **Pro account:** `samboddens@gmail.com` (upgraded via Supabase)
