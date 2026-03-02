@@ -178,11 +178,16 @@ SELECT cleanup_stuck_audits();
 
 **Location:** https://rankcli.dev/tools/chatgpt-checker
 
+> **Note:** This tool checks if **ChatGPT recommends** your site in its responses.
+> For crawler access (GPTBot/robots.txt), use the CLI: `rankcli geo -u <url>`
+
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 1.4.1 | GPTBot access | Enter URL, submit | Shows if GPTBot can crawl the site | ✅ 2026-03-02 |
-| 1.4.2 | Content analysis | Complete check | Shows what content ChatGPT can "see" | ☐ |
-| 1.4.3 | LLM signals | Complete check | Shows citation readiness, structured content | ☐ |
+| 1.4.1 | Recommendation check | Enter URL, submit | Shows if ChatGPT mentions/recommends your site | ✅ 2026-03-02 |
+| 1.4.2 | Position & sentiment | Complete check | Shows position ranking (#1, #2, etc.) and sentiment (positive/neutral/negative) | ✅ 2026-03-02 |
+| 1.4.3 | Response preview | Complete check | Shows actual ChatGPT response snippet/quote | ✅ 2026-03-02 |
+| 1.4.4 | Other AI models | Complete check | Shows status for Claude, Gemini, Perplexity with link to full report | ✅ 2026-03-02 |
+| 1.4.5 | Tracking CTA | Complete check | Shows "Check All AI Models" / "Track Continuously" options | ✅ 2026-03-02 |
 
 ### 1.5 OG Image Preview
 
