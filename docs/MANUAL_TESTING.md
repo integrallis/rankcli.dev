@@ -155,9 +155,9 @@ SELECT cleanup_stuck_audits();
 | 1.2.9 | Hidden issues count | Complete audit | Shows "X more issues - sign up to see all" (if total > 10) | ✅ 2026-03-02 |
 | 1.2.10 | SERP preview | Complete audit | Shows Google SERP preview with title/description | ✅ 2026-03-02 |
 | 1.2.11 | Share results | Click share button | Opens share modal with URL/embed options | ✅ 2026-03-02 (inline buttons: X, LinkedIn, Copy Link - no modal) |
-| 1.2.12 | Sign up CTA | Visible after results | Clear CTA to create account for full report | ☐ |
-| 1.2.13 | Slow site handling | Audit a slow site | Doesn't timeout, shows results eventually | ☐ |
-| 1.2.14 | Error handling | Audit unreachable URL | Shows helpful error message | ☐ |
+| 1.2.12 | Sign up CTA | Visible after results | Clear CTA to create account for full report | ✅ 2026-03-02 |
+| 1.2.13 | Slow site handling | Audit a slow site | Doesn't timeout, shows results eventually | ✅ 2026-03-02 |
+| 1.2.14 | Error handling | Audit unreachable URL | Shows helpful error message | ✅ 2026-03-02 |
 
 ### 1.3 AI Visibility Checker
 
