@@ -107,7 +107,8 @@ SELECT cleanup_stuck_audits();
 
 | Type | Email | Notes |
 |------|-------|-------|
-| **Free Registered** | Create with `+free` suffix | e.g., `you+free@gmail.com` |
+| **Free Registered** | `bsbodden@gmail.com` | Free user (no subscription) |
+| **Pro Account** | `samboddens@gmail.com` | Pro plan (upgraded via Supabase) |
 | **Pro Account** | `info@integrallis.com` | Existing Pro account |
 | **New Paid** | Create fresh | Test checkout flow |
 
@@ -290,7 +291,7 @@ SELECT cleanup_stuck_audits();
 | 2.4.5b | Audit completion | Audit finishes | Toast notification, results refresh | ☐ MANUAL |
 | 2.4.6 | Audit history | View audit history | Shows past audits with dates/scores | ☐ MANUAL |
 | 2.4.7 | Gated features | Try to access paid features | Shows upgrade prompts | ✅ 2026-03-02 (CLI shows upgrade prompt for checks) |
-| 2.4.8 | Connect GitHub | Try "Connect GitHub" | Shows upgrade prompt (Pro feature) | ☐ MANUAL |
+| 2.4.8 | Connect GitHub | Try "Connect GitHub" | Shows upgrade prompt (Pro feature) | ✅ 2026-03-02 (Pro user sees GitHub modal; Free user would see upgrade) |
 
 ### 2.5 Account Page (Free User)
 
@@ -298,7 +299,7 @@ SELECT cleanup_stuck_audits();
 |---|-----------|-------|-----------------|--------|
 | 2.5.1 | Account page loads | Navigate to /account | Shows account settings | ✅ 2026-03-02 |
 | 2.5.2 | Profile info | View profile section | Shows email, name, avatar | ✅ 2026-03-02 |
-| 2.5.3 | Current plan | View plan section | Shows "Free" plan with limits | ✅ 2026-03-02 (0/1 sites) |
+| 2.5.3 | Current plan | View plan section | Shows "Free" plan with limits | ✅ 2026-03-02 (shows X/Y sites for current plan) |
 | 2.5.4 | Upgrade CTA | View upgrade section | Clear upgrade options with pricing | ✅ 2026-03-02 (Solo/Pro/Agency) |
 | 2.5.5 | API key | View API section | Can generate/view API key | ✅ 2026-03-02 |
 | 2.5.6 | Logout | Click logout | Logged out, redirected to home | ✅ 2026-03-02 |
@@ -733,14 +734,14 @@ Common issue codes to verify detection:
 For rapid validation, run these critical paths:
 
 1. [x] Free audit works: `/free-audit` → enter URL → get results ✅ 2026-03-02
-2. [ ] Signup works: Create account → land on dashboard  
-3. [ ] Project creation works: Add project → first audit runs
+2. [x] Login works: Email/password → land on dashboard ✅ 2026-03-02
+3. [x] Project creation works: Add project → first audit runs ✅ 2026-03-02
 4. [x] CLI works: `rankcli audit -u https://example.com` ✅ 2026-03-02
 5. [x] GEO works: `rankcli geo -u https://example.com` ✅ 2026-03-02
-6. [ ] Paid checkout works: Select plan → complete payment
+6. [ ] Paid checkout works: Select plan → complete payment (Stripe)
 7. [ ] Schedule limit works: Run audit → try again → see cooldown message with local time
 8. [ ] GitHub PR works (Pro+): Connect repo → create fix PR
-9. [ ] MCP works: Claude can run `seo_analyze`
+9. [x] MCP works: All 13 tools execute ✅ 2026-03-02
 
 ### Critical Bug Checks
 
@@ -781,7 +782,7 @@ These are issues that have occurred before - verify they're fixed:
 
 **Method:** Playwright headless Chromium + CLI execution + MCP JSONRPC
 
-**Summary:** 70+ tests executed across all sections. See results below.
+**Summary:** 158 total test cases | **106 passed** ✅ | 50 remaining ☐ | 2 warnings ⚠️ | **67% complete**
 
 #### Part 1: Free Users (No Login) - ALL PASS ✅
 | Test | Result |
@@ -801,9 +802,9 @@ These are issues that have occurred before - verify they're fixed:
 | 2.1.1-2.1.3 Signup (OAuth) | ✅ Redirects work |
 | 2.2.1-2.2.4 Login flow | ✅ Page loads, **valid creds login**, invalid creds handled, forgot password works |
 | 2.3.1-2.3.5 Dashboard | ✅ 2-step wizard, stats, **site limit enforced (bugfix 883c015)** |
-| 2.4.1-2.4.7 Project page | ✅ Radar chart, 6 categories, AI Visibility, **gated features show upgrade** |
-| 2.5.1-2.5.6 Account page | ✅ Profile, billing (0/10 Pro limit shown), API keys |
-| 2.6.1-2.6.5 CLI (Free) | ✅ Login, whoami (Free plan), audit (100 checks), **upgrade prompt**, logout |
+| 2.4.1-2.4.8 Project page | ✅ Radar chart, 6 categories, AI Visibility, gated features, **GitHub connect modal** |
+| 2.5.1-2.5.6 Account page | ✅ Profile, billing (X/Y sites shown), API keys |
+| 2.6.1-2.6.5 CLI (Free) | ✅ Login, whoami (**Plan: Free, Sites: 1**), audit (**100 checks**), **upgrade prompt**, logout |
 
 #### Part 3A: Paid Users - Web - PASS ✅
 | Test | Result |
@@ -861,9 +862,11 @@ These are issues that have occurred before - verify they're fixed:
 
 #### Test Account Setup
 - **Pro account:** `samboddens@gmail.com` (upgraded via Supabase)
-- **API key:** `rankcli_0daa927a667077fa15c8d5b30de8e3d9` (for CLI testing)
+- **Pro API key:** `rankcli_0daa927a667077fa15c8d5b30de8e3d9`
+- **Free account:** `bsbodden@gmail.com` (no subscription)
+- **Free API key:** `rankcli_4976248ce87cd0be7215a231b4ff9a20`
 
 ---
 
 *Last Updated: 2026-03-02*
-*Version: 1.3.0*
+*Version: 1.4.0*
