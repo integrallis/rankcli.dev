@@ -144,7 +144,7 @@ SELECT cleanup_stuck_audits();
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 1.2.1 | Valid URL audit | Enter `https://rankcli.dev`, submit | Audit runs, shows score 0-100, categories, issues | ☐ |
+| 1.2.1 | Valid URL audit | Enter `https://rankcli.dev`, submit | Audit runs, shows score 0-100, categories, issues | ✅ 2026-03-02 |
 | 1.2.2 | URL without https | Enter `rankcli.dev`, submit | Auto-prepends https://, runs audit | ☐ |
 | 1.2.3 | Invalid URL | Enter `notaurl`, submit | Shows validation error | ☐ |
 | 1.2.4 | Loading state | Submit URL | Shows loading spinner during audit | ☐ |
