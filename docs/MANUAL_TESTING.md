@@ -223,9 +223,9 @@ SELECT cleanup_stuck_audits();
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 1.7.1 | Compare two sites | Enter your site + competitor | Shows side-by-side comparison | ☐ |
-| 1.7.2 | Score comparison | Complete analysis | Shows scores for both sites | ☐ |
-| 1.7.3 | Gap analysis | Complete analysis | Highlights where competitor is stronger | ☐ |
+| 1.7.1 | Compare two sites | Enter your site + competitor | Shows side-by-side scores (X/100 vs Y/100) | ✅ 2026-03-02 |
+| 1.7.2 | Category breakdown | Complete analysis | Shows bars for Crawlability, Content, Performance, Security, Social, AI | ✅ 2026-03-02 |
+| 1.7.3 | Win/Loss analysis | Complete analysis | Shows "Where You Win" and "Where Competitor Wins" sections | ✅ 2026-03-02 |
 
 ### 1.8 Documentation
 
