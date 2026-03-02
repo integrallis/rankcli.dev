@@ -210,10 +210,10 @@ SELECT cleanup_stuck_audits();
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 1.6.1 | Title analysis | Enter URL, submit | Shows title tag, length, optimization tips | ☐ |
-| 1.6.2 | Description analysis | Complete analysis | Shows meta description, length, quality score | ☐ |
-| 1.6.3 | Character count | Complete analysis | Shows character counts with optimal ranges | ☐ |
-| 1.6.4 | Improvement suggestions | Complete analysis | Actionable suggestions for improvement | ☐ |
+| 1.6.1 | Overall score | Enter URL, submit | Shows overall meta tag score (0-100) | ✅ 2026-03-02 |
+| 1.6.2 | Core meta tags | Complete analysis | Shows title, description with status (good/bad) | ✅ 2026-03-02 |
+| 1.6.3 | OG tags | Complete analysis | Shows og:title, og:description, og:image status | ✅ 2026-03-02 |
+| 1.6.4 | Technical tags | Complete analysis | Shows canonical, robots, viewport, twitter:card | ✅ 2026-03-02 |
 
 ### 1.7 Competitor Analyzer
 
