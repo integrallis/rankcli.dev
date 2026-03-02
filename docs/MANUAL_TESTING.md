@@ -191,33 +191,39 @@ SELECT cleanup_stuck_audits();
 
 ### 1.5 OG Image Preview
 
-**Location:** https://rankcli.dev/tools/og-preview
+**Location:** https://rankcli.dev/tools/og-image-preview
+
+> **Note:** URL was corrected from `/tools/og-preview` to `/tools/og-image-preview`
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 1.5.1 | OG tags extraction | Enter URL, submit | Shows og:title, og:description, og:image | ❌ 2026-03-02 **BROKEN: Page renders blank** |
-| 1.5.2 | Preview cards | Complete extraction | Shows Twitter/Facebook/LinkedIn previews | ☐ |
-| 1.5.3 | Missing tags | Test page without OG tags | Clearly indicates what's missing | ☐ |
-| 1.5.4 | Image preview | Page with og:image | Shows actual image preview | ☐ |
+| 1.5.1 | OG tags extraction | Enter URL, submit | Shows og:title, og:description, og:image | ✅ 2026-03-02 |
+| 1.5.2 | Preview cards | Complete extraction | Shows Twitter/Facebook/LinkedIn/Slack previews | ✅ 2026-03-02 |
+| 1.5.3 | Missing tags | Test page without OG tags | Clearly indicates what's missing (checkmarks/X icons) | ✅ 2026-03-02 |
+| 1.5.4 | Recommendations | Complete extraction | Shows best practices (image size, title length, etc.) | ✅ 2026-03-02 |
 
 ### 1.6 Meta Tag Analyzer
 
-**Location:** https://rankcli.dev/tools/meta-analyzer
+**Location:** https://rankcli.dev/tools/meta-tag-analyzer
+
+> **Note:** URL was corrected from `/tools/meta-analyzer` to `/tools/meta-tag-analyzer`
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 1.6.1 | Title analysis | Enter URL, submit | Shows title tag, length, optimization tips | ❌ 2026-03-02 **BROKEN: Page renders blank** |
+| 1.6.1 | Title analysis | Enter URL, submit | Shows title tag, length, optimization tips | ☐ |
 | 1.6.2 | Description analysis | Complete analysis | Shows meta description, length, quality score | ☐ |
 | 1.6.3 | Character count | Complete analysis | Shows character counts with optimal ranges | ☐ |
 | 1.6.4 | Improvement suggestions | Complete analysis | Actionable suggestions for improvement | ☐ |
 
 ### 1.7 Competitor Analyzer
 
-**Location:** https://rankcli.dev/tools/competitor
+**Location:** https://rankcli.dev/tools/compare
+
+> **Note:** URL was corrected from `/tools/competitor` to `/tools/compare`
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 1.7.1 | Compare two sites | Enter your site + competitor | Shows side-by-side comparison | ❌ 2026-03-02 **BROKEN: Page renders blank** |
+| 1.7.1 | Compare two sites | Enter your site + competitor | Shows side-by-side comparison | ☐ |
 | 1.7.2 | Score comparison | Complete analysis | Shows scores for both sites | ☐ |
 | 1.7.3 | Gap analysis | Complete analysis | Highlights where competitor is stronger | ☐ |
 
