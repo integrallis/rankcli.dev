@@ -323,14 +323,14 @@ SELECT cleanup_stuck_audits();
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
 | 3A.1.1 | Pricing page | Navigate to /pricing | Shows all tiers with features | ✅ (tested in 1.x) |
-| 3A.1.2 | Monthly/Annual toggle | Toggle billing period | Prices update with annual discount | ☐ MANUAL |
-| 3A.1.3 | LTD view | Toggle to Lifetime Deals | Shows LTD options with remaining count | ☐ MANUAL |
-| 3A.1.4 | Select Solo plan | Click "Get Started" on Solo | Redirects to checkout | ☐ MANUAL |
-| 3A.1.5 | Select Pro plan | Click "Get Started" on Pro | Redirects to checkout | ☐ MANUAL |
-| 3A.1.6 | Stripe checkout | Complete checkout | Stripe checkout loads, can enter card | ☐ SKIP (avoid real charges) |
-| 3A.1.7 | Successful payment | Complete payment (test card) | Redirected to dashboard, plan upgraded | ☐ SKIP (DB upgrade used) |
-| 3A.1.8 | LTD checkout | Select LTD tier | Shows LTD-specific checkout | ☐ MANUAL |
-| 3A.1.9 | License count update | Complete LTD purchase | Remaining licenses decrease | ☐ MANUAL |
+| 3A.1.2 | Monthly/Annual toggle | Toggle billing period | Prices update with annual discount | ✅ 2026-03-03 (Brian manual) |
+| 3A.1.3 | LTD view | Toggle to Lifetime Deals | Shows LTD options with remaining count | ✅ 2026-03-03 (Brian manual) |
+| 3A.1.4 | Select Solo plan | Click "Get Started" on Solo | Redirects to checkout | ✅ 2026-03-03 (Brian manual) |
+| 3A.1.5 | Select Pro plan | Click "Get Started" on Pro | Redirects to checkout | ✅ 2026-03-03 (Brian manual) |
+| 3A.1.6 | Stripe checkout | Complete checkout | Stripe checkout loads, can enter card | ✅ 2026-03-03 (Brian manual) |
+| 3A.1.7 | Successful payment | Complete payment (test card) | Redirected to dashboard, plan upgraded | ✅ 2026-03-03 (Brian manual) |
+| 3A.1.8 | LTD checkout | Select LTD tier | Shows LTD-specific checkout | ✅ 2026-03-03 (Brian manual) |
+| 3A.1.9 | License count update | Complete LTD purchase | Remaining licenses decrease | ✅ 2026-03-03 (Brian manual) |
 
 ### 3A.2 Dashboard (Paid User)
 
@@ -738,7 +738,7 @@ For rapid validation, run these critical paths:
 3. [x] Project creation works: Add project → first audit runs ✅ 2026-03-02
 4. [x] CLI works: `rankcli audit -u https://example.com` ✅ 2026-03-02
 5. [x] GEO works: `rankcli geo -u https://example.com` ✅ 2026-03-02
-6. [ ] Paid checkout works: Select plan → complete payment (Stripe)
+6. [x] Paid checkout works: Select plan → complete payment (Stripe) ✅ 2026-03-03
 7. [ ] Schedule limit works: Run audit → try again → see cooldown message with local time
 8. [ ] GitHub PR works (Pro+): Connect repo → create fix PR
 9. [x] MCP works: All 13 tools execute ✅ 2026-03-02
@@ -782,7 +782,7 @@ These are issues that have occurred before - verify they're fixed:
 
 **Method:** Playwright headless Chromium + CLI execution + MCP JSONRPC
 
-**Summary:** 158 total test cases | **106 passed** ✅ | 50 remaining ☐ | 2 warnings ⚠️ | **67% complete**
+**Summary:** 158 total test cases | **114 passed** ✅ | 42 remaining ☐ | 2 warnings ⚠️ | **72% complete**
 
 #### Part 1: Free Users (No Login) - ALL PASS ✅
 | Test | Result |
