@@ -305,9 +305,6 @@ export function AgencyPage() {
   }
 
   const activeWidgetToken = widgetTokens[0];
-  const activeClientLink = clientLinks.find(
-    (l) => !l.expires_at || new Date(l.expires_at) > new Date()
-  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -702,7 +699,7 @@ export function AgencyPage() {
                               onClick={() =>
                                 copyToClipboard(getClientLinkUrl(link.token), link.id)
                               }
-                              disabled={isExpired}
+                              disabled={!!isExpired}
                             >
                               {copied === link.id ? (
                                 <Check className="h-4 w-4 text-green-500" />
@@ -714,7 +711,7 @@ export function AgencyPage() {
                               variant="outline"
                               size="sm"
                               asChild
-                              disabled={isExpired}
+                              disabled={!!isExpired}
                             >
                               <a
                                 href={getClientLinkUrl(link.token)}
