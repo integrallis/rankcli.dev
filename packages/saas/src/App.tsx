@@ -18,6 +18,8 @@ import { AuthCallbackPage } from './pages/AuthCallbackPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProjectPage } from './pages/ProjectPage';
 import { KeywordsPage } from './pages/KeywordsPage';
+import { AgencyPage } from './pages/AgencyPage';
+import { ClientReportPage } from './pages/ClientReportPage';
 import { AccountPage } from './pages/AccountPage';
 import { BillingPage } from './pages/BillingPage';
 import { GitHubCallbackPage } from './pages/GitHubCallbackPage';
@@ -42,6 +44,7 @@ function App() {
       <Route path="/tools/ai-visibility" element={<AIVisibilityCheckerPage />} />
       <Route path="/tools/compare" element={<CompetitorAnalyzerPage />} />
       <Route path="/widget" element={<WidgetPage />} />
+      <Route path="/report/:token" element={<ClientReportPage />} />
       <Route path="/checkout/ltd" element={
         <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
           <LTDCheckoutPage />
@@ -57,6 +60,7 @@ function App() {
         <Route path="/dashboard/github-callback" element={<GitHubCallbackPage />} />
         <Route path="/dashboard/projects/:id" element={<ProjectPage />} />
         <Route path="/dashboard/projects/:id/keywords" element={<KeywordsPage />} />
+        <Route path="/dashboard/projects/:id/agency" element={<AgencyPage />} />
         <Route path="/account" element={<AccountPage />} />
         <Route path="/account/billing" element={<BillingPage />} />
         <Route path="/account/api-keys" element={<AccountPage />} />

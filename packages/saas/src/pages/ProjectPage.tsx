@@ -16,6 +16,7 @@ import {
   X,
   XCircle,
   Clock,
+  Building2,
 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
@@ -352,6 +353,12 @@ export function ProjectPage() {
               <Link to={`/dashboard/projects/${projectId}/keywords`}>
                 <Sparkles className="h-4 w-4" />
                 Keywords
+              </Link>
+            </Button>
+            <Button variant="outline" className="gap-2" asChild>
+              <Link to={`/dashboard/projects/${projectId}/agency`}>
+                <Building2 className="h-4 w-4" />
+                Agency
               </Link>
             </Button>
             {project.github_repo_url ? (
