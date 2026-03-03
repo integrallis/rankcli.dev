@@ -70,8 +70,8 @@ npm install -g @rankcli/cli
 rankcli --version
 # Expected: 0.0.19 (or current version)
 
-# For MCP testing, also install:
-npm install -g @rankcli/mcp-server
+# MCP: No installation needed - it's a hosted endpoint
+# Just configure Claude Desktop with your API key (see Part 5)
 ```
 
 ### Database Health Check (Admin)
@@ -600,20 +600,39 @@ SELECT cleanup_stuck_audits();
 
 ## Part 5: MCP Server (AI Assistants)
 
-### 5.1 Installation
+The MCP server is a **hosted endpoint** — no npm installation required. Users just add the URL and their API key to Claude Desktop config.
+
+### 5.1 Hosted Endpoint Configuration
+
+**Claude Desktop config** (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "rankcli": {
+      "url": "https://rankcli-audit-worker.fly.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 5.1.1 | npm install | `npm install -g @rankcli/mcp-server` | Installs successfully | ✅ 2026-03-02 |
-| 5.1.2 | npx run | `npx @rankcli/mcp-server` | Server starts | ✅ 2026-03-02 |
+| 5.1.1 | Get API key | Dashboard → API Keys → Create | API key generated | ☐ |
+| 5.1.2 | Config file | Add config to claude_desktop_config.json | File saved | ☐ |
+| 5.1.3 | Restart Claude | Quit and reopen Claude Desktop | MCP server connects | ☐ |
+| 5.1.4 | Tools available | Ask Claude "what SEO tools do you have?" | Shows 13 SEO tools | ☐ |
 
-### 5.2 Claude Desktop Integration
+### 5.2 MCP Endpoint Health
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 5.2.1 | Config file | Add to claude_desktop_config.json | Config accepted | ☐ |
-| 5.2.2 | Claude restart | Restart Claude Desktop | MCP server loads | ☐ |
-| 5.2.3 | Tools available | Check Claude tools | Shows 13 SEO tools | ☐ |
+| 5.2.1 | Endpoint responds | `curl https://rankcli-audit-worker.fly.dev/mcp` | Returns MCP protocol response | ☐ |
+| 5.2.2 | Auth required | `curl` without API key | Returns 401 Unauthorized | ☐ |
+| 5.2.3 | Auth works | `curl` with valid API key header | Returns tool list | ☐ |
 
 ### 5.3 MCP Tools
 
@@ -829,14 +848,14 @@ These are issues that have occurred before - verify they're fixed:
 | 3B.9.2-3B.9.3 Init cmd | ✅ Creates seo-autopilot.config.json |
 | 3B.10.1, 3B.10.3 Analyze | ✅ Codebase analysis with suggestions |
 
-#### Part 5: MCP Server - ALL PASS ✅
+#### Part 5: MCP Server - Hosted Endpoint
 | Test | Result |
 |------|--------|
-| 5.1.1 npm install | ✅ |
-| 5.1.2 Server starts | ✅ "RankCLI MCP Server running on stdio" |
-| 5.2.3 Tools count | ✅ **13 tools confirmed** |
+| Endpoint | `https://rankcli-audit-worker.fly.dev/mcp` |
+| Auth | Bearer token (API key from dashboard) |
+| Tools count | **13 tools** |
 
-**MCP Tools verified:**
+**MCP Tools available:**
 1. seo_analyze ✅
 2. seo_geo_check ✅
 3. seo_robots_ai ✅
