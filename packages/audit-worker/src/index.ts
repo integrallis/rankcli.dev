@@ -1501,7 +1501,7 @@ const MCP_TOOLS = [
 
 // Validate RankCLI API key
 async function validateMCPApiKey(apiKey: string): Promise<{ valid: boolean; userId?: string; tier?: string }> {
-  if (!apiKey || !apiKey.startsWith('rk_')) {
+  if (!apiKey || !apiKey.startsWith('rankcli_')) {
     return { valid: false };
   }
 
