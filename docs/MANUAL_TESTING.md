@@ -339,7 +339,7 @@ SELECT cleanup_stuck_audits();
 | 3A.2.1 | Paid dashboard | Login as paid user | Dashboard shows full features | ✅ 2026-03-02 |
 | 3A.2.2 | Multiple projects | Add multiple sites (up to plan limit) | All projects created successfully | ✅ 2026-03-02 (2 sites added) |
 | 3A.2.3 | AI Visibility Card | View dashboard | Shows AI visibility metrics | ✅ 2026-03-02 (on project page) |
-| 3A.2.4 | Widget generator | Click "Generate Widget" | Opens widget customization modal | ☐ MANUAL |
+| 3A.2.4 | Widget generator | Click "Generate Widget" | Opens widget customization modal | ❌ NOT WIRED UP (component exists but not in UI) |
 
 ### 3A.3 Project Management (Paid User)
 
@@ -350,7 +350,7 @@ SELECT cleanup_stuck_audits();
 | 3A.3.3 | Issue categories | Filter by category | Filtering works correctly | ✅ 2026-03-03 (On-Page, AI Readiness, Mobile, Content badges shown) |
 | 3A.3.4 | Issue severity | Filter by severity | Shows errors/warnings/notices | ✅ 2026-03-03 (severity dots + "Notices (70)" section) |
 | 3A.3.5 | Project settings | Click settings gear | Opens project settings modal | ✅ 2026-03-02 |
-| 3A.3.6 | Delete project | Delete a project | Project removed, confirmation shown | ☐ MANUAL |
+| 3A.3.6 | Delete project | Delete a project | Project removed, confirmation shown | ✅ 2026-03-03 (Danger Zone + Delete Project button) |
 | 3A.3.7 | Framework detection | View project | Shows detected framework (Next.js, etc.) | ⚠️ needs audit first |
 
 ### 3A.4 GitHub Integration (Pro & Agency ONLY)
@@ -782,7 +782,7 @@ These are issues that have occurred before - verify they're fixed:
 
 **Method:** Playwright headless Chromium + CLI execution + MCP JSONRPC
 
-**Summary:** 293 total test cases | **176 passed** ✅ | 113 remaining ☐ | 4 warnings ⚠️ | **60% complete**
+**Summary:** 293 total test cases | **184 passed** ✅ | 104 remaining ☐ | 1 not implemented ❌ | **63% complete**
 
 #### Part 1: Free Users (No Login) - ALL PASS ✅
 | Test | Result |
