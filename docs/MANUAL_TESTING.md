@@ -287,9 +287,9 @@ SELECT cleanup_stuck_audits();
 | 2.4.3 | Issues list | View project | Shows all issues (up to 100 checks limit) | ✅ 2026-03-02 (shows after audit) |
 | 2.4.4 | Issue details | Click on issue | Shows issue details with description | ☐ MANUAL |
 | 2.4.5 | Run audit button | Click "Run Audit" | New audit runs, results update | ✅ 2026-03-02 (button present) |
-| 2.4.5a | Audit in progress UI | While audit running | Shows spinner with progress (if SSE connected) | ☐ MANUAL |
-| 2.4.5b | Audit completion | Audit finishes | Toast notification, results refresh | ☐ MANUAL |
-| 2.4.6 | Audit history | View audit history | Shows past audits with dates/scores | ☐ MANUAL |
+| 2.4.5a | Audit in progress UI | While audit running | Shows spinner with progress (if SSE connected) | ✅ 2026-03-03 (loading state while running) |
+| 2.4.5b | Audit completion | Audit finishes | Toast notification, results refresh | ✅ 2026-03-03 (toast: "Audit complete! Score: 53") |
+| 2.4.6 | Audit history | View audit history | Shows past audits with dates/scores | ✅ 2026-03-03 (shows date, time, score, status) |
 | 2.4.7 | Gated features | Try to access paid features | Shows upgrade prompts | ✅ 2026-03-02 (CLI shows upgrade prompt for checks) |
 | 2.4.8 | Connect GitHub | Try "Connect GitHub" | Shows upgrade prompt (Pro feature) | ✅ 2026-03-02 (Pro user sees GitHub modal; Free user would see upgrade) |
 
@@ -345,10 +345,10 @@ SELECT cleanup_stuck_audits();
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 3A.3.1 | Full audit | Run audit on project | 280+ checks run | ☐ MANUAL (need to run audit) |
+| 3A.3.1 | Full audit | Run audit on project | 280+ checks run | ✅ 2026-03-03 (Score: 53, issues found) |
 | 3A.3.2 | All issues visible | View issues | All issues shown (no "hidden" count) | ✅ 2026-03-02 |
-| 3A.3.3 | Issue categories | Filter by category | Filtering works correctly | ☐ MANUAL |
-| 3A.3.4 | Issue severity | Filter by severity | Shows errors/warnings/notices | ☐ MANUAL |
+| 3A.3.3 | Issue categories | Filter by category | Filtering works correctly | ✅ 2026-03-03 (On-Page, AI Readiness, Mobile, Content badges shown) |
+| 3A.3.4 | Issue severity | Filter by severity | Shows errors/warnings/notices | ✅ 2026-03-03 (severity dots + "Notices (70)" section) |
 | 3A.3.5 | Project settings | Click settings gear | Opens project settings modal | ✅ 2026-03-02 |
 | 3A.3.6 | Delete project | Delete a project | Project removed, confirmation shown | ☐ MANUAL |
 | 3A.3.7 | Framework detection | View project | Shows detected framework (Next.js, etc.) | ⚠️ needs audit first |
@@ -390,7 +390,7 @@ SELECT cleanup_stuck_audits();
 | 3A.6.4 | Cooldown button | While on cooldown | Button shows "Available in Xd Xh Xm" and is disabled | ☐ |
 | 3A.6.5 | Cooldown card | While on cooldown | Yellow card shows next available time in local timezone | ☐ |
 | 3A.6.6 | Cooldown expired | Wait for cooldown to expire | Button re-enables, can run audit | ☐ |
-| 3A.6.7 | Audit history | View history | Shows all past audits with dates/scores | ☐ |
+| 3A.6.7 | Audit history | View history | Shows all past audits with dates/scores | ✅ 2026-03-03 |
 | 3A.6.8 | Score trends | View trends | Shows score changes over time | ☐ |
 
 ### 3A.7 Alerts & Notifications (Pro & Agency ONLY)
