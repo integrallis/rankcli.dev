@@ -251,10 +251,10 @@ SELECT cleanup_stuck_audits();
 | 2.1.1 | Signup page loads | Navigate to /signup | Shows signup form with OAuth options | ✅ 2026-03-02 |
 | 2.1.2 | GitHub OAuth | Click "Continue with GitHub" | Redirects to GitHub, then back to dashboard | ✅ 2026-03-02 (redirect works) |
 | 2.1.3 | Google OAuth | Click "Continue with Google" | Redirects to Google, then back to dashboard | ✅ 2026-03-02 (redirect works) |
-| 2.1.4 | Email signup | Enter email/password | Account created, verification email sent | ☐ MANUAL |
-| 2.1.5 | Email verification | Click link in email | Email verified, redirected to dashboard | ☐ MANUAL |
-| 2.1.6 | Duplicate email | Try existing email | Shows "account exists" error | ☐ MANUAL |
-| 2.1.7 | Weak password | Enter weak password | Shows password requirements | ☐ MANUAL |
+| 2.1.4 | Email signup | Enter email/password | Account created, verification email sent | ✅ 2026-03-03 (Brian manual) |
+| 2.1.5 | Email verification | Click link in email | Email verified, redirected to dashboard | ✅ 2026-03-03 (Brian manual) |
+| 2.1.6 | Duplicate email | Try existing email | Shows "account exists" error | ✅ 2026-03-03 (Brian manual) |
+| 2.1.7 | Weak password | Enter weak password | Shows password requirements | ✅ 2026-03-03 (Brian manual) |
 
 ### 2.2 Login Flow
 
@@ -264,7 +264,7 @@ SELECT cleanup_stuck_audits();
 | 2.2.2 | Valid credentials | Enter correct email/password | Redirected to dashboard | ✅ 2026-03-02 |
 | 2.2.3 | Invalid credentials | Enter wrong password | Shows error message | ✅ 2026-03-02 |
 | 2.2.4 | Forgot password | Click "Forgot password" | Shows password reset flow | ✅ 2026-03-02 |
-| 2.2.5 | Password reset | Complete reset flow | Able to login with new password | ☐ MANUAL |
+| 2.2.5 | Password reset | Complete reset flow | Able to login with new password | ✅ 2026-03-03 (Brian manual) |
 
 ### 2.3 Dashboard (Free User)
 
@@ -418,18 +418,18 @@ SELECT cleanup_stuck_audits();
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 3A.9.1 | Keywords page | Navigate to /keywords | Shows keyword research interface | ☐ |
-| 3A.9.2 | Seed keywords | Enter seed keywords | Generates keyword suggestions | ☐ |
-| 3A.9.3 | Search volume | View results | Shows estimated search volume | ☐ |
-| 3A.9.4 | Keyword difficulty | View results | Shows KD scores | ☐ |
-| 3A.9.5 | Competitor keywords | Enter competitor | Shows competitor keyword gaps | ☐ |
+| 3A.9.1 | Keywords page | Navigate to /keywords | Shows keyword research interface | ✅ 2026-03-03 (AI Keyword Research UI loads) |
+| 3A.9.2 | Seed keywords | Enter seed keywords | Generates keyword suggestions | ☐ (UI exists, needs run) |
+| 3A.9.3 | Search volume | View results | Shows estimated search volume | ☐ (UI exists, needs run) |
+| 3A.9.4 | Keyword difficulty | View results | Shows KD scores | ☐ (UI exists, needs run) |
+| 3A.9.5 | Competitor keywords | Enter competitor | Shows competitor keyword gaps | ☐ (UI exists, needs run) |
 
 ### 3A.10 Account Management (Paid)
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 3A.10.1 | View subscription | Navigate to account | Shows current plan details | ☐ |
-| 3A.10.2 | Usage stats | View usage | Shows limits and current usage | ☐ |
+| 3A.10.1 | View subscription | Navigate to account | Shows current plan details | ✅ 2026-03-03 |
+| 3A.10.2 | Usage stats | View usage | Shows limits and current usage | ✅ 2026-03-03 (X/Y sites shown) |
 | 3A.10.3 | Upgrade plan | Click upgrade | Shows upgrade options | ☐ |
 | 3A.10.4 | Downgrade plan | Click downgrade | Shows confirmation with implications | ☐ |
 | 3A.10.5 | Cancel subscription | Click cancel | Shows cancellation flow | ☐ |
@@ -782,7 +782,7 @@ These are issues that have occurred before - verify they're fixed:
 
 **Method:** Playwright headless Chromium + CLI execution + MCP JSONRPC
 
-**Summary:** 158 total test cases | **114 passed** ✅ | 42 remaining ☐ | 2 warnings ⚠️ | **72% complete**
+**Summary:** 293 total test cases | **176 passed** ✅ | 113 remaining ☐ | 4 warnings ⚠️ | **60% complete**
 
 #### Part 1: Free Users (No Login) - ALL PASS ✅
 | Test | Result |
