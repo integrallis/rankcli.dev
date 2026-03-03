@@ -554,20 +554,29 @@ function MCPServerSection() {
         </ul>
       </section>
 
-      {/* Installation */}
+      {/* Setup - No Installation Required */}
       <section id="installation-mcp">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Terminal className="h-5 w-5" />
-          Installation
+          Setup (No Installation Required)
         </h2>
         <p className="text-muted-foreground mb-4">
-          Install the MCP server package:
+          RankCLI provides a <strong>hosted MCP endpoint</strong> — no npm install needed.
+          Just configure your AI assistant with your API key.
         </p>
-        <CodeBlock code="npm install -g @rankcli/mcp-server" />
-        <p className="text-muted-foreground mt-4">
-          Or run directly with npx:
+
+        <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg mb-4">
+          <h4 className="font-medium text-green-600 dark:text-green-400 mb-2">✨ Zero Installation</h4>
+          <p className="text-sm text-muted-foreground">
+            Unlike other MCP servers, you don't need to install anything locally.
+            Our hosted endpoint handles everything — just add your API key and you're ready.
+          </p>
+        </div>
+
+        <h4 className="font-medium mt-6 mb-2">1. Get Your API Key</h4>
+        <p className="text-sm text-muted-foreground mb-4">
+          Go to <a href="/account" className="text-primary underline">Account → API Keys</a> and create a new key.
         </p>
-        <CodeBlock code="npx @rankcli/mcp-server" />
       </section>
 
       {/* Claude Desktop Setup */}
@@ -587,8 +596,10 @@ function MCPServerSection() {
         <CodeBlock code={`{
   "mcpServers": {
     "rankcli": {
-      "command": "npx",
-      "args": ["@rankcli/mcp-server"]
+      "url": "https://rankcli-audit-worker.fly.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
     }
   }
 }`} />
@@ -600,8 +611,10 @@ function MCPServerSection() {
         <CodeBlock code={`{
   "mcpServers": {
     "rankcli": {
-      "command": "npx",
-      "args": ["@rankcli/mcp-server"]
+      "url": "https://rankcli-audit-worker.fly.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
     }
   }
 }`} />
@@ -622,24 +635,15 @@ function MCPServerSection() {
           Available Tools
         </h2>
         <p className="text-muted-foreground mb-4">
-          The MCP server provides 13 SEO tools:
+          The MCP server provides 4 SEO tools:
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {[
-            { name: 'seo_analyze', desc: 'Comprehensive SEO audit (200+ checks)' },
-            { name: 'seo_geo_check', desc: 'GEO analysis for AI search visibility' },
-            { name: 'seo_robots_ai', desc: 'Check robots.txt AI crawler rules' },
-            { name: 'seo_generate_robots', desc: 'Generate AI-friendly robots.txt' },
-            { name: 'seo_core_web_vitals', desc: 'Estimate LCP, CLS, INP, TTFB' },
-            { name: 'seo_structured_data', desc: 'Validate JSON-LD schemas' },
-            { name: 'seo_generate_schema', desc: 'Generate schema.org templates' },
-            { name: 'seo_security_headers', desc: 'Security header analysis (A+ to F)' },
-            { name: 'seo_generate_security_headers', desc: 'Generate security headers' },
-            { name: 'seo_images', desc: 'Image optimization analysis' },
-            { name: 'seo_internal_links', desc: 'Internal linking analysis' },
-            { name: 'seo_mobile', desc: 'Mobile SEO & PWA readiness' },
-            { name: 'seo_ai_crawlers', desc: 'List all known AI crawlers info' },
+            { name: 'seo_audit', desc: 'Run comprehensive SEO audit on any URL (200+ checks)' },
+            { name: 'seo_geo_check', desc: 'Check AI search visibility (GEO) for ChatGPT, Perplexity, Claude' },
+            { name: 'seo_robots_check', desc: 'Analyze robots.txt for AI crawler permissions' },
+            { name: 'seo_compare', desc: 'Compare SEO metrics between two URLs' },
           ].map((tool) => (
             <div key={tool.name} className="p-3 border rounded-lg">
               <h5 className="font-medium text-sm font-mono">{tool.name}</h5>

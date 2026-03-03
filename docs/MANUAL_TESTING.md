@@ -634,23 +634,14 @@ The MCP server is a **hosted endpoint** — no npm installation required. Users 
 | 5.2.2 | Auth required | `curl` without API key | Returns 401 Unauthorized | ☐ |
 | 5.2.3 | Auth works | `curl` with valid API key header | Returns tool list | ☐ |
 
-### 5.3 MCP Tools
+### 5.3 MCP Tools (4 tools available)
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|
-| 5.3.1 | seo_analyze | Ask Claude to analyze site | Full audit results | ✅ 2026-03-02 |
-| 5.3.2 | seo_geo_check | Ask about AI visibility | GEO analysis results | ✅ 2026-03-02 |
-| 5.3.3 | seo_robots_ai | Ask about robots.txt | AI crawler analysis | ✅ 2026-03-02 |
-| 5.3.4 | seo_generate_robots | Ask to generate robots.txt | AI-friendly robots.txt | ✅ 2026-03-02 |
-| 5.3.5 | seo_core_web_vitals | Ask about CWV | LCP, CLS, INP, TTFB | ✅ 2026-03-02 |
-| 5.3.6 | seo_structured_data | Ask about schema | JSON-LD validation | ✅ 2026-03-02 |
-| 5.3.7 | seo_generate_schema | Ask to generate schema | Schema template | ✅ 2026-03-02 |
-| 5.3.8 | seo_security_headers | Ask about security | Security header grades | ✅ 2026-03-02 |
-| 5.3.9 | seo_generate_security_headers | Ask to generate headers | Recommended headers | ✅ 2026-03-02 |
-| 5.3.10 | seo_images | Ask about images | Image optimization analysis | ✅ 2026-03-02 |
-| 5.3.11 | seo_internal_links | Ask about links | Internal linking analysis | ✅ 2026-03-02 |
-| 5.3.12 | seo_mobile | Ask about mobile | Mobile SEO analysis | ✅ 2026-03-02 |
-| 5.3.13 | seo_ai_crawlers | Ask about AI crawlers | Crawler reference info | ✅ 2026-03-02 |
+| 5.3.1 | seo_audit | Ask Claude to audit a site | Full 200+ check audit results | ✅ 2026-03-03 |
+| 5.3.2 | seo_geo_check | Ask about AI visibility | GEO analysis with crawler access | ✅ 2026-03-03 |
+| 5.3.3 | seo_robots_check | Ask about robots.txt | AI crawler permission analysis | ✅ 2026-03-03 |
+| 5.3.4 | seo_compare | Ask to compare two URLs | Side-by-side SEO comparison | ✅ 2026-03-03 |
 
 ---
 
@@ -848,27 +839,18 @@ These are issues that have occurred before - verify they're fixed:
 | 3B.9.2-3B.9.3 Init cmd | ✅ Creates seo-autopilot.config.json |
 | 3B.10.1, 3B.10.3 Analyze | ✅ Codebase analysis with suggestions |
 
-#### Part 5: MCP Server - Hosted Endpoint
+#### Part 5: MCP Server - Hosted Endpoint ✅
 | Test | Result |
 |------|--------|
 | Endpoint | `https://rankcli-audit-worker.fly.dev/mcp` |
 | Auth | Bearer token (API key from dashboard) |
-| Tools count | **13 tools** |
+| Tools count | **4 tools** |
 
-**MCP Tools available:**
-1. seo_analyze ✅
-2. seo_geo_check ✅
-3. seo_robots_ai ✅
-4. seo_generate_robots ✅
-5. seo_core_web_vitals ✅
-6. seo_structured_data ✅
-7. seo_generate_schema ✅
-8. seo_security_headers ✅
-9. seo_generate_security_headers ✅
-10. seo_images ✅
-11. seo_internal_links ✅
-12. seo_mobile ✅
-13. seo_ai_crawlers ✅
+**MCP Tools verified (2026-03-03):**
+1. seo_audit ✅ - Full 200+ check SEO audit
+2. seo_geo_check ✅ - AI search visibility analysis
+3. seo_robots_check ✅ - AI crawler permissions
+4. seo_compare ✅ - Compare two URLs
 
 #### Bug Fixes Applied During Testing
 1. **Site limit enforcement** (commit `883c015`) - Free users now see `UpgradeLimitModal` at 1 site limit
