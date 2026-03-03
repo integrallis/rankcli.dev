@@ -1516,19 +1516,26 @@ async function validateMCPApiKey(apiKey: string): Promise<{ valid: boolean; user
 
   const { data: keyData, error } = await supabase
     .from('api_keys')
-    .select('user_id, users(subscription_tier)')
+    .select('user_id')
     .eq('key_hash', keyHash)
-    .eq('is_active', true)
+    .is('revoked_at', null)
     .single();
 
   if (error || !keyData) {
     return { valid: false };
   }
 
+  // Get subscription tier from user_subscriptions
+  const { data: subData } = await supabase
+    .from('user_subscriptions')
+    .select('plan_id')
+    .eq('user_id', keyData.user_id)
+    .single();
+
   return {
     valid: true,
     userId: keyData.user_id,
-    tier: (keyData.users as { subscription_tier?: string })?.subscription_tier || 'free',
+    tier: subData?.plan_id || 'free',
   };
 }
 
