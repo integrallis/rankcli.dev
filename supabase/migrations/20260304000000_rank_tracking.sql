@@ -49,10 +49,10 @@ CREATE OR REPLACE FUNCTION get_rank_history(
     p_days INT DEFAULT 30
 )
 RETURNS TABLE (
-    position INT,
-    url TEXT,
-    serp_features JSONB,
-    recorded_at TIMESTAMPTZ
+    rank_position INT,
+    rank_url TEXT,
+    rank_serp_features JSONB,
+    rank_recorded_at TIMESTAMPTZ
 ) AS $$
 BEGIN
     RETURN QUERY
