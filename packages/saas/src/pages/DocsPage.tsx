@@ -45,7 +45,7 @@ const sections = [
     id: 'cli-reference',
     title: 'CLI Reference',
     icon: Code,
-    subsections: ['auth', 'audit', 'apply', 'keywords', 'content', 'setup'],
+    subsections: ['auth', 'audit', 'fix', 'track', 'apply', 'keywords', 'content', 'setup'],
   },
   {
     id: 'dashboard',
@@ -734,6 +734,87 @@ Options:
         <CodeBlock code="rankcli audit --url https://example.com --max-pages 10 -o json > report.json" />
         <CodeBlock code="# AI-enhanced audit" />
         <CodeBlock code="rankcli audit --url https://example.com --ai" />
+      </section>
+
+      {/* rankcli fix */}
+      <section id="fix">
+        <h2 className="text-xl font-semibold mb-4">rankcli fix</h2>
+        <p className="text-muted-foreground mb-4">
+          Agentic SEO fixer - automatically detect issues, generate fixes, apply them, 
+          commit, and push. Full CI/CD automation.
+        </p>
+        <CodeBlock
+          code={`rankcli fix [options]
+
+Options:
+  -u, --url <url>         URL to analyze
+  --auto                  Auto-apply fixes without confirmation
+  --commit                Commit changes with conventional commit message
+  --push                  Push changes after committing (requires --commit)
+  --dry-run               Preview changes without applying
+  --only <codes>          Fix only specific issue codes (comma-separated)
+  -o, --output <format>   Output format (text, json)`}
+        />
+        <h4 className="font-medium mt-6 mb-2">Examples</h4>
+        <CodeBlock code="# Preview fixes without applying" />
+        <CodeBlock code="rankcli fix --url https://mysite.com --dry-run" />
+        <CodeBlock code="# Fix, commit, and push (CI mode)" />
+        <CodeBlock code="rankcli fix --url https://mysite.com --auto --commit --push" />
+        <CodeBlock code="# Fix only specific issues" />
+        <CodeBlock code="rankcli fix --url https://mysite.com --auto --only TITLE_MISSING,META_DESC_MISSING" />
+
+        <div className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+          <h4 className="font-medium text-green-600 dark:text-green-400 mb-2 flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            Conventional Commits
+          </h4>
+          <p className="text-sm text-muted-foreground">
+            With <code className="bg-muted px-1 rounded">--commit</code>, RankCLI generates semantic commit messages 
+            like <code className="bg-muted px-1 rounded">feat(seo): fix 3 SEO issues</code> that work with 
+            semantic-release and CHANGELOG generators.
+          </p>
+        </div>
+      </section>
+
+      {/* rankcli track */}
+      <section id="track">
+        <h2 className="text-xl font-semibold mb-4">rankcli track</h2>
+        <p className="text-muted-foreground mb-4">
+          Keyword rank tracking - monitor your SERP positions over time.
+        </p>
+        <CodeBlock
+          code={`rankcli track <command> [options]
+
+Commands:
+  add <keywords...>        Add keywords to track
+  status                   Show current keyword rankings
+  history                  Show keyword position history
+  check                    Check current rankings (calls SERP API)
+  export                   Export tracking data
+
+Common Options:
+  -u, --url <url>          URL to track rankings for
+  -o, --output <format>    Output format (text, json)`}
+        />
+        <h4 className="font-medium mt-6 mb-2">Examples</h4>
+        <CodeBlock code="# Add keywords to track" />
+        <CodeBlock code='rankcli track add "seo tool" "cli seo" --url https://mysite.com' />
+        <CodeBlock code="# View current rankings" />
+        <CodeBlock code="rankcli track status --url https://mysite.com" />
+        <CodeBlock code="# Check live SERP positions" />
+        <CodeBlock code="rankcli track check --url https://mysite.com" />
+        <CodeBlock code="# View position history for a keyword" />
+        <CodeBlock code='rankcli track history --keyword "seo tool" --url https://mysite.com --days 30' />
+        <CodeBlock code="# Export as CSV" />
+        <CodeBlock code="rankcli track export --url https://mysite.com --format csv > rankings.csv" />
+
+        <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <h4 className="font-medium text-blue-600 dark:text-blue-400 mb-2">SERP API Required</h4>
+          <p className="text-sm text-muted-foreground">
+            Live rank checking requires a SERP API key. Set <code className="bg-muted px-1 rounded">VALUESERP_API_KEY</code> or{' '}
+            <code className="bg-muted px-1 rounded">SERPAPI_KEY</code> in your environment.
+          </p>
+        </div>
       </section>
 
       {/* rankcli apply */}

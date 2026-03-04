@@ -13,6 +13,20 @@ import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ui/scr
 
 const features = [
   {
+    icon: Zap,
+    title: 'Agentic Auto-Fix',
+    description:
+      'Run `rankcli fix --auto --commit --push`. Detect issues, apply fixes, commit with conventional messages, push to CI. Full automation.',
+    highlight: true,
+  },
+  {
+    icon: Search,
+    title: 'Keyword Rank Tracking',
+    description:
+      'Track keyword positions over time with `rankcli track`. SERP monitoring, position history, sparkline trends, CSV export.',
+    highlight: true,
+  },
+  {
     icon: Bot,
     title: 'GEO (AI Search Optimization)',
     description:
