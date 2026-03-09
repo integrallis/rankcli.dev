@@ -152,6 +152,7 @@ jobs:
           VITE_AUDIT_WORKER_URL: https://rankcli-audit-worker.fly.dev
           VITE_AUDIT_WORKER_SECRET: ${{ secrets.AUDIT_WORKER_SECRET }}
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          VITE_GITHUB_APP_URL: https://github.com/apps/rankcli
         run: pnpm build
 
       - name: Install Wrangler

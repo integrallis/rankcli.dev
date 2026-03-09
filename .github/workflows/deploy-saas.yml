@@ -124,6 +124,7 @@ jobs:
           VITE_SUPABASE_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          VITE_GITHUB_APP_URL: https://github.com/apps/rankcli
 
       # Deploy to Cloudflare Pages (or Vercel, Netlify, etc.)
       - name: Deploy to Cloudflare Pages
