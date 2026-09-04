@@ -65,11 +65,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -fsSL https://get.docker.com | sh && \
   usermod -aG docker vscode
 
-# Install Rust toolchain and wasm-pack for CLI native WASM builds
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-  . /root/.cargo/env && \
-  curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-
 # Install uv (fast Python package manager)
 RUN pip install --no-cache-dir uv
 
@@ -95,8 +90,20 @@ USER vscode
 ENV NPM_CONFIG_PREFIX=/usr/local/share/npm-global
 ENV PATH=$PATH:/usr/local/share/npm-global/bin
 
-# Install pnpm globally
-RUN npm install -g npm@latest pnpm@latest
+# Install pnpm, pinned to match the root package.json "packageManager" field.
+# Do NOT float npm@latest here: current npm releases require Node >=22, which
+# is incompatible with the Node 20 installed above via NodeSource.
+RUN npm install -g pnpm@8.15.0
+
+# Install Rust toolchain and wasm-pack for the CLI package's native WASM build
+# (packages/cli/native). Must run as the vscode user, not root: rustup installs
+# into $HOME/.cargo, remoteUser is "vscode" (devcontainer.json), and root's
+# home directory isn't readable by vscode — installing this earlier as root
+# left cargo/wasm-pack unreachable (and unbuildable) for the actual dev user.
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+  . "$HOME/.cargo/env" && \
+  curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+ENV PATH=$PATH:/home/vscode/.cargo/bin
 
 # Install global Node.js tools
 RUN npm install -g \
