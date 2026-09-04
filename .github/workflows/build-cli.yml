@@ -10,7 +10,13 @@
 #
 # Required secrets:
 # - RANKCLI_BUILD_KEY: AES-256 encryption key (base64, 32 bytes)
-# - NPM_TOKEN: npm access token for publishing
+#
+# Publishing to npm uses OIDC (Trusted Publishing) via the publish job's
+# id-token: write permission - no npm token stored as a secret. Each of
+# the three published packages (@rankcli/agent-runtime, @rankcli/mcp-server,
+# @rankcli/cli) has a Trusted Publisher configured on npmjs.com pointing at
+# this exact repo + this workflow file. If publishing ever needs re-linking,
+# see: npmjs.com/package/<name>/access -> Trusted Publisher.
 
 name: Build CLI
 
@@ -156,6 +162,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true')
+    permissions:
+      contents: read
+      id-token: write # required for npm OIDC / Trusted Publishing - no NPM_TOKEN needed
 
     steps:
       - name: Checkout code
@@ -169,8 +178,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          # OIDC/Trusted Publishing needs npm >=11.5.1; pinned separately from
+          # the build job's NODE_VERSION (20) so the native WASM build stays
+          # untouched. Node 20 can't run `npm install -g npm@latest` (that
+          # command itself now requires Node >=22 - the exact issue fixed in
+          # .devcontainer/Dockerfile earlier this session), hence 22 here.
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
+
+      - name: Update npm for OIDC support
+        run: npm install -g npm@latest
 
       - name: Download build artifact
         uses: actions/download-artifact@v4
@@ -199,21 +216,8 @@ jobs:
         working-directory: packages/agent-runtime
         run: pnpm build
 
-      - name: Diagnose NPM_TOKEN
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          echo "--- npm whoami (confirms the token authenticates at all) ---"
-          npm whoami --registry https://registry.npmjs.org/ || echo "whoami FAILED"
-          echo "--- npm profile get (token/account restrictions sometimes surface here) ---"
-          npm profile get --registry https://registry.npmjs.org/ 2>&1 || echo "profile get FAILED (may be expected for automation tokens)"
-          echo "--- npm access list packages (confirms scope/permission on @rankcli) ---"
-          npm access list packages @rankcli --registry https://registry.npmjs.org/ 2>&1 || echo "access list FAILED"
-
       - name: Publish agent-runtime
         working-directory: packages/agent-runtime
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           # Check if version already exists
           CURRENT_VERSION=$(node -p "require('./package.json').version")
@@ -237,8 +241,6 @@ jobs:
 
       - name: Publish MCP server
         working-directory: packages/mcp-server
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           CURRENT_VERSION=$(node -p "require('./package.json').version")
           if npm view @rankcli/mcp-server@$CURRENT_VERSION version 2>/dev/null; then
@@ -282,8 +284,6 @@ jobs:
 
       - name: Publish CLI to npm
         working-directory: packages/cli
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           echo "Publishing @rankcli/cli@$(node -p "require('./package.json').version")"
           npm publish --access public --ignore-scripts
