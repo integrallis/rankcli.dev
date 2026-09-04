@@ -9,6 +9,7 @@ RUN npm install -g pnpm
 # Copy workspace files
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/agent-runtime/package.json ./packages/agent-runtime/
+COPY packages/agent-runtime-premium/package.json ./packages/agent-runtime-premium/
 COPY packages/audit-worker/package.json ./packages/audit-worker/
 
 # Install dependencies
@@ -16,9 +17,13 @@ RUN pnpm install --frozen-lockfile
 
 # Copy source
 COPY packages/agent-runtime ./packages/agent-runtime
+COPY packages/agent-runtime-premium ./packages/agent-runtime-premium
 COPY packages/audit-worker ./packages/audit-worker
 
-# Build agent-runtime first
+# Build agent-runtime first (its build:deno step imports paid-tier checks
+# from agent-runtime-premium - never published, workspace-linked only,
+# needed here at build time even though audit-worker's runtime stage only
+# ends up needing agent-runtime's compiled dist/)
 WORKDIR /app/packages/agent-runtime
 RUN pnpm build
 
