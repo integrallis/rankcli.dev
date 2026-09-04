@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { LandingTerminalDemo } from '@/components/terminal/TerminalOutput';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
 import { SocialProof } from '@/components/landing/SocialProof';
+import { InstallTabs } from '@/components/InstallTabs';
 
 export function Hero() {
   return (
@@ -70,30 +71,8 @@ export function Hero() {
           </ScrollReveal>
 
           {/* Install command */}
-          <ScrollReveal delay={0.5} className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-            <code className="px-3 py-2 bg-card border border-border rounded-md font-mono text-foreground">
-              npm install -g @rankcli/cli
-            </code>
-            <button
-              className="p-2 hover:bg-card rounded-md transition-colors border border-transparent hover:border-border"
-              onClick={() => navigator.clipboard.writeText('npm install -g @rankcli/cli')}
-              title="Copy to clipboard"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-              </svg>
-            </button>
+          <ScrollReveal delay={0.5} className="mt-4 w-full flex justify-center">
+            <InstallTabs />
           </ScrollReveal>
 
           {/* Social Proof - only shows once checks > 1000 */}

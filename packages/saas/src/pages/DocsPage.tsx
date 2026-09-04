@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { InstallTabs } from '@/components/InstallTabs';
 import {
   Terminal,
   Key,
@@ -145,20 +146,13 @@ function GettingStartedSection() {
           Installation
         </h2>
         <p className="text-muted-foreground mb-4">
-          Install a standalone binary via Homebrew or Scoop (no Node required), or install via npm, yarn, or pnpm:
+          Homebrew and Scoop install a standalone binary — no Node required. npm works everywhere Node does.
         </p>
-        <div className="space-y-2">
-          <CodeBlock code="brew install integrallis/tap/rankcli" />
-          <CodeBlock code="# or on Windows with Scoop" />
-          <CodeBlock code="scoop bucket add integrallis https://github.com/integrallis/scoop-bucket" />
-          <CodeBlock code="scoop install rankcli" />
-          <CodeBlock code="# or with npm (requires Node 18+)" />
-          <CodeBlock code="npm install -g @rankcli/cli" />
-          <CodeBlock code="# or with yarn" />
-          <CodeBlock code="yarn global add @rankcli/cli" />
-          <CodeBlock code="# or with pnpm" />
-          <CodeBlock code="pnpm add -g @rankcli/cli" />
-        </div>
+        <InstallTabs />
+        <p className="text-sm text-muted-foreground mt-3">
+          Also available via <code className="bg-muted px-1 rounded">yarn global add @rankcli/cli</code> or{' '}
+          <code className="bg-muted px-1 rounded">pnpm add -g @rankcli/cli</code>.
+        </p>
         <p className="text-muted-foreground mt-4">
           Verify the installation:
         </p>
