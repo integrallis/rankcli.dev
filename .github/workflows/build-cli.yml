@@ -199,6 +199,17 @@ jobs:
         working-directory: packages/agent-runtime
         run: pnpm build
 
+      - name: Diagnose NPM_TOKEN
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "--- npm whoami (confirms the token authenticates at all) ---"
+          npm whoami --registry https://registry.npmjs.org/ || echo "whoami FAILED"
+          echo "--- npm profile get (token/account restrictions sometimes surface here) ---"
+          npm profile get --registry https://registry.npmjs.org/ 2>&1 || echo "profile get FAILED (may be expected for automation tokens)"
+          echo "--- npm access list packages (confirms scope/permission on @rankcli) ---"
+          npm access list packages @rankcli --registry https://registry.npmjs.org/ 2>&1 || echo "access list FAILED"
+
       - name: Publish agent-runtime
         working-directory: packages/agent-runtime
         env:
