@@ -34,7 +34,7 @@ export function Footer() {
             <p className="text-sm text-muted-foreground mb-4">
               Ship code, get ranked.
               <br />
-              SEO meets CI/CD.
+              Get cited, not just crawled.
             </p>
             <div className="flex gap-4">
               <a

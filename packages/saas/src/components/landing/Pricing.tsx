@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, X, HelpCircle, Clock, Zap, AlertTriangle } from 'lucide-react';
+import { Check, X, HelpCircle, Clock, Zap, AlertTriangle, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -52,7 +52,33 @@ interface LTDAvailability {
   isSoldOut: boolean;
 }
 
+interface FoundingOfferConfig {
+  enabled: boolean;
+  key: string;
+  plan_id: string;
+  base_plan_id: string;
+  name: string;
+  tagline: string;
+  discounted_price_cents: number;
+  original_price_cents: number;
+  discount_percent: number;
+  total_seats: number;
+  duration_days: number;
+  availability_endpoint: string;
+}
+
+interface FoundingAvailability {
+  remaining: number;
+  totalSeats: number;
+  claimedSeats: number;
+  isActive: boolean;
+  isLow: boolean;
+  isAlmostGone: boolean;
+  isSoldOut: boolean;
+}
+
 const subscriptionTiers = pricingConfig.subscriptions as SubscriptionTier[];
+const foundingOffer = pricingConfig.founding_offer as FoundingOfferConfig | undefined;
 const ltdConfig = pricingConfig.lifetime_deals as {
   enabled: boolean;
   show_remaining: boolean;
@@ -66,14 +92,14 @@ const freeTier = {
   name: 'Free',
   price_cents: 0,
   billing_period: 'forever',
-  tagline: 'Get started for free',
+  tagline: 'Unlimited via MCP, no credit card',
   popular: false,
   highlights: [
-    '1 site monitored',
-    '100 SEO checks',
-    'Audit history',
+    'Unlimited audits via MCP/CLI (your own AI key)',
+    'No signup required for MCP',
+    '1 hosted site, 100 checks, audit history',
+    'GEO + AI-crawler-access checks included',
     'Basic dashboard',
-    'CLI access',
   ],
 };
 
@@ -176,6 +202,39 @@ export function Pricing() {
   const [view, setView] = useState<PricingView>(defaultView);
   const [ltdAvailability, setLtdAvailability] = useState<Record<string, LTDAvailability>>({});
   const [loadingAvailability, setLoadingAvailability] = useState(true);
+  const [foundingAvailability, setFoundingAvailability] = useState<FoundingAvailability | null>(null);
+
+  // Fetch founding-offer availability. Fails soft: if the migration/function
+  // hasn't been deployed yet, the Pro card just falls back to list pricing.
+  useEffect(() => {
+    if (!foundingOffer?.enabled) return;
+
+    async function fetchFoundingAvailability() {
+      try {
+        const { data, error } = await supabase.functions.invoke(
+          foundingOffer!.availability_endpoint,
+          { body: { key: foundingOffer!.key } }
+        );
+        if (error) throw error;
+        setFoundingAvailability({
+          remaining: data.remaining,
+          totalSeats: data.totalSeats,
+          claimedSeats: data.claimedSeats,
+          isActive: data.isActive,
+          isLow: data.isLow,
+          isAlmostGone: data.isAlmostGone,
+          isSoldOut: data.isSoldOut,
+        });
+      } catch (err) {
+        console.error('Failed to fetch founding offer availability:', err);
+        setFoundingAvailability(null);
+      }
+    }
+
+    fetchFoundingAvailability();
+    const interval = setInterval(fetchFoundingAvailability, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch LTD availability
   useEffect(() => {
@@ -240,7 +299,7 @@ export function Pricing() {
             Simple, transparent pricing
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Start free, upgrade when you need more. No credit card required.
+            Unlimited audits free via MCP. Upgrade for CI, auto-fix PRs, and hosted tracking. No credit card for Free.
           </p>
         </ScrollReveal>
 
@@ -322,6 +381,8 @@ export function Pricing() {
             freeTier={freeTier}
             isAnnual={view === 'annual'}
             onSelectPlan={handleSelectPlan}
+            foundingOffer={foundingOffer}
+            foundingAvailability={foundingAvailability}
           />
         )}
 
@@ -523,6 +584,8 @@ function SubscriptionPricingCards({
   freeTier,
   isAnnual,
   onSelectPlan,
+  foundingOffer,
+  foundingAvailability,
 }: {
   tiers: SubscriptionTier[];
   freeTier: {
@@ -536,7 +599,15 @@ function SubscriptionPricingCards({
   };
   isAnnual: boolean;
   onSelectPlan: (planId: string) => void;
+  foundingOffer?: FoundingOfferConfig;
+  foundingAvailability: FoundingAvailability | null;
 }) {
+  // Founding pricing only applies to the monthly, non-annual view — it's a
+  // recurring-price override, not a separate billing period.
+  const showFounding =
+    !isAnnual &&
+    foundingOffer?.enabled &&
+    (foundingAvailability === null || (foundingAvailability.isActive && !foundingAvailability.isSoldOut));
   return (
     <StaggerContainer className="grid md:grid-cols-4 gap-5 max-w-6xl mx-auto mb-16">
       {/* Free Tier */}
@@ -579,16 +650,24 @@ function SubscriptionPricingCards({
         const price = isAnnual && plan.price_cents_annual
           ? Math.floor(plan.price_cents_annual / 12 / 100)
           : Math.floor(plan.price_cents / 100);
+        const isFoundingPlan = showFounding && foundingOffer?.base_plan_id === plan.id;
+        const foundingPrice = isFoundingPlan ? Math.floor(foundingOffer!.discounted_price_cents / 100) : null;
 
         return (
           <StaggerItem key={plan.id}>
             <Card
               className={cn(
                 'relative flex flex-col h-full',
-                plan.popular && 'border-primary'
+                (plan.popular || isFoundingPlan) && 'border-primary',
+                isFoundingPlan && 'ring-1 ring-primary/30'
               )}
             >
-              {plan.popular && (
+              {isFoundingPlan ? (
+                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-xs bg-primary text-primary-foreground flex items-center gap-1">
+                  <Flame className="h-3 w-3" />
+                  Founding Member
+                </Badge>
+              ) : plan.popular && (
                 <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-xs bg-primary text-primary-foreground">
                   Popular
                 </Badge>
@@ -596,11 +675,24 @@ function SubscriptionPricingCards({
 
               <CardHeader className="text-center pb-6">
                 <CardTitle className="text-lg font-medium">{plan.name}</CardTitle>
-                <p className="text-sm text-muted-foreground">{plan.tagline}</p>
+                <p className="text-sm text-muted-foreground">
+                  {isFoundingPlan ? foundingOffer!.tagline : plan.tagline}
+                </p>
                 <div className="mt-4">
-                  <span className="text-3xl font-semibold tracking-tight">
-                    ${price}
-                  </span>
+                  {isFoundingPlan ? (
+                    <>
+                      <span className="text-muted-foreground text-lg line-through mr-2">
+                        ${Math.floor(foundingOffer!.original_price_cents / 100)}
+                      </span>
+                      <span className="text-3xl font-semibold tracking-tight text-primary">
+                        ${foundingPrice}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-3xl font-semibold tracking-tight">
+                      ${price}
+                    </span>
+                  )}
                   <span className="text-muted-foreground text-sm">
                     /month{isAnnual && ', billed annually'}
                   </span>
@@ -608,6 +700,15 @@ function SubscriptionPricingCards({
                 {isAnnual && plan.price_cents_annual && (
                   <p className="text-xs text-green-600 dark:text-green-400 mt-1">
                     Save ${Math.floor((plan.price_cents * 12 - plan.price_cents_annual) / 100)}/year
+                  </p>
+                )}
+                {isFoundingPlan && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center justify-center gap-1">
+                    {foundingAvailability
+                      ? foundingAvailability.isAlmostGone
+                        ? `Only ${foundingAvailability.remaining} spots left`
+                        : `${foundingAvailability.remaining} of ${foundingOffer!.total_seats} founding spots left`
+                      : `Limited to the first ${foundingOffer!.total_seats} customers or ${foundingOffer!.duration_days} days, whichever comes first`}
                   </p>
                 )}
               </CardHeader>
@@ -626,10 +727,14 @@ function SubscriptionPricingCards({
               <CardFooter>
                 <Button
                   className="w-full"
-                  variant={plan.popular ? 'default' : 'outline'}
-                  onClick={() => onSelectPlan(plan.id)}
+                  variant={plan.popular || isFoundingPlan ? 'default' : 'outline'}
+                  onClick={() => onSelectPlan(isFoundingPlan ? foundingOffer!.plan_id : plan.id)}
                 >
-                  {plan.id === 'agency' ? 'Contact Sales' : 'Get Started'}
+                  {isFoundingPlan
+                    ? 'Claim Founding Pricing'
+                    : plan.id === 'agency'
+                      ? 'Contact Sales'
+                      : 'Get Started'}
                 </Button>
               </CardFooter>
             </Card>

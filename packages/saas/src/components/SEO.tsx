@@ -28,7 +28,7 @@ const TWITTER_HANDLE = '@rankcli';
 
 export function SEO({
   title,
-  description = 'Ship code, get ranked. SEO meets CI/CD. 200+ automated checks, auto-fix PRs, GitHub integration.',
+  description = 'Ship code, get ranked. Get cited, not just crawled. 200+ automated SEO + GEO checks, auto-fix PRs, GitHub integration.',
   image = DEFAULT_IMAGE,
   url,
   type = 'website',
@@ -109,7 +109,7 @@ export function SEO({
 export const PageSEO = {
   Landing: () => (
     <SEO
-      description="Ship code, get ranked. SEO meets CI/CD. 200+ automated checks, auto-fix PRs, GitHub integration. Engineering as marketing."
+      description="Ship code, get ranked. Get cited, not just crawled. 200+ automated SEO + GEO checks, auto-fix PRs, GitHub integration. Engineering as marketing."
       url="/"
     />
   ),

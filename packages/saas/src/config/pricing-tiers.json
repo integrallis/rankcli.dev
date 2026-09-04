@@ -1,5 +1,5 @@
 {
-  "default_view": "lifetime_deals",
+  "default_view": "monthly",
   "free_audit": {
     "enabled": true,
     "checks_limit": 50,
@@ -26,12 +26,32 @@
       "white_label": false
     }
   },
+  "free_mcp": {
+    "enabled": true,
+    "description": "Unlimited SEO + GEO audits via the free MCP server (npx @rankcli/mcp-server) or CLI with your own OpenAI/Anthropic key. No signup, no rate limit, nothing sent to our servers.",
+    "tagline": "Unlimited, forever, with your own API key"
+  },
   "trial": {
     "enabled": true,
     "duration_days": 14,
     "plan_access": "pro",
     "credit_card_required": false,
     "description": "Full Pro access for 14 days"
+  },
+  "founding_offer": {
+    "enabled": true,
+    "key": "pro_founding",
+    "plan_id": "pro_founding",
+    "base_plan_id": "pro",
+    "name": "Pro Founding Member",
+    "tagline": "Locked in for as long as you stay subscribed",
+    "discounted_price_cents": 1900,
+    "original_price_cents": 2900,
+    "discount_percent": 34,
+    "total_seats": 100,
+    "duration_days": 90,
+    "availability_endpoint": "launch-offer-availability",
+    "stripe_price_id_env": "STRIPE_PRO_FOUNDING_PRICE_ID"
   },
   "subscriptions": [
     {
