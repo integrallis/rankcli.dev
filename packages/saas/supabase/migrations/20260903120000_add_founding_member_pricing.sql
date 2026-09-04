@@ -85,10 +85,12 @@ $$ LANGUAGE plpgsql STABLE;
 
 ALTER TABLE launch_offers ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Anyone can view launch offers" ON launch_offers;
 CREATE POLICY "Anyone can view launch offers"
   ON launch_offers FOR SELECT
   USING (true);
 
+DROP POLICY IF EXISTS "Service role full access to launch offers" ON launch_offers;
 CREATE POLICY "Service role full access to launch offers"
   ON launch_offers FOR ALL
   USING (auth.jwt()->>'role' = 'service_role');
