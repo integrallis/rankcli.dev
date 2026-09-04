@@ -82,7 +82,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      # Step 1: Build agent-runtime WASM bundle (JS → IIFE)
+      # Step 1a: Build agent-runtime's regular dist/ (index.js + index.d.ts)
+      # so packages/cli's own TypeScript build - specifically wasm-engine.ts,
+      # which imports agent-runtime's AuditIssue type - can resolve it. This
+      # was missing here even though the publish job runs it separately;
+      # nothing surfaced it until wasm-engine.ts started importing a type
+      # from agent-runtime instead of redeclaring its own copy.
+      - name: Build agent-runtime
+        working-directory: packages/agent-runtime
+        run: pnpm build
+
+      # Step 1b: Build agent-runtime WASM bundle (JS → IIFE)
       - name: Build agent-runtime WASM bundle
         working-directory: packages/agent-runtime
         run: pnpm build:wasm
