@@ -130,6 +130,7 @@ jobs:
         run: pnpm build:wasm
 
       - name: Build CLI WASM binary (encrypts premium checks, embeds in WASM)
+        shell: bash
         working-directory: packages/cli
         env:
           RANKCLI_BUILD_KEY: ${{ secrets.RANKCLI_BUILD_KEY }}
