@@ -3,8 +3,13 @@
 # =============================================================================
 # Builds standalone, dependency-free rankcli binaries (Node Single
 # Executable Applications - no Node install required to run them) for
-# five platforms, uploads them to the GitHub release, then publishes a
-# Homebrew formula and Scoop manifest pointing at those binaries.
+# five platforms, uploads them to a GitHub release on the PUBLIC
+# integrallis/rankcli-cli repo (not this one - rankcli.dev is private,
+# and Homebrew/Scoop fetch release asset URLs anonymously at install
+# time, which 404s against a private repo's releases no matter how
+# correct the formula/manifest are - confirmed the hard way), then
+# publishes a Homebrew formula and Scoop manifest pointing at those
+# binaries.
 #
 # Mirrors the pattern already proven out in ModelJars'
 # .github/workflows/cli-release.yml (same tap/bucket repos, same
@@ -43,10 +48,36 @@ permissions:
 
 env:
   PNPM_VERSION: '8'
+  PUBLIC_REPO: integrallis/rankcli-cli
 
 jobs:
+  ensure-public-release:
+    name: Ensure public release exists
+    runs-on: ubuntu-24.04
+    outputs:
+      tag: ${{ steps.release.outputs.tag }}
+    steps:
+      - name: Resolve release context
+        id: release
+        run: |
+          tag="${{ github.event.release.tag_name || inputs.tag }}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Create release on public repo if missing
+        env:
+          GH_TOKEN: ${{ secrets.PACKAGES_PUBLISH_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          if gh release view "$TAG" --repo "$PUBLIC_REPO" >/dev/null 2>&1; then
+            echo "Release $TAG already exists on $PUBLIC_REPO"
+          else
+            gh release create "$TAG" --repo "$PUBLIC_REPO" --title "$TAG" \
+              --notes "Binaries for rankcli $TAG. Source: https://github.com/${{ github.repository }}"
+          fi
+
   native:
     name: ${{ matrix.label }}
+    needs: ensure-public-release
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -180,14 +211,14 @@ jobs:
           fi
           echo "raw=$raw" >> "$GITHUB_OUTPUT"
 
-      - name: Upload asset to GitHub release
+      - name: Upload asset to public release
         shell: bash
         working-directory: packages/cli
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PACKAGES_PUBLISH_TOKEN }}
         run: >-
           gh release upload "${{ steps.release.outputs.tag }}" "dist-upload/${{ steps.package.outputs.raw }}"
-          --clobber --repo "${{ github.repository }}"
+          --clobber --repo "${{ env.PUBLIC_REPO }}"
 
   publish-packages:
     name: Publish Homebrew and Scoop
@@ -216,11 +247,11 @@ jobs:
       - name: Download binaries and calculate checksums
         if: steps.context.outputs.ready == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PACKAGES_PUBLISH_TOKEN }}
           TAG: ${{ steps.context.outputs.tag }}
         run: |
           mkdir dist
-          gh release download "$TAG" --repo "${{ github.repository }}" --dir dist \
+          gh release download "$TAG" --repo "${{ env.PUBLIC_REPO }}" --dir dist \
             --pattern 'rankcli-linux-x86_64' \
             --pattern 'rankcli-linux-aarch64' \
             --pattern 'rankcli-macos-x86_64' \
@@ -239,7 +270,7 @@ jobs:
         env:
           TOKEN: ${{ secrets.PACKAGES_PUBLISH_TOKEN }}
           VERSION: ${{ steps.context.outputs.version }}
-          BASE: https://github.com/${{ github.repository }}/releases/download/${{ steps.context.outputs.tag }}
+          BASE: https://github.com/${{ env.PUBLIC_REPO }}/releases/download/${{ steps.context.outputs.tag }}
         run: |
           variables='${VERSION} ${BASE} ${SHA_LINUX_X64} ${SHA_LINUX_ARM} ${SHA_MAC_X64} ${SHA_MAC_ARM}'
           git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/integrallis/homebrew-tap.git" tap
@@ -255,7 +286,7 @@ jobs:
         env:
           TOKEN: ${{ secrets.PACKAGES_PUBLISH_TOKEN }}
           VERSION: ${{ steps.context.outputs.version }}
-          BASE: https://github.com/${{ github.repository }}/releases/download/${{ steps.context.outputs.tag }}
+          BASE: https://github.com/${{ env.PUBLIC_REPO }}/releases/download/${{ steps.context.outputs.tag }}
         run: |
           variables='${VERSION} ${BASE} ${SHA_WIN_X64}'
           git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/integrallis/scoop-bucket.git" bucket
