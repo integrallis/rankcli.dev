@@ -11,6 +11,11 @@ interface InstallMethod {
 
 const METHODS: InstallMethod[] = [
   {
+    id: 'npm',
+    label: 'npm',
+    lines: ['npm install -g @rankcli/cli'],
+  },
+  {
     id: 'brew',
     label: 'Homebrew',
     lines: ['brew install integrallis/tap/rankcli'],
@@ -23,17 +28,14 @@ const METHODS: InstallMethod[] = [
       'scoop install rankcli',
     ],
   },
-  {
-    id: 'npm',
-    label: 'npm',
-    lines: ['npm install -g @rankcli/cli'],
-  },
 ];
 
 /**
- * Tabbed install-command strip (Homebrew / Scoop / npm), each with its own
- * copy button. Standalone binaries (brew/scoop) ship first since they need
- * no Node install; npm remains the universal fallback.
+ * Tabbed install-command strip (npm / Homebrew / Scoop), each with its own
+ * copy button. Ordered by expected popularity: npm is the universal,
+ * already-installed-for-most-devs default; Homebrew has a large macOS/Linux
+ * install base; Scoop is real but comparatively niche even among Windows
+ * developers.
  */
 export function InstallTabs({ className }: { className?: string }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export function InstallTabs({ className }: { className?: string }) {
   };
 
   return (
-    <Tabs defaultValue="brew" className={cn('w-full max-w-2xl', className)}>
+    <Tabs defaultValue="npm" className={cn('w-full max-w-2xl', className)}>
       <TabsList>
         {METHODS.map((method) => (
           <TabsTrigger key={method.id} value={method.id}>

@@ -146,7 +146,7 @@ function GettingStartedSection() {
           Installation
         </h2>
         <p className="text-muted-foreground mb-4">
-          Homebrew and Scoop install a standalone binary — no Node required. npm works everywhere Node does.
+          npm works everywhere Node does. Homebrew and Scoop install a standalone binary instead — no Node required.
         </p>
         <InstallTabs />
         <p className="text-sm text-muted-foreground mt-3">
