@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-03-04T19:50:20.439Z
+// Generated: 2026-09-04T04:31:37.468Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -879,6 +879,24 @@ var ISSUE_DEFINITIONS = {
     description: "robots.txt blocks Google's AI training crawler (Google-Extended).",
     impact: "Your content will not be used for Bard/Gemini AI training (regular search unaffected).",
     howToFix: 'Remove "User-agent: Google-Extended Disallow: /" if you want Google AI visibility.'
+  },
+  CLOUDFLARE_AI_CRAWLER_GATE_AMBIGUOUS: {
+    code: "CLOUDFLARE_AI_CRAWLER_GATE_AMBIGUOUS",
+    severity: "warning",
+    category: "ai-readiness",
+    title: "No explicit AI crawler rules on a Cloudflare-fronted site",
+    description: 'This site appears to be served through Cloudflare but robots.txt has no explicit Allow/Disallow rules for AI crawlers. Cloudflare blocks "mixed-use" AI crawlers by default on ad-hosting zones starting September 15, 2026, and is rolling out Pay Per Crawl / Pay Per Use gating beyond that.',
+    impact: "Without an explicit rule, whether AI crawlers (and future citation opportunities in ChatGPT, Claude, Perplexity, etc.) can reach this site now depends on Cloudflare account-level bot-management defaults, not on this codebase \u2014 a silent, invisible-to-git failure mode.",
+    howToFix: "Add explicit User-agent rules for GPTBot, Claude-Web/ClaudeBot, PerplexityBot, and Google-Extended in robots.txt, and confirm the matching allow/block posture in the Cloudflare dashboard under Bot Management \u2192 AI Crawl Control. If you'd rather charge than block, Cloudflare's Pay Per Crawl (AI Crawl Control \u2192 Payments tab) lets you set a per-crawl price instead of a flat allow/deny \u2014 worth a look if you get meaningful AI-crawler traffic."
+  },
+  NO_AGENT_EXPERIENCE_SURFACE: {
+    code: "NO_AGENT_EXPERIENCE_SURFACE",
+    severity: "notice",
+    category: "ai-readiness",
+    title: "No agent-facing discovery surface found",
+    description: "None of the emerging AI-agent discovery conventions were found: llms-full.txt, SKILL.md, a discoverable MCP server, or an OpenAPI spec. This is a genuinely new, low-adoption category as of 2026 \u2014 most sites have none of these yet \u2014 so this is an opportunity, not a compliance failure.",
+    impact: "AI agents (not just chatbots answering questions, but agents that browse and act on a user's behalf) increasingly prefer sites that expose machine-readable capabilities over ones that require scraping and guessing at HTML structure. Being an early, discoverable site in this space is a low-competition differentiator right now.",
+    howToFix: "Start with whichever fits your site: llms-full.txt (a single Markdown dump of your key content \u2014 measured as fetched roughly 2x more than plain llms.txt), a SKILL.md capability manifest, or an OpenAPI spec at /openapi.json if you already have an API. A discoverable MCP server is the highest-effort, highest-payoff option if your product has one to expose."
   },
   HIGH_JS_RENDERING_RATIO: {
     code: "HIGH_JS_RENDERING_RATIO",
@@ -3968,6 +3986,65 @@ async function analyzeRedirects(url, maxHops = 10) {
 
 // src/audit/checks/ai-readiness.ts
 import * as cheerio13 from "https://esm.sh/cheerio@1.0.0";
+
+// src/audit/checks/agent-experience.ts
+var SIGNAL_PATHS = [
+  { path: "/llms-full.txt", description: "Full-site content dump for AI agents \u2014 the fuller sibling of llms.txt, measured as fetched roughly 2x more often" },
+  { path: "/skill.md", description: "SKILL.md capability manifest (Anthropic Agent Skills convention)" },
+  { path: "/mcp", description: "MCP (Model Context Protocol) server, discoverable at a conventional path" },
+  { path: "/.well-known/mcp.json", description: "MCP server descriptor at the .well-known convention" },
+  { path: "/openapi.json", description: "OpenAPI spec \u2014 lets an agent discover and call your API directly instead of scraping HTML" },
+  { path: "/.well-known/ai-plugin.json", description: "AI plugin manifest (older but still-referenced convention for agent tool discovery)" }
+];
+async function fetchBody(baseUrl, path) {
+  try {
+    const url = new URL(path, baseUrl).href;
+    const response = await httpGet(url, {
+      timeout: 8e3,
+      validateStatus: () => true
+    });
+    return { status: response.status, body: String(response.data ?? "") };
+  } catch {
+    return null;
+  }
+}
+async function pathExists(baseUrl, path, fallbackBody) {
+  const result = await fetchBody(baseUrl, path);
+  if (!result)
+    return false;
+  if (result.status === 404)
+    return false;
+  if (result.status < 200 || result.status >= 400)
+    return false;
+  if (fallbackBody != null && result.body === fallbackBody)
+    return false;
+  return true;
+}
+async function checkAgentExperience(baseUrl) {
+  const issues = [];
+  const probePath = `/__rankcli_ax_probe_${Math.random().toString(36).slice(2)}`;
+  const baseline = await fetchBody(baseUrl, probePath);
+  const fallbackBody = baseline && baseline.status >= 200 && baseline.status < 400 ? baseline.body : null;
+  const signals = await Promise.all(
+    SIGNAL_PATHS.map(async ({ path, description }) => ({
+      path,
+      description,
+      present: await pathExists(baseUrl, path, fallbackBody)
+    }))
+  );
+  const presentCount = signals.filter((s) => s.present).length;
+  const score = Math.round(presentCount / signals.length * 100);
+  if (presentCount === 0) {
+    issues.push({
+      ...ISSUE_DEFINITIONS.NO_AGENT_EXPERIENCE_SURFACE,
+      affectedUrls: [baseUrl],
+      details: { checkedPaths: SIGNAL_PATHS.map((s) => s.path) }
+    });
+  }
+  return { issues, data: { signals, score } };
+}
+
+// src/audit/checks/ai-readiness.ts
 var AI_BOTS = {
   GPTBot: "GPTBot",
   "ChatGPT-User": "ChatGPT-User",
@@ -4188,6 +4265,32 @@ function checkJSRenderingRatio(html, url) {
     data: { ratio, staticWordCount }
   };
 }
+async function checkCloudflareAICrawlerGate(baseUrl, botBlocking) {
+  const issues = [];
+  let behindCloudflare = false;
+  try {
+    const response = await httpGet(baseUrl, {
+      timeout: 1e4,
+      validateStatus: () => true
+    });
+    const server = response.headers["server"] || "";
+    behindCloudflare = server.toLowerCase().includes("cloudflare") || "cf-ray" in response.headers;
+  } catch {
+    behindCloudflare = false;
+  }
+  const hasExplicitAIRules = botBlocking.robotsExists && botBlocking.blockedBots.length > 0;
+  const ambiguous = behindCloudflare && !hasExplicitAIRules;
+  if (ambiguous) {
+    issues.push({
+      ...ISSUE_DEFINITIONS.CLOUDFLARE_AI_CRAWLER_GATE_AMBIGUOUS,
+      affectedUrls: [baseUrl]
+    });
+  }
+  return {
+    issues,
+    data: { behindCloudflare, hasExplicitAIRules, ambiguous }
+  };
+}
 async function runAIReadinessChecks(baseUrl, html) {
   const allIssues = [];
   const llmsResult = await checkLlmsTxt(baseUrl);
@@ -4196,12 +4299,18 @@ async function runAIReadinessChecks(baseUrl, html) {
   allIssues.push(...botResult.issues);
   const jsResult = checkJSRenderingRatio(html, baseUrl);
   allIssues.push(...jsResult.issues);
+  const cfGateResult = await checkCloudflareAICrawlerGate(baseUrl, botResult.data);
+  allIssues.push(...cfGateResult.issues);
+  const agentExperienceResult = await checkAgentExperience(baseUrl);
+  allIssues.push(...agentExperienceResult.issues);
   return {
     issues: allIssues,
     data: {
       llmsTxt: llmsResult.data,
       botBlocking: botResult.data,
-      jsRenderingRatio: jsResult.data.ratio
+      jsRenderingRatio: jsResult.data.ratio,
+      cloudflareAIGate: cfGateResult.data,
+      agentExperience: agentExperienceResult.data
     }
   };
 }
@@ -12828,8 +12937,98 @@ function analyzeAIContentStructure(html, url) {
   };
 }
 
-// src/audit/checks/citation-quality.ts
+// src/audit/checks/rag-chunk-readiness.ts
 import * as cheerio44 from "https://esm.sh/cheerio@1.0.0";
+var MIN_GOOD_WORDS = 150;
+var MAX_GOOD_WORDS = 450;
+var TOKENS_PER_WORD = 1.33;
+var DANGLING_OPENERS = /^(this|it|these|that|they|such|those|the former|the latter)\b/i;
+function classifySize(wordCount) {
+  if (wordCount < MIN_GOOD_WORDS)
+    return "too-short";
+  if (wordCount > MAX_GOOD_WORDS)
+    return "too-long";
+  return "good";
+}
+function extractSections($) {
+  const elements = $("h1, h2, h3, p, li, blockquote").toArray();
+  const sections = [];
+  let current = null;
+  for (const el of elements) {
+    const tag = el.tagName?.toLowerCase();
+    if (tag === "h1" || tag === "h2" || tag === "h3") {
+      if (current)
+        sections.push(current);
+      current = { heading: $(el).text().trim(), headingLevel: parseInt(tag.slice(1), 10), text: "" };
+    } else if (current) {
+      current.text += " " + $(el).text();
+    }
+  }
+  if (current)
+    sections.push(current);
+  return sections;
+}
+function analyzeRAGChunkReadiness(html, url) {
+  const issues = [];
+  const $ = cheerio44.load(html);
+  $("nav, footer, aside, script, style, noscript, header").remove();
+  const rawSections = extractSections($);
+  const sections = rawSections.map((s) => {
+    const words = s.text.trim().split(/\s+/).filter(Boolean);
+    const wordCount = words.length;
+    const estimatedTokens = Math.round(wordCount * TOKENS_PER_WORD);
+    const firstSentence = s.text.trim().split(/[.!?]/)[0] || "";
+    return {
+      heading: s.heading,
+      headingLevel: s.headingLevel,
+      wordCount,
+      estimatedTokens,
+      sizeQuality: classifySize(wordCount),
+      startsWithDanglingReference: DANGLING_OPENERS.test(firstSentence.trim())
+    };
+  });
+  const totalSections = sections.length;
+  const wellSizedSectionCount = sections.filter((s) => s.sizeQuality === "good").length;
+  const danglingReferenceCount = sections.filter((s) => s.startsWithDanglingReference).length;
+  const chunkReadinessScore = totalSections === 0 ? 0 : Math.round(
+    (wellSizedSectionCount / totalSections * 0.7 + (totalSections - danglingReferenceCount) / totalSections * 0.3) * 100
+  );
+  if (totalSections >= 3 && wellSizedSectionCount / totalSections < 0.5) {
+    const tooLong = sections.filter((s) => s.sizeQuality === "too-long").length;
+    const tooShort = sections.filter((s) => s.sizeQuality === "too-short").length;
+    issues.push({
+      code: "RAG_CHUNK_SIZE_MISMATCH",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "Most sections are poorly sized for AI retrieval chunking",
+      description: `${wellSizedSectionCount} of ${totalSections} sections fall in a well-sized range for RAG retrieval (roughly 150-450 words); ${tooLong} are too long and likely to get split mid-thought, ${tooShort} are too short and likely to get merged with unrelated neighbors.`,
+      impact: "When an AI answer engine retrieves a chunk of this page in response to a query, oversized sections risk being cut off mid-point and undersized ones risk losing standalone context \u2014 both reduce the odds the retrieved chunk reads coherently in an AI-generated answer.",
+      howToFix: "Break up long sections (450+ words) with an additional H2/H3 subheading roughly every 300-400 words. Merge very short sections (under 150 words) into a neighboring section or expand them with enough context to stand alone.",
+      affectedUrls: [url],
+      details: { wellSizedSectionCount, totalSections, tooLong, tooShort }
+    });
+  }
+  if (totalSections >= 3 && danglingReferenceCount / totalSections > 0.3) {
+    issues.push({
+      code: "RAG_CHUNK_DANGLING_REFERENCES",
+      severity: "notice",
+      category: "ai-readiness",
+      title: "Several sections open with a reference to prior context",
+      description: `${danglingReferenceCount} of ${totalSections} sections start with a pronoun or demonstrative ("This...", "It...", "These...") that depends on the previous section to make sense.`,
+      impact: "A RAG system that retrieves one of these sections on its own \u2014 which is exactly how retrieval works, one chunk at a time \u2014 surfaces a sentence whose subject is undefined, reading as broken or confusing in an AI-generated answer.",
+      howToFix: 'Open each section by naming its actual subject instead of referring back to the previous one \u2014 e.g. "This approach reduces cost" becomes "Caching reduces cost."',
+      affectedUrls: [url],
+      details: { danglingReferenceCount, totalSections }
+    });
+  }
+  return {
+    issues,
+    data: { sections, totalSections, wellSizedSectionCount, danglingReferenceCount, chunkReadinessScore }
+  };
+}
+
+// src/audit/checks/citation-quality.ts
+import * as cheerio45 from "https://esm.sh/cheerio@1.0.0";
 var REPUTABLE_SOURCES = {
   academic: [
     "scholar.google.com",
@@ -12896,7 +13095,7 @@ var REPUTABLE_SOURCES = {
 };
 function analyzeCitationQuality(html, url) {
   const issues = [];
-  const $ = cheerio44.load(html);
+  const $ = cheerio45.load(html);
   const parsedUrl = new URL(url);
   const currentDomain = parsedUrl.hostname;
   const $content = $("body").clone();
@@ -13137,12 +13336,12 @@ function analyzeCitationQuality(html, url) {
 }
 
 // src/audit/checks/answer-conciseness.ts
-import * as cheerio45 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio46 from "https://esm.sh/cheerio@1.0.0";
 var IDEAL_ANSWER_LENGTH = { min: 40, max: 150 };
 var MAX_FIRST_SENTENCE = 200;
 function analyzeAnswerConciseness(html, url) {
   const issues = [];
-  const $ = cheerio45.load(html);
+  const $ = cheerio46.load(html);
   $("nav, footer, aside, script, style, noscript, header").remove();
   const headings = $("h1, h2, h3, h4, h5, h6");
   let totalHeadings = 0;
@@ -13341,7 +13540,7 @@ function analyzeAnswerConciseness(html, url) {
 }
 
 // src/audit/checks/brand-mention-optimization.ts
-import * as cheerio46 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio47 from "https://esm.sh/cheerio@1.0.0";
 var BRAND_DEFINITION_PATTERNS = [
   /(?:we are|we're|is a|is the|is an)\s+(?:leading|premier|top|best|trusted|innovative|professional)/i,
   /(?:our mission|our vision|we help|we provide|we offer|we specialize)/i,
@@ -13379,7 +13578,7 @@ var REVIEW_PLATFORMS = [
 ];
 function analyzeBrandMentionOptimization(html, url) {
   const issues = [];
-  const $ = cheerio46.load(html);
+  const $ = cheerio47.load(html);
   const parsedUrl = new URL(url);
   const $content = $("body").clone();
   $content.find("nav, footer, script, style, noscript").remove();
@@ -13589,7 +13788,7 @@ function analyzeBrandMentionOptimization(html, url) {
 }
 
 // src/audit/checks/ai-citation-worthiness.ts
-import * as cheerio47 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio48 from "https://esm.sh/cheerio@1.0.0";
 var ORIGINAL_DATA_PATTERNS = [
   /(?:our data|our research|our study|our analysis|we found|we discovered)/i,
   /(?:survey of|surveyed|interviewed|analyzed)\s+\d+/i,
@@ -13636,7 +13835,7 @@ var STOCK_IMAGE_DOMAINS = [
 ];
 function analyzeAICitationWorthiness(html, url) {
   const issues = [];
-  const $ = cheerio47.load(html);
+  const $ = cheerio48.load(html);
   const $content = $("body").clone();
   $content.find("nav, footer, script, style, noscript, aside").remove();
   const bodyText = $content.text();
@@ -13876,7 +14075,7 @@ function analyzeAICitationWorthiness(html, url) {
 }
 
 // src/audit/checks/review-ecosystem.ts
-import * as cheerio48 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio49 from "https://esm.sh/cheerio@1.0.0";
 var REVIEW_PLATFORMS2 = {
   general: [
     { name: "Google Business", domain: "google.com/maps", aliases: ["goo.gl/maps", "maps.google"] },
@@ -13936,7 +14135,7 @@ var TRUST_BADGE_PATTERNS2 = [
 ];
 function analyzeReviewEcosystem(html, url) {
   const issues = [];
-  const $ = cheerio48.load(html);
+  const $ = cheerio49.load(html);
   const allLinks = $("a[href]").map((_, a) => $(a).attr("href") || "").get();
   const allLinksLower = allLinks.map((l) => l.toLowerCase());
   const linkedPlatforms = [];
@@ -14633,10 +14832,10 @@ function analyzeStructure(content) {
 }
 
 // src/audit/checks/html-compliance.ts
-import * as cheerio49 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio50 from "https://esm.sh/cheerio@1.0.0";
 async function analyzeHtmlCompliance(html, url, headers) {
   const issues = [];
-  const $ = cheerio49.load(html);
+  const $ = cheerio50.load(html);
   const parsedUrl = new URL(url);
   const doctypeMatch = html.match(/<!DOCTYPE\s+([^>]+)>/i);
   const hasDoctype = doctypeMatch !== null;
@@ -15208,7 +15407,7 @@ function getAssetType(url) {
 }
 
 // src/audit/checks/dom-size.ts
-import * as cheerio50 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio51 from "https://esm.sh/cheerio@1.0.0";
 var THRESHOLDS = {
   totalElements: {
     warning: 1500,
@@ -15225,7 +15424,7 @@ var THRESHOLDS = {
 };
 function analyzeDomSize(html, url) {
   const issues = [];
-  const $ = cheerio50.load(html);
+  const $ = cheerio51.load(html);
   const allElements = $("*");
   const totalElements = allElements.length;
   let maxDepth = 0;
@@ -15381,10 +15580,10 @@ function getDomReductionSuggestions(breakdown) {
 }
 
 // src/audit/checks/image-dimensions.ts
-import * as cheerio51 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio52 from "https://esm.sh/cheerio@1.0.0";
 function analyzeImageDimensions(html, url) {
   const issues = [];
-  const $ = cheerio51.load(html);
+  const $ = cheerio52.load(html);
   const images = $("img");
   const totalImages = images.length;
   let withDimensions = 0;
@@ -15495,7 +15694,7 @@ function truncateSrc(src) {
 }
 
 // src/audit/checks/color-contrast.ts
-import * as cheerio52 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio53 from "https://esm.sh/cheerio@1.0.0";
 var KNOWN_LOW_CONTRAST_PAIRS = [
   { fg: "#999999", bg: "#ffffff", ratio: 2.85 },
   { fg: "#888888", bg: "#ffffff", ratio: 3.54 },
@@ -15530,7 +15729,7 @@ var NAMED_COLORS = {
 };
 function analyzeColorContrast(html, url) {
   const issues = [];
-  const $ = cheerio52.load(html);
+  const $ = cheerio53.load(html);
   const potentialIssues = [];
   let elementsAnalyzed = 0;
   let passedChecks = 0;
@@ -15733,7 +15932,7 @@ function calculateContrastRatio(fg, bg) {
 }
 
 // src/audit/checks/asset-minification.ts
-import * as cheerio53 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio54 from "https://esm.sh/cheerio@1.0.0";
 function isMinified(content, type) {
   const lines = content.split("\n");
   const totalLines = lines.length;
@@ -15761,7 +15960,7 @@ function isMinified(content, type) {
   };
 }
 function extractAssetUrls(html, baseUrl) {
-  const $ = cheerio53.load(html);
+  const $ = cheerio54.load(html);
   const base = new URL(baseUrl);
   const css = [];
   const js = [];
@@ -15907,10 +16106,10 @@ async function analyzeAssetMinification(html, url) {
 }
 
 // src/audit/checks/page-resources.ts
-import * as cheerio54 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio55 from "https://esm.sh/cheerio@1.0.0";
 function analyzePageResources(html, url) {
   const issues = [];
-  const $ = cheerio54.load(html);
+  const $ = cheerio55.load(html);
   const baseUrl = new URL(url);
   const baseHostname = baseUrl.hostname;
   const stylesheets = [];
@@ -16110,7 +16309,7 @@ function analyzePageResources(html, url) {
 }
 
 // src/audit/checks/responsive-css.ts
-import * as cheerio55 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio56 from "https://esm.sh/cheerio@1.0.0";
 function extractMediaQueries(css) {
   const mediaQueries = [];
   const regex = /@media\s*([^{]+)/g;
@@ -16160,7 +16359,7 @@ function classifyBreakpoints(mediaQueries) {
 }
 async function analyzeResponsiveCss(html, url) {
   const issues = [];
-  const $ = cheerio55.load(html);
+  const $ = cheerio56.load(html);
   const baseUrl = new URL(url);
   const viewportMeta = $('meta[name="viewport"]').attr("content");
   const hasViewport = !!viewportMeta;
@@ -16912,10 +17111,10 @@ var urlSafetyDatabase = {
 };
 
 // src/audit/checks/tracking-verification.ts
-import * as cheerio56 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio57 from "https://esm.sh/cheerio@1.0.0";
 function analyzeTrackingVerification(html, url) {
   const issues = [];
-  const $ = cheerio56.load(html);
+  const $ = cheerio57.load(html);
   const ga4Match = html.match(/gtag\s*\(\s*['"]config['"]\s*,\s*['"](G-[A-Z0-9]+)['"]/i) || html.match(/googletagmanager\.com\/gtag\/js\?id=(G-[A-Z0-9]+)/i);
   const hasGa4 = !!ga4Match;
   const ga4MeasurementId = ga4Match ? ga4Match[1] : void 0;
@@ -17049,10 +17248,10 @@ async function runFullAudit(options) {
   const runExtendedChecks = tier !== "free";
   const parsedUrl = new URL(url);
   const domain = parsedUrl.hostname;
-  console.log(`
+  console.error(`
 \u{1F50D} Running comprehensive SEO audit on ${url}...
 `);
-  console.log("\u{1F4CB} Phase 1: Crawlability checks + page fetch (parallel)...");
+  console.error("\u{1F4CB} Phase 1: Crawlability checks + page fetch (parallel)...");
   const [crawlabilityResult, fetchResult] = await Promise.all([
     runCrawlabilityChecks(url).catch((err) => {
       console.error("Crawlability check failed:", err);
@@ -17087,7 +17286,7 @@ async function runFullAudit(options) {
   }
   const html = fetchResult.data;
   const headers = fetchResult.headers;
-  console.log(`\u{1F4DD} Phase 2: Running synchronous HTML checks (tier: ${tier}, limit: ${checksLimit})...`);
+  console.error(`\u{1F4DD} Phase 2: Running synchronous HTML checks (tier: ${tier}, limit: ${checksLimit})...`);
   const onPageResult = analyzeOnPage(html, url);
   const structuredDataResult = analyzeStructuredData(html, url);
   const mobileResult = analyzeMobile(html, url);
@@ -17127,6 +17326,7 @@ async function runFullAudit(options) {
   const entityResult = runPremiumChecks ? analyzeEntitySEO(html, url) : { issues: [], data: {} };
   const qdfFreshnessResult = runPremiumChecks ? analyzeFreshnessSignals(html, url) : { issues: [], data: {} };
   const aiContentStructureResult = runPremiumChecks ? analyzeAIContentStructure(html, url) : { issues: [], data: {} };
+  const ragChunkReadinessResult = runPremiumChecks ? analyzeRAGChunkReadiness(html, url) : { issues: [], data: {} };
   const citationQualityResult = runPremiumChecks ? analyzeCitationQuality(html, url) : { issues: [], data: {} };
   const answerConcisenessResult = runPremiumChecks ? analyzeAnswerConciseness(html, url) : { issues: [], data: {} };
   const brandMentionResult = runPremiumChecks ? analyzeBrandMentionOptimization(html, url) : { issues: [], data: {} };
@@ -17165,6 +17365,7 @@ async function runFullAudit(options) {
     ...entityResult.issues,
     ...qdfFreshnessResult.issues,
     ...aiContentStructureResult.issues,
+    ...ragChunkReadinessResult.issues,
     ...citationQualityResult.issues,
     ...answerConcisenessResult.issues,
     ...brandMentionResult.issues,
@@ -17188,7 +17389,7 @@ async function runFullAudit(options) {
       };
     }
   }
-  console.log("\u{1F517} Phase 3: Running async checks (parallel)...");
+  console.error("\u{1F517} Phase 3: Running async checks (parallel)...");
   const safeAsync = async (name, fn, timeoutMs = 1e4) => {
     try {
       const resultPromise = fn();
@@ -17301,7 +17502,7 @@ async function runFullAudit(options) {
     loadTime: perfData.loadTime,
     issues: allIssues.map((i) => i.code)
   });
-  console.log("\n\u2705 Audit complete!\n");
+  console.error("\n\u2705 Audit complete!\n");
   return createReport(url, domain, allIssues, pages);
 }
 function createReport(url, domain, issues, pages) {
