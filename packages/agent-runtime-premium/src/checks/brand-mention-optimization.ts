@@ -10,7 +10,7 @@
  */
 
 import * as cheerio from 'cheerio';
-import type { AuditIssue } from '../types.js';
+import type { AuditIssue } from '@rankcli/agent-runtime';
 
 export interface BrandMentionData {
   brandSignals: {

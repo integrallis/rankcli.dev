@@ -10,6 +10,7 @@ import {
   type AuditIssue,
   type PlanTier,
 } from '@rankcli/agent-runtime';
+import { premiumChecks } from '@rankcli/agent-runtime-premium';
 import { EventEmitter } from 'events';
 
 // Environment
@@ -272,6 +273,8 @@ app.post<{
     const auditPromise = runFullAudit({
       url,
       maxPages: Math.min(maxPages, 1), // Limit to 1 page for quick audits
+      checksLimit,
+      premiumChecks,
     });
 
     const timeoutPromise = new Promise<never>((_, reject) =>
@@ -534,6 +537,7 @@ async function runDeepAudit(
               checkBrokenLinks: true,
               tier: 'paid',
               checksLimit: options.checksLimit,
+              premiumChecks,
             });
 
             job.pagesCompleted++;
@@ -1595,6 +1599,7 @@ async function handleMCPToolCall(name: string, args: Record<string, unknown>): P
         maxPages: 1,
         tier: 'paid',
         checksLimit: 280,
+        premiumChecks,
       });
 
       const criticalIssues = report.issues.filter(i => i.severity === 'error');
@@ -1638,9 +1643,11 @@ ${warnings.slice(0, 5).map(i => `- **${i.code}:** ${i.title}`).join('\n') || 'No
         url,
         maxPages: 1,
         tier: 'paid',
+        checksLimit: 280,
+        premiumChecks,
       });
 
-      const geoIssues = report.issues.filter(i => 
+      const geoIssues = report.issues.filter(i =>
         i.code?.startsWith('GEO_') || i.code?.startsWith('AI_') || i.code?.includes('ROBOT')
       );
 
@@ -1694,8 +1701,8 @@ ${analyzeRobotsTxtForAI(robotsTxt)}
       app.log.info({ url1, url2 }, 'MCP: Comparing URLs');
 
       const [report1, report2] = await Promise.all([
-        runFullAudit({ url: url1, maxPages: 1, tier: 'paid' }),
-        runFullAudit({ url: url2, maxPages: 1, tier: 'paid' }),
+        runFullAudit({ url: url1, maxPages: 1, tier: 'paid', checksLimit: 280, premiumChecks }),
+        runFullAudit({ url: url2, maxPages: 1, tier: 'paid', checksLimit: 280, premiumChecks }),
       ]);
 
       const score1 = report1.healthScore?.overall ?? 0;

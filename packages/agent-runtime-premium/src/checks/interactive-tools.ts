@@ -5,7 +5,7 @@
 // "Generate backlinks - free tools are link magnets"
 
 import * as cheerio from 'cheerio';
-import type { AuditIssue } from '../types.js';
+import type { AuditIssue } from '@rankcli/agent-runtime';
 
 export interface InteractiveElement {
   type: 'calculator' | 'quiz' | 'form' | 'widget' | 'embed' | 'tool' | 'interactive';

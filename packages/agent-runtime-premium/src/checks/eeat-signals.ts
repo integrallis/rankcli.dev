@@ -2,7 +2,7 @@
 // Based on Google's Quality Rater Guidelines and advanced SEO research
 
 import * as cheerio from 'cheerio';
-import type { AuditIssue } from '../types.js';
+import type { AuditIssue } from '@rankcli/agent-runtime';
 
 export interface AuthorInfo {
   name: string | null;

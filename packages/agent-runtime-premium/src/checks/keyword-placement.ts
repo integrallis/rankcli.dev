@@ -4,7 +4,7 @@
 // "Include the primary keyword phrase in the first paragraph"
 
 import * as cheerio from 'cheerio';
-import type { AuditIssue } from '../types.js';
+import type { AuditIssue } from '@rankcli/agent-runtime';
 
 export interface KeywordPlacementData {
   detectedKeywords: string[];
