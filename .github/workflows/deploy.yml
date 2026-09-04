@@ -326,6 +326,19 @@ jobs:
           if [ -n "${{ secrets.GITHUB_TOKEN_SEARCH }}" ]; then
             OPTIONAL_SECRETS="$OPTIONAL_SECRETS GITHUB_TOKEN=\"${{ secrets.GITHUB_TOKEN_SEARCH }}\""
           fi
+          # GitHub App (auto-fix PRs via github-webhook -> run-audit -> create-seo-pr).
+          # Optional here, same as the providers above, so deploys don't break
+          # for anyone who hasn't generated these yet - create-seo-pr already
+          # degrades gracefully (500 "GitHub App not configured") without them.
+          if [ -n "${{ secrets.RANKCLI_GITHUB_APP_ID }}" ]; then
+            OPTIONAL_SECRETS="$OPTIONAL_SECRETS GITHUB_APP_ID=\"${{ secrets.RANKCLI_GITHUB_APP_ID }}\""
+          fi
+          if [ -n "${{ secrets.RANKCLI_GITHUB_APP_PRIVATE_KEY }}" ]; then
+            OPTIONAL_SECRETS="$OPTIONAL_SECRETS GITHUB_PRIVATE_KEY=\"${{ secrets.RANKCLI_GITHUB_APP_PRIVATE_KEY }}\""
+          fi
+          if [ -n "${{ secrets.RANKCLI_GITHUB_APP_WEBHOOK_SECRET }}" ]; then
+            OPTIONAL_SECRETS="$OPTIONAL_SECRETS GITHUB_WEBHOOK_SECRET=\"${{ secrets.RANKCLI_GITHUB_APP_WEBHOOK_SECRET }}\""
+          fi
           if [ -n "$OPTIONAL_SECRETS" ]; then
             eval "supabase secrets set $OPTIONAL_SECRETS"
           fi
