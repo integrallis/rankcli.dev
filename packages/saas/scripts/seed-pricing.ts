@@ -43,6 +43,20 @@ const stripe = syncStripe
   ? new Stripe(stripeSecretKey!, { apiVersion: '2023-10-16' })
   : null;
 
+interface FoundingOffer {
+  enabled: boolean;
+  key: string;
+  plan_id: string;
+  base_plan_id: string;
+  name: string;
+  tagline: string;
+  discounted_price_cents: number;
+  original_price_cents: number;
+  discount_percent: number;
+  total_seats: number;
+  duration_days: number;
+}
+
 interface SubscriptionTier {
   id: string;
   name: string;
@@ -154,6 +168,69 @@ async function findOrCreateStripeProduct(
   return { productId: product.id, priceId: price.id };
 }
 
+/**
+ * Founding-member pricing is a second, coexisting Price on the base tier's
+ * EXISTING product (e.g. rankcli_pro) - not a new product, and critically
+ * not run through findOrCreateStripeProduct, which deactivates every other
+ * active price on the product when it creates a new one. That's correct
+ * for a tier's *regular* price (only one should ever be active), but would
+ * wrongly kill the base tier's real price the moment a founding price is
+ * added alongside it. Both need to stay active at once.
+ */
+async function syncFoundingOffer(offer: FoundingOffer): Promise<void> {
+  if (!stripe) throw new Error('Stripe not initialized');
+
+  const productId = `rankcli_${offer.base_plan_id}`;
+
+  try {
+    await stripe.products.retrieve(productId);
+  } catch (error) {
+    throw new Error(`Base product ${productId} not found - run the base tier sync first: ${(error as Error).message}`);
+  }
+
+  const existingPrices = await stripe.prices.list({ product: productId, active: true });
+  const matchingPrice = existingPrices.data.find(
+    (price) =>
+      price.unit_amount === offer.discounted_price_cents &&
+      price.recurring?.interval === 'month' &&
+      price.metadata?.rankcli_offer === offer.key
+  );
+
+  let priceId: string;
+  if (matchingPrice) {
+    console.log(`  💰 Using existing founding price: $${offer.discounted_price_cents / 100}/month (${matchingPrice.id})`);
+    priceId = matchingPrice.id;
+  } else {
+    const price = await stripe.prices.create({
+      product: productId,
+      unit_amount: offer.discounted_price_cents,
+      currency: 'usd',
+      recurring: { interval: 'month' },
+      nickname: offer.name,
+      metadata: {
+        rankcli_offer: offer.key,
+        rankcli_plan_id: offer.plan_id,
+        seats: String(offer.total_seats),
+      },
+    });
+    console.log(`  💰 Created founding price: $${offer.discounted_price_cents / 100}/month (${price.id})`);
+    priceId = price.id;
+  }
+
+  // Targeted update, not upsert - the pro_founding row (limits, features,
+  // sort_order) already exists from the founding-member migration, copied
+  // from the base tier. Only the Stripe linkage is missing here.
+  const { error } = await supabase
+    .from('subscription_plans')
+    .update({ stripe_price_id: priceId })
+    .eq('plan_id', offer.plan_id);
+
+  if (error) {
+    throw new Error(`Failed to set stripe_price_id for ${offer.plan_id}: ${error.message}`);
+  }
+  console.log(`  ✅ Synced ${offer.name} to Supabase (price: ${priceId})`);
+}
+
 async function syncToSupabase(
   tier: SubscriptionTier,
   stripePriceId: string | null
@@ -221,6 +298,20 @@ async function main() {
   // Sync free tier config (no Stripe product needed)
   if (pricingConfig.free_tier?.enabled) {
     console.log('\n📋 Free tier is enabled (no Stripe product needed)');
+  }
+
+  // Founding-member offer: a second price on an existing product, only in
+  // --stripe mode (there's no meaningful Supabase-only sync for it, since
+  // its row already exists from the founding-member migration).
+  const foundingOffer = pricingConfig.founding_offer as FoundingOffer | undefined;
+  if (syncStripe && foundingOffer?.enabled) {
+    console.log(`\n📋 Processing founding offer: ${foundingOffer.name} ($${foundingOffer.discounted_price_cents / 100}/month, was $${foundingOffer.original_price_cents / 100})`);
+    try {
+      await syncFoundingOffer(foundingOffer);
+    } catch (error) {
+      console.error(`  ❌ Founding offer error:`, (error as Error).message);
+      success = false;
+    }
   }
 
   console.log('\n' + (success ? '✅ Pricing sync complete!' : '⚠️ Completed with errors'));
