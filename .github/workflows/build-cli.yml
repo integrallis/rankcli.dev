@@ -256,6 +256,10 @@ jobs:
           RANKCLI_SUPABASE_URL: ${{ secrets.RANKCLI_SUPABASE_URL }}
           RANKCLI_SUPABASE_ANON_KEY: ${{ secrets.RANKCLI_SUPABASE_ANON_KEY }}
           RANKCLI_WEB_URL: https://rankcli.dev
+          # Same key native/build.rs used to encrypt the WASM-embedded
+          # premium checks - needed here so the published CLI can decrypt
+          # them for entitled (paid apiKey) users. See wasm-engine.ts.
+          RANKCLI_BUILD_KEY: ${{ secrets.RANKCLI_BUILD_KEY }}
         run: node scripts/inject-config.js
 
       - name: Final workspace dependency fix
