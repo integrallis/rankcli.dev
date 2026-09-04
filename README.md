@@ -1,8 +1,8 @@
 # RankCLI
 
-> Ship code, get ranked.
+> Ship code, get ranked. Get cited, not just crawled.
 
-CLI-first SEO automation for developers. Audit, fix, and track — from your terminal.
+CLI-first SEO + GEO automation for developers. Audit, fix, and track — from your terminal.
 
 ## Why RankCLI?
 
@@ -10,17 +10,20 @@ Enterprise SEO tools cost $100+/month and expect you to click through dashboards
 
 - **CLI-first**: Runs in your terminal, fits your workflow
 - **Agentic fixes**: Detects issues, generates fixes, commits & pushes
-- **AI-native**: GEO (Generative Engine Optimization) + MCP server for AI assistants
-- **Affordable**: Free tier + $15/mo for solo devs
+- **AI-native**: GEO (Generative Engine Optimization) + a free, local MCP server for AI assistants
+- **Affordable**: Free tier + $9/mo for solo devs (founding members: $19/mo Pro, limited seats)
 
 ## Quick Start
 
 ```bash
-# Install
+# Install (standalone binary, no Node required)
+brew install integrallis/tap/rankcli
+# or: scoop bucket add integrallis https://github.com/integrallis/scoop-bucket && scoop install rankcli
+# or via npm (requires Node 18+)
 npm install -g @rankcli/cli
 
 # Authenticate
-rankcli auth login
+rankcli login
 
 # Run an audit
 rankcli audit --url https://yoursite.com
@@ -67,7 +70,7 @@ rankcli track export --format csv > rankings.csv
 
 ### SEO Audit
 ```bash
-# Full audit with 300+ checks
+# Full audit with 280+ checks
 rankcli audit --url https://yoursite.com
 
 # JSON output for CI/CD
@@ -84,17 +87,18 @@ rankcli geo --url https://yoursite.com
 ```
 
 ### MCP Server
-Claude and other AI assistants can run audits directly via Model Context Protocol:
+Claude and other AI assistants can run audits directly via Model Context Protocol. Free, local, no signup:
+```bash
+npx @rankcli/mcp-server
 ```
-https://rankcli.dev/mcp
-```
+A hosted endpoint (`https://rankcli-audit-worker.fly.dev/mcp`) is also available for teams that want dashboard sync — see [`packages/mcp-server`](packages/mcp-server).
 
 ## CLI Commands
 
 | Command | Description |
 |---------|-------------|
-| `rankcli auth` | Authenticate with API key |
-| `rankcli audit` | Run SEO audit (300+ checks) |
+| `rankcli login` | Authenticate with API key |
+| `rankcli audit` | Run SEO audit (280+ checks) |
 | `rankcli fix` | Agentic fixer — detect, fix, commit, push |
 | `rankcli track` | Keyword rank tracking |
 | `rankcli apply` | Apply fixes from audit |
@@ -125,23 +129,29 @@ jobs:
 
 ## Pricing
 
-| Plan | Price | Keywords | Features |
-|------|-------|----------|----------|
-| Free | $0 | 10 | Basic audit, 1 project |
-| Solo | $15/mo | 100 | Full audit, agentic fix, tracking |
-| Pro | $49/mo | 500 | GitHub integration, API access |
-| Agency | $149/mo | 2000 | White-label, priority support |
+| Plan | Price | Keyword tracking | Features |
+|------|-------|-------------------|----------|
+| Free | $0 | — | 100 checks, audit history |
+| Solo | $9/mo | 100 | 280+ checks, agentic fix, 3 sites |
+| Pro | $29/mo | 500 | + GitHub integration, 10 sites, API access |
+| Agency | $99/mo | Unlimited | + White-label, 50 sites |
+
+Founding members get Pro for $19/mo (locked in for as long as you stay subscribed) — limited to the first 100 customers. See [rankcli.dev/pricing](https://rankcli.dev/pricing).
 
 ## Project Structure
 
 ```
 /packages
-  /cli           # @rankcli/cli - CLI tool
-  /agent-runtime # @rankcli/agent-runtime - Core engine
-  /saas          # Web dashboard (rankcli.dev)
-  /worker        # Audit worker (Fly.io)
+  /cli                    # @rankcli/cli - CLI tool
+  /agent-runtime          # @rankcli/agent-runtime - Core audit engine (public checks)
+  /agent-runtime-premium  # Paid-tier checks (never published; encrypted into the CLI's WASM binary)
+  /mcp-server             # @rankcli/mcp-server - free, local MCP server
+  /saas                   # Web dashboard (rankcli.dev)
+  /audit-worker           # Deep-audit worker (Fly.io)
+  /github-action          # GitHub Action wrapper
+  /vite-plugin, /next-plugin, /astro-plugin  # Build-tool plugins
+  /vscode-extension       # VS Code extension
 
-/supabase        # Database migrations
 /docs            # Documentation
 ```
 
@@ -174,6 +184,7 @@ pnpm --filter @rankcli/saas dev
 - **Website**: [rankcli.dev](https://rankcli.dev)
 - **Docs**: [rankcli.dev/docs](https://rankcli.dev/docs)
 - **npm**: [@rankcli/cli](https://www.npmjs.com/package/@rankcli/cli)
+- **Binaries (Homebrew/Scoop)**: [github.com/integrallis/rankcli-cli](https://github.com/integrallis/rankcli-cli)
 
 ## License
 

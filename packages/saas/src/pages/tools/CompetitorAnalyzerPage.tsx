@@ -367,7 +367,7 @@ export function CompetitorAnalyzerPage() {
                 {[
                   {
                     title: 'SEO Score',
-                    desc: 'Overall health score based on 200+ SEO checks.',
+                    desc: 'Overall health score based on 280+ SEO checks.',
                   },
                   {
                     title: 'Technical SEO',

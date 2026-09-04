@@ -145,9 +145,14 @@ function GettingStartedSection() {
           Installation
         </h2>
         <p className="text-muted-foreground mb-4">
-          Install the RankCLI globally using npm, yarn, or pnpm:
+          Install a standalone binary via Homebrew or Scoop (no Node required), or install via npm, yarn, or pnpm:
         </p>
         <div className="space-y-2">
+          <CodeBlock code="brew install integrallis/tap/rankcli" />
+          <CodeBlock code="# or on Windows with Scoop" />
+          <CodeBlock code="scoop bucket add integrallis https://github.com/integrallis/scoop-bucket" />
+          <CodeBlock code="scoop install rankcli" />
+          <CodeBlock code="# or with npm (requires Node 18+)" />
           <CodeBlock code="npm install -g @rankcli/cli" />
           <CodeBlock code="# or with yarn" />
           <CodeBlock code="yarn global add @rankcli/cli" />
@@ -231,8 +236,8 @@ function GettingStartedSection() {
                 <td className="py-2 pr-4">SEO Checks</td>
                 <td className="text-center py-2 px-4">50</td>
                 <td className="text-center py-2 px-4">100</td>
-                <td className="text-center py-2 px-4">200+</td>
-                <td className="text-center py-2 px-4">200+</td>
+                <td className="text-center py-2 px-4">280+</td>
+                <td className="text-center py-2 px-4">280+</td>
               </tr>
               <tr className="border-b">
                 <td className="py-2 pr-4">Cloud Sync</td>
@@ -273,7 +278,7 @@ function GettingStartedSection() {
 
         <h4 className="font-medium mt-6 mb-2">What Gets Checked</h4>
         <p className="text-muted-foreground mb-4">
-          The audit runs 200+ SEO checks across these categories:
+          The audit runs 280+ SEO checks across these categories:
         </p>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {[
@@ -554,29 +559,25 @@ function MCPServerSection() {
         </ul>
       </section>
 
-      {/* Setup - No Installation Required */}
+      {/* Setup - Free & Local (primary) */}
       <section id="installation-mcp">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Terminal className="h-5 w-5" />
-          Setup (No Installation Required)
+          Setup
         </h2>
         <p className="text-muted-foreground mb-4">
-          RankCLI provides a <strong>hosted MCP endpoint</strong> — no npm install needed.
-          Just configure your AI assistant with your API key.
+          The MCP server is <strong>free, local, and requires no signup</strong> — nothing is sent to
+          RankCLI's servers. For centralized dashboard sync across a team, a hosted option is also
+          available below.
         </p>
 
         <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg mb-4">
-          <h4 className="font-medium text-green-600 dark:text-green-400 mb-2">✨ Zero Installation</h4>
+          <h4 className="font-medium text-green-600 dark:text-green-400 mb-2">✨ No account needed</h4>
           <p className="text-sm text-muted-foreground">
-            Unlike other MCP servers, you don't need to install anything locally.
-            Our hosted endpoint handles everything — just add your API key and you're ready.
+            <code className="bg-muted px-1 rounded">npx @rankcli/mcp-server</code> runs the whole thing
+            locally — no API key, no dashboard, no data leaving your machine.
           </p>
         </div>
-
-        <h4 className="font-medium mt-6 mb-2">1. Get Your API Key</h4>
-        <p className="text-sm text-muted-foreground mb-4">
-          Go to <a href="/account" className="text-primary underline">Account → API Keys</a> and create a new key.
-        </p>
       </section>
 
       {/* Claude Desktop Setup */}
@@ -596,10 +597,8 @@ function MCPServerSection() {
         <CodeBlock code={`{
   "mcpServers": {
     "rankcli": {
-      "url": "https://rankcli-audit-worker.fly.dev/mcp",
-      "headers": {
-        "Authorization": "Bearer YOUR_API_KEY"
-      }
+      "command": "npx",
+      "args": ["@rankcli/mcp-server"]
     }
   }
 }`} />
@@ -611,10 +610,8 @@ function MCPServerSection() {
         <CodeBlock code={`{
   "mcpServers": {
     "rankcli": {
-      "url": "https://rankcli-audit-worker.fly.dev/mcp",
-      "headers": {
-        "Authorization": "Bearer YOUR_API_KEY"
-      }
+      "command": "npx",
+      "args": ["@rankcli/mcp-server"]
     }
   }
 }`} />
@@ -626,6 +623,22 @@ function MCPServerSection() {
             Ask Claude: <em>"What SEO tools do you have?"</em>
           </p>
         </div>
+
+        <h4 className="font-medium mt-8 mb-2">Alternative: Hosted (for team dashboard sync)</h4>
+        <p className="text-sm text-muted-foreground mb-2">
+          Get a free API key from <a href="/account" className="text-primary underline">Account → API Keys</a>,
+          then point at the hosted endpoint instead:
+        </p>
+        <CodeBlock code={`{
+  "mcpServers": {
+    "rankcli-hosted": {
+      "url": "https://rankcli-audit-worker.fly.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}`} />
       </section>
 
       {/* Available Tools */}
@@ -640,7 +653,7 @@ function MCPServerSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {[
-            { name: 'seo_audit', desc: 'Run comprehensive SEO audit on any URL (200+ checks)' },
+            { name: 'seo_audit', desc: 'Run comprehensive SEO audit on any URL (280+ checks)' },
             { name: 'seo_geo_check', desc: 'Check AI search visibility (GEO) for ChatGPT, Perplexity, Claude' },
             { name: 'seo_robots_check', desc: 'Analyze robots.txt for AI crawler permissions' },
             { name: 'seo_compare', desc: 'Compare SEO metrics between two URLs' },
@@ -1012,7 +1025,7 @@ function DashboardSection() {
           Understanding Audits
         </h2>
         <p className="text-muted-foreground mb-4">
-          Each audit runs 200+ SEO checks and produces a comprehensive report.
+          Each audit runs 280+ SEO checks and produces a comprehensive report.
         </p>
 
         <h4 className="font-medium mt-6 mb-2">Health Scores</h4>
@@ -1580,7 +1593,7 @@ function WorkflowsSection() {
               <h4 className="font-medium">Run an audit</h4>
               <CodeBlock code="rankcli audit --url https://yoursite.com" />
               <p className="text-sm text-muted-foreground mt-1">
-                200+ SEO checks run and results sync to your dashboard.
+                280+ SEO checks run and results sync to your dashboard.
               </p>
             </div>
           </div>
@@ -1701,7 +1714,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install RankCLI
-        run: npm install -g rankcli
+        run: npm install -g @rankcli/cli
 
       - name: Run SEO Audit
         run: rankcli audit --url \${{ secrets.SITE_URL }} -o json > audit.json

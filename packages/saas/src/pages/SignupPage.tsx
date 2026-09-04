@@ -24,7 +24,7 @@ const GitHubIcon = () => (
 );
 
 const benefits = [
-  '200+ automated SEO checks',
+  '280+ automated SEO checks',
   'GitHub integration for auto-fix PRs',
   'Keyword tracking & rankings',
   '14-day free trial, no credit card',

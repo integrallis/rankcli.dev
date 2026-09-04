@@ -37,7 +37,7 @@ const features = [
     icon: Cpu,
     title: 'MCP Server for AI',
     description:
-      'Industry-first: Claude and other AI assistants can run SEO audits directly via Model Context Protocol. AI doing SEO for you.',
+      'Free and local: run npx @rankcli/mcp-server and Claude, Cursor, or any MCP client can audit your site directly — no signup, nothing sent to our servers.',
     highlight: true,
   },
   {
@@ -93,7 +93,7 @@ export function Features() {
             The SEO tool that makes competitors look outdated
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            GEO, MCP, 11 frameworks, 300+ checks. Built for developers who ship fast.
+            GEO, MCP, 11 frameworks, 280+ checks. Built for developers who ship fast.
           </p>
         </ScrollReveal>
 

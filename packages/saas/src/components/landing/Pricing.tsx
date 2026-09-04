@@ -108,9 +108,9 @@ const featureComparison = [
   {
     name: 'SEO Checks',
     free: '100',
-    solo: '200+',
-    pro: '200+',
-    agency: '200+'
+    solo: '280+',
+    pro: '280+',
+    agency: '280+'
   },
   {
     name: 'Sites',

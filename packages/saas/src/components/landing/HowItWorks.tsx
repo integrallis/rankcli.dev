@@ -7,12 +7,12 @@ const steps = [
     icon: Terminal,
     title: 'Install & Login',
     description: 'One command to install, one to authenticate.',
-    code: 'npm i -g rankcli && rankcli login',
+    code: 'npm install -g @rankcli/cli && rankcli login',
   },
   {
     icon: Scan,
     title: 'Run the Audit',
-    description: '300+ SEO checks in seconds. Works with any framework.',
+    description: '280+ SEO checks in seconds. Works with any framework.',
     code: 'rankcli audit --url yoursite.com',
   },
   {
@@ -29,7 +29,7 @@ const approaches = [
     description: 'No repo access needed. Run locally, push when ready.',
     icon: Upload,
     commands: [
-      { cmd: 'rankcli audit', desc: 'Run 300+ checks' },
+      { cmd: 'rankcli audit', desc: 'Run 280+ checks' },
       { cmd: 'rankcli apply --auto', desc: 'Apply fixes locally' },
       { cmd: 'git push', desc: 'Push when ready' },
     ],

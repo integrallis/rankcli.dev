@@ -32,7 +32,7 @@ export function Hero() {
           <ScrollReveal delay={0.2}>
             <p className="text-lg text-muted-foreground mb-3 max-w-2xl leading-relaxed">
               Get cited, not just crawled.{' '}
-              <span className="text-primary font-semibold">300+ automated checks. Auto-fix PRs. GitHub integration.</span>
+              <span className="text-primary font-semibold">280+ automated checks. Auto-fix PRs. GitHub integration.</span>
             </p>
             {/* Brand definition for AI extraction */}
             <p className="text-sm text-muted-foreground/80 mb-6 max-w-2xl leading-relaxed">
@@ -52,7 +52,7 @@ export function Hero() {
                 </Button>
               </Link>
               <a
-                href="https://github.com/integrallis/rankcli.dev"
+                href="https://github.com/integrallis/rankcli-cli"
                 target="_blank"
                 rel="noopener noreferrer"
               >

@@ -374,7 +374,7 @@ export function OgImagePreviewPage() {
                 <h3 className="text-lg font-semibold mb-2">Generate Perfect OG Images</h3>
                 <p className="text-muted-foreground mb-4">
                   RankCLI can automatically generate and optimize OG images for your site.
-                  Plus 200+ other SEO checks.
+                  Plus 280+ other SEO checks.
                 </p>
                 <div className="flex justify-center gap-3">
                   <Link to="/free-audit">

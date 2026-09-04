@@ -10,7 +10,7 @@ const faqs = [
   {
     question: 'What SEO checks does it run?',
     answer:
-      'We run 300+ checks covering technical SEO (meta tags, schema, canonicals), content quality (headings, word count, readability), performance (Core Web Vitals, page speed), security (HTTPS, headers), and more. The same checks you\'d get from Ahrefs or Screaming Frog.',
+      'We run 280+ checks covering technical SEO (meta tags, schema, canonicals), content quality (headings, word count, readability), performance (Core Web Vitals, page speed), security (HTTPS, headers), and more. The same checks you\'d get from Ahrefs or Screaming Frog.',
   },
   {
     question: 'How does the GitHub integration work?',
