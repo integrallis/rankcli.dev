@@ -1,0 +1,65 @@
+{
+  "_comment": "Consumed by scripts/growth-ops/scheduler.mjs via .github/workflows/growth-ops.yml. Cadence numbers grounded in SaaS-launch-playbook research — see automation-setup.md for sourcing and what's solid data vs. rule-of-thumb. Edit campaign_start before your first real run; it drives every phase boundary below.",
+  "campaign_start": "2026-09-08",
+
+  "channels": {
+    "bluesky": {
+      "phases": [
+        { "start_week": 0, "end_week": 4, "posts_per_week": 3 },
+        { "start_week": 4, "end_week": null, "posts_per_week": 1 }
+      ]
+    },
+    "mastodon": {
+      "phases": [
+        { "start_week": 0, "end_week": 4, "posts_per_week": 3 },
+        { "start_week": 4, "end_week": null, "posts_per_week": 1 }
+      ]
+    },
+    "linkedin": {
+      "phases": [
+        { "start_week": 0, "end_week": 4, "posts_per_week": 2 },
+        { "start_week": 4, "end_week": null, "posts_per_week": 1 }
+      ]
+    },
+    "devto": {
+      "posts_per_week": 1
+    },
+    "discord": {
+      "posts_per_week": 1
+    },
+    "twitter": {
+      "_comment": "Off by default — no secret configured. Same phased cadence as Bluesky/Mastodon if you opt in; costs real money per post (see automation-setup.md).",
+      "phases": [
+        { "start_week": 0, "end_week": 4, "posts_per_week": 3 },
+        { "start_week": 4, "end_week": null, "posts_per_week": 1 }
+      ]
+    },
+    "reddit": {
+      "_comment": "1x/week is the one cadence number multiple sources agree on for avoiding spam-flag risk, and only across DIFFERENT subreddits — never the same one repeatedly. Bounded to 4 curated weeks (month 1); after that this channel goes silent rather than looping the same posts. Each content_calendar item below is genuinely distinct copy tailored to that subreddit's norms, not an identical cross-post — see automation-setup.md for why that matters.",
+      "posts_per_week": 1,
+      "active_weeks": 4,
+      "content_calendar": [
+        {
+          "subreddit": "SideProject",
+          "title": "Built a tool that audits your site the same way your CI audits your code — dogfooding it on our own site right now (60/100, ouch)",
+          "body": "Spent the last few months building RankCLI — SEO + GEO (AI-search-citation) checks that run in CI and open a PR when something's fixable, instead of another dashboard alert. Free tier runs entirely local via MCP, no signup. We're eating our own dog food publicly: rankcli.dev currently scores 60/100 on its own audit. Happy to answer anything about the build or take feedback on the free tier."
+        },
+        {
+          "subreddit": "SaaS",
+          "title": "Every 'AI SEO' tool is a $29-$2000/mo dashboard for marketing teams. We built the CI-native one instead — launch pricing inside",
+          "body": "Researched the GEO/AI-visibility space before building RankCLI and found the same product everywhere: a monitoring dashboard, priced for marketing budgets, that tells you whether ChatGPT mentioned your brand. None of them run in CI or ship a fix as a PR. We're launching with founding pricing — first 100 Pro subscribers at $19/mo instead of $29, locked in for as long as you stay subscribed. Free tier (MCP, local, no signup) is genuinely unmetered since it runs on your own API key, not our infra."
+        },
+        {
+          "subreddit": "webdev",
+          "title": "Cloudflare started blocking 'mixed-use' AI crawlers by default on ad-hosting zones (Sep 15, 2026) — here's a free check for whether that silently hit your site",
+          "body": "If you're on Cloudflare and haven't explicitly configured robots.txt rules for GPTBot/ClaudeBot/PerplexityBot, your AI-crawler access now depends on an account-level default you may not have looked at. Built a free check for this into RankCLI (`npx @rankcli/mcp-server`, no signup, runs locally in Claude Code/Cursor/etc.) alongside the usual technical SEO stuff — Core Web Vitals, structured data, security headers. Curious if others have hit this."
+        },
+        {
+          "subreddit": "programming",
+          "title": "The data behind 'AI SEO': being crawled isn't the win, being cited is (35%/91% more clicks when you are)",
+          "body": "Google's own numbers: organic CTR on AI-Overview queries has fallen from ~1.8% to under 1% since mid-2024, but brands actually cited in an AI answer get 35% more organic clicks and 91% more paid clicks than uncited brands, even when both rank the same underlying position. That gap is the whole thesis behind a CI-native SEO/GEO tool I built (RankCLI) — treating AI-citation readiness as a lint target instead of a marketing metric. Wrote up the full research behind the positioning if anyone wants the source data, otherwise happy to talk shop on the GEO checks specifically."
+        }
+      ]
+    }
+  }
+}

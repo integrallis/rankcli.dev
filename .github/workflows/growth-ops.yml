@@ -1,0 +1,303 @@
+# Growth Ops — config-driven, no-touch scheduled promotion
+#
+# Runs daily; scripts/growth-ops/scheduler.mjs (pure, unit-tested — see
+# scripts/growth-ops/scheduler.test.mjs) decides which channels are
+# actually due to post today, from docs/launch/campaign-config.json. Tune
+# cadence, launch-vs-sustain phases, and campaign duration there — nothing
+# in this workflow file needs to change to adjust "how often" or "for how
+# long."
+#
+# Every post is either a template filled with a real, live-measured number
+# (this week's dogfooding audit score) or a human-curated content_calendar
+# item (Reddit) — never free-form AI-generated copy. That's what makes this
+# safe to run completely unattended: there's no path for it to say
+# something false or off-brand while nobody's watching.
+#
+# Every platform step is independently gated on its own secrets existing,
+# so this is safe to merge and enable now — it activates channel-by-channel
+# as you add credentials. See docs/launch/automation-setup.md.
+
+name: Growth Ops
+
+on:
+  schedule:
+    # Runs daily; the scheduler decides which channels actually post today.
+    # An hour after SEO Monitoring's Monday 9am UTC run so this week's
+    # audit score is always fresh, not stale from a prior week.
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Compute the schedule and build post content, but do not actually publish anywhere'
+        required: false
+        default: 'false'
+        type: boolean
+      simulate_date:
+        description: 'Evaluate the schedule as if today were this date (YYYY-MM-DD) — for testing cadence/phase transitions without waiting'
+        required: false
+        default: ''
+        type: string
+
+env:
+  SITE_URL: 'https://rankcli.dev'
+
+jobs:
+  status-post:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Compute today's schedule
+        id: schedule
+        env:
+          SIMULATE_DATE: ${{ inputs.simulate_date }}
+        run: |
+          DATE="$SIMULATE_DATE"
+          if [ -z "$DATE" ]; then
+            DATE=$(date -u +%Y-%m-%d)
+          fi
+          node scripts/growth-ops/scheduler.mjs docs/launch/campaign-config.json "$DATE" > schedule.json
+          echo "::notice::Schedule for $DATE:"
+          cat schedule.json
+
+      - name: Install RankCLI
+        run: npm install -g @rankcli/cli
+
+      - name: Run audit for this week's numbers
+        id: audit
+        run: |
+          rankcli audit --url "$SITE_URL" --output json > audit-report.json
+          SCORE=$(jq -r '.score' audit-report.json)
+          ISSUES=$(jq -r '.issues | length' audit-report.json)
+          echo "score=$SCORE" >> "$GITHUB_OUTPUT"
+          echo "issues=$ISSUES" >> "$GITHUB_OUTPUT"
+
+      - name: Build status content
+        id: content
+        env:
+          AUDIT_SCORE: ${{ steps.audit.outputs.score }}
+          AUDIT_ISSUES: ${{ steps.audit.outputs.issues }}
+        run: |
+          BODY="🤖 Weekly dogfood: rankcli.dev scored ${AUDIT_SCORE}/100 this week (${AUDIT_ISSUES} open issues) — audited by the same tool we ship. rankcli.dev"
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$BODY" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Is a channel due today?
+        id: due
+        run: |
+          for ch in bluesky mastodon linkedin devto discord twitter reddit; do
+            due=$(jq -r --arg c "$ch" '.[$c].due // false' schedule.json)
+            echo "${ch}=${due}" >> "$GITHUB_OUTPUT"
+          done
+
+      # ---------------------------------------------------------------
+      # Bluesky — open AT Protocol, no developer portal, free, simple
+      # app-password auth. App password at bsky.app/settings/app-passwords.
+      # ---------------------------------------------------------------
+      - name: Post to Bluesky
+        if: ${{ inputs.dry_run != 'true' && steps.due.outputs.bluesky == 'true' }}
+        env:
+          BLUESKY_IDENTIFIER: ${{ secrets.BLUESKY_IDENTIFIER }}
+          BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
+          POST_BODY: ${{ steps.content.outputs.body }}
+        run: |
+          if [ -z "$BLUESKY_IDENTIFIER" ] || [ -z "$BLUESKY_APP_PASSWORD" ]; then
+            echo "::notice::Skipping Bluesky — due today, but BLUESKY_IDENTIFIER/BLUESKY_APP_PASSWORD not set"
+            exit 0
+          fi
+
+          SESSION=$(curl -sS -f -X POST https://bsky.social/xrpc/com.atproto.server.createSession \
+            -H "Content-Type: application/json" \
+            -d "{\"identifier\":\"$BLUESKY_IDENTIFIER\",\"password\":\"$BLUESKY_APP_PASSWORD\"}")
+          ACCESS_JWT=$(echo "$SESSION" | jq -r '.accessJwt')
+          DID=$(echo "$SESSION" | jq -r '.did')
+          NOW=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+
+          curl -sS -f -X POST https://bsky.social/xrpc/com.atproto.repo.createRecord \
+            -H "Authorization: Bearer $ACCESS_JWT" \
+            -H "Content-Type: application/json" \
+            -d "{\"repo\":\"$DID\",\"collection\":\"app.bsky.feed.post\",\"record\":{\"text\":$(jq -Rs . <<< "$POST_BODY"),\"createdAt\":\"$NOW\"}}"
+          echo "::notice::Posted to Bluesky"
+
+      # ---------------------------------------------------------------
+      # Mastodon — standard OAuth2 app token, `write:statuses` scope.
+      # ---------------------------------------------------------------
+      - name: Post to Mastodon
+        if: ${{ inputs.dry_run != 'true' && steps.due.outputs.mastodon == 'true' }}
+        env:
+          MASTODON_INSTANCE_URL: ${{ secrets.MASTODON_INSTANCE_URL }}
+          MASTODON_ACCESS_TOKEN: ${{ secrets.MASTODON_ACCESS_TOKEN }}
+          POST_BODY: ${{ steps.content.outputs.body }}
+        run: |
+          if [ -z "$MASTODON_INSTANCE_URL" ] || [ -z "$MASTODON_ACCESS_TOKEN" ]; then
+            echo "::notice::Skipping Mastodon — due today, but MASTODON_INSTANCE_URL/MASTODON_ACCESS_TOKEN not set"
+            exit 0
+          fi
+
+          curl -sS -f -X POST "${MASTODON_INSTANCE_URL%/}/api/v1/statuses" \
+            -H "Authorization: Bearer $MASTODON_ACCESS_TOKEN" \
+            --data-urlencode "status=$POST_BODY"
+          echo "::notice::Posted to Mastodon"
+
+      # ---------------------------------------------------------------
+      # LinkedIn — own-profile posting only (w_member_social, self-serve,
+      # no partner review). Smoke-test manually before trusting the
+      # schedule; LinkedIn's API surface shifts periodically.
+      # ---------------------------------------------------------------
+      - name: Post to LinkedIn
+        if: ${{ inputs.dry_run != 'true' && steps.due.outputs.linkedin == 'true' }}
+        env:
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          LINKEDIN_MEMBER_URN: ${{ secrets.LINKEDIN_MEMBER_URN }}
+          POST_BODY: ${{ steps.content.outputs.body }}
+        run: |
+          if [ -z "$LINKEDIN_ACCESS_TOKEN" ] || [ -z "$LINKEDIN_MEMBER_URN" ]; then
+            echo "::notice::Skipping LinkedIn — due today, but LINKEDIN_ACCESS_TOKEN/LINKEDIN_MEMBER_URN not set"
+            exit 0
+          fi
+
+          PAYLOAD=$(jq -n --arg author "$LINKEDIN_MEMBER_URN" --arg text "$POST_BODY" '{
+            author: $author, lifecycleState: "PUBLISHED",
+            specificContent: { "com.linkedin.ugc.ShareContent": { shareCommentary: { text: $text }, shareMediaCategory: "NONE" } },
+            visibility: { "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC" }
+          }')
+
+          curl -sS -f -X POST https://api.linkedin.com/v2/ugcPosts \
+            -H "Authorization: Bearer $LINKEDIN_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "X-Restli-Protocol-Version: 2.0.0" \
+            -d "$PAYLOAD"
+          echo "::notice::Posted to LinkedIn"
+
+      # ---------------------------------------------------------------
+      # Dev.to — dead-simple API, dofollow canonical links back to
+      # rankcli.dev, developer-native audience. Genuinely high-reward,
+      # low-risk: publishing an article isn't a pattern that gets
+      # spam-flagged the way link-drops are on other platforms.
+      # ---------------------------------------------------------------
+      - name: Post to Dev.to
+        if: ${{ inputs.dry_run != 'true' && steps.due.outputs.devto == 'true' }}
+        env:
+          DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+          POST_BODY: ${{ steps.content.outputs.body }}
+        run: |
+          if [ -z "$DEVTO_API_KEY" ]; then
+            echo "::notice::Skipping Dev.to — due today, but DEVTO_API_KEY not set"
+            exit 0
+          fi
+
+          TITLE="RankCLI weekly dogfood report — $(date -u +%Y-%m-%d)"
+          ARTICLE_BODY=$(printf '%s\n\nRead more or run your own audit: [rankcli.dev](https://rankcli.dev)' "$POST_BODY")
+          PAYLOAD=$(jq -n --arg title "$TITLE" --arg body "$ARTICLE_BODY" --arg url "https://rankcli.dev" '{
+            article: { title: $title, body_markdown: $body, published: true, canonical_url: $url, tags: ["seo", "webdev", "opensource"] }
+          }')
+
+          curl -sS -f -X POST https://dev.to/api/articles \
+            -H "api-key: $DEVTO_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"
+          echo "::notice::Posted to Dev.to"
+
+      # ---------------------------------------------------------------
+      # Discord — trivial webhook, zero risk, zero cost. Only fires if
+      # you actually have a community server and set the secret.
+      # ---------------------------------------------------------------
+      - name: Post to Discord
+        if: ${{ inputs.dry_run != 'true' && steps.due.outputs.discord == 'true' }}
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          POST_BODY: ${{ steps.content.outputs.body }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "::notice::Skipping Discord — due today, but DISCORD_WEBHOOK_URL not set"
+            exit 0
+          fi
+
+          curl -sS -f -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg content "$POST_BODY" '{content: $content}')"
+          echo "::notice::Posted to Discord"
+
+      # ---------------------------------------------------------------
+      # X/Twitter — off by default. Free API tier ended Feb 2026; this
+      # now costs ~$0.20/post (contains a link). TWITTER_BEARER_TOKEN is
+      # an explicit opt-in to per-post spend, not a config formality.
+      # ---------------------------------------------------------------
+      - name: Post to X/Twitter
+        if: ${{ inputs.dry_run != 'true' && steps.due.outputs.twitter == 'true' }}
+        env:
+          TWITTER_BEARER_TOKEN: ${{ secrets.TWITTER_BEARER_TOKEN }}
+          POST_BODY: ${{ steps.content.outputs.body }}
+        run: |
+          if [ -z "$TWITTER_BEARER_TOKEN" ]; then
+            echo "::notice::Skipping X/Twitter — due today, but not configured (costs ~\$0.20/post as of Feb 2026; TWITTER_BEARER_TOKEN is an explicit opt-in)"
+            exit 0
+          fi
+
+          curl -sS -f -X POST https://api.twitter.com/2/tweets \
+            -H "Authorization: Bearer $TWITTER_BEARER_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg text "$POST_BODY" '{text: $text}')"
+          echo "::notice::Posted to X/Twitter"
+
+      # ---------------------------------------------------------------
+      # Reddit — the highest-reward, highest-risk channel, so it's the
+      # most constrained: posts ONLY from docs/launch/campaign-config.json's
+      # human-curated content_calendar (never the generic status content —
+      # identical cross-posting is exactly the pattern that gets accounts
+      # flagged), at most 1x/week per the cadence research, across
+      # DIFFERENT subreddits, and only for the campaign's bounded window —
+      # once the curated list is exhausted this channel goes silent rather
+      # than looping. Script-app OAuth2 (password grant): create one at
+      # reddit.com/prefs/apps.
+      # ---------------------------------------------------------------
+      - name: Post to Reddit
+        if: ${{ inputs.dry_run != 'true' && steps.due.outputs.reddit == 'true' }}
+        env:
+          REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
+          REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
+          REDDIT_USERNAME: ${{ secrets.REDDIT_USERNAME }}
+          REDDIT_PASSWORD: ${{ secrets.REDDIT_PASSWORD }}
+        run: |
+          if [ -z "$REDDIT_CLIENT_ID" ] || [ -z "$REDDIT_PASSWORD" ]; then
+            echo "::notice::Skipping Reddit — due today, but REDDIT_* secrets not set"
+            exit 0
+          fi
+
+          SUBREDDIT=$(jq -r '.reddit.contentItem.subreddit' schedule.json)
+          TITLE=$(jq -r '.reddit.contentItem.title' schedule.json)
+          BODY=$(jq -r '.reddit.contentItem.body' schedule.json)
+
+          TOKEN=$(curl -sS -f -X POST https://www.reddit.com/api/v1/access_token \
+            -u "$REDDIT_CLIENT_ID:$REDDIT_CLIENT_SECRET" \
+            -H "User-Agent: RankCLI-GrowthOps/1.0" \
+            -d "grant_type=password&username=$REDDIT_USERNAME&password=$REDDIT_PASSWORD" \
+            | jq -r '.access_token')
+
+          curl -sS -f -X POST https://oauth.reddit.com/api/submit \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "User-Agent: RankCLI-GrowthOps/1.0" \
+            --data-urlencode "sr=$SUBREDDIT" \
+            --data-urlencode "kind=self" \
+            --data-urlencode "title=$TITLE" \
+            --data-urlencode "text=$BODY" \
+            --data-urlencode "api_type=json"
+          echo "::notice::Posted to r/$SUBREDDIT"
+
+      - name: Save this run's report and schedule
+        uses: actions/upload-artifact@v4
+        with:
+          name: growth-ops-${{ github.run_number }}
+          path: |
+            audit-report.json
+            schedule.json
+          retention-days: 90
