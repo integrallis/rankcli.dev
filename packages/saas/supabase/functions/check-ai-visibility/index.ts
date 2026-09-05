@@ -1,6 +1,7 @@
 // Force redeploy - v2
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { decryptSecret } from '../_shared/crypto.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -8,6 +9,40 @@ const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
 const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
 const googleApiKey = Deno.env.get('GOOGLE_API_KEY');
 const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
+
+interface BYOKOverride {
+  provider: 'openai' | 'anthropic' | 'gemini';
+  apiKey: string;
+  model: string | null;
+}
+
+// This is a public, anonymous-accessible tool - most callers have no
+// session. If the request carries a real user's Bearer token and that
+// user has a connected BYOK key for one of the three provider slots this
+// function natively checks (openai/anthropic/gemini), use their key+model
+// for that one slot only - a single BYOK key can't cover all 4 providers,
+// and openrouter/groq/custom don't map to a native "does ChatGPT/Claude/
+// Gemini itself mention this" check, so those are left on RankCLI's own
+// keys (or skipped, same as today, if RankCLI has no key for that slot).
+// deno-lint-ignore no-explicit-any
+async function resolveBYOKOverride(supabase: any, authHeader: string | null): Promise<BYOKOverride | null> {
+  if (!authHeader) return null;
+  const token = authHeader.replace('Bearer ', '');
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  if (authError || !user) return null;
+
+  const { data: byok } = await supabase
+    .from('user_ai_keys')
+    .select('provider, encrypted_key, model')
+    .eq('user_id', user.id)
+    .single();
+  if (!byok || !['openai', 'anthropic', 'gemini'].includes(byok.provider)) return null;
+
+  const encryptionSecret = Deno.env.get('AI_KEY_ENCRYPTION_SECRET');
+  if (!encryptionSecret) return null;
+  const apiKey = await decryptSecret(byok.encrypted_key, encryptionSecret);
+  return { provider: byok.provider, apiKey, model: byok.model || null };
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -102,11 +137,13 @@ serve(async (req) => {
       `What do you think about ${brand}?`,
     ];
 
+    const byok = await resolveBYOKOverride(supabase, req.headers.get('Authorization'));
+
     // Check all providers in parallel
     const providerPromises = [
-      checkOpenAI(brand, domain, queries[0]),
-      checkAnthropic(brand, domain, queries[0]),
-      checkGoogle(brand, domain, queries[0]),
+      checkOpenAI(brand, domain, queries[0], byok?.provider === 'openai' ? byok : undefined),
+      checkAnthropic(brand, domain, queries[0], byok?.provider === 'anthropic' ? byok : undefined),
+      checkGoogle(brand, domain, queries[0], byok?.provider === 'gemini' ? byok : undefined),
       checkPerplexity(brand, domain, queries[0]),
     ];
 
@@ -170,7 +207,7 @@ serve(async (req) => {
   }
 });
 
-async function checkOpenAI(brand: string, domain: string, query: string): Promise<ProviderResult> {
+async function checkOpenAI(brand: string, domain: string, query: string, byok?: BYOKOverride): Promise<ProviderResult> {
   const baseResult: ProviderResult = {
     provider: 'openai',
     name: 'ChatGPT',
@@ -181,17 +218,18 @@ async function checkOpenAI(brand: string, domain: string, query: string): Promis
     context: null,
   };
 
-  if (!openaiApiKey) return baseResult;
+  const apiKey = byok?.apiKey || openaiApiKey;
+  if (!apiKey) return baseResult;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: byok?.model || 'gpt-4o-mini',
         messages: [
           { role: 'system', content: 'You are a helpful assistant that recommends tools and websites. List your top recommendations.' },
           { role: 'user', content: query },
@@ -212,7 +250,7 @@ async function checkOpenAI(brand: string, domain: string, query: string): Promis
   }
 }
 
-async function checkAnthropic(brand: string, domain: string, query: string): Promise<ProviderResult> {
+async function checkAnthropic(brand: string, domain: string, query: string, byok?: BYOKOverride): Promise<ProviderResult> {
   const baseResult: ProviderResult = {
     provider: 'anthropic',
     name: 'Claude',
@@ -223,8 +261,8 @@ async function checkAnthropic(brand: string, domain: string, query: string): Pro
     context: null,
   };
 
-  if (!anthropicApiKey) {
-    // Simulate with OpenAI if no Anthropic key
+  const apiKey = byok?.apiKey || anthropicApiKey;
+  if (!apiKey) {
     return baseResult;
   }
 
@@ -232,12 +270,12 @@ async function checkAnthropic(brand: string, domain: string, query: string): Pro
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
-        'x-api-key': anthropicApiKey,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
+        model: byok?.model || 'claude-3-haiku-20240307',
         max_tokens: 500,
         messages: [{ role: 'user', content: query }],
       }),
@@ -254,7 +292,7 @@ async function checkAnthropic(brand: string, domain: string, query: string): Pro
   }
 }
 
-async function checkGoogle(brand: string, domain: string, query: string): Promise<ProviderResult> {
+async function checkGoogle(brand: string, domain: string, query: string, byok?: BYOKOverride): Promise<ProviderResult> {
   const baseResult: ProviderResult = {
     provider: 'google',
     name: 'Gemini',
@@ -265,10 +303,12 @@ async function checkGoogle(brand: string, domain: string, query: string): Promis
     context: null,
   };
 
-  if (!googleApiKey) return baseResult;
+  const apiKey = byok?.apiKey || googleApiKey;
+  if (!apiKey) return baseResult;
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${googleApiKey}`, {
+    const model = byok?.model || 'gemini-pro';
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

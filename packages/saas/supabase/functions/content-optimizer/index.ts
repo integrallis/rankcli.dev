@@ -13,10 +13,16 @@ import {
   getWikipediaData,
   getGoogleSuggestions,
 } from '../_shared/free-seo-data.ts';
+import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
+import { resolveAIConfig, aiConfigErrorMessage } from '../_shared/resolve-ai-config.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
+const rankcliOpenAIKey = Deno.env.get('OPENAI_API_KEY');
+
+// Matches pricing-tiers.json's features.content_optimizer: true (solo,
+// pro, agency all have it - LTD tiers don't declare this key).
+const CONTENT_OPTIMIZER_FALLBACK_TIERS = new Set(['solo', 'pro', 'agency']);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -167,22 +173,12 @@ async function fetchAndParseContent(url: string): Promise<{
 // ========== AI ANALYSIS FUNCTIONS ==========
 
 async function analyzeContentWithAI(
+  aiConfig: AIProviderConfig,
   content: { text: string; title: string; description: string; headings: { level: number; text: string }[] },
   targetKeyword: string,
   competitorContent?: string[]
 ): Promise<ContentOptimization> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert SEO content optimizer. Analyze content and provide specific, actionable recommendations to improve rankings.
+  const systemPrompt = `You are an expert SEO content optimizer. Analyze content and provide specific, actionable recommendations to improve rankings.
 
 Your analysis should be:
 1. Data-driven (based on content analysis, not generic advice)
@@ -196,11 +192,9 @@ Consider:
 - Keyword optimization (natural, not stuffed)
 - SERP feature eligibility (featured snippets, PAA, etc.)
 - E-E-A-T signals
-- Readability and user experience`
-        },
-        {
-          role: 'user',
-          content: `Analyze this content for the keyword "${targetKeyword}":
+- Readability and user experience`;
+
+  const userPrompt = `Analyze this content for the keyword "${targetKeyword}":
 
 TITLE: ${content.title}
 META DESCRIPTION: ${content.description}
@@ -268,49 +262,26 @@ Return a comprehensive JSON analysis:
   "internalLinkingSuggestions": [
     {"anchorText": "suggested anchor", "targetUrl": "/suggested/path", "context": "Where to place in content"}
   ]
-}`
-        }
-      ],
-      max_tokens: 4000,
-      temperature: 0.2,
-      response_format: { type: 'json_object' },
-    }),
-  });
+}`;
 
-  if (!response.ok) {
-    throw new Error('AI analysis failed');
-  }
-
-  const data = await response.json();
-  return JSON.parse(data.choices[0].message.content);
+  const aiResponse = await callChatCompletion(aiConfig, systemPrompt, userPrompt, { jsonMode: true, maxTokens: 4000, temperature: 0.2 });
+  return JSON.parse(aiResponse);
 }
 
 async function generateOptimizedContent(
+  aiConfig: AIProviderConfig,
   optimization: ContentOptimization,
   originalContent: string,
   targetKeyword: string
 ): Promise<{ sections: { heading: string; content: string }[]; fullContent: string }> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert content writer specializing in SEO-optimized content. Generate high-quality content sections that:
+  const systemPrompt = `You are an expert content writer specializing in SEO-optimized content. Generate high-quality content sections that:
 1. Are comprehensive and valuable to readers
 2. Include keywords naturally
 3. Follow E-E-A-T principles
 4. Are optimized for featured snippets where applicable
-5. Match the existing content's tone and style`
-        },
-        {
-          role: 'user',
-          content: `Generate optimized content sections for the keyword "${targetKeyword}".
+5. Match the existing content's tone and style`;
+
+  const userPrompt = `Generate optimized content sections for the keyword "${targetKeyword}".
 
 Content gaps to fill:
 ${optimization.contentGaps.map(g => `- ${g.topic}: ${g.suggestedSection.outline.join(', ')}`).join('\n')}
@@ -328,21 +299,10 @@ Return JSON:
       "content": "Full section content (300-500 words)"
     }
   ]
-}`
-        }
-      ],
-      max_tokens: 4000,
-      temperature: 0.5,
-      response_format: { type: 'json_object' },
-    }),
-  });
+}`;
 
-  if (!response.ok) {
-    throw new Error('Content generation failed');
-  }
-
-  const data = await response.json();
-  const result = JSON.parse(data.choices[0].message.content);
+  const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, { jsonMode: true, maxTokens: 4000, temperature: 0.5 });
+  const result = JSON.parse(content);
 
   return {
     sections: result.sections,
@@ -374,6 +334,27 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    if (!projectId) {
+      return new Response(JSON.stringify({ error: 'projectId is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { data: project } = await supabase
+      .from('projects')
+      .select('user_id')
+      .eq('id', projectId)
+      .single();
+
+    const aiResolution = await resolveAIConfig(supabase, project?.user_id, rankcliOpenAIKey, CONTENT_OPTIMIZER_FALLBACK_TIERS);
+    if (!aiResolution.ok) {
+      return new Response(JSON.stringify({ error: aiConfigErrorMessage(aiResolution.reason, 'content optimization') }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const aiConfig = aiResolution.config;
 
     console.log(`Optimizing content at ${url} for "${targetKeyword}"`);
     console.log('Using FREE data sources: SERP scraping, Google Trends, Wikipedia');
@@ -438,13 +419,13 @@ serve(async (req) => {
       ...relatedSearches.map(r => `Related: ${r}`),
       ...trendingQueries.map(t => `Trending: ${t}`),
     ];
-    const optimization = await analyzeContentWithAI(content, targetKeyword, competitorContext.length > 0 ? competitorContext : undefined);
+    const optimization = await analyzeContentWithAI(aiConfig, content, targetKeyword, competitorContext.length > 0 ? competitorContext : undefined);
 
     // Step 3: Generate optimized content if requested
     let generatedContent = null;
     if (generateContent && optimization.contentGaps.length > 0) {
       console.log('Generating optimized content sections...');
-      generatedContent = await generateOptimizedContent(optimization, content.text, targetKeyword);
+      generatedContent = await generateOptimizedContent(aiConfig, optimization, content.text, targetKeyword);
     }
 
     // Step 4: Save to database if project provided

@@ -11,10 +11,17 @@ import {
   scrapeSERP,
   getGoogleSuggestions,
 } from '../_shared/free-seo-data.ts';
+import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
+import { resolveAIConfig, aiConfigErrorMessage } from '../_shared/resolve-ai-config.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
+const rankcliOpenAIKey = Deno.env.get('OPENAI_API_KEY');
+
+// pricing-tiers.json doesn't declare a dedicated feature key for backlink
+// finding on any tier - rather than guess who it should be "included" for,
+// require BYOK across the board until that's an actual product decision.
+const BACKLINK_FINDER_FALLBACK_TIERS = new Set<string>([]);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -64,23 +71,13 @@ interface BacklinkAnalysis {
 // ========== AI FUNCTIONS ==========
 
 async function findBacklinkOpportunities(
+  aiConfig: AIProviderConfig,
   domain: string,
   keywords: string[],
   competitors?: string[],
   realDomains?: { domain: string; url: string; keyword: string }[]
 ): Promise<BacklinkOpportunity[]> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert link building strategist. Generate realistic backlink opportunities based on the domain and keywords provided.
+  const systemPrompt = `You are an expert link building strategist. Generate realistic backlink opportunities based on the domain and keywords provided.
 
 For each opportunity, consider:
 1. Domain authority (based on domain age, traffic, backlinks)
@@ -99,11 +96,9 @@ Types of opportunities to identify:
 - Podcast/interview opportunities
 - Expert roundups
 
-Be specific and realistic - generate opportunities that actually exist in the niche.`
-        },
-        {
-          role: 'user',
-          content: `Find backlink opportunities for:
+Be specific and realistic - generate opportunities that actually exist in the niche.`;
+
+  const userPrompt = `Find backlink opportunities for:
 Domain: ${domain}
 Keywords/Niche: ${keywords.join(', ')}
 ${competitors?.length ? `Competitors: ${competitors.join(', ')}` : ''}
@@ -131,48 +126,27 @@ Generate 20+ realistic backlink opportunities. Prioritize real domains found abo
       "notes": "Why this is a good opportunity"
     }
   ]
-}`
-        }
-      ],
-      max_tokens: 4000,
-      temperature: 0.7,
-      response_format: { type: 'json_object' },
-    }),
-  });
+}`;
 
-  if (!response.ok) throw new Error('Failed to find opportunities');
-
-  const data = await response.json();
-  const content = JSON.parse(data.choices[0].message.content);
-  return content.opportunities;
+  const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, { jsonMode: true, maxTokens: 4000, temperature: 0.7 });
+  const parsed = JSON.parse(content);
+  return parsed.opportunities;
 }
 
 async function generateOutreachTemplates(
+  aiConfig: AIProviderConfig,
   domain: string,
   siteDescription: string
 ): Promise<Record<string, string>> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert at writing link building outreach emails that get responses. Create personalized, non-spammy templates that:
+  const systemPrompt = `You are an expert at writing link building outreach emails that get responses. Create personalized, non-spammy templates that:
 1. Have compelling subject lines
 2. Show you've actually visited their site
 3. Provide clear value proposition
 4. Have a specific ask
 5. Are concise (under 150 words)
-6. Feel personal, not templated`
-        },
-        {
-          role: 'user',
-          content: `Create outreach email templates for ${domain}.
+6. Feel personal, not templated`;
+
+  const userPrompt = `Create outreach email templates for ${domain}.
 Site description: ${siteDescription}
 
 Generate templates for:
@@ -187,19 +161,10 @@ Return JSON:
   "resourcePage": "Subject: ...\\n\\n...",
   "brokenLink": "Subject: ...\\n\\n...",
   "unlinkedMention": "Subject: ...\\n\\n..."
-}`
-        }
-      ],
-      max_tokens: 2000,
-      temperature: 0.6,
-      response_format: { type: 'json_object' },
-    }),
-  });
+}`;
 
-  if (!response.ok) throw new Error('Failed to generate templates');
-
-  const data = await response.json();
-  return JSON.parse(data.choices[0].message.content);
+  const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, { jsonMode: true, maxTokens: 2000, temperature: 0.6 });
+  return JSON.parse(content);
 }
 
 async function qualifyOpportunities(
@@ -254,6 +219,27 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    if (!projectId) {
+      return new Response(JSON.stringify({ error: 'projectId is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { data: project } = await supabase
+      .from('projects')
+      .select('user_id')
+      .eq('id', projectId)
+      .single();
+
+    const aiResolution = await resolveAIConfig(supabase, project?.user_id, rankcliOpenAIKey, BACKLINK_FINDER_FALLBACK_TIERS);
+    if (!aiResolution.ok) {
+      return new Response(JSON.stringify({ error: aiConfigErrorMessage(aiResolution.reason, 'backlink finding') }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const aiConfig = aiResolution.config;
 
     console.log(`Finding backlink opportunities for ${domain}`);
     console.log('Using FREE data sources: SERP scraping for real domains');
@@ -297,6 +283,7 @@ serve(async (req) => {
     // Step 1: Find opportunities (enhanced with real domain data)
     console.log('Identifying opportunities with AI...');
     const opportunities = await findBacklinkOpportunities(
+      aiConfig,
       domain,
       keywords,
       competitors,
@@ -305,7 +292,7 @@ serve(async (req) => {
 
     // Step 2: Generate outreach templates
     console.log('Generating outreach templates...');
-    const templates = await generateOutreachTemplates(domain, siteDescription || `A website about ${keywords.join(', ')}`);
+    const templates = await generateOutreachTemplates(aiConfig, domain, siteDescription || `A website about ${keywords.join(', ')}`);
 
     // Step 3: Qualify and plan
     console.log('Creating outreach plan...');

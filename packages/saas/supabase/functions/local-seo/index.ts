@@ -10,10 +10,17 @@ import {
   getGoogleSuggestions,
   scrapeSERP,
 } from '../_shared/free-seo-data.ts';
+import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
+import { resolveAIConfig, aiConfigErrorMessage } from '../_shared/resolve-ai-config.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
+const rankcliOpenAIKey = Deno.env.get('OPENAI_API_KEY');
+
+// Matches pricing-tiers.json's features.local_seo: true (solo, pro, agency
+// all have it - the LTD tiers don't declare this key at all, so they must
+// bring a key too).
+const LOCAL_SEO_FALLBACK_TIERS = new Set(['solo', 'pro', 'agency']);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -80,6 +87,7 @@ interface LocalSEOAudit {
 // ========== AI FUNCTIONS ==========
 
 async function analyzeLocalSEO(
+  aiConfig: AIProviderConfig,
   url: string,
   businessInfo: NAPData,
   serviceArea: string[],
@@ -98,18 +106,7 @@ async function analyzeLocalSEO(
     console.log('Could not fetch URL');
   }
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a local SEO expert. Analyze websites for local search optimization and provide comprehensive recommendations.
+  const systemPrompt = `You are a local SEO expert. Analyze websites for local search optimization and provide comprehensive recommendations.
 
 Consider all aspects of local SEO:
 1. NAP (Name, Address, Phone) consistency
@@ -121,11 +118,9 @@ Consider all aspects of local SEO:
 7. LocalBusiness schema markup
 8. Competitor analysis
 
-Provide specific, actionable recommendations based on the business type and service area.`
-        },
-        {
-          role: 'user',
-          content: `Analyze local SEO for this business:
+Provide specific, actionable recommendations based on the business type and service area.`;
+
+  const userPrompt = `Analyze local SEO for this business:
 
 URL: ${url}
 Business Name: ${businessInfo.name}
@@ -185,38 +180,15 @@ Return comprehensive local SEO audit as JSON:
     "topCompetitors": [{"name": "Competitor", "strengths": ["More reviews", "Better photos"]}],
     "differentiators": ["What makes this business unique"]
   }
-}`
-        }
-      ],
-      max_tokens: 4000,
-      temperature: 0.3,
-      response_format: { type: 'json_object' },
-    }),
-  });
+}`;
 
-  if (!response.ok) throw new Error('Local SEO analysis failed');
-
-  const data = await response.json();
-  return JSON.parse(data.choices[0].message.content);
+  const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, { jsonMode: true, maxTokens: 4000, temperature: 0.3 });
+  return JSON.parse(content);
 }
 
-async function generateLocalSchema(businessInfo: NAPData, industry: string): Promise<object> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: 'Generate complete, valid LocalBusiness JSON-LD schema markup.'
-        },
-        {
-          role: 'user',
-          content: `Generate LocalBusiness schema for:
+async function generateLocalSchema(aiConfig: AIProviderConfig, businessInfo: NAPData, industry: string): Promise<object> {
+  const systemPrompt = 'Generate complete, valid LocalBusiness JSON-LD schema markup.';
+  const userPrompt = `Generate LocalBusiness schema for:
 Name: ${businessInfo.name}
 Address: ${businessInfo.address}
 Phone: ${businessInfo.phone}
@@ -226,19 +198,10 @@ Industry: ${industry}
 Return valid JSON-LD schema:
 {
   "schema": { "@context": "...", "@type": "LocalBusiness", ... }
-}`
-        }
-      ],
-      max_tokens: 1500,
-      temperature: 0.1,
-      response_format: { type: 'json_object' },
-    }),
-  });
+}`;
 
-  if (!response.ok) throw new Error('Schema generation failed');
-
-  const data = await response.json();
-  return JSON.parse(data.choices[0].message.content).schema;
+  const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, { jsonMode: true, maxTokens: 1500, temperature: 0.1 });
+  return JSON.parse(content).schema;
 }
 
 // ========== MAIN HANDLER ==========
@@ -268,6 +231,27 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    if (!projectId) {
+      return new Response(JSON.stringify({ error: 'projectId is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { data: project } = await supabase
+      .from('projects')
+      .select('user_id')
+      .eq('id', projectId)
+      .single();
+
+    const aiResolution = await resolveAIConfig(supabase, project?.user_id, rankcliOpenAIKey, LOCAL_SEO_FALLBACK_TIERS);
+    if (!aiResolution.ok) {
+      return new Response(JSON.stringify({ error: aiConfigErrorMessage(aiResolution.reason, 'local SEO analysis') }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const aiConfig = aiResolution.config;
 
     console.log(`Analyzing local SEO for ${businessName}`);
 
@@ -281,6 +265,7 @@ serve(async (req) => {
     // Step 1: Run local SEO audit
     console.log('Running local SEO audit...');
     const audit = await analyzeLocalSEO(
+      aiConfig,
       url,
       businessInfo,
       serviceAreas || ['Local Area'],
@@ -289,7 +274,7 @@ serve(async (req) => {
 
     // Step 2: Generate optimized LocalBusiness schema
     console.log('Generating LocalBusiness schema...');
-    const schema = await generateLocalSchema(businessInfo, industry || 'Business');
+    const schema = await generateLocalSchema(aiConfig, businessInfo, industry || 'Business');
 
     // Add schema to audit result
     audit.schemaMarkup.recommended = schema;

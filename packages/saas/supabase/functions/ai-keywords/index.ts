@@ -12,14 +12,57 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import * as cheerio from 'https://esm.sh/cheerio@1.0.0';
+import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
+import { decryptSecret } from '../_shared/crypto.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
 
+// Previously: free tier ran the SAME two full gpt-4o calls (site analysis +
+// keyword generation) as paid tiers, on RankCLI's own key, and only
+// truncated the DISPLAYED response to a teaser - identical cost to a paid
+// request for every free-tier call. BYOK wins for every tier; absent one,
+// only tiers past the free-tier branch below (solo/pro/agency, all of
+// which have keyword_research: true in pricing-tiers.json) fall back to
+// RankCLI's key - free tier without BYOK gets no AI call at all now.
+type AIConfigResolution =
+  | { ok: true; config: AIProviderConfig }
+  | { ok: false; reason: 'no_key_byok_required' };
+
+// deno-lint-ignore no-explicit-any
+async function resolveAIConfig(supabase: any, userId: string | null, planTier: string): Promise<AIConfigResolution> {
+  if (userId) {
+    const { data: byok } = await supabase
+      .from('user_ai_keys')
+      .select('provider, encrypted_key, base_url, model')
+      .eq('user_id', userId)
+      .single();
+    if (byok) {
+      const encryptionSecret = Deno.env.get('AI_KEY_ENCRYPTION_SECRET');
+      if (encryptionSecret) {
+        const apiKey = await decryptSecret(byok.encrypted_key, encryptionSecret);
+        return {
+          ok: true,
+          config: { provider: byok.provider, apiKey, baseUrl: byok.base_url || undefined, model: byok.model || undefined },
+        };
+      }
+    }
+  }
+
+  if (planTier === 'free') {
+    return { ok: false, reason: 'no_key_byok_required' };
+  }
+  return { ok: true, config: { provider: 'openai', apiKey: openaiApiKey, model: 'gpt-4o-mini' } };
+}
+
 // Worker configuration for paid keyword research
 const WORKER_URL = Deno.env.get('AUDIT_WORKER_URL') || 'http://localhost:8080';
-const WORKER_SECRET = Deno.env.get('WORKER_SECRET') || 'dev-secret';
+// No 'dev-secret' fallback - audit-worker no longer accepts that guessable
+// default either (fixed earlier this session), so falling back here would
+// only turn a real misconfiguration into a confusing 401 instead of an
+// honest "WORKER_SECRET missing" failure.
+const WORKER_SECRET = Deno.env.get('WORKER_SECRET');
 const USE_WORKER_FOR_PAID = Deno.env.get('USE_WORKER_FOR_KEYWORDS') === 'true';
 
 const corsHeaders = {
@@ -243,7 +286,7 @@ async function crawlSite(startUrl: string, maxPages = 5): Promise<CrawledPage[]>
 
 // ========== AI ANALYSIS ==========
 
-async function analyzeSiteWithAI(pages: CrawledPage[], wizardResponses?: Record<string, string>): Promise<{
+async function analyzeSiteWithAI(pages: CrawledPage[], aiConfig: AIProviderConfig, wizardResponses?: Record<string, string>): Promise<{
   summary: SiteSummary;
   uncertainty: UncertaintyAssessment;
 }> {
@@ -261,18 +304,7 @@ Content Preview: ${p.content.slice(0, 1000)}
     ? `\nUser-provided context:\n${Object.entries(wizardResponses).map(([q, a]) => `Q: ${q}\nA: ${a}`).join('\n')}`
     : '';
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert SEO strategist analyzing a website to understand the business and recommend keywords.
+  const systemPrompt = `You are an expert SEO strategist analyzing a website to understand the business and recommend keywords.
 
 IMPORTANT: You must quantify your uncertainty. If you're not confident about key aspects (target audience, product purpose, competitive positioning), say so and explain what questions would help.
 
@@ -281,11 +313,9 @@ For niche focus assessment:
 - "broad" = serves a wide market
 - "unknown" = can't determine from the content
 
-Be honest about confidence levels. It's better to ask questions than give wrong recommendations.`
-        },
-        {
-          role: 'user',
-          content: `Analyze this website and provide a summary with uncertainty assessment.
+Be honest about confidence levels. It's better to ask questions than give wrong recommendations.`;
+
+  const userPrompt = `Analyze this website and provide a summary with uncertainty assessment.
 
 Crawled Pages:
 ${pagesContext}
@@ -321,21 +351,14 @@ Return JSON with this structure:
     ],
     "explanation": "Plain English explanation of confidence level"
   }
-}`
-        }
-      ],
-      max_tokens: 2000,
-      temperature: 0.3,
-      response_format: { type: 'json_object' },
-    }),
+}`;
+
+  const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, {
+    jsonMode: true,
+    maxTokens: 2000,
+    temperature: 0.3,
   });
-
-  if (!response.ok) {
-    throw new Error(`OpenAI API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  const result = JSON.parse(data.choices[0].message.content);
+  const result = JSON.parse(content);
 
   return {
     summary: result.summary,
@@ -346,6 +369,7 @@ Return JSON with this structure:
 async function generateKeywordRecommendations(
   summary: SiteSummary,
   uncertainty: UncertaintyAssessment,
+  aiConfig: AIProviderConfig,
   wizardResponses?: Record<string, string>
 ): Promise<{
   recommendations: KeywordRecommendation[];
@@ -355,18 +379,7 @@ async function generateKeywordRecommendations(
     ? `\nUser-provided context:\n${Object.entries(wizardResponses).map(([q, a]) => `Q: ${q}\nA: ${a}`).join('\n')}`
     : '';
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert SEO strategist implementing "Engineering as Marketing" strategy.
+  const systemPrompt = `You are an expert SEO strategist implementing "Engineering as Marketing" strategy.
 
 Your goal is to recommend keywords that can be targeted with:
 1. Content pages (blog posts, guides, landing pages)
@@ -451,11 +464,9 @@ BAD tool idea (REJECT):
   "description": "A utility to customize diagram styles and export them for presentations."
   // BAD: No input format, no output format, "styles" is vague, no competitor research
   // feasibilityScore: 1 - REJECT
-}`
-        },
-        {
-          role: 'user',
-          content: `Generate keyword recommendations for this product:
+}`;
+
+  const userPrompt = `Generate keyword recommendations for this product:
 
 Product: ${summary.productName}
 Description: ${summary.description}
@@ -516,21 +527,14 @@ Return JSON:
   ]
 }
 
-Generate 10-15 keywords and 3-5 SPECIFIC tool ideas. ONLY include tools with feasibilityScore >= 3.`
-        }
-      ],
-      max_tokens: 3000,
-      temperature: 0.5,
-      response_format: { type: 'json_object' },
-    }),
+Generate 10-15 keywords and 3-5 SPECIFIC tool ideas. ONLY include tools with feasibilityScore >= 3.`;
+
+  const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, {
+    jsonMode: true,
+    maxTokens: 3000,
+    temperature: 0.5,
   });
-
-  if (!response.ok) {
-    throw new Error(`OpenAI API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return JSON.parse(data.choices[0].message.content);
+  return JSON.parse(content);
 }
 
 function generateWizardQuestions(uncertainty: UncertaintyAssessment): WizardQuestion[] {
@@ -667,6 +671,17 @@ serve(async (req) => {
 
     console.log(`AI Keyword Research for ${url} (plan: ${planTier}, mode: ${mode})`);
 
+    const aiResolution = await resolveAIConfig(supabase, userId, planTier);
+    if (!aiResolution.ok) {
+      return new Response(JSON.stringify({
+        error: 'Connect an AI provider key to run keyword research on the free plan - any provider works, including free-tier keys from OpenRouter, Groq, or Google AI Studio. Add one at https://rankcli.dev/account?tab=ai-provider',
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const aiConfig = aiResolution.config;
+
     // Step 1: Crawl the site
     console.log('Step 1: Crawling site...');
     const pages = await crawlSite(url, planTier === 'free' ? 3 : 5);
@@ -684,7 +699,7 @@ serve(async (req) => {
 
     // Step 2: Analyze with AI
     console.log('Step 2: AI analysis...');
-    const { summary, uncertainty } = await analyzeSiteWithAI(pages, wizardResponses);
+    const { summary, uncertainty } = await analyzeSiteWithAI(pages, aiConfig, wizardResponses);
 
     console.log(`Confidence: ${Math.round(uncertainty.overallConfidence * 100)}%`);
 
@@ -715,6 +730,7 @@ serve(async (req) => {
       const { recommendations, freeToolIdeas } = await generateKeywordRecommendations(
         summary,
         uncertainty,
+        aiConfig,
         wizardResponses
       );
 
@@ -819,6 +835,7 @@ serve(async (req) => {
     const { recommendations, freeToolIdeas } = await generateKeywordRecommendations(
       summary,
       uncertainty,
+      aiConfig,
       wizardResponses
     );
 

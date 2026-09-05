@@ -1,5 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
+import { decryptSecret } from '../_shared/crypto.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -23,6 +25,34 @@ interface ChatGPTCheckResult {
   context: string | null;
   queries_tested: string[];
   response_snippet: string | null;
+}
+
+// This is a public, anonymous-accessible tool - most callers have no
+// session at all. If the request does carry a real user's Bearer token
+// and that user has a connected BYOK key, use it (their own cost, their
+// own provider/model choice); otherwise fall back to RankCLI's own
+// gpt-4o-mini, same as before. BYOK is a bonus path here, never a
+// requirement - anonymous usage must keep working unauthenticated.
+// deno-lint-ignore no-explicit-any
+async function resolveAIConfig(supabase: any, authHeader: string | null): Promise<AIProviderConfig> {
+  const fallback: AIProviderConfig = { provider: 'openai', apiKey: openaiApiKey, model: 'gpt-4o-mini' };
+  if (!authHeader) return fallback;
+
+  const token = authHeader.replace('Bearer ', '');
+  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+  if (authError || !user) return fallback;
+
+  const { data: byok } = await supabase
+    .from('user_ai_keys')
+    .select('provider, encrypted_key, base_url, model')
+    .eq('user_id', user.id)
+    .single();
+  if (!byok) return fallback;
+
+  const encryptionSecret = Deno.env.get('AI_KEY_ENCRYPTION_SECRET');
+  if (!encryptionSecret) return fallback;
+  const apiKey = await decryptSecret(byok.encrypted_key, encryptionSecret);
+  return { provider: byok.provider, apiKey, baseUrl: byok.base_url || undefined, model: byok.model || undefined };
 }
 
 serve(async (req) => {
@@ -86,11 +116,13 @@ serve(async (req) => {
       });
     }
 
+    const aiConfig = await resolveAIConfig(supabase, req.headers.get('Authorization'));
+
     // Generate queries based on the domain/brand
     const queries = generateQueries(brand, domain);
 
     // Check ChatGPT for mentions
-    const result = await checkChatGPTMentions(brand, domain, queries);
+    const result = await checkChatGPTMentions(aiConfig, brand, domain, queries);
 
     // Save result to database
     await supabase.from('chatgpt_checks').insert({
@@ -141,6 +173,7 @@ function generateQueries(brand: string, domain: string): string[] {
 }
 
 async function checkChatGPTMentions(
+  aiConfig: AIProviderConfig,
   brand: string,
   domain: string,
   queries: string[]
@@ -155,35 +188,12 @@ async function checkChatGPTMentions(
   const query = `I'm looking for tools or websites related to ${brand} (${domain}). What would you recommend? Please list your top recommendations.`;
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a helpful assistant that recommends tools and websites. Provide honest recommendations based on your knowledge. List recommendations in order of relevance.',
-          },
-          {
-            role: 'user',
-            content: query,
-          },
-        ],
-        max_tokens: 500,
-        temperature: 0.7,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content || '';
+    const content = await callChatCompletion(
+      aiConfig,
+      'You are a helpful assistant that recommends tools and websites. Provide honest recommendations based on your knowledge. List recommendations in order of relevance.',
+      query,
+      { maxTokens: 500, temperature: 0.7 }
+    );
 
     // Check if the brand/domain is mentioned
     const brandLower = brand.toLowerCase();

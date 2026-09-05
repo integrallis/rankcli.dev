@@ -5,7 +5,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getInstallationToken } from '../_shared/github-app.ts';
 import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
-import { decryptSecret } from '../_shared/crypto.ts';
+import { resolveAIConfig, aiConfigErrorMessage } from '../_shared/resolve-ai-config.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -15,57 +15,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// We never eat inference cost we don't have to. A connected BYOK key wins
-// for every tier, no exceptions. Absent one, only the tiers whose
-// pricing-tiers.json `features.github_auto_fix` is literally `true` today
-// (pro, pro_founding, agency, ltd_agency) fall back to RankCLI's own key as
-// a paid convenience - solo and the LTD starter/pro tiers were never sold
-// that feature, so they must bring a key too. Keep this list in sync with
-// pricing-tiers.json if plan features change.
+// Only the tiers whose pricing-tiers.json `features.github_auto_fix` is
+// literally `true` today fall back to RankCLI's own key as a paid
+// convenience - solo and the LTD starter/pro tiers were never sold that
+// feature, so they must bring a key too. Keep in sync with pricing-tiers.json.
 const RANKCLI_KEY_FALLBACK_TIERS = new Set(['pro', 'pro_founding', 'agency', 'ltd_agency']);
-
-type AIConfigResolution =
-  | { ok: true; config: AIProviderConfig }
-  | { ok: false; reason: 'no_key_byok_required' | 'no_key_configured' };
-
-async function resolveAIConfig(
-  // deno-lint-ignore no-explicit-any
-  supabase: any,
-  userId: string,
-  rankcliOpenAIKey: string | undefined
-): Promise<AIConfigResolution> {
-  const { data: byok } = await supabase
-    .from('user_ai_keys')
-    .select('provider, encrypted_key, base_url, model')
-    .eq('user_id', userId)
-    .single();
-
-  if (byok) {
-    const encryptionSecret = Deno.env.get('AI_KEY_ENCRYPTION_SECRET');
-    if (!encryptionSecret) throw new Error('AI key storage not configured');
-    const apiKey = await decryptSecret(byok.encrypted_key, encryptionSecret);
-    return {
-      ok: true,
-      config: { provider: byok.provider, apiKey, baseUrl: byok.base_url || undefined, model: byok.model || undefined },
-    };
-  }
-
-  const { data: subscription } = await supabase
-    .from('user_subscriptions')
-    .select('plan:subscription_plans (plan_id)')
-    .eq('user_id', userId)
-    .single();
-  const plan = subscription?.plan as { plan_id: string } | null;
-  const tier = plan?.plan_id || 'free';
-
-  if (!RANKCLI_KEY_FALLBACK_TIERS.has(tier)) {
-    return { ok: false, reason: 'no_key_byok_required' };
-  }
-  if (!rankcliOpenAIKey) {
-    return { ok: false, reason: 'no_key_configured' };
-  }
-  return { ok: true, config: { provider: 'openai', apiKey: rankcliOpenAIKey } };
-}
 
 interface AuditIssue {
   code: string;
@@ -580,12 +534,9 @@ serve(async (req) => {
       });
     }
 
-    const aiResolution = await resolveAIConfig(supabase, project.user_id, openaiKey);
+    const aiResolution = await resolveAIConfig(supabase, project.user_id, openaiKey, RANKCLI_KEY_FALLBACK_TIERS);
     if (!aiResolution.ok) {
-      const message = aiResolution.reason === 'no_key_byok_required'
-        ? 'Connect an AI provider key to enable auto-fix PRs on your plan - any provider works, including free-tier keys from OpenRouter, Groq, or Google AI Studio. Add one at https://rankcli.dev/account?tab=ai-provider'
-        : 'No AI provider configured for this account';
-      return new Response(JSON.stringify({ error: message }), {
+      return new Response(JSON.stringify({ error: aiConfigErrorMessage(aiResolution.reason, 'auto-fix PRs') }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

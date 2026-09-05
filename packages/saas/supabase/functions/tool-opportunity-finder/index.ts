@@ -5,6 +5,8 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
+import { decryptSecret } from '../_shared/crypto.ts';
 
 // Import FREE SEO data sources
 import {
@@ -16,12 +18,43 @@ import {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// This function had NO tier gating at all before this - any caller, any
+// tier (even fully anonymous, since projectId is optional and only used
+// for saving), got unconditional gpt-4o calls on RankCLI's key, including
+// a batched loop in generateToolConcepts that multiplies cost per
+// keyword batch. No pricing-tiers.json feature flag or existing paid-tier
+// precedent exists for this endpoint, so BYOK is required unconditionally
+// here - there's no proven fallback tier to preserve.
+async function resolveAIConfig(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  userId: string | null
+): Promise<{ ok: true; config: AIProviderConfig } | { ok: false }> {
+  if (userId) {
+    const { data: byok } = await supabase
+      .from('user_ai_keys')
+      .select('provider, encrypted_key, base_url, model')
+      .eq('user_id', userId)
+      .single();
+    if (byok) {
+      const encryptionSecret = Deno.env.get('AI_KEY_ENCRYPTION_SECRET');
+      if (encryptionSecret) {
+        const apiKey = await decryptSecret(byok.encrypted_key, encryptionSecret);
+        return {
+          ok: true,
+          config: { provider: byok.provider, apiKey, baseUrl: byok.base_url || undefined, model: byok.model || undefined },
+        };
+      }
+    }
+  }
+  return { ok: false };
+}
 
 // ========== BHANU'S 7-STEP METHODOLOGY ==========
 /*
@@ -90,22 +123,12 @@ const TOOL_TYPE_PATTERNS = {
 // ========== AI FUNCTIONS ==========
 
 async function discoverToolKeywords(
+  aiConfig: AIProviderConfig,
   industry: string,
   productDescription: string,
   targetAudience: string
 ): Promise<{ keyword: string; volume: number; difficulty: number; toolType: string }[]> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an SEO keyword research expert specializing in "Engineering as Marketing" - finding keywords for free tools that can drive traffic.
+  const systemPrompt = `You are an SEO keyword research expert specializing in "Engineering as Marketing" - finding keywords for free tools that can drive traffic.
 
 Based on Bhanu's methodology:
 - Find keywords with patterns like: [topic] generator, [topic] calculator, [topic] converter, [topic] checker
@@ -113,11 +136,9 @@ Based on Bhanu's methodology:
 - Look for low-competition niches (estimated KD < 30)
 - Keywords should relate to the product's target audience
 
-Generate realistic keyword opportunities with estimated metrics based on typical patterns in the industry.`
-        },
-        {
-          role: 'user',
-          content: `Find free tool keyword opportunities for:
+Generate realistic keyword opportunities with estimated metrics based on typical patterns in the industry.`;
+
+  const userPrompt = `Find free tool keyword opportunities for:
 
 Industry: ${industry}
 Product: ${productDescription}
@@ -142,22 +163,23 @@ Return JSON:
       "toolType": "generator|calculator|converter|checker|analyzer"
     }
   ]
-}`
-        }
-      ],
-      max_tokens: 3000,
+}`;
+
+  let content: string;
+  try {
+    content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, {
+      jsonMode: true,
+      maxTokens: 3000,
       temperature: 0.7,
-      response_format: { type: 'json_object' },
-    }),
-  });
-
-  if (!response.ok) throw new Error('Keyword discovery failed');
-
-  const data = await response.json();
-  return JSON.parse(data.choices[0].message.content).keywords;
+    });
+  } catch {
+    throw new Error('Keyword discovery failed');
+  }
+  return JSON.parse(content).keywords;
 }
 
 async function generateToolConcepts(
+  aiConfig: AIProviderConfig,
   keywords: { keyword: string; volume: number; difficulty: number; toolType: string }[],
   productDescription: string
 ): Promise<ToolOpportunity[]> {
@@ -167,18 +189,7 @@ async function generateToolConcepts(
   for (let i = 0; i < keywords.length; i += 10) {
     const batch = keywords.slice(i, i + 10);
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: `You are a product designer specializing in free tools that drive traffic (Engineering as Marketing).
+    const systemPrompt = `You are a product designer specializing in free tools that drive traffic (Engineering as Marketing).
 
 For each keyword, design a simple but useful tool that:
 1. Solves the user's immediate need
@@ -189,11 +200,9 @@ For each keyword, design a simple but useful tool that:
 Rate build effort:
 - easy: Simple form + JS logic (1-4 hours)
 - medium: More complex UI/logic (4-16 hours)
-- hard: Requires API calls or complex algorithms (16+ hours)`
-          },
-          {
-            role: 'user',
-            content: `Design free tool concepts for these keywords:
+- hard: Requires API calls or complex algorithms (16+ hours)`;
+
+    const userPrompt = `Design free tool concepts for these keywords:
 
 ${batch.map(k => `- ${k.keyword} (vol: ${k.volume}, KD: ${k.difficulty}, type: ${k.toolType})`).join('\n')}
 
@@ -222,18 +231,15 @@ For each keyword, return:
       }
     }
   ]
-}`
-          }
-        ],
-        max_tokens: 3000,
-        temperature: 0.4,
-        response_format: { type: 'json_object' },
-      }),
-    });
+}`;
 
-    if (response.ok) {
-      const data = await response.json();
-      const result = JSON.parse(data.choices[0].message.content);
+    try {
+      const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, {
+        jsonMode: true,
+        maxTokens: 3000,
+        temperature: 0.4,
+      });
+      const result = JSON.parse(content);
 
       for (const tool of result.tools) {
         const originalKw = batch.find(k => k.keyword === tool.keyword);
@@ -263,6 +269,8 @@ For each keyword, return:
           });
         }
       }
+    } catch {
+      // Same as the original response.ok check - skip this batch on failure.
     }
   }
 
@@ -317,11 +325,32 @@ serve(async (req) => {
       });
     }
 
+    // No tier ever legitimately got this feature for free before - BYOK is
+    // required unconditionally (see resolveAIConfig's comment above).
+    let userId: string | null = null;
+    const authHeader = req.headers.get('Authorization');
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabase.auth.getUser(token);
+      userId = user?.id || null;
+    }
+    const aiResolution = await resolveAIConfig(supabase, userId);
+    if (!aiResolution.ok) {
+      return new Response(JSON.stringify({
+        error: 'Connect an AI provider key to use the tool opportunity finder - any provider works, including free-tier keys from OpenRouter, Groq, or Google AI Studio. Add one at https://rankcli.dev/account?tab=ai-provider',
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const aiConfig = aiResolution.config;
+
     console.log(`Finding tool opportunities for: ${industry}`);
 
     // Step 1-4: Discover keywords (Bhanu's filter approach)
     console.log('Discovering keywords...');
     const keywords = await discoverToolKeywords(
+      aiConfig,
       industry,
       productDescription,
       targetAudience || 'Developers and business owners'
@@ -331,7 +360,7 @@ serve(async (req) => {
 
     // Step 5-6: Generate tool concepts with CTAs
     console.log('Generating tool concepts...');
-    const opportunities = await generateToolConcepts(keywords, productDescription);
+    const opportunities = await generateToolConcepts(aiConfig, keywords, productDescription);
 
     // Step 7: Prioritize and create roadmap
     console.log('Creating implementation roadmap...');

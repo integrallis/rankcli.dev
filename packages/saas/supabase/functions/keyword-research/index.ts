@@ -4,6 +4,8 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
+import { decryptSecret } from '../_shared/crypto.ts';
 
 // Import FREE SEO data sources
 import {
@@ -28,6 +30,64 @@ import {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
+
+// This function had NO tier gating at all before this - aiExpandKeywords
+// alone ran on every request regardless of caller/tier, including
+// 'discover-only' mode. pricing-tiers.json's keyword_research feature is
+// true for solo/pro/agency (and ai_analysis, the closest equivalent, for
+// all three LTD tiers) - only those qualify for RankCLI's key as a
+// fallback; BYOK wins for every tier, free included.
+const RANKCLI_KEY_FALLBACK_TIERS = new Set([
+  'solo', 'pro', 'agency', 'pro_founding', 'ltd_starter', 'ltd_pro', 'ltd_agency',
+]);
+
+type AIConfigResolution =
+  | { ok: true; config: AIProviderConfig }
+  | { ok: false; reason: 'no_key_byok_required' };
+
+// deno-lint-ignore no-explicit-any
+async function resolveAIConfig(supabase: any, authHeader: string | null): Promise<AIConfigResolution> {
+  let userId: string | null = null;
+  if (authHeader) {
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user } } = await supabase.auth.getUser(token);
+    userId = user?.id || null;
+  }
+
+  if (userId) {
+    const { data: byok } = await supabase
+      .from('user_ai_keys')
+      .select('provider, encrypted_key, base_url, model')
+      .eq('user_id', userId)
+      .single();
+    if (byok) {
+      const encryptionSecret = Deno.env.get('AI_KEY_ENCRYPTION_SECRET');
+      if (encryptionSecret) {
+        const apiKey = await decryptSecret(byok.encrypted_key, encryptionSecret);
+        return {
+          ok: true,
+          config: { provider: byok.provider, apiKey, baseUrl: byok.base_url || undefined, model: byok.model || undefined },
+        };
+      }
+    }
+  }
+
+  let tier = 'free';
+  if (userId) {
+    const { data: subscription } = await supabase
+      .from('user_subscriptions')
+      .select('plan:subscription_plans (plan_id)')
+      .eq('user_id', userId)
+      .single();
+    const plan = subscription?.plan as { plan_id: string } | null;
+    tier = plan?.plan_id || 'free';
+  }
+
+  if (!RANKCLI_KEY_FALLBACK_TIERS.has(tier)) {
+    return { ok: false, reason: 'no_key_byok_required' };
+  }
+  return { ok: true, config: { provider: 'openai', apiKey: openaiApiKey, model: 'gpt-4o-mini' } };
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -244,76 +304,49 @@ async function analyzeKeywordsWithFreeData(
 // NOT for keyword metrics - those come from free data sources
 
 async function aiExpandKeywords(
+  aiConfig: AIProviderConfig,
   seedKeyword: string,
   existingKeywords: string[],
   industry?: string
 ): Promise<string[]> {
   // Use AI to suggest additional keywords we might have missed
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an SEO expert. Given a seed keyword and existing keyword list, suggest additional keywords that might be missing. Focus on:
+  const systemPrompt = `You are an SEO expert. Given a seed keyword and existing keyword list, suggest additional keywords that might be missing. Focus on:
 - Long-tail variations (4+ words)
 - Question-based keywords
 - Comparison keywords (vs, alternative)
 - Commercial modifiers
 - Niche subtopics
 
-Only suggest keywords NOT already in the existing list.`
-        },
-        {
-          role: 'user',
-          content: `Seed keyword: "${seedKeyword}"
+Only suggest keywords NOT already in the existing list.`;
+
+  const userPrompt = `Seed keyword: "${seedKeyword}"
 ${industry ? `Industry: ${industry}` : ''}
 
 Existing keywords (${existingKeywords.length}):
 ${existingKeywords.slice(0, 50).join('\n')}
 
 Suggest 20 additional keywords NOT in this list.
-Return JSON: { "keywords": ["kw1", "kw2", ...] }`
-        }
-      ],
-      max_tokens: 1000,
+Return JSON: { "keywords": ["kw1", "kw2", ...] }`;
+
+  try {
+    const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, {
+      jsonMode: true,
+      maxTokens: 1000,
       temperature: 0.7,
-      response_format: { type: 'json_object' },
-    }),
-  });
-
-  if (!response.ok) return [];
-
-  const data = await response.json();
-  const content = JSON.parse(data.choices[0].message.content);
-  return content.keywords || [];
+    });
+    return JSON.parse(content).keywords || [];
+  } catch {
+    return [];
+  }
 }
 
-async function clusterKeywords(keywords: KeywordData[]): Promise<KeywordCluster[]> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an SEO content strategist. Group keywords into topical clusters that can each target a single piece of content. Each cluster should:
+async function clusterKeywords(aiConfig: AIProviderConfig, keywords: KeywordData[]): Promise<KeywordCluster[]> {
+  const systemPrompt = `You are an SEO content strategist. Group keywords into topical clusters that can each target a single piece of content. Each cluster should:
 - Have a clear topical theme
 - Target a specific search intent
-- Be suitable for one comprehensive article/page`
-        },
-        {
-          role: 'user',
-          content: `Cluster these keywords by topic:
+- Be suitable for one comprehensive article/page`;
+
+  const userPrompt = `Cluster these keywords by topic:
 
 ${keywords.slice(0, 50).map(k => `${k.keyword} (vol: ${k.searchVolume}, diff: ${k.difficulty}, intent: ${k.intent})`).join('\n')}
 
@@ -326,19 +359,19 @@ Return JSON:
       "keywords": ["keyword1", "keyword2", ...]
     }
   ]
-}`
-        }
-      ],
-      max_tokens: 2000,
+}`;
+
+  let jsonContent: string;
+  try {
+    jsonContent = await callChatCompletion(aiConfig, systemPrompt, userPrompt, {
+      jsonMode: true,
+      maxTokens: 2000,
       temperature: 0.3,
-      response_format: { type: 'json_object' },
-    }),
-  });
-
-  if (!response.ok) throw new Error('Failed to cluster keywords');
-
-  const data = await response.json();
-  const content = JSON.parse(data.choices[0].message.content);
+    });
+  } catch {
+    throw new Error('Failed to cluster keywords');
+  }
+  const content = JSON.parse(jsonContent);
 
   return content.clusters.map((cluster: any) => {
     const clusterKeywords = keywords.filter(k =>
@@ -368,6 +401,7 @@ Return JSON:
 }
 
 async function generateContentBriefs(
+  aiConfig: AIProviderConfig,
   clusters: KeywordCluster[],
   serpData: Map<string, SERPFeatures>
 ): Promise<ContentBrief[]> {
@@ -391,22 +425,9 @@ async function generateContentBriefs(
       topStories: false,
     };
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${openaiApiKey}`,
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'system',
-            content: `You are an SEO content strategist. Create comprehensive content briefs that will rank for target keywords.`
-          },
-          {
-            role: 'user',
-            content: `Create a content brief:
+    const systemPrompt = `You are an SEO content strategist. Create comprehensive content briefs that will rank for target keywords.`;
+
+    const userPrompt = `Create a content brief:
 
 Cluster: ${cluster.name}
 Primary Keyword: ${primaryKeyword}
@@ -429,18 +450,15 @@ Return JSON:
   "contentType": "guide/listicle/comparison/tutorial",
   "outline": ["Intro", "Section 1", ...],
   "competitorInsights": ["Insight 1", ...]
-}`
-          }
-        ],
-        max_tokens: 1500,
-        temperature: 0.5,
-        response_format: { type: 'json_object' },
-      }),
-    });
+}`;
 
-    if (response.ok) {
-      const data = await response.json();
-      const content = JSON.parse(data.choices[0].message.content);
+    try {
+      const jsonContent = await callChatCompletion(aiConfig, systemPrompt, userPrompt, {
+        jsonMode: true,
+        maxTokens: 1500,
+        temperature: 0.5,
+      });
+      const content = JSON.parse(jsonContent);
 
       briefs.push({
         targetKeyword: primaryKeyword,
@@ -450,47 +468,36 @@ Return JSON:
         relatedSearches: serpFeatures.relatedSearches,
         ...content,
       });
+    } catch {
+      // Same as the original response.ok check - skip this brief on failure.
     }
   }
 
   return briefs;
 }
 
-async function findCompetitorGaps(url: string, keywords: KeywordData[]): Promise<KeywordData[]> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an SEO analyst. Given a website and keywords, identify which keywords represent opportunities - keywords the site likely doesn't rank for but should target.`
-        },
-        {
-          role: 'user',
-          content: `Website: ${url}
+async function findCompetitorGaps(aiConfig: AIProviderConfig, url: string, keywords: KeywordData[]): Promise<KeywordData[]> {
+  const systemPrompt = `You are an SEO analyst. Given a website and keywords, identify which keywords represent opportunities - keywords the site likely doesn't rank for but should target.`;
+
+  const userPrompt = `Website: ${url}
 
 Keywords to analyze:
 ${keywords.slice(0, 30).map(k => `${k.keyword} (vol: ${k.searchVolume}, diff: ${k.difficulty})`).join('\n')}
 
 Identify the top 10 keywords that are likely GAPS.
-Return JSON: { "gapKeywords": ["keyword1", "keyword2", ...] }`
-        }
-      ],
-      max_tokens: 500,
+Return JSON: { "gapKeywords": ["keyword1", "keyword2", ...] }`;
+
+  let content: { gapKeywords: string[] };
+  try {
+    const jsonContent = await callChatCompletion(aiConfig, systemPrompt, userPrompt, {
+      jsonMode: true,
+      maxTokens: 500,
       temperature: 0.3,
-      response_format: { type: 'json_object' },
-    }),
-  });
-
-  if (!response.ok) return [];
-
-  const data = await response.json();
-  const content = JSON.parse(data.choices[0].message.content);
+    });
+    content = JSON.parse(jsonContent);
+  } catch {
+    return [];
+  }
 
   return keywords.filter(k =>
     content.gapKeywords.some((gk: string) => gk.toLowerCase() === k.keyword.toLowerCase())
@@ -526,6 +533,17 @@ serve(async (req) => {
       });
     }
 
+    const aiResolution = await resolveAIConfig(supabase, req.headers.get('Authorization'));
+    if (!aiResolution.ok) {
+      return new Response(JSON.stringify({
+        error: 'Connect an AI provider key to run keyword research on the free plan - any provider works, including free-tier keys from OpenRouter, Groq, or Google AI Studio. Add one at https://rankcli.dev/account?tab=ai-provider',
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const aiConfig = aiResolution.config;
+
     console.log(`Starting keyword research for: "${seedKeyword}"`);
     console.log('Using FREE data sources: Google Suggest, Google Trends, Wikipedia, SERP');
 
@@ -539,7 +557,7 @@ serve(async (req) => {
     // Step 2: AI expansion to fill gaps
     console.log('\n=== STEP 2: AI-Enhanced Expansion ===');
     const existingKws = rawKeywords.map(k => k.keyword);
-    const aiKeywords = await aiExpandKeywords(seedKeyword, existingKws, industry);
+    const aiKeywords = await aiExpandKeywords(aiConfig, seedKeyword, existingKws, industry);
     console.log(`AI suggested ${aiKeywords.length} additional keywords`);
 
     const seen = new Set(existingKws.map(k => k.toLowerCase()));
@@ -621,19 +639,19 @@ serve(async (req) => {
 
     // Step 5: Cluster keywords
     console.log('\n=== STEP 5: Semantic Clustering ===');
-    const clusters = await clusterKeywords(analyzedKeywords);
+    const clusters = await clusterKeywords(aiConfig, analyzedKeywords);
     console.log(`Created ${clusters.length} keyword clusters`);
 
     // Step 6: Generate content briefs
     console.log('\n=== STEP 6: Content Briefs ===');
-    const contentBriefs = await generateContentBriefs(clusters, serpDataMap);
+    const contentBriefs = await generateContentBriefs(aiConfig, clusters, serpDataMap);
     console.log(`Generated ${contentBriefs.length} content briefs`);
 
     // Step 7: Find competitor gaps
     let competitorGaps: KeywordData[] = [];
     if (url) {
       console.log('\n=== STEP 7: Competitor Gap Analysis ===');
-      competitorGaps = await findCompetitorGaps(url, analyzedKeywords);
+      competitorGaps = await findCompetitorGaps(aiConfig, url, analyzedKeywords);
       console.log(`Found ${competitorGaps.length} competitor gaps`);
     }
 

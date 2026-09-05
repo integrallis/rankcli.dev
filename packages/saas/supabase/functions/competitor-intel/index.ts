@@ -12,10 +12,16 @@ import {
   getGoogleSuggestions,
   researchKeyword,
 } from '../_shared/free-seo-data.ts';
+import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
+import { resolveAIConfig, aiConfigErrorMessage } from '../_shared/resolve-ai-config.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
+const rankcliOpenAIKey = Deno.env.get('OPENAI_API_KEY');
+
+// Matches pricing-tiers.json's features.competitor_intel: true (pro,
+// agency - solo is explicitly false, LTD tiers don't declare this key).
+const COMPETITOR_INTEL_FALLBACK_TIERS = new Set(['pro', 'agency']);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -93,7 +99,7 @@ interface CompetitorIntelligence {
 
 // ========== AI ANALYSIS FUNCTIONS ==========
 
-async function analyzeCompetitor(competitorUrl: string, yourDomain: string): Promise<CompetitorProfile> {
+async function analyzeCompetitor(aiConfig: AIProviderConfig, competitorUrl: string, yourDomain: string): Promise<CompetitorProfile> {
   // Fetch competitor page
   let competitorHtml = '';
   try {
@@ -107,29 +113,16 @@ async function analyzeCompetitor(competitorUrl: string, yourDomain: string): Pro
     console.log(`Could not fetch ${competitorUrl}`);
   }
 
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a competitive intelligence analyst specializing in SEO and digital marketing. Analyze competitor websites thoroughly and provide actionable insights.
+  const systemPrompt = `You are a competitive intelligence analyst specializing in SEO and digital marketing. Analyze competitor websites thoroughly and provide actionable insights.
 
 Base your analysis on:
 1. The HTML/content provided
 2. Your knowledge of the domain/industry
 3. Common patterns in successful sites
 
-Be realistic and specific in your estimates.`
-        },
-        {
-          role: 'user',
-          content: `Analyze this competitor website: ${competitorUrl}
+Be realistic and specific in your estimates.`;
+
+  const userPrompt = `Analyze this competitor website: ${competitorUrl}
 
 ${competitorHtml ? `Homepage HTML (first 3000 chars): ${competitorHtml.substring(0, 3000)}` : 'Could not fetch HTML - use your knowledge of this domain'}
 
@@ -157,37 +150,18 @@ Return a detailed competitor profile as JSON:
   },
   "strengths": ["Strong brand", "Good content"],
   "weaknesses": ["Slow site", "Poor mobile"]
-}`
-        }
-      ],
-      max_tokens: 2000,
-      temperature: 0.3,
-      response_format: { type: 'json_object' },
-    }),
-  });
+}`;
 
-  if (!response.ok) throw new Error(`Failed to analyze ${competitorUrl}`);
-
-  const data = await response.json();
-  return JSON.parse(data.choices[0].message.content);
+  const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, { jsonMode: true, maxTokens: 2000, temperature: 0.3 });
+  return JSON.parse(content);
 }
 
 async function identifyCompetitiveGaps(
+  aiConfig: AIProviderConfig,
   yourDomain: string,
   competitors: CompetitorProfile[]
 ): Promise<CompetitiveGap[]> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a competitive strategy expert. Identify gaps between a site and its competitors that represent opportunities.
+  const systemPrompt = `You are a competitive strategy expert. Identify gaps between a site and its competitors that represent opportunities.
 
 Focus on:
 1. Keywords competitors rank for that the target doesn't
@@ -196,11 +170,9 @@ Focus on:
 4. Technical advantages competitors have
 5. Backlink sources competitors use
 
-Prioritize gaps by potential impact and difficulty to close.`
-        },
-        {
-          role: 'user',
-          content: `Identify competitive gaps for ${yourDomain}
+Prioritize gaps by potential impact and difficulty to close.`;
+
+  const userPrompt = `Identify competitive gaps for ${yourDomain}
 
 Competitor Profiles:
 ${competitors.map(c => `
@@ -224,48 +196,27 @@ Return JSON:
       "actionItems": ["Step 1", "Step 2"]
     }
   ]
-}`
-        }
-      ],
-      max_tokens: 3000,
-      temperature: 0.3,
-      response_format: { type: 'json_object' },
-    }),
-  });
+}`;
 
-  if (!response.ok) throw new Error('Failed to identify gaps');
-
-  const data = await response.json();
-  return JSON.parse(data.choices[0].message.content).gaps;
+  const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, { jsonMode: true, maxTokens: 3000, temperature: 0.3 });
+  return JSON.parse(content).gaps;
 }
 
 async function generateStrategicRecommendations(
+  aiConfig: AIProviderConfig,
   yourDomain: string,
   competitors: CompetitorProfile[],
   gaps: CompetitiveGap[]
 ): Promise<CompetitorIntelligence['strategicRecommendations']> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a strategic SEO consultant. Create actionable recommendations based on competitive analysis.
+  const systemPrompt = `You are a strategic SEO consultant. Create actionable recommendations based on competitive analysis.
 
 Recommendations should be:
 1. Specific and actionable (not generic advice)
 2. Prioritized by impact and effort
 3. Organized by time horizon (short/medium/long term)
-4. Based on the actual gaps identified`
-        },
-        {
-          role: 'user',
-          content: `Create strategic recommendations for ${yourDomain}
+4. Based on the actual gaps identified`;
+
+  const userPrompt = `Create strategic recommendations for ${yourDomain}
 
 Competitive Gaps:
 ${gaps.map(g => `- [${g.priority}] ${g.type}: ${g.description}`).join('\n')}
@@ -278,46 +229,25 @@ Return JSON:
   "shortTerm": ["Action 1 (1-2 weeks)", "Action 2"],
   "mediumTerm": ["Action 1 (1-3 months)", "Action 2"],
   "longTerm": ["Action 1 (3-6 months)", "Action 2"]
-}`
-        }
-      ],
-      max_tokens: 1500,
-      temperature: 0.4,
-      response_format: { type: 'json_object' },
-    }),
-  });
+}`;
 
-  if (!response.ok) throw new Error('Failed to generate recommendations');
-
-  const data = await response.json();
-  return JSON.parse(data.choices[0].message.content);
+  const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, { jsonMode: true, maxTokens: 1500, temperature: 0.4 });
+  return JSON.parse(content);
 }
 
 async function findKeywordOpportunities(
+  aiConfig: AIProviderConfig,
   yourDomain: string,
   competitors: CompetitorProfile[]
 ): Promise<CompetitorIntelligence['keywordOpportunities']> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${openaiApiKey}`,
-    },
-    body: JSON.stringify({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are an SEO keyword analyst. Identify keyword opportunities based on competitor analysis.
+  const systemPrompt = `You are an SEO keyword analyst. Identify keyword opportunities based on competitor analysis.
 
 Focus on:
 1. Keywords competitors rank for that the target likely doesn't
 2. Keywords with good volume and achievable difficulty
-3. Keywords that align with the target's likely business goals`
-        },
-        {
-          role: 'user',
-          content: `Find keyword opportunities for ${yourDomain}
+3. Keywords that align with the target's likely business goals`;
+
+  const userPrompt = `Find keyword opportunities for ${yourDomain}
 
 Competitor keywords:
 ${competitors.map(c => `${c.domain}: ${c.topKeywords.join(', ')}`).join('\n')}
@@ -334,19 +264,10 @@ Return 15+ keyword opportunities as JSON:
       "opportunity": "Why this is a good opportunity"
     }
   ]
-}`
-        }
-      ],
-      max_tokens: 2000,
-      temperature: 0.5,
-      response_format: { type: 'json_object' },
-    }),
-  });
+}`;
 
-  if (!response.ok) throw new Error('Failed to find keyword opportunities');
-
-  const data = await response.json();
-  return JSON.parse(data.choices[0].message.content).opportunities;
+  const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, { jsonMode: true, maxTokens: 2000, temperature: 0.5 });
+  return JSON.parse(content).opportunities;
 }
 
 // ========== MAIN HANDLER ==========
@@ -374,6 +295,27 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    if (!projectId) {
+      return new Response(JSON.stringify({ error: 'projectId is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { data: project } = await supabase
+      .from('projects')
+      .select('user_id')
+      .eq('id', projectId)
+      .single();
+
+    const aiResolution = await resolveAIConfig(supabase, project?.user_id, rankcliOpenAIKey, COMPETITOR_INTEL_FALLBACK_TIERS);
+    if (!aiResolution.ok) {
+      return new Response(JSON.stringify({ error: aiConfigErrorMessage(aiResolution.reason, 'competitor intelligence') }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const aiConfig = aiResolution.config;
 
     console.log(`Analyzing competitors for ${yourDomain}`);
     console.log('Using FREE data sources: SERP scraping for competitor discovery');
@@ -419,7 +361,7 @@ serve(async (req) => {
 
     for (const url of actualCompetitorUrls.slice(0, 5)) { // Limit to 5 competitors
       try {
-        const profile = await analyzeCompetitor(url, yourDomain);
+        const profile = await analyzeCompetitor(aiConfig, url, yourDomain);
         competitors.push(profile);
         console.log(`Analyzed ${profile.domain}`);
       } catch (e) {
@@ -429,15 +371,15 @@ serve(async (req) => {
 
     // Step 2: Identify competitive gaps
     console.log('Identifying competitive gaps...');
-    const gaps = await identifyCompetitiveGaps(yourDomain, competitors);
+    const gaps = await identifyCompetitiveGaps(aiConfig, yourDomain, competitors);
 
     // Step 3: Find keyword opportunities
     console.log('Finding keyword opportunities...');
-    const keywordOpportunities = await findKeywordOpportunities(yourDomain, competitors);
+    const keywordOpportunities = await findKeywordOpportunities(aiConfig, yourDomain, competitors);
 
     // Step 4: Generate strategic recommendations
     console.log('Generating strategic recommendations...');
-    const recommendations = await generateStrategicRecommendations(yourDomain, competitors, gaps);
+    const recommendations = await generateStrategicRecommendations(aiConfig, yourDomain, competitors, gaps);
 
     // Step 5: Determine competitive position
     const competitivePosition = {
