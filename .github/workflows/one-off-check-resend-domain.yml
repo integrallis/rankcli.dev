@@ -1,0 +1,19 @@
+name: One-off Check Resend Domain Status
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Resend domains
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          curl -s https://api.resend.com/domains \
+            -H "Authorization: Bearer $RESEND_API_KEY" \
+            | node -e '
+              const d = JSON.parse(require("fs").readFileSync(0, "utf8"));
+              console.log(JSON.stringify(d, null, 2));
+            '
