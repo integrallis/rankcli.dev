@@ -1,0 +1,37 @@
+name: E2E Create Test Project
+
+on:
+  workflow_dispatch:
+    inputs:
+      user_id:
+        description: 'auth.users.id of the e2e test user'
+        required: true
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Insert projects row matching the test repo
+        env:
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          set -euo pipefail
+          SUPABASE_URL="https://bspljbxwbjiqueeyzyat.supabase.co"
+          USER_ID="${{ inputs.user_id }}"
+          REPO_URL="https://github.com/integrallis-test/rankcli-e2e-smoketest"
+
+          RESP=$(curl -s -w "\n%{http_code}" -X POST "$SUPABASE_URL/rest/v1/projects" \
+            -H "apikey: $SERVICE_KEY" \
+            -H "Authorization: Bearer $SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=representation" \
+            -d "{\"user_id\":\"$USER_ID\",\"name\":\"RankCLI E2E Smoketest\",\"url\":\"$REPO_URL\",\"domain\":\"github.com\",\"github_repo_url\":\"$REPO_URL\"}")
+
+          BODY=$(echo "$RESP" | head -n -1)
+          CODE=$(echo "$RESP" | tail -n1)
+          echo "HTTP $CODE"
+          echo "$BODY"
+          if [ "$CODE" != "201" ]; then
+            echo "::error::Failed to create project"
+            exit 1
+          fi
