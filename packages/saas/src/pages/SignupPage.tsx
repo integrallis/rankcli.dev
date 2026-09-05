@@ -27,7 +27,7 @@ const benefits = [
   '280+ automated SEO checks',
   'GitHub integration for auto-fix PRs',
   'Keyword tracking & rankings',
-  '14-day free trial, no credit card',
+  'Free forever tier, upgrade anytime',
 ];
 
 export function SignupPage() {
@@ -107,7 +107,7 @@ export function SignupPage() {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Create your account</CardTitle>
             <CardDescription>
-              Start your 14-day free trial
+              Free to start, no credit card required
             </CardDescription>
           </CardHeader>
 

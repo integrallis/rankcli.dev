@@ -30,7 +30,7 @@ const faqs = [
   {
     question: 'Is there a free tier?',
     answer:
-      'Yes! Our free audit tool lets you analyze any URL without signing up. For ongoing monitoring, we offer a 14-day free trial on all paid plans. No credit card required to start.',
+      'Yes! Run a free audit on any URL with no signup at all. Create a free account for more checks and audit history. Paid plans unlock GitHub auto-fix PRs, full checks, and more - upgrade or cancel anytime, no long-term commitment.',
   },
   {
     question: 'How do I cancel my subscription?',

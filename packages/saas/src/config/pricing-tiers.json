@@ -32,11 +32,11 @@
     "tagline": "Unlimited, forever, with your own API key"
   },
   "trial": {
-    "enabled": true,
+    "enabled": false,
     "duration_days": 14,
     "plan_access": "pro",
     "credit_card_required": false,
-    "description": "Full Pro access for 14 days"
+    "description": "Not implemented - create-checkout has no trial_period_days configured. Disabled until it's actually wired up in Stripe; don't reference this in copy while disabled."
   },
   "founding_offer": {
     "enabled": true,

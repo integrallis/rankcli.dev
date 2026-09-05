@@ -246,7 +246,7 @@ ISSUES FOUND (${issues.length})
 ---
 Want to fix these issues automatically?
 RankCLI can create pull requests to fix SEO issues in your codebase.
-Start your free trial: https://rankcli.dev/signup
+Get started free: https://rankcli.dev/signup
 
 © ${new Date().getFullYear()} Integrallis Software, LLC
 https://rankcli.dev
