@@ -12,13 +12,19 @@ import {
 } from '@rankcli/agent-runtime';
 import { premiumChecks } from '@rankcli/agent-runtime-premium';
 import { EventEmitter } from 'events';
+import { randomUUID } from 'crypto';
 
 // Environment
 const PORT = parseInt(process.env.PORT || '8080', 10);
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
-const WORKER_SECRET = process.env.WORKER_SECRET || 'dev-secret';
+// No fallback default - a guessable 'dev-secret' string is a real
+// vulnerability if this ever got deployed unset, not a dev convenience.
+const WORKER_SECRET = process.env.WORKER_SECRET;
+if (!WORKER_SECRET) {
+  throw new Error('WORKER_SECRET environment variable is required');
+}
 // Competitive search API keys (optional but recommended)
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY || '';
 const SERPER_API_KEY = process.env.SERPER_API_KEY || '';
@@ -114,6 +120,37 @@ interface AIProviderResult {
 
 const aiVisibilityJobs = new Map<string, AIVisibilityJob>();
 
+// Per-IP rate limiting for the public /ai-visibility endpoint. In-memory is
+// fine here (unlike a stateless edge function) - this is a long-running
+// process with min_machines_running=1, so state persists across requests.
+const AI_VISIBILITY_RATE_LIMIT = 5;
+const AI_VISIBILITY_RATE_WINDOW_MS = 60 * 60 * 1000;
+const aiVisibilityRequestLog = new Map<string, number[]>();
+
+function checkAIVisibilityRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const timestamps = (aiVisibilityRequestLog.get(ip) || []).filter(
+    (t) => now - t < AI_VISIBILITY_RATE_WINDOW_MS
+  );
+  if (timestamps.length >= AI_VISIBILITY_RATE_LIMIT) {
+    aiVisibilityRequestLog.set(ip, timestamps);
+    return false;
+  }
+  timestamps.push(now);
+  aiVisibilityRequestLog.set(ip, timestamps);
+  return true;
+}
+
+// Prevent unbounded memory growth from IPs that only ever request once.
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, timestamps] of aiVisibilityRequestLog.entries()) {
+    const fresh = timestamps.filter((t) => now - t < AI_VISIBILITY_RATE_WINDOW_MS);
+    if (fresh.length === 0) aiVisibilityRequestLog.delete(ip);
+    else aiVisibilityRequestLog.set(ip, fresh);
+  }
+}, 10 * 60 * 1000);
+
 // LLM Provider configurations
 const LLM_PROVIDERS = [
   { id: 'openai', name: 'ChatGPT', model: 'gpt-4o-mini' },
@@ -182,7 +219,11 @@ app.get<{ Params: { jobId: string } }>('/jobs/:jobId', async (request, reply) =>
 });
 
 // List all jobs (for debugging)
-app.get('/jobs', async () => {
+app.get('/jobs', async (request, reply) => {
+  const authHeader = request.headers.authorization;
+  if (authHeader !== `Bearer ${WORKER_SECRET}`) {
+    return reply.status(401).send({ error: 'Unauthorized' });
+  }
   return Array.from(jobs.values());
 });
 
@@ -209,7 +250,7 @@ app.post<{
     return reply.status(400).send({ error: 'Missing required fields: auditId, projectId, url' });
   }
 
-  const jobId = `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const jobId = `job_${randomUUID()}`;
 
   const job: AuditJob = {
     id: jobId,
@@ -984,6 +1025,22 @@ app.post<{
     brand?: string;
   };
 }>('/ai-visibility', async (request, reply) => {
+  // This is a genuinely public, anonymous-accessible free tool
+  // (/tools/ai-visibility, /tools/chatgpt-checker call it directly from
+  // the browser via useAIVisibilitySSE - it can never carry WORKER_SECRET,
+  // that's server-only). It triggers up to 4 separate paid AI API calls
+  // per request on RankCLI's own keys, and had NO rate limiting at all -
+  // anyone could script unlimited calls against it for free. Same 5/hour
+  // per-IP limit as the equivalent saas edge functions use elsewhere.
+  const clientIp = request.headers['cf-connecting-ip'] as string
+    || request.headers['x-forwarded-for'] as string
+    || request.ip;
+  if (!checkAIVisibilityRateLimit(clientIp)) {
+    return reply.status(429).send({
+      error: 'Rate limit exceeded. Try again in an hour, or sign up for unlimited checks.',
+    });
+  }
+
   const { url, brand: customBrand } = request.body;
 
   if (!url) {
@@ -1001,7 +1058,7 @@ app.post<{
     return reply.status(400).send({ error: 'Invalid URL' });
   }
 
-  const jobId = `aiv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const jobId = `aiv_${randomUUID()}`;
 
   const job: AIVisibilityJob = {
     id: jobId,
