@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { User, CreditCard, Key, Bell, Loader2, AlertTriangle, Trash2, ArrowUpRight, CheckCircle, Copy, Check, Plus, X } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
@@ -277,6 +278,9 @@ export function AccountPage() {
       }
     } catch (err) {
       console.error('Upgrade error:', err);
+      toast.error('Could not start checkout', {
+        description: err instanceof Error ? err.message : 'Please try again in a moment.',
+      });
     } finally {
       setUpgradingPlanId(null);
     }
@@ -312,6 +316,9 @@ export function AccountPage() {
       }
     } catch (err) {
       console.error('Portal error:', err);
+      toast.error('Could not open billing portal', {
+        description: err instanceof Error ? err.message : 'Please try again in a moment.',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -333,6 +340,9 @@ export function AccountPage() {
       navigate('/');
     } catch (err) {
       console.error('Delete account error:', err);
+      toast.error('Could not delete account', {
+        description: err instanceof Error ? err.message : 'Please try again or contact support.',
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -368,6 +378,9 @@ export function AccountPage() {
       fetchApiKeys();
     } catch (err) {
       console.error('Create API key error:', err);
+      toast.error('Could not create API key', {
+        description: err instanceof Error ? err.message : 'Please try again in a moment.',
+      });
     } finally {
       setIsCreatingKey(false);
       setShowNewKeyDialog(false);
@@ -386,6 +399,9 @@ export function AccountPage() {
       fetchApiKeys();
     } catch (err) {
       console.error('Revoke key error:', err);
+      toast.error('Could not revoke API key', {
+        description: err instanceof Error ? err.message : 'Please try again in a moment.',
+      });
     } finally {
       setRevokingKeyId(null);
     }
@@ -417,6 +433,9 @@ export function AccountPage() {
       if (error) throw error;
     } catch (err) {
       console.error('Save notification error:', err);
+      toast.error('Could not save notification settings', {
+        description: err instanceof Error ? err.message : 'Please try again in a moment.',
+      });
       // Revert on error
       setNotifications(notifications);
     } finally {
