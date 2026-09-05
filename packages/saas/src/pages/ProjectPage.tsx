@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -177,7 +178,21 @@ export function ProjectPage() {
   };
 
   const handleConnectGitHub = async (repoUrl: string) => {
-    await connectGitHub(repoUrl);
+    const result = await connectGitHub(repoUrl);
+    if (!result.success) {
+      toast.error('Could not connect repository', {
+        description: result.reason || 'Please try again in a moment.',
+      });
+    } else if (!result.linked) {
+      // Repo URL saved, but the App isn't installed there yet - auto-fix
+      // PRs won't work until it is. Worth a clear heads-up, not a silent
+      // "success" that leaves the user wondering why nothing ever happens.
+      toast.warning('Repository saved, but not fully connected', {
+        description: result.reason || 'Install the RankCLI GitHub App on this repository to enable auto-fix PRs.',
+      });
+    } else {
+      toast.success('GitHub repository connected');
+    }
   };
 
   const handleUpdateProject = async (updates: Partial<Project>): Promise<boolean> => {

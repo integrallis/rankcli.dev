@@ -240,7 +240,7 @@ interface UseProjectReturn {
   deleteOldAudits: (keepCount?: number) => Promise<number>;
   updateProject: (updates: Partial<Project>) => Promise<boolean>;
   deleteProject: () => Promise<boolean>;
-  connectGitHub: (repoUrl: string) => Promise<boolean>;
+  connectGitHub: (repoUrl: string) => Promise<{ success: boolean; linked: boolean; reason?: string }>;
   disconnectGitHub: () => Promise<boolean>;
 }
 
@@ -553,8 +553,8 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
     }
   };
 
-  const connectGitHub = async (repoUrl: string): Promise<boolean> => {
-    if (!user || !projectId) return false;
+  const connectGitHub = async (repoUrl: string): Promise<{ success: boolean; linked: boolean; reason?: string }> => {
+    if (!user || !projectId) return { success: false, linked: false };
 
     try {
       // Resolves the installation covering this repo (not just the repo
@@ -574,11 +574,12 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
       }
 
       await fetchProject();
-      return true;
+      return { success: true, linked: data?.linked ?? false, reason: data?.reason };
     } catch (err) {
       console.error('Error connecting GitHub:', err);
-      setError(err instanceof Error ? err.message : 'Failed to connect GitHub');
-      return false;
+      const message = err instanceof Error ? err.message : 'Failed to connect GitHub';
+      setError(message);
+      return { success: false, linked: false, reason: message };
     }
   };
 
