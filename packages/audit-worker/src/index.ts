@@ -339,6 +339,8 @@ app.post<{
       healthScore: report.healthScore,
       summary: report.summary,
       url: report.url,
+      title: report.pages[0]?.title,
+      description: report.pages[0]?.description,
     });
 
   } catch (error) {

@@ -52,6 +52,8 @@ interface WorkerAuditResponse {
     errors: number;
     warnings: number;
   };
+  title?: string;
+  description?: string;
   error?: string;
 }
 
@@ -281,6 +283,8 @@ serve(async (req) => {
       displayedIssues: displayedIssues.length,
       hiddenIssues: hiddenIssueCount,
       message,
+      title: auditResult.title,
+      description: auditResult.description,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
