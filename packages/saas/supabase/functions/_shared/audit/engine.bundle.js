@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-05T17:18:06.621Z
+// Generated: 2026-09-05T23:17:36.039Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -20218,7 +20218,7 @@ async function runFullAudit(options) {
     });
     return createReport(url, domain, allIssues, pages);
   }
-  const html = fetchResult.data;
+  const html = fetchResult.data.replace(/<\/?noscript[^>]*>/gi, "");
   const headers = fetchResult.headers;
   console.error(`\u{1F4DD} Phase 2: Running synchronous HTML checks (tier: ${tier}, limit: ${checksLimit})...`);
   const onPageResult = analyzeOnPage(html, url);

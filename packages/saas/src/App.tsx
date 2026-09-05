@@ -6,6 +6,11 @@ import { PricingPage } from './pages/PricingPage';
 import { DocsPage } from './pages/DocsPage';
 import { BlogPage } from './pages/BlogPage';
 import { BlogPostPage } from './pages/BlogPostPage';
+import { AboutPage } from './pages/AboutPage';
+import { ContactPage } from './pages/ContactPage';
+import { ChangelogPage } from './pages/ChangelogPage';
+import { PrivacyPage } from './pages/PrivacyPage';
+import { TermsPage } from './pages/TermsPage';
 import { MetaTagAnalyzerPage } from './pages/tools/MetaTagAnalyzerPage';
 import { OgImagePreviewPage } from './pages/tools/OgImagePreviewPage';
 import { ChatGPTCheckerPage } from './pages/tools/ChatGPTCheckerPage';
@@ -41,6 +46,11 @@ function App() {
       <Route path="/docs" element={<DocsPage />} />
       <Route path="/blog" element={<BlogPage />} />
       <Route path="/blog/:slug" element={<BlogPostPage />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/contact" element={<ContactPage />} />
+      <Route path="/changelog" element={<ChangelogPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
       <Route path="/tools/meta-tag-analyzer" element={<MetaTagAnalyzerPage />} />
       <Route path="/tools/og-image-preview" element={<OgImagePreviewPage />} />
       <Route path="/tools/chatgpt-checker" element={<ChatGPTCheckerPage />} />

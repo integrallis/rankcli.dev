@@ -11,7 +11,6 @@ import {
   Settings,
   Book,
   Code,
-  ExternalLink,
   Github,
   LayoutDashboard,
   CheckCircle,
@@ -1820,15 +1819,6 @@ function APISection() {
           </div>
         </div>
 
-        <div className="mt-6">
-          <a
-            href="/api-docs"
-            className="inline-flex items-center gap-2 text-primary hover:underline"
-          >
-            View Full API Documentation
-            <ExternalLink className="h-4 w-4" />
-          </a>
-        </div>
       </section>
 
       {/* Webhooks */}
