@@ -1,0 +1,24 @@
+name: E2E Check Audit Status
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check latest audits for the e2e project
+        env:
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          set -euo pipefail
+          SUPABASE_URL="https://bspljbxwbjiqueeyzyat.supabase.co"
+
+          echo "=== projects row ==="
+          curl -s "$SUPABASE_URL/rest/v1/projects?github_repo_url=eq.https://github.com/integrallis-test/rankcli-e2e-smoketest" \
+            -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY"
+          echo
+          echo "=== recent audits (triggered_by=github_push) ==="
+          curl -s "$SUPABASE_URL/rest/v1/audits?triggered_by=eq.github_push&order=created_at.desc&limit=5" \
+            -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY"
+          echo
