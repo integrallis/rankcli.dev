@@ -44,7 +44,9 @@ export function LoginPage() {
   const { login, loginWithGoogle, loginWithGitHub } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard';
+  const fromLocation = (location.state as { from?: { pathname: string; search: string } })?.from;
+  const from = fromLocation ? `${fromLocation.pathname}${fromLocation.search}` : '/dashboard';
+  const isGitHubInstallReturn = fromLocation?.pathname === '/dashboard/github-callback';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +64,7 @@ export function LoginPage() {
   const handleGoogleLogin = async () => {
     setOauthLoading('google');
     try {
-      await loginWithGoogle();
+      await loginWithGoogle(from);
     } catch {
       // Error handled by AuthContext
       setOauthLoading(null);
@@ -72,7 +74,7 @@ export function LoginPage() {
   const handleGitHubLogin = async () => {
     setOauthLoading('github');
     try {
-      await loginWithGitHub();
+      await loginWithGitHub(from);
     } catch {
       // Error handled by AuthContext
       setOauthLoading(null);
@@ -92,9 +94,13 @@ export function LoginPage() {
 
         <Card>
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl">Welcome back</CardTitle>
+            <CardTitle className="text-2xl">
+              {isGitHubInstallReturn ? "You've installed the RankCLI GitHub App" : 'Welcome back'}
+            </CardTitle>
             <CardDescription>
-              Sign in to your account to continue
+              {isGitHubInstallReturn
+                ? 'Sign in with GitHub to finish connecting your repository — one click, since you\'re already signed into GitHub.'
+                : 'Sign in to your account to continue'}
             </CardDescription>
           </CardHeader>
 
