@@ -9,7 +9,7 @@ const differentiators = [
     icon: Bot,
     title: 'GEO (AI Search Optimization)',
     description: 'Check if GPTBot, ClaudeBot, and PerplexityBot can access your site.',
-    detail: 'First CLI tool with Generative Engine Optimization - get cited in ChatGPT, Claude, and Perplexity answers.',
+    detail: 'Brands actually cited in AI answers get 35% more organic clicks and 91% more paid clicks than uncited brands (Search Engine Land). First CLI tool built for that.',
     badge: 'New',
     cta: { text: 'Try the GEO Check', link: '/docs' },
   },
