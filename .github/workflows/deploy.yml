@@ -339,6 +339,12 @@ jobs:
           if [ -n "${{ secrets.RANKCLI_GITHUB_APP_WEBHOOK_SECRET }}" ]; then
             OPTIONAL_SECRETS="$OPTIONAL_SECRETS GITHUB_WEBHOOK_SECRET=\"${{ secrets.RANKCLI_GITHUB_APP_WEBHOOK_SECRET }}\""
           fi
+          # BYOK AI provider keys (user_ai_keys table) are encrypted at rest with
+          # this secret. Free tier auto-fix PRs are fully gated on it existing -
+          # we never fall back to our own OpenAI key for free-tier users.
+          if [ -n "${{ secrets.AI_KEY_ENCRYPTION_SECRET }}" ]; then
+            OPTIONAL_SECRETS="$OPTIONAL_SECRETS AI_KEY_ENCRYPTION_SECRET=\"${{ secrets.AI_KEY_ENCRYPTION_SECRET }}\""
+          fi
           if [ -n "$OPTIONAL_SECRETS" ]; then
             eval "supabase secrets set $OPTIONAL_SECRETS"
           fi

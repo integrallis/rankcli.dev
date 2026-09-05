@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { User, CreditCard, Key, Bell, Loader2, AlertTriangle, Trash2, ArrowUpRight, CheckCircle, Copy, Check, Plus, X } from 'lucide-react';
+import { User, CreditCard, Key, Bell, Bot, Loader2, AlertTriangle, Trash2, ArrowUpRight, CheckCircle, Copy, Check, Plus, X } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,6 +25,7 @@ import { cn } from '@/lib/utils';
 import pricingTiers from '@/config/pricing-tiers.json';
 import { useUserLTD } from '@/hooks/useLTD';
 import { AlertConfigForm } from '@/components/settings/AlertConfigForm';
+import { AIProviderSettings } from '@/components/settings/AIProviderSettings';
 
 interface UserSubscription {
   plan_id: string | null;
@@ -56,6 +57,7 @@ const tabs = [
   { id: 'profile', label: 'Profile', icon: User },
   { id: 'billing', label: 'Billing', icon: CreditCard },
   { id: 'api-keys', label: 'API Keys', icon: Key },
+  { id: 'ai-provider', label: 'AI Provider', icon: Bot },
   { id: 'notifications', label: 'Notifications', icon: Bell },
 ];
 
@@ -817,6 +819,12 @@ export function AccountPage() {
                     </div>
                   </CardContent>
                 </Card>
+              </div>
+            )}
+
+            {activeTab === 'ai-provider' && (
+              <div className="space-y-6">
+                <AIProviderSettings />
               </div>
             )}
 
