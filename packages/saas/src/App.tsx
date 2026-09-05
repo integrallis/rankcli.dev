@@ -23,6 +23,7 @@ import { ClientReportPage } from './pages/ClientReportPage';
 import { AccountPage } from './pages/AccountPage';
 import { BillingPage } from './pages/BillingPage';
 import { GitHubCallbackPage } from './pages/GitHubCallbackPage';
+import { ConnectPage } from './pages/ConnectPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Lazy-loaded checkout pages
@@ -64,6 +65,7 @@ function App() {
         <Route path="/account" element={<AccountPage />} />
         <Route path="/account/billing" element={<BillingPage />} />
         <Route path="/account/api-keys" element={<AccountPage />} />
+        <Route path="/connect" element={<ConnectPage />} />
       </Route>
     </Routes>
   );

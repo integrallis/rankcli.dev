@@ -47,6 +47,7 @@ export function LoginPage() {
   const fromLocation = (location.state as { from?: { pathname: string; search: string } })?.from;
   const from = fromLocation ? `${fromLocation.pathname}${fromLocation.search}` : '/dashboard';
   const isGitHubInstallReturn = fromLocation?.pathname === '/dashboard/github-callback';
+  const isMcpConnectReturn = fromLocation?.pathname === '/connect';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,11 +96,17 @@ export function LoginPage() {
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">
-              {isGitHubInstallReturn ? "You've installed the RankCLI GitHub App" : 'Welcome back'}
+              {isGitHubInstallReturn
+                ? "You've installed the RankCLI GitHub App"
+                : isMcpConnectReturn
+                ? 'Connect your AI assistant'
+                : 'Welcome back'}
             </CardTitle>
             <CardDescription>
               {isGitHubInstallReturn
                 ? 'Sign in with GitHub to finish connecting your repository — one click, since you\'re already signed into GitHub.'
+                : isMcpConnectReturn
+                ? "Sign in (or create a free account) to link the MCP server you're using to your RankCLI dashboard."
                 : 'Sign in to your account to continue'}
             </CardDescription>
           </CardHeader>
@@ -197,7 +204,7 @@ export function LoginPage() {
           <CardFooter className="justify-center">
             <p className="text-sm text-muted-foreground">
               Don't have an account?{' '}
-              <Link to="/signup" className="text-primary hover:underline">
+              <Link to="/signup" state={fromLocation ? { from: fromLocation } : undefined} className="text-primary hover:underline">
                 Sign up
               </Link>
             </p>

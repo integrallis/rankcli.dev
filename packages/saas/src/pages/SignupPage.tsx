@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Loader2, Terminal, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +38,9 @@ export function SignupPage() {
   const [success, setSuccess] = useState(false);
 
   const { signup, loginWithGoogle, loginWithGitHub } = useAuth();
+  const location = useLocation();
+  const fromLocation = (location.state as { from?: { pathname: string; search: string } })?.from;
+  const from = fromLocation ? `${fromLocation.pathname}${fromLocation.search}` : undefined;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,7 +58,7 @@ export function SignupPage() {
   const handleGoogleLogin = async () => {
     setOauthLoading('google');
     try {
-      await loginWithGoogle();
+      await loginWithGoogle(from);
     } catch {
       setOauthLoading(null);
     }
@@ -64,7 +67,7 @@ export function SignupPage() {
   const handleGitHubLogin = async () => {
     setOauthLoading('github');
     try {
-      await loginWithGitHub();
+      await loginWithGitHub(from);
     } catch {
       setOauthLoading(null);
     }
@@ -83,7 +86,7 @@ export function SignupPage() {
               We sent a verification link to <strong>{email}</strong>.
               Click the link to activate your account.
             </p>
-            <Link to="/login">
+            <Link to="/login" state={fromLocation ? { from: fromLocation } : undefined}>
               <Button variant="outline">Back to login</Button>
             </Link>
           </CardContent>
@@ -214,7 +217,7 @@ export function SignupPage() {
           <CardFooter className="justify-center">
             <p className="text-sm text-muted-foreground">
               Already have an account?{' '}
-              <Link to="/login" className="text-primary hover:underline">
+              <Link to="/login" state={fromLocation ? { from: fromLocation } : undefined} className="text-primary hover:underline">
                 Sign in
               </Link>
             </p>
