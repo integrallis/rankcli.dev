@@ -1,0 +1,53 @@
+name: E2E Verify Connect Repo
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        required: true
+      password:
+        required: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clear installation_id, sign in, call connect-github-repo
+        env:
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          ANON_KEY: ${{ secrets.RANKCLI_SUPABASE_ANON_KEY }}
+          EMAIL: ${{ inputs.email }}
+          PASSWORD: ${{ inputs.password }}
+        run: |
+          set -euo pipefail
+          SUPABASE_URL="https://bspljbxwbjiqueeyzyat.supabase.co"
+          PROJECT_ID="e00334cf-e169-42ea-b88f-1eedff1f25cf"
+          REPO_URL="https://github.com/integrallis-test/rankcli-e2e-smoketest"
+
+          echo "=== clearing github_installation_id/github_repo_id ==="
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" -X PATCH "$SUPABASE_URL/rest/v1/projects?id=eq.$PROJECT_ID" \
+            -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"github_installation_id": null, "github_repo_id": null}'
+
+          echo "=== signing in as test user ==="
+          SIGNIN_RESP=$(curl -s -X POST "$SUPABASE_URL/auth/v1/token?grant_type=password" \
+            -H "apikey: $ANON_KEY" -H "Content-Type: application/json" \
+            -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}")
+          ACCESS_TOKEN=$(node -pe 'JSON.parse(process.argv[1]).access_token' "$SIGNIN_RESP" 2>/dev/null || echo "")
+          echo "::add-mask::$ACCESS_TOKEN"
+          if [ -z "$ACCESS_TOKEN" ] || [ "$ACCESS_TOKEN" = "undefined" ]; then
+            echo "Sign-in failed:"
+            echo "$SIGNIN_RESP"
+            exit 1
+          fi
+
+          echo "=== calling connect-github-repo (as the plain URL-connect flow would) ==="
+          curl -s -w "\nHTTP %{http_code}\n" -X POST "$SUPABASE_URL/functions/v1/connect-github-repo" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -d "{\"projectId\":\"$PROJECT_ID\",\"repoUrl\":\"$REPO_URL\"}"
+
+          echo "=== verifying projects row ==="
+          curl -s "$SUPABASE_URL/rest/v1/projects?id=eq.$PROJECT_ID&select=github_installation_id,github_repo_id,github_repo_url" \
+            -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY"
