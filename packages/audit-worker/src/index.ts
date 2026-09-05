@@ -190,6 +190,12 @@ function broadcastEvent(auditId: string, event: SseEvent) {
 const app = Fastify({
   logger: true,
   requestTimeout: AUDIT_TIMEOUT + 30000, // Extra buffer
+  // Without this, request.ip is the direct TCP peer - Fly.io's edge proxy,
+  // not the real client - so every request behind it looks like the same
+  // (or an inconsistent) source and IP-based rate limiting can't work.
+  // Fastify's own X-Forwarded-For handling (via @fastify/proxy-addr) is
+  // more correct here than hand-parsing the header.
+  trustProxy: true,
 });
 
 await app.register(cors, {
@@ -1032,10 +1038,10 @@ app.post<{
   // per request on RankCLI's own keys, and had NO rate limiting at all -
   // anyone could script unlimited calls against it for free. Same 5/hour
   // per-IP limit as the equivalent saas edge functions use elsewhere.
-  const clientIp = request.headers['cf-connecting-ip'] as string
-    || request.headers['x-forwarded-for'] as string
-    || request.ip;
-  if (!checkAIVisibilityRateLimit(clientIp)) {
+  // trustProxy above makes this the real client IP behind Fly's edge, not
+  // a Cloudflare one - this app isn't behind Cloudflare, unlike the saas
+  // edge functions this pattern was borrowed from.
+  if (!checkAIVisibilityRateLimit(request.ip)) {
     return reply.status(429).send({
       error: 'Rate limit exceeded. Try again in an hour, or sign up for unlimited checks.',
     });
