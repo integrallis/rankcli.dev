@@ -47,7 +47,7 @@ export function InstallTabs({ className }: { className?: string }) {
   };
 
   return (
-    <Tabs defaultValue="npm" className={cn('w-full max-w-2xl', className)}>
+    <Tabs defaultValue="npm" className={cn('w-full max-w-3xl', className)}>
       <TabsList>
         {METHODS.map((method) => (
           <TabsTrigger key={method.id} value={method.id}>
