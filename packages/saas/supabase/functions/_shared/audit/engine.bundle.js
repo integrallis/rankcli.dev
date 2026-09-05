@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-05T10:54:16.568Z
+// Generated: 2026-09-05T11:02:17.047Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -8742,7 +8742,10 @@ var HTML_SIGNATURES = [
   {
     framework: "react",
     language: "javascript",
-    patterns: [/data-reactroot/, /data-react-helmet/, /_react/, /react-app/],
+    // data-reactroot/data-react-helmet are React <=15 hydration markers -
+    // React 18's createRoot() never adds them, so every modern CRA/Vite
+    // React app (an empty <div id="root">) went undetected from HTML alone.
+    patterns: [/data-reactroot/, /data-react-helmet/, /_react/, /react-app/, /<div id="root"><\/div>/],
     confidence: "medium"
   },
   // Vue (generic - lower priority)
