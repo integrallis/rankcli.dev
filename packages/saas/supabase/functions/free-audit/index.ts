@@ -127,6 +127,8 @@ serve(async (req) => {
 
     let allIssues: FreeAuditIssue[] = [];
     let score = 85;
+    let pageTitle: string | undefined;
+    let pageDescription: string | undefined;
     let healthScore = {
       overall: 85,
       crawlability: 100,
@@ -196,6 +198,9 @@ serve(async (req) => {
       if (auditResult.summary) {
         totalChecksRun = auditResult.summary.passed + auditResult.summary.errors + auditResult.summary.warnings;
       }
+
+      pageTitle = auditResult.title;
+      pageDescription = auditResult.description;
 
       console.log(`Audit complete: ${allIssues.length} issues found from ${totalChecksRun} checks`);
 
@@ -283,8 +288,8 @@ serve(async (req) => {
       displayedIssues: displayedIssues.length,
       hiddenIssues: hiddenIssueCount,
       message,
-      title: auditResult.title,
-      description: auditResult.description,
+      title: pageTitle,
+      description: pageDescription,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
