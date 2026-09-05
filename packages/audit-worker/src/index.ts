@@ -1503,14 +1503,37 @@ const MCP_TOOLS = [
   },
 ];
 
+// Rate limits per plan (requests per day) - must match
+// packages/saas/supabase/functions/validate-api-key/index.ts exactly. This
+// hosted MCP endpoint is a second, independent path to the same api_keys,
+// and previously enforced none of this - any free-tier key (the default
+// for every signup, zero payment required) got unlimited access to every
+// tool, silently bypassing the paywall the CLI already enforces.
+const MCP_RATE_LIMITS: Record<string, number> = {
+  solo: 100,
+  pro: 1000,
+  agency: 10000,
+  free: 0,
+};
+
+interface MCPKeyValidation {
+  valid: boolean;
+  userId?: string;
+  tier?: string;
+  keyId?: string;
+  error?: string;
+  limit?: number;
+  used?: number;
+}
+
 // Validate RankCLI API key
-async function validateMCPApiKey(apiKey: string): Promise<{ valid: boolean; userId?: string; tier?: string }> {
+async function validateMCPApiKey(apiKey: string): Promise<MCPKeyValidation> {
   if (!apiKey || !apiKey.startsWith('rankcli_')) {
-    return { valid: false };
+    return { valid: false, error: 'Invalid API key format' };
   }
 
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-  
+
   // Hash the API key
   const encoder = new TextEncoder();
   const data = encoder.encode(apiKey);
@@ -1520,27 +1543,51 @@ async function validateMCPApiKey(apiKey: string): Promise<{ valid: boolean; user
 
   const { data: keyData, error } = await supabase
     .from('api_keys')
-    .select('user_id')
+    .select('id, user_id')
     .eq('key_hash', keyHash)
     .is('revoked_at', null)
     .single();
 
   if (error || !keyData) {
-    return { valid: false };
+    return { valid: false, error: 'Invalid or revoked API key' };
   }
 
-  // Get subscription tier from user_subscriptions
-  const { data: subData } = await supabase
+  // Get subscription tier - plan_id on user_subscriptions is a UUID FK into
+  // subscription_plans, not the tier name itself, so this must join through.
+  const { data: subscription } = await supabase
     .from('user_subscriptions')
-    .select('plan_id')
+    .select('plan:subscription_plans (plan_id)')
     .eq('user_id', keyData.user_id)
     .single();
 
-  return {
-    valid: true,
-    userId: keyData.user_id,
-    tier: subData?.plan_id || 'free',
-  };
+  const plan = subscription?.plan as unknown as { plan_id: string } | null;
+  const tier = plan?.plan_id || 'free';
+  const limit = MCP_RATE_LIMITS[tier] ?? 0;
+
+  if (limit === 0) {
+    return { valid: false, userId: keyData.user_id, tier, error: 'API access requires a paid subscription (Solo, Pro, or Agency). Upgrade at https://rankcli.dev/pricing' };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const { count: used } = await supabase
+    .from('api_requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('api_key_id', keyData.id)
+    .gte('created_at', today.toISOString());
+
+  const usedCount = used || 0;
+  if (usedCount >= limit) {
+    return { valid: false, userId: keyData.user_id, tier, limit, used: usedCount, error: `Daily MCP request limit reached (${limit}/day on the ${tier} plan). Resets at midnight UTC.` };
+  }
+
+  await supabase.from('api_requests').insert({
+    api_key_id: keyData.id,
+    user_id: keyData.user_id,
+    endpoint: 'mcp',
+  });
+
+  return { valid: true, userId: keyData.user_id, tier, keyId: keyData.id, limit, used: usedCount + 1 };
 }
 
 // Analyze robots.txt for AI crawlers
@@ -1747,7 +1794,7 @@ app.post<{ Body: MCPRequest }>('/mcp', async (request, reply) => {
   if (!auth.valid) {
     return reply.send({
       jsonrpc: '2.0',
-      error: { code: -32600, message: 'Invalid API key' },
+      error: { code: -32600, message: auth.error || 'Invalid API key' },
       id: null,
     });
   }
