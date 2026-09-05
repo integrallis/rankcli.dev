@@ -101,7 +101,7 @@ export function AuthCallbackPage() {
           setStatus('success');
 
           // Longer delay for new users or email confirmation to read the message
-          const delay = (newUser || callbackType === 'email_confirm') ? 2500 : 800;
+          const delay = (newUser || callbackType === 'email_confirm' || callbackType === 'recovery') ? 2500 : 800;
           setTimeout(() => {
             navigate(next, { replace: true });
           }, delay);
@@ -121,6 +121,7 @@ export function AuthCallbackPage() {
   }, [isLoading, isAuthenticated, navigate, next, callbackType]);
 
   const isEmailConfirmation = callbackType === 'email_confirm';
+  const isRecovery = callbackType === 'recovery';
   const isOtpExpired = errorCode === 'otp_expired';
 
   return (
@@ -129,7 +130,11 @@ export function AuthCallbackPage() {
         <>
           <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
           <p className="text-muted-foreground">
-            {isEmailConfirmation ? 'Verifying your email...' : 'Completing sign in...'}
+            {isEmailConfirmation
+              ? 'Verifying your email...'
+              : isRecovery
+              ? 'Verifying reset link...'
+              : 'Completing sign in...'}
           </p>
         </>
       )}
@@ -146,6 +151,13 @@ export function AuthCallbackPage() {
               <p className="text-foreground text-lg font-medium mb-1">Email verified!</p>
               <p className="text-muted-foreground text-sm mb-2">
                 Your account is now active. Welcome to RankCLI!
+              </p>
+            </>
+          ) : isRecovery ? (
+            <>
+              <p className="text-foreground text-lg font-medium mb-1">Reset link verified!</p>
+              <p className="text-muted-foreground text-sm mb-2">
+                Taking you to choose a new password...
               </p>
             </>
           ) : isNewUser ? (
