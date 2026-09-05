@@ -27,6 +27,126 @@ import { useUserLTD } from '@/hooks/useLTD';
 import { AlertConfigForm } from '@/components/settings/AlertConfigForm';
 import { AIProviderSettings } from '@/components/settings/AIProviderSettings';
 
+function ChangePasswordCard() {
+  const { user } = useAuth();
+  const hasPassword = user?.identities?.some((i) => i.provider === 'email') ?? false;
+
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords don't match");
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Re-verify identity with the current password before changing it,
+      // so an unattended logged-in session can't be used to silently take
+      // over the password (a valid session alone is enough for
+      // auth.updateUser to succeed - this check is on top of that).
+      if (hasPassword) {
+        const { error: verifyError } = await supabase.auth.signInWithPassword({
+          email: user!.email!,
+          password: currentPassword,
+        });
+        if (verifyError) {
+          toast.error('Current password is incorrect');
+          return;
+        }
+      }
+
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success(hasPassword ? 'Password updated' : 'Password set');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Password</CardTitle>
+        <CardDescription>
+          {hasPassword
+            ? 'Change the password for your account'
+            : "You signed up with an OAuth provider - set a password to also sign in with email"}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4 max-w-sm">
+          {hasPassword && (
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">Current password</Label>
+              <Input
+                id="currentPassword"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+                disabled={isSaving}
+              />
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <Label htmlFor="newPassword">{hasPassword ? 'New password' : 'Password'}</Label>
+            <Input
+              id="newPassword"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required
+              disabled={isSaving}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm password</Label>
+            <Input
+              id="confirmPassword"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              disabled={isSaving}
+            />
+          </div>
+
+          <Button type="submit" disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Saving...
+              </>
+            ) : hasPassword ? (
+              'Update password'
+            ) : (
+              'Set password'
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
 interface UserSubscription {
   plan_id: string | null;
   status: string;
@@ -516,6 +636,8 @@ export function AccountPage() {
                     </div>
                   </CardContent>
                 </Card>
+
+                <ChangePasswordCard />
 
                 <Card className="border-destructive/50">
                   <CardHeader>
