@@ -366,7 +366,12 @@ jobs:
           git matches what's live on npm - see build-cli.yml.
 
           Co-Authored-By: github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
-          git push origin main
+          # `git worktree add <path> origin/main` checks out a detached
+          # HEAD at that commit, not a local branch named main - `git push
+          # origin main` has no local "main" ref to find. HEAD:main maps
+          # the current (detached) commit to the remote branch explicitly,
+          # which works regardless of whether HEAD is on a named branch.
+          git push origin HEAD:main
 
       - name: Create publish summary
         run: |
