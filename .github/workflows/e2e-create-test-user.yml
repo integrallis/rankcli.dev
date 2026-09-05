@@ -1,0 +1,83 @@
+name: E2E Create Test User
+
+on:
+  workflow_dispatch:
+
+jobs:
+  create-user:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Supabase user, sign in, mint API key
+        env:
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          ANON_KEY: ${{ secrets.RANKCLI_SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          SUPABASE_URL="https://bspljbxwbjiqueeyzyat.supabase.co"
+
+          TS=$(date +%s)
+          EMAIL="bsbodden+rankcli-e2e-${TS}@gmail.com"
+          PASSWORD=$(openssl rand -base64 24)
+          echo "::add-mask::$PASSWORD"
+
+          echo "Creating test user: $EMAIL"
+          CREATE_RESP=$(curl -s -X POST "$SUPABASE_URL/auth/v1/admin/users" \
+            -H "apikey: $SERVICE_KEY" \
+            -H "Authorization: Bearer $SERVICE_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"email_confirm\":true}")
+
+          USER_ID=$(node -pe 'JSON.parse(process.argv[1]).id' "$CREATE_RESP" 2>/dev/null || echo "")
+          if [ -z "$USER_ID" ] || [ "$USER_ID" = "undefined" ]; then
+            echo "Create user failed:"
+            echo "$CREATE_RESP"
+            exit 1
+          fi
+          echo "Created user_id: $USER_ID"
+
+          echo "Signing in..."
+          SIGNIN_RESP=$(curl -s -X POST "$SUPABASE_URL/auth/v1/token?grant_type=password" \
+            -H "apikey: $ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}")
+
+          ACCESS_TOKEN=$(node -pe 'JSON.parse(process.argv[1]).access_token' "$SIGNIN_RESP" 2>/dev/null || echo "")
+          echo "::add-mask::$ACCESS_TOKEN"
+          if [ -z "$ACCESS_TOKEN" ] || [ "$ACCESS_TOKEN" = "undefined" ]; then
+            echo "Sign-in failed:"
+            echo "$SIGNIN_RESP"
+            exit 1
+          fi
+
+          echo "Minting RankCLI API key..."
+          KEY_RESP=$(curl -s -X POST "$SUPABASE_URL/functions/v1/create-api-key" \
+            -H "Authorization: Bearer $ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"name":"e2e-sandbox"}')
+
+          API_KEY=$(node -pe 'JSON.parse(process.argv[1]).key' "$KEY_RESP" 2>/dev/null || echo "")
+          echo "::add-mask::$API_KEY"
+          if [ -z "$API_KEY" ] || [ "$API_KEY" = "undefined" ]; then
+            echo "Create API key failed:"
+            echo "$KEY_RESP"
+            exit 1
+          fi
+
+          mkdir -p out
+          EMAIL="$EMAIL" PASSWORD="$PASSWORD" USER_ID="$USER_ID" API_KEY="$API_KEY" node -e '
+            const fs = require("fs");
+            fs.writeFileSync("out/test-user.json", JSON.stringify({
+              email: process.env.EMAIL,
+              password: process.env.PASSWORD,
+              user_id: process.env.USER_ID,
+              api_key: process.env.API_KEY,
+            }, null, 2));
+          '
+          echo "Wrote out/test-user.json"
+
+      - name: Upload credentials artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-user
+          path: out/test-user.json
+          retention-days: 1
