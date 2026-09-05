@@ -1,0 +1,30 @@
+name: E2E Check Create PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      audit_id:
+        description: 'audits.id to retry create-seo-pr for'
+        required: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Directly invoke create-seo-pr and dump the response
+        env:
+          SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          set -euo pipefail
+          SUPABASE_URL="https://bspljbxwbjiqueeyzyat.supabase.co"
+
+          echo "=== github_prs rows for reference ==="
+          curl -s "$SUPABASE_URL/rest/v1/github_prs?order=created_at.desc&limit=5" \
+            -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY"
+          echo
+
+          echo "=== invoking create-seo-pr for audit ${{ inputs.audit_id }} ==="
+          curl -s -w "\nHTTP %{http_code}\n" -X POST "$SUPABASE_URL/functions/v1/create-seo-pr" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $SERVICE_KEY" \
+            -d "{\"auditId\":\"${{ inputs.audit_id }}\"}"
