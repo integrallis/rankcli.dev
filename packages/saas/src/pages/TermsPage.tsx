@@ -112,9 +112,8 @@ export function TermsPage() {
 
           <h2>12. Governing law</h2>
           <p>
-            These Terms are governed by the laws of the United States and the state in
-            which Integrallis Software, LLC is organized, without regard to
-            conflict-of-law principles.
+            These Terms are governed by the laws of the State of Arizona, United States,
+            without regard to conflict-of-law principles.
           </p>
 
           <h2>Contact</h2>
