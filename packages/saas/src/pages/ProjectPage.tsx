@@ -154,6 +154,33 @@ export function ProjectPage() {
     }
   }, [notification]);
 
+  // Plain-language explanations for the category scores - the raw labels
+  // ("Crawlability", "AI Ready") mean nothing to a non-technical founder
+  // without this, and developers already get the full technical detail
+  // in the issues list below regardless.
+  const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+    crawlability: 'Can search engines find and read your pages at all',
+    onPage: 'Titles, headings, and meta tags search engines use to understand each page',
+    content: "Whether your content is substantial and well-structured enough to rank",
+    performance: 'How fast your site loads - slow sites lose visitors and rankings',
+    security: "HTTPS and security headers - search engines and users don't trust insecure sites",
+    aiReadiness: 'Whether AI assistants like ChatGPT and Claude can find and cite your site',
+  };
+
+  // One plain-language sentence a non-technical founder can act on without
+  // reading a single check name - the full technical breakdown is still
+  // right below for anyone who wants it, this doesn't replace that.
+  function getPlainLanguageSummary(score: number | null, errorCount: number, warningCount: number): string {
+    if (score === null) return '';
+    if (errorCount > 0) {
+      return `${errorCount} critical issue${errorCount === 1 ? ' is' : 's are'} likely hurting how search engines and AI assistants see your site.`;
+    }
+    if (warningCount > 0) {
+      return `No critical issues - ${warningCount} smaller improvement${warningCount === 1 ? '' : 's'} could help you rank better.`;
+    }
+    return 'Your site is in good shape - search engines and AI assistants can find and understand it well.';
+  }
+
   const getScoreColor = (score: number | null) => {
     if (score === null) return 'text-muted-foreground';
     if (score >= 80) return 'text-green-400';
@@ -289,6 +316,8 @@ export function ProjectPage() {
 
   // Calculate category scores from latest audit
   const healthScores = (latestAudit?.health_scores || {}) as Record<string, number | undefined>;
+  const errorCount = issues.filter((i) => i.severity === 'error').length;
+  const warningCount = issues.filter((i) => i.severity === 'warning').length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -440,6 +469,11 @@ export function ProjectPage() {
                   {project.last_audit_score ?? '-'}
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">SEO Health Score</p>
+                {latestAudit && (
+                  <p className="text-xs text-muted-foreground/80 mt-2 text-center max-w-[16rem]">
+                    {getPlainLanguageSummary(project.last_audit_score, errorCount, warningCount)}
+                  </p>
+                )}
               </div>
 
               {/* Radar Chart */}
@@ -458,28 +492,37 @@ export function ProjectPage() {
               </div>
 
               {/* Category Scores */}
-              <div className="grid grid-cols-2 gap-3 content-center">
-                {[
-                  { key: 'crawlability', label: 'Crawlability' },
-                  { key: 'onPage', label: 'On-Page' },
-                  { key: 'content', label: 'Content' },
-                  { key: 'performance', label: 'Performance' },
-                  { key: 'security', label: 'Security' },
-                  { key: 'aiReadiness', label: 'AI Ready' },
-                ].map(({ key, label }) => (
-                  <div key={key} className="flex items-center justify-between px-2 py-1 rounded bg-muted/50">
-                    <span className="text-xs text-muted-foreground">{label}</span>
-                    <span
-                      className={cn(
-                        'text-sm font-medium tabular-nums',
-                        getScoreColor(healthScores[key] ?? null)
-                      )}
-                    >
-                      {healthScores[key] ?? '-'}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <TooltipProvider>
+                <div className="grid grid-cols-2 gap-3 content-center">
+                  {[
+                    { key: 'crawlability', label: 'Crawlability' },
+                    { key: 'onPage', label: 'On-Page' },
+                    { key: 'content', label: 'Content' },
+                    { key: 'performance', label: 'Performance' },
+                    { key: 'security', label: 'Security' },
+                    { key: 'aiReadiness', label: 'AI Ready' },
+                  ].map(({ key, label }) => (
+                    <Tooltip key={key}>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center justify-between px-2 py-1 rounded bg-muted/50 cursor-help">
+                          <span className="text-xs text-muted-foreground">{label}</span>
+                          <span
+                            className={cn(
+                              'text-sm font-medium tabular-nums',
+                              getScoreColor(healthScores[key] ?? null)
+                            )}
+                          >
+                            {healthScores[key] ?? '-'}
+                          </span>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-64">
+                        <p>{CATEGORY_DESCRIPTIONS[key]}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
+              </TooltipProvider>
             </div>
           </CardContent>
         </Card>
@@ -507,11 +550,11 @@ export function ProjectPage() {
                 <div className="flex gap-4 text-sm">
                   <span className="flex items-center gap-1">
                     <span className="h-2 w-2 rounded-full bg-red-500" />
-                    {issues.filter((i) => i.severity === 'error').length} errors
+                    {errorCount} errors
                   </span>
                   <span className="flex items-center gap-1">
                     <span className="h-2 w-2 rounded-full bg-yellow-500" />
-                    {issues.filter((i) => i.severity === 'warning').length} warnings
+                    {warningCount} warnings
                   </span>
                   <span className="flex items-center gap-1">
                     <span className="h-2 w-2 rounded-full bg-blue-500" />
