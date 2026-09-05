@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-05T16:55:37.571Z
+// Generated: 2026-09-05T17:18:06.621Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -9353,7 +9353,7 @@ var ISSUE_DEFINITIONS = {
     title: "No explicit AI crawler rules on a Cloudflare-fronted site",
     description: 'This site appears to be served through Cloudflare but robots.txt has no explicit Allow/Disallow rules for AI crawlers. Cloudflare blocks "mixed-use" AI crawlers by default on ad-hosting zones starting September 15, 2026, and is rolling out Pay Per Crawl / Pay Per Use gating beyond that.',
     impact: "Without an explicit rule, whether AI crawlers (and future citation opportunities in ChatGPT, Claude, Perplexity, etc.) can reach this site now depends on Cloudflare account-level bot-management defaults, not on this codebase \u2014 a silent, invisible-to-git failure mode.",
-    howToFix: "Add explicit User-agent rules for GPTBot, Claude-Web/ClaudeBot, PerplexityBot, and Google-Extended in robots.txt, and confirm the matching allow/block posture in the Cloudflare dashboard under Bot Management \u2192 AI Crawl Control. If you'd rather charge than block, Cloudflare's Pay Per Crawl (AI Crawl Control \u2192 Payments tab) lets you set a per-crawl price instead of a flat allow/deny \u2014 worth a look if you get meaningful AI-crawler traffic."
+    howToFix: `Two ways to make your stance explicit, either works: (1) add a Content-Signal line to robots.txt - e.g. "Content-Signal: search=yes,ai-train=no,use=reference" - the format Cloudflare's AI Crawl Control update actually reads, or (2) add explicit User-agent rules for GPTBot, Claude-Web/ClaudeBot, PerplexityBot, and Google-Extended. Either way, confirm the matching allow/block posture in the Cloudflare dashboard under Bot Management \u2192 AI Crawl Control. If you'd rather charge than block, Cloudflare's Pay Per Crawl (AI Crawl Control \u2192 Payments tab) lets you set a per-crawl price instead of a flat allow/deny \u2014 worth a look if you get meaningful AI-crawler traffic.`
   },
   NO_AGENT_EXPERIENCE_SURFACE: {
     code: "NO_AGENT_EXPERIENCE_SURFACE",
@@ -13190,6 +13190,15 @@ async function checkLlmsTxt(baseUrl) {
     };
   }
 }
+function parseContentSignal(robotsTxtContent) {
+  for (const line of robotsTxtContent.split("\n")) {
+    const trimmed = line.trim();
+    if (trimmed.toLowerCase().startsWith("content-signal:")) {
+      return trimmed.substring(trimmed.indexOf(":") + 1).trim();
+    }
+  }
+  return null;
+}
 async function checkAIBotBlocking(baseUrl) {
   const issues = [];
   const url = new URL("/robots.txt", baseUrl).href;
@@ -13207,17 +13216,21 @@ async function checkAIBotBlocking(baseUrl) {
           robotsExists: false,
           blockedBots: [],
           allowedBots: Object.keys(AI_BOTS),
-          allBlocked: false
+          allBlocked: false,
+          contentSignal: null
         }
       };
     }
     const content = response.data;
     const lines = content.split("\n");
+    const contentSignal = parseContentSignal(content);
     let currentUserAgent = "";
     const botRules = {};
     for (const line of lines) {
       const trimmed = line.trim().toLowerCase();
-      if (trimmed.startsWith("user-agent:")) {
+      if (trimmed.startsWith("content-signal:")) {
+        continue;
+      } else if (trimmed.startsWith("user-agent:")) {
         currentUserAgent = trimmed.split(":")[1].trim();
       } else if (trimmed.startsWith("disallow:")) {
         const path = trimmed.split(":")[1]?.trim() || "";
@@ -13290,7 +13303,8 @@ async function checkAIBotBlocking(baseUrl) {
         robotsExists: true,
         blockedBots,
         allowedBots,
-        allBlocked: blockedBots.length === Object.keys(AI_BOTS).length
+        allBlocked: blockedBots.length === Object.keys(AI_BOTS).length,
+        contentSignal
       }
     };
   } catch (error) {
@@ -13300,7 +13314,8 @@ async function checkAIBotBlocking(baseUrl) {
         robotsExists: false,
         blockedBots: [],
         allowedBots: Object.keys(AI_BOTS),
-        allBlocked: false
+        allBlocked: false,
+        contentSignal: null
       }
     };
   }
@@ -13354,7 +13369,7 @@ async function checkCloudflareAICrawlerGate(baseUrl, botBlocking) {
   } catch {
     behindCloudflare = false;
   }
-  const hasExplicitAIRules = botBlocking.robotsExists && botBlocking.blockedBots.length > 0;
+  const hasExplicitAIRules = botBlocking.robotsExists && (botBlocking.blockedBots.length > 0 || !!botBlocking.contentSignal);
   const ambiguous = behindCloudflare && !hasExplicitAIRules;
   if (ambiguous) {
     issues.push({
