@@ -136,8 +136,8 @@ importers:
         specifier: workspace:*
         version: link:../agent-runtime
       '@supabase/supabase-js':
-        specifier: ^2.45.0
-        version: 2.97.0
+        specifier: ^2.98.0
+        version: 2.98.0
       axios:
         specifier: ^1.6.0
         version: 1.13.5
