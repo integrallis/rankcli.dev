@@ -345,6 +345,13 @@ jobs:
           if [ -n "${{ secrets.AI_KEY_ENCRYPTION_SECRET }}" ]; then
             OPTIONAL_SECRETS="$OPTIONAL_SECRETS AI_KEY_ENCRYPTION_SECRET=\"${{ secrets.AI_KEY_ENCRYPTION_SECRET }}\""
           fi
+          # Authenticates the scheduled send-weekly-reports.yml workflow to
+          # send-weekly-report - that function already accepts the service
+          # role key too, but a dedicated cron secret means the actual
+          # service role key never has to leave Supabase's own secrets.
+          if [ -n "${{ secrets.CRON_SECRET }}" ]; then
+            OPTIONAL_SECRETS="$OPTIONAL_SECRETS CRON_SECRET=\"${{ secrets.CRON_SECRET }}\""
+          fi
           if [ -n "$OPTIONAL_SECRETS" ]; then
             eval "supabase secrets set $OPTIONAL_SECRETS"
           fi

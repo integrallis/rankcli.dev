@@ -1,0 +1,67 @@
+# Triggers the already-built send-weekly-report edge function, which does
+# all the real work: finds every user with notification_preferences.
+# email_weekly_report = true, builds a per-user report from their actual
+# project scores, and sends it via Resend (rankcli.dev is a verified
+# sending domain there already). This workflow's only job is to be the
+# clock - see packages/saas/supabase/functions/send-weekly-report/index.ts
+# for the actual logic, and AccountPage.tsx's Notifications tab for the
+# dashboard toggle customers use to opt in.
+
+name: Send Weekly Reports
+
+on:
+  schedule:
+    # Monday 9am UTC - the function computes "last Monday" through "last
+    # Sunday" as the reporting week, so running early Monday covers the
+    # week that just ended.
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Compute and log what would be sent, but do not actually send emails'
+        required: false
+        default: 'true'
+        type: boolean
+      user_id:
+        description: 'Send to only this user (for testing) - leave blank for everyone opted in'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call send-weekly-report
+        env:
+          SUPABASE_URL: ${{ secrets.RANKCLI_SUPABASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          USER_ID: ${{ inputs.user_id }}
+        run: |
+          # workflow_dispatch's dry_run defaults to 'true'; the schedule
+          # trigger has no inputs at all, so DRY_RUN is empty there -
+          # treat "not explicitly false" as a real send, only the manual
+          # dispatch's own default (or an explicit true) holds it back.
+          BODY=$(node -e "
+            const dryRun = process.env.DRY_RUN === 'true';
+            const userId = process.env.USER_ID || undefined;
+            console.log(JSON.stringify({ dryRun, userId }));
+          ")
+          echo "Request body: $BODY"
+
+          RESPONSE=$(curl -sS -w '\n%{http_code}' -X POST "$SUPABASE_URL/functions/v1/send-weekly-report" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            -d "$BODY")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          RESPONSE_BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "$RESPONSE_BODY"
+          echo "::notice::send-weekly-report responded $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "::error::send-weekly-report failed"
+            exit 1
+          fi
