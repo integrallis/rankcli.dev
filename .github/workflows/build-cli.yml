@@ -342,13 +342,20 @@ jobs:
           # in git.
           VERSION="${{ github.event.release.tag_name }}"
           VERSION="${VERSION#v}"
-          # The release event checks out the tag's commit (detached HEAD),
-          # which may be behind main by the time this runs - work from a
-          # fresh checkout of main itself so the commit lands as a
-          # fast-forward regardless.
+          # A same-directory `git checkout main` (tried previously) does NOT
+          # discard the "Final workspace dependency fix" step's uncommitted
+          # workspace:* -> pinned-version rewrite still sitting in this
+          # working tree - checkout-by-branch-name preserves uncommitted
+          # local modifications through the switch instead of resetting
+          # them, so that commit captured both changes and broke
+          # `pnpm install --frozen-lockfile` on main. Use a fully separate
+          # worktree instead, with no relation to this directory's
+          # uncommitted state, and fetched fresh so the commit lands as a
+          # fast-forward even if main has moved since the release tag.
           git fetch origin main
-          git checkout main
-          sed -i "s|\"version\": \"[^\"]*\"|\"version\": \"$VERSION\"|" packages/cli/package.json
+          git worktree add /tmp/version-bump origin/main
+          sed -i "s|\"version\": \"[^\"]*\"|\"version\": \"$VERSION\"|" /tmp/version-bump/packages/cli/package.json
+          cd /tmp/version-bump
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add packages/cli/package.json
