@@ -173,7 +173,7 @@ jobs:
     needs: build
     if: github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish == 'true')
     permissions:
-      contents: read
+      contents: write # also commits packages/cli's version bump back to main on a release publish
       id-token: write # required for npm OIDC / Trusted Publishing - no NPM_TOKEN needed
 
     steps:
@@ -301,6 +301,39 @@ jobs:
         run: |
           echo "Publishing @rankcli/cli@$(node -p "require('./package.json').version")"
           npm publish --access public --ignore-scripts
+
+      - name: Commit version bump back to main
+        if: github.event_name == 'release'
+        run: |
+          # This step only runs on a real release, publishing always
+          # succeeded to get here, and the version was only ever bumped
+          # in-memory by "Set CLI version from release tag" above - commit
+          # it back so package.json in git matches what's actually live on
+          # npm. Work from a clean checkout of packages/cli/package.json
+          # (not the one mutated in-place above) so the "Final workspace
+          # dependency fix" step's workspace:* -> pinned-version rewrite,
+          # which is only correct for the published tarball, never lands
+          # in git.
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
+          # The release event checks out the tag's commit (detached HEAD),
+          # which may be behind main by the time this runs - work from a
+          # fresh checkout of main itself so the commit lands as a
+          # fast-forward regardless.
+          git fetch origin main
+          git checkout main
+          sed -i "s|\"version\": \"[^\"]*\"|\"version\": \"$VERSION\"|" packages/cli/package.json
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add packages/cli/package.json
+          git diff --staged --quiet && echo "No changes to commit" && exit 0
+          git commit -m "chore(cli): bump published version to $VERSION
+
+          Auto-committed after a successful npm publish so package.json in
+          git matches what's live on npm - see build-cli.yml.
+
+          Co-Authored-By: github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+          git push origin main
 
       - name: Create publish summary
         run: |
