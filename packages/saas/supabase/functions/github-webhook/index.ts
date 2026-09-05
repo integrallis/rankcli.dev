@@ -193,42 +193,57 @@ serve(async (req: Request) => {
 
     console.log(`Received GitHub event: ${event}`);
 
-    switch (event) {
-      case 'installation':
-        await handleInstallation(supabase, payload as GitHubInstallationEvent);
-        break;
+    // handlePush/handlePullRequest/handleWorkflowRun/handleIssueComment chain
+    // into run-audit (a real crawl) and then create-seo-pr (an LLM call plus
+    // several GitHub API calls) - together these routinely take well past
+    // GitHub's webhook delivery timeout. Ack immediately and let the actual
+    // work continue in the background via waitUntil, instead of blocking
+    // the response on it (confirmed via real webhook deliveries timing out).
+    const handleEvent = async () => {
+      try {
+        switch (event) {
+          case 'installation':
+            await handleInstallation(supabase, payload as GitHubInstallationEvent);
+            break;
 
-      case 'push':
-        await handlePush(supabase, payload as GitHubPushEvent);
-        break;
+          case 'push':
+            await handlePush(supabase, payload as GitHubPushEvent);
+            break;
 
-      case 'pull_request':
-        await handlePullRequest(supabase, payload as GitHubPullRequestEvent);
-        break;
+          case 'pull_request':
+            await handlePullRequest(supabase, payload as GitHubPullRequestEvent);
+            break;
 
-      case 'workflow_run':
-        await handleWorkflowRun(supabase, payload as GitHubWorkflowRunEvent);
-        break;
+          case 'workflow_run':
+            await handleWorkflowRun(supabase, payload as GitHubWorkflowRunEvent);
+            break;
 
-      case 'create':
-        await handleCreate(supabase, payload as GitHubCreateEvent);
-        break;
+          case 'create':
+            await handleCreate(supabase, payload as GitHubCreateEvent);
+            break;
 
-      case 'issue_comment':
-        await handleIssueComment(supabase, payload as GitHubIssueCommentEvent);
-        break;
+          case 'issue_comment':
+            await handleIssueComment(supabase, payload as GitHubIssueCommentEvent);
+            break;
 
-      case 'issues':
-        await handleIssues(supabase, payload as GitHubIssuesEvent);
-        break;
+          case 'issues':
+            await handleIssues(supabase, payload as GitHubIssuesEvent);
+            break;
 
-      case 'ping':
-        console.log('Received ping event - webhook configured successfully');
-        break;
+          case 'ping':
+            console.log('Received ping event - webhook configured successfully');
+            break;
 
-      default:
-        console.log(`Unhandled event type: ${event}`);
-    }
+          default:
+            console.log(`Unhandled event type: ${event}`);
+        }
+      } catch (error) {
+        console.error(`Webhook background handling error (${event}):`, error);
+      }
+    };
+
+    // deno-lint-ignore no-explicit-any
+    (globalThis as any).EdgeRuntime?.waitUntil(handleEvent());
 
     return new Response(
       JSON.stringify({ received: true, event }),
