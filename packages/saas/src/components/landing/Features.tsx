@@ -97,21 +97,21 @@ export function Features() {
           </p>
         </ScrollReveal>
 
-        <StaggerContainer className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10 max-w-5xl mx-auto">
+        <StaggerContainer className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10 max-w-5xl mx-auto items-stretch">
           {features.map((feature, index) => (
-            <StaggerItem key={index}>
-              <div className={`flex gap-4 ${feature.highlight ? 'p-4 -m-4 rounded-lg bg-primary/5 border border-primary/20' : ''}`}>
+            <StaggerItem key={index} className="h-full">
+              <div className={`flex gap-4 h-full ${feature.highlight ? 'p-4 -m-4 rounded-lg bg-primary/5 border border-primary/20' : ''}`}>
                 <div className="flex-shrink-0">
                   <feature.icon className={`h-5 w-5 ${feature.highlight ? 'text-primary' : 'text-muted-foreground'}`} strokeWidth={1.5} />
                 </div>
-                <div>
+                <div className="flex flex-col">
                   <h3 className="font-medium mb-1 tracking-tight">
                     {feature.title}
                     {feature.highlight && (
                       <span className="ml-2 text-xs text-primary font-normal">New</span>
                     )}
                   </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-muted-foreground leading-relaxed min-h-[5rem] sm:min-h-[5.5rem] lg:min-h-[6rem]">
                     {feature.description}
                   </p>
                 </div>

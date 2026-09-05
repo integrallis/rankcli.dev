@@ -33,7 +33,7 @@ const approaches = [
       { cmd: 'rankcli apply --auto', desc: 'Apply fixes locally' },
       { cmd: 'git push', desc: 'Push when ready' },
     ],
-    highlight: 'Solo plan',
+    highlight: 'Every plan',
   },
   {
     title: 'Full Automation',
@@ -44,7 +44,7 @@ const approaches = [
       { cmd: '✓ Auto-audit on push', desc: 'Runs on every deploy' },
       { cmd: '✓ Get issues in PRs', desc: 'Review and fix' },
     ],
-    highlight: 'Pro plan',
+    highlight: 'Every plan',
   },
 ];
 
@@ -57,7 +57,7 @@ export function HowItWorks() {
             How it works
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Three commands to better SEO. No dashboards to check. No meetings to schedule.
+            Three commands to better SEO and GEO. No dashboards to check. No meetings to schedule.
           </p>
         </ScrollReveal>
 
@@ -71,9 +71,11 @@ export function HowItWorks() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
                 <p className="text-muted-foreground mb-4 text-sm">{step.description}</p>
-                <code className="text-xs px-3 py-1.5 bg-muted rounded-md font-mono">
-                  {step.code}
-                </code>
+                <div className="w-full max-w-full overflow-x-auto">
+                  <code className="inline-block text-xs px-3 py-1.5 bg-muted rounded-md font-mono whitespace-nowrap">
+                    {step.code}
+                  </code>
+                </div>
               </div>
             </ScrollReveal>
           ))}
@@ -113,7 +115,7 @@ export function HowItWorks() {
                 <div className="space-y-2">
                   {approach.commands.map((cmd, i) => (
                     <div key={i} className="flex items-center gap-3 text-sm">
-                      <code className="px-2 py-1 bg-muted rounded text-xs font-mono flex-shrink-0">
+                      <code className="px-2 py-1 bg-muted rounded text-xs font-mono flex-shrink-0 whitespace-nowrap">
                         {cmd.cmd}
                       </code>
                       <span className="text-muted-foreground text-xs">{cmd.desc}</span>

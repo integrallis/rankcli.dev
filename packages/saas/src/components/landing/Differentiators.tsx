@@ -7,11 +7,11 @@ import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ui/scr
 const differentiators = [
   {
     icon: Bot,
-    title: 'GEO Analysis',
+    title: 'GEO (AI Search Optimization)',
     description: 'Check if GPTBot, ClaudeBot, and PerplexityBot can access your site.',
-    detail: 'First CLI tool with Generative Engine Optimization.',
+    detail: 'First CLI tool with Generative Engine Optimization - get cited in ChatGPT, Claude, and Perplexity answers.',
     badge: 'New',
-    cta: { text: 'Try GEO Check', link: '/docs' },
+    cta: { text: 'Try the GEO Check', link: '/docs' },
   },
   {
     icon: Terminal,

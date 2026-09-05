@@ -31,7 +31,7 @@ export function Hero() {
 
           {/* Subheadline */}
           <ScrollReveal delay={0.2}>
-            <p className="text-lg text-muted-foreground mb-3 max-w-2xl leading-relaxed">
+            <p className="text-lg text-muted-foreground mb-3 max-w-2xl leading-relaxed text-balance">
               Get cited, not just crawled.{' '}
               <span className="text-primary font-semibold">280+ automated checks. Auto-fix PRs. GitHub integration.</span>
             </p>
