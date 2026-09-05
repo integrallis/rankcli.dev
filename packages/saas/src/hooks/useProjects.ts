@@ -557,13 +557,21 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
     if (!user || !projectId) return false;
 
     try {
-      const { error: connectError } = await supabase
-        .from('projects')
-        .update({ github_repo_url: repoUrl })
-        .eq('id', projectId)
-        .eq('user_id', user.id);
+      // Resolves the installation covering this repo (not just the repo
+      // URL) - create-seo-pr needs github_installation_id set to ever open
+      // an auto-fix PR, and that never happens from a plain URL alone.
+      const { data, error: connectError } = await supabase.functions.invoke<{
+        linked: boolean;
+        reason?: string;
+      }>('connect-github-repo', {
+        body: { projectId, repoUrl },
+      });
 
       if (connectError) throw connectError;
+
+      if (data && !data.linked) {
+        setError(data.reason || 'RankCLI GitHub App is not installed on this repository yet');
+      }
 
       await fetchProject();
       return true;

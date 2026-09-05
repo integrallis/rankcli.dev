@@ -3,7 +3,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import * as jose from 'https://deno.land/x/jose@v4.14.4/index.ts';
+import { getInstallationToken } from '../_shared/github-app.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -34,108 +34,6 @@ interface RepoContext {
   framework: string;
   files: string[];
   appRoot: string; // Root path of the app (e.g., 'ui/', 'web/', or '')
-}
-
-// Convert PKCS#1 PEM to PKCS#8 PEM format
-function convertPkcs1ToPkcs8(pkcs1Pem: string): string {
-  // If already PKCS#8, return as-is
-  if (pkcs1Pem.includes('BEGIN PRIVATE KEY')) {
-    return pkcs1Pem;
-  }
-
-  // Extract the base64 content
-  const base64 = pkcs1Pem
-    .replace('-----BEGIN RSA PRIVATE KEY-----', '')
-    .replace('-----END RSA PRIVATE KEY-----', '')
-    .replace(/\s/g, '');
-
-  // Decode the PKCS#1 key
-  const pkcs1Bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-
-  // PKCS#8 header for RSA keys (ASN.1 structure)
-  // SEQUENCE {
-  //   INTEGER 0 (version)
-  //   SEQUENCE { OID rsaEncryption, NULL }
-  //   OCTET STRING { <PKCS#1 key> }
-  // }
-  const rsaOid = [0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0x00];
-
-  // Build the PKCS#8 structure
-  const algorithmSeq = [0x30, rsaOid.length, ...rsaOid];
-
-  // Encode OCTET STRING with PKCS#1 content
-  const octetStringHeader = encodeLength(pkcs1Bytes.length);
-  const octetString = [0x04, ...octetStringHeader, ...pkcs1Bytes];
-
-  // Version (INTEGER 0)
-  const version = [0x02, 0x01, 0x00];
-
-  // Inner content
-  const innerContent = [...version, ...algorithmSeq, ...octetString];
-
-  // Outer SEQUENCE
-  const outerHeader = encodeLength(innerContent.length);
-  const pkcs8Bytes = new Uint8Array([0x30, ...outerHeader, ...innerContent]);
-
-  // Convert to base64
-  const pkcs8Base64 = btoa(String.fromCharCode(...pkcs8Bytes));
-
-  // Format as PEM with line breaks every 64 chars
-  const lines = pkcs8Base64.match(/.{1,64}/g) || [];
-  return `-----BEGIN PRIVATE KEY-----\n${lines.join('\n')}\n-----END PRIVATE KEY-----`;
-}
-
-// ASN.1 DER length encoding
-function encodeLength(length: number): number[] {
-  if (length < 128) {
-    return [length];
-  } else if (length < 256) {
-    return [0x81, length];
-  } else if (length < 65536) {
-    return [0x82, (length >> 8) & 0xff, length & 0xff];
-  }
-  return [0x83, (length >> 16) & 0xff, (length >> 8) & 0xff, length & 0xff];
-}
-
-// Get installation access token from GitHub App
-async function getInstallationToken(installationId: number, privateKeyBase64: string, appId: string): Promise<string> {
-  // Decode the base64-encoded PEM key
-  let pemKey = atob(privateKeyBase64);
-
-  // Convert PKCS#1 to PKCS#8 if needed (jose only supports PKCS#8)
-  pemKey = convertPkcs1ToPkcs8(pemKey);
-
-  // Import the private key using jose library
-  const privateKey = await jose.importPKCS8(pemKey, 'RS256');
-
-  // Create and sign the JWT
-  const jwt = await new jose.SignJWT({})
-    .setProtectedHeader({ alg: 'RS256', typ: 'JWT' })
-    .setIssuer(appId)
-    .setIssuedAt(Math.floor(Date.now() / 1000) - 60)
-    .setExpirationTime('10m')
-    .sign(privateKey);
-
-  // Exchange JWT for installation access token
-  const response = await fetch(
-    `https://api.github.com/app/installations/${installationId}/access_tokens`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${jwt}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    }
-  );
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to get installation token: ${error}`);
-  }
-
-  const result = await response.json();
-  return result.token;
 }
 
 // Fetch file content from GitHub
