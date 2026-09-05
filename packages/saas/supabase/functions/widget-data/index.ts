@@ -14,9 +14,17 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  let token: string | undefined;
   try {
-    const { token } = await req.json();
+    ({ token } = await req.json());
+  } catch {
+    return new Response(JSON.stringify({ error: 'Invalid request body' }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
+  try {
     if (!token || !token.startsWith('widget_')) {
       return new Response(JSON.stringify({ error: 'Invalid widget token' }), {
         status: 400,

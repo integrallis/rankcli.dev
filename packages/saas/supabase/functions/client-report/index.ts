@@ -82,8 +82,8 @@ Deno.serve(async (req) => {
 
     // Get issues for the audit
     const { data: issues } = await supabase
-      .from('issues')
-      .select('id, severity, code, message, page_url')
+      .from('audit_issues')
+      .select('id, severity, code, message:description, page_url:affected_urls')
       .eq('audit_id', audit.id)
       .order('severity', { ascending: true })
 
