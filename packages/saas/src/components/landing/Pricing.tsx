@@ -97,9 +97,9 @@ const freeTier = {
   highlights: [
     'Unlimited audits via MCP/CLI (your own AI key)',
     'No signup required for MCP',
-    '1 hosted site, 100 checks, audit history',
+    '1 hosted site, all 280+ checks, audit history',
+    'GitHub auto-fix PRs (connect your own AI key)',
     'GEO + AI-crawler-access checks included',
-    'Basic dashboard',
   ],
 };
 
@@ -450,7 +450,7 @@ export function Pricing() {
             <Link to="/free-audit" className="text-foreground hover:text-primary transition-colors">
               Try our free audit tool
             </Link>{' '}
-            — 50 checks, no signup required.
+            — all 280+ checks, no signup required.
           </p>
         </ScrollReveal>
       </div>
