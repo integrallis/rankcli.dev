@@ -15,6 +15,13 @@ import { createAnalysisServer } from '@rankcli/mcp-server/server';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { EventEmitter } from 'events';
 import { randomUUID } from 'crypto';
+import {
+  OPENAI_FAST,
+  ANTHROPIC_FAST,
+  GOOGLE_FAST,
+  GOOGLE_ENDPOINT,
+  PERPLEXITY_SEARCH,
+} from './models.js';
 
 // Environment
 const PORT = parseInt(process.env.PORT || '8080', 10);
@@ -155,10 +162,10 @@ setInterval(() => {
 
 // LLM Provider configurations
 const LLM_PROVIDERS = [
-  { id: 'openai', name: 'ChatGPT', model: 'gpt-4o-mini' },
-  { id: 'anthropic', name: 'Claude', model: 'claude-haiku-4-5' },
-  { id: 'google', name: 'Gemini', model: 'gemini-pro' },
-  { id: 'perplexity', name: 'Perplexity', model: 'llama-3.1-sonar-small-128k-online' },
+  { id: 'openai', name: 'ChatGPT', model: OPENAI_FAST },
+  { id: 'anthropic', name: 'Claude', model: ANTHROPIC_FAST },
+  { id: 'google', name: 'Gemini', model: GOOGLE_FAST },
+  { id: 'perplexity', name: 'Perplexity', model: PERPLEXITY_SEARCH },
 ] as const;
 
 // Event emitter for SSE broadcasts
@@ -919,7 +926,7 @@ Return JSON with:
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: OPENAI_FAST,
         messages: [
           { role: 'system', content: 'You are an SEO expert. Respond with valid JSON only.' },
           { role: 'user', content: prompt },
@@ -1394,7 +1401,7 @@ async function checkOpenAI(brand: string, domain: string, query: string): Promis
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: OPENAI_FAST,
       messages: [
         { role: 'system', content: 'You are a helpful assistant that recommends tools and websites. List your top recommendations.' },
         { role: 'user', content: query },
@@ -1433,7 +1440,7 @@ async function checkAnthropic(brand: string, domain: string, query: string, apiK
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5',
+      model: ANTHROPIC_FAST,
       max_tokens: 500,
       messages: [{ role: 'user', content: query }],
     }),
@@ -1460,7 +1467,7 @@ async function checkGoogle(brand: string, domain: string, query: string, apiKey:
 
   if (!apiKey) return baseResult;
 
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+  const response = await fetch(`${GOOGLE_ENDPOINT}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -1496,7 +1503,7 @@ async function checkPerplexity(brand: string, domain: string, query: string, api
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'llama-3.1-sonar-small-128k-online',
+      model: PERPLEXITY_SEARCH,
       messages: [{ role: 'user', content: query }],
       max_tokens: 500,
     }),
