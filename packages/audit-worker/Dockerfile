@@ -10,6 +10,7 @@ RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/agent-runtime/package.json ./packages/agent-runtime/
 COPY packages/agent-runtime-premium/package.json ./packages/agent-runtime-premium/
+COPY packages/mcp-server/package.json ./packages/mcp-server/
 COPY packages/audit-worker/package.json ./packages/audit-worker/
 
 # Install dependencies
@@ -18,6 +19,7 @@ RUN pnpm install --frozen-lockfile
 # Copy source
 COPY packages/agent-runtime ./packages/agent-runtime
 COPY packages/agent-runtime-premium ./packages/agent-runtime-premium
+COPY packages/mcp-server ./packages/mcp-server
 COPY packages/audit-worker ./packages/audit-worker
 
 # Build agent-runtime first (its build:deno step imports paid-tier checks
@@ -25,6 +27,12 @@ COPY packages/audit-worker ./packages/audit-worker
 # needed here at build time even though audit-worker's runtime stage only
 # ends up needing agent-runtime's compiled dist/)
 WORKDIR /app/packages/agent-runtime
+RUN pnpm build
+
+# Build mcp-server - audit-worker's /mcp/free route imports its
+# createAnalysisServer() factory (packages/mcp-server/src/server.ts) to
+# reuse the exact same tool implementations the local stdio server uses.
+WORKDIR /app/packages/mcp-server
 RUN pnpm build
 
 # Build audit-worker
@@ -49,6 +57,8 @@ RUN npm install -g pnpm
 COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
 COPY --from=builder /app/packages/agent-runtime/package.json ./packages/agent-runtime/
 COPY --from=builder /app/packages/agent-runtime/dist ./packages/agent-runtime/dist
+COPY --from=builder /app/packages/mcp-server/package.json ./packages/mcp-server/
+COPY --from=builder /app/packages/mcp-server/dist ./packages/mcp-server/dist
 COPY --from=builder /app/packages/audit-worker/package.json ./packages/audit-worker/
 COPY --from=builder /app/packages/audit-worker/dist ./packages/audit-worker/dist
 
