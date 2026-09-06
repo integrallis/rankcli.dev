@@ -9,11 +9,14 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
-      - name: Check if alert_configs table exists
+      - name: Link project
+        working-directory: packages/saas
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF }}
+      - name: Migration status
+        working-directory: packages/saas
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
-        run: |
-          cd packages/saas
-          supabase link --project-ref $(grep project_id supabase/config.toml | cut -d'"' -f2) --password "$SUPABASE_DB_PASSWORD"
-          supabase migration list
+        run: supabase migration list
