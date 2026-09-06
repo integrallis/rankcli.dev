@@ -1,0 +1,19 @@
+name: One-off Delete Dead Edge Functions
+on:
+  workflow_dispatch:
+jobs:
+  delete:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Delete dead functions from Supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          for fn in create-tracking-pr tool-opportunity-finder backlink-finder check-chatgpt competitor-intel content-optimizer keyword-research; do
+            echo "Deleting $fn..."
+            supabase functions delete "$fn" --project-ref "${{ vars.SUPABASE_PROJECT_REF }}" || echo "  (already gone or failed, continuing)"
+          done
