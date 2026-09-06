@@ -1,0 +1,15 @@
+name: One-off Add MCP Custom Domain
+on:
+  workflow_dispatch:
+jobs:
+  add-domain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Request cert and show required DNS record
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          flyctl certs add mcp.rankcli.dev -a rankcli-audit-worker || true
+          echo "=== cert status / required DNS ==="
+          flyctl certs show mcp.rankcli.dev -a rankcli-audit-worker
