@@ -275,7 +275,7 @@ async function checkAnthropic(brand: string, domain: string, query: string, byok
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: byok?.model || 'claude-3-haiku-20240307',
+        model: byok?.model || 'claude-haiku-4-5',
         max_tokens: 500,
         messages: [{ role: 'user', content: query }],
       }),

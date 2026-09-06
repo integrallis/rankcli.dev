@@ -156,7 +156,7 @@ setInterval(() => {
 // LLM Provider configurations
 const LLM_PROVIDERS = [
   { id: 'openai', name: 'ChatGPT', model: 'gpt-4o-mini' },
-  { id: 'anthropic', name: 'Claude', model: 'claude-3-haiku-20240307' },
+  { id: 'anthropic', name: 'Claude', model: 'claude-haiku-4-5' },
   { id: 'google', name: 'Gemini', model: 'gemini-pro' },
   { id: 'perplexity', name: 'Perplexity', model: 'llama-3.1-sonar-small-128k-online' },
 ] as const;
@@ -1433,7 +1433,7 @@ async function checkAnthropic(brand: string, domain: string, query: string, apiK
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'claude-3-haiku-20240307',
+      model: 'claude-haiku-4-5',
       max_tokens: 500,
       messages: [{ role: 'user', content: query }],
     }),
