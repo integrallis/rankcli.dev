@@ -1,0 +1,19 @@
+name: One-off Check alert_configs Table
+on:
+  workflow_dispatch:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Check if alert_configs table exists
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          cd packages/saas
+          supabase link --project-ref $(grep project_id supabase/config.toml | cut -d'"' -f2) --password "$SUPABASE_DB_PASSWORD"
+          supabase migration list
