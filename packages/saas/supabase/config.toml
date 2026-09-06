@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.free-audit]
 verify_jwt = false
+
+[functions.sync-audit]
+verify_jwt = false
