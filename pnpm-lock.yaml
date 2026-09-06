@@ -104,12 +104,18 @@ importers:
       '@fastify/cors':
         specifier: ^8.5.0
         version: 8.5.0
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.30.0
+        version: 1.30.0(zod@4.3.6)
       '@rankcli/agent-runtime':
         specifier: workspace:*
         version: link:../agent-runtime
       '@rankcli/agent-runtime-premium':
         specifier: workspace:*
         version: link:../agent-runtime-premium
+      '@rankcli/mcp-server':
+        specifier: workspace:*
+        version: link:../mcp-server
       '@supabase/supabase-js':
         specifier: ^2.39.0
         version: 2.97.0

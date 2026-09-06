@@ -11,6 +11,8 @@ import {
   type PlanTier,
 } from '@rankcli/agent-runtime';
 import { premiumChecks } from '@rankcli/agent-runtime-premium';
+import { createAnalysisServer } from '@rankcli/mcp-server/server';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { EventEmitter } from 'events';
 import { randomUUID } from 'crypto';
 
@@ -210,6 +212,60 @@ app.get('/health', async () => {
     timestamp: new Date().toISOString(),
     activeJobs: jobs.size,
   };
+});
+
+// Free remote MCP endpoint - the same free, stateless analysis tools
+// @rankcli/mcp-server exposes locally over stdio (seo_analyze, seo_geo_check,
+// etc.), reused as-is over Streamable HTTP so directories that require a
+// live URL (Smithery) can install RankCLI too. A *different* path from the
+// existing /mcp below on purpose: that one is the paid, API-key-gated
+// hosted API (seo_audit/seo_compare/etc., a separate tool set, separate
+// product) - this is the free/no-signup mirror of the local server, so it
+// can't reuse that path or its auth model. Stateless mode (a fresh Server +
+// transport per request, matching the MCP SDK's own stateless example) - no
+// session state, no rankcli_connect/disconnect here (those write to a local
+// Conf file, which only makes sense for the local stdio process; see
+// packages/mcp-server/src/server.ts for why they're split out).
+// Unauthenticated by design, same as every other audit route - this
+// service's entire job is fetching and analyzing URLs callers provide.
+app.post('/mcp/free', async (request, reply) => {
+  reply.hijack();
+  const server = createAnalysisServer();
+  try {
+    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+    await server.connect(transport);
+    await transport.handleRequest(request.raw, reply.raw, request.body);
+    reply.raw.on('close', () => {
+      transport.close();
+      server.close();
+    });
+  } catch (error) {
+    app.log.error({ err: error }, 'Error handling MCP request');
+    if (!reply.raw.headersSent) {
+      reply.raw.writeHead(500, { 'Content-Type': 'application/json' });
+      reply.raw.end(JSON.stringify({
+        jsonrpc: '2.0',
+        error: { code: -32603, message: 'Internal server error' },
+        id: null,
+      }));
+    }
+  }
+});
+
+app.get('/mcp/free', async (_request, reply) => {
+  reply.code(405).send({
+    jsonrpc: '2.0',
+    error: { code: -32000, message: 'Method not allowed.' },
+    id: null,
+  });
+});
+
+app.delete('/mcp/free', async (_request, reply) => {
+  reply.code(405).send({
+    jsonrpc: '2.0',
+    error: { code: -32000, message: 'Method not allowed.' },
+    id: null,
+  });
 });
 
 // Get job status
