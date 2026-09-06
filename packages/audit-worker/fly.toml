@@ -22,6 +22,10 @@ primary_region = "iad"
   force_https = true
   auto_stop_machines = "stop"
   auto_start_machines = true
+  # 1 machine stays running normally; the size of the pool it can burst
+  # into (currently 3) isn't a fly.toml field - it's set by `flyctl scale
+  # count`, which runs as part of the "Ensure autoscaling machine pool"
+  # step in .github/workflows/deploy.yml on every deploy.
   min_machines_running = 1
 
   [http_service.concurrency]
