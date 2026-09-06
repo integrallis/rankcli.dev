@@ -11,6 +11,26 @@ const supabaseClient = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
+const INTERNAL_WEBHOOK_SECRET = Deno.env.get("INTERNAL_WEBHOOK_SECRET");
+
+// Internal ops Slack ping - best-effort, never blocks or fails the
+// webhook response over a notification issue.
+async function notifySlack(payload: Record<string, unknown>): Promise<void> {
+  if (!INTERNAL_WEBHOOK_SECRET) return;
+  try {
+    await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/notify-slack`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-secret": INTERNAL_WEBHOOK_SECRET,
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.error("[WEBHOOK] notify-slack failed:", error);
+  }
+}
+
 serve(async (req) => {
   const signature = req.headers.get("Stripe-Signature");
   const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
@@ -99,6 +119,12 @@ serve(async (req) => {
             console.error("[WEBHOOK] Failed to complete LTD purchase:", purchaseError);
           } else {
             console.log(`[WEBHOOK] SUCCESS: LTD purchase completed: ${purchaseId}`);
+            await notifySlack({
+              event: "lifetime_deal",
+              email: customerEmail,
+              planId: ltdTier,
+              amountCents: session.amount_total || 0,
+            });
 
             // Update user_subscriptions to reflect LTD status
             await supabaseClient
@@ -164,6 +190,12 @@ serve(async (req) => {
           console.error("[WEBHOOK] Failed to upsert subscription:", upsertError);
         } else {
           console.log(`[WEBHOOK] SUCCESS: Subscription activated for user ${userId}, plan ${planId}`);
+          await notifySlack({
+            event: "subscription",
+            email: session.customer_details?.email || undefined,
+            planId,
+            amountCents: session.amount_total || 0,
+          });
         }
         break;
       }

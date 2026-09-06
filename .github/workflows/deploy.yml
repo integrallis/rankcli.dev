@@ -367,6 +367,16 @@ jobs:
           if [ -n "${{ secrets.CRON_SECRET }}" ]; then
             OPTIONAL_SECRETS="$OPTIONAL_SECRETS CRON_SECRET=\"${{ secrets.CRON_SECRET }}\""
           fi
+          # Internal ops Slack notifications (notify-slack) - new signups
+          # and new paid subscriptions. Both optional so deploys don't
+          # break before SLACK_WEBHOOK_URL is created; notify-slack itself
+          # also no-ops gracefully without it.
+          if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+            OPTIONAL_SECRETS="$OPTIONAL_SECRETS SLACK_WEBHOOK_URL=\"${{ secrets.SLACK_WEBHOOK_URL }}\""
+          fi
+          if [ -n "${{ secrets.INTERNAL_WEBHOOK_SECRET }}" ]; then
+            OPTIONAL_SECRETS="$OPTIONAL_SECRETS INTERNAL_WEBHOOK_SECRET=\"${{ secrets.INTERNAL_WEBHOOK_SECRET }}\""
+          fi
           if [ -n "$OPTIONAL_SECRETS" ]; then
             eval "supabase secrets set $OPTIONAL_SECRETS"
           fi

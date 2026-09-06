@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.sync-audit]
 verify_jwt = false
+
+[functions.notify-slack]
+verify_jwt = false
