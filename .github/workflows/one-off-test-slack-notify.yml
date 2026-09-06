@@ -1,0 +1,16 @@
+name: One-off Test Slack Notify
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send test signup notification
+        env:
+          INTERNAL_WEBHOOK_SECRET: ${{ secrets.INTERNAL_WEBHOOK_SECRET }}
+        run: |
+          curl -s -X POST https://bspljbxwbjiqueeyzyat.supabase.co/functions/v1/notify-slack \
+            -H "Content-Type: application/json" \
+            -H "x-internal-secret: $INTERNAL_WEBHOOK_SECRET" \
+            -d '{"event":"signup","email":"test-notification@rankcli.dev"}' \
+            -w "\nHTTP %{http_code}\n"
