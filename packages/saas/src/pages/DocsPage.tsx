@@ -617,6 +617,18 @@ function MCPServerSection() {
           </p>
         </div>
 
+        <h4 className="font-medium mt-8 mb-2">Alternative: Free Hosted (no install)</h4>
+        <p className="text-sm text-muted-foreground mb-2">
+          Skip the local install entirely — point at the free hosted endpoint instead:
+        </p>
+        <CodeBlock code={`{
+  "mcpServers": {
+    "rankcli": {
+      "url": "https://mcp.rankcli.dev/mcp/free"
+    }
+  }
+}`} />
+
         <h4 className="font-medium mt-8 mb-2">Alternative: Hosted (for team dashboard sync)</h4>
         <p className="text-sm text-muted-foreground mb-2">
           Get a free API key from <a href="/account" className="text-primary underline">Account → API Keys</a>,
@@ -625,7 +637,7 @@ function MCPServerSection() {
         <CodeBlock code={`{
   "mcpServers": {
     "rankcli-hosted": {
-      "url": "https://rankcli-audit-worker.fly.dev/mcp",
+      "url": "https://mcp.rankcli.dev/mcp",
       "headers": {
         "Authorization": "Bearer YOUR_API_KEY"
       }

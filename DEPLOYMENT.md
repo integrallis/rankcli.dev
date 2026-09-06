@@ -872,7 +872,7 @@ host -t NS yourdomain.com
 |---------|-----|
 | Frontend (Pages) | `https://rankcli.pages.dev` |
 | Frontend (Custom) | `https://rankcli.dev` |
-| Audit Worker | `https://rankcli-audit-worker.fly.dev` |
+| Audit Worker | `https://rankcli-audit-worker.fly.dev` (also `https://mcp.rankcli.dev` for the MCP endpoints) |
 | Supabase | `https://<project-ref>.supabase.co` |
 | Stripe Dashboard | `https://dashboard.stripe.com` |
 

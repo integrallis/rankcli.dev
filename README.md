@@ -91,7 +91,7 @@ Claude and other AI assistants can run audits directly via Model Context Protoco
 ```bash
 npx @rankcli/mcp-server
 ```
-A hosted endpoint (`https://rankcli-audit-worker.fly.dev/mcp`) is also available for teams that want dashboard sync — see [`packages/mcp-server`](packages/mcp-server).
+A free hosted endpoint (`https://mcp.rankcli.dev/mcp/free`) is also available — no npx, no signup. For teams that want dashboard sync, GitHub auto-fix PRs, and scheduled monitoring, use the paid hosted endpoint (`https://mcp.rankcli.dev/mcp`) — see [`packages/mcp-server`](packages/mcp-server).
 
 ## CLI Commands
 
