@@ -1,7 +1,7 @@
 # Supabase Configuration for RankCLI SaaS
 # https://supabase.com/docs/guides/cli/config
 
-project_id = "plfhfykcoytxkjxnjnez"
+project_id = "bspljbxwbjiqueeyzyat"
 
 [functions.create-checkout]
 verify_jwt = false

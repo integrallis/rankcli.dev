@@ -20,7 +20,7 @@ Save this value - you'll need it twice.
 | **Basic Info** | Name: `rankcli-dev`, Homepage: `http://localhost:3005` |
 | **Callback URL** | `http://localhost:3005/auth/callback/github` |
 | **Setup URL** | `http://localhost:3005/dashboard/github-callback` |
-| **Webhook URL** | `https://plfhfykcoytxkjxnjnez.supabase.co/functions/v1/github-webhook` |
+| **Webhook URL** | `https://bspljbxwbjiqueeyzyat.supabase.co/functions/v1/github-webhook` |
 | **Webhook Secret** | Your generated secret (same value goes to Supabase) |
 | **SSL Verification** | ✓ Enabled |
 | **Repo Permissions** | Contents (RW), Issues (RW), Metadata (R), PRs (RW), Webhooks (RW), Actions (RW) |
@@ -74,7 +74,7 @@ Go to: https://github.com/settings/apps/new
 | Field | Value |
 |-------|-------|
 | **Active** | ✓ Checked |
-| **Webhook URL** | `https://plfhfykcoytxkjxnjnez.supabase.co/functions/v1/github-webhook` |
+| **Webhook URL** | `https://bspljbxwbjiqueeyzyat.supabase.co/functions/v1/github-webhook` |
 | **Webhook secret** | Generate with: `openssl rand -hex 32` (see note below) |
 
 > **About the Webhook Secret:** This is a random string YOU generate. You'll enter the same value here AND in Supabase secrets. GitHub uses it to sign webhook payloads so your server can verify requests are authentic.
@@ -324,7 +324,7 @@ npx supabase secrets set GITHUB_PRIVATE_KEY="$(cat rankcli-dev.private-key.pem |
 
 ### Webhook Not Receiving Events
 
-1. Verify the webhook URL is correct: `https://plfhfykcoytxkjxnjnez.supabase.co/functions/v1/github-webhook`
+1. Verify the webhook URL is correct: `https://bspljbxwbjiqueeyzyat.supabase.co/functions/v1/github-webhook`
 2. Check GitHub App settings → Advanced → Recent Deliveries
 3. Look for any error messages in the delivery details
 4. Check Supabase function logs: `npx supabase functions logs github-webhook`

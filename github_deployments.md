@@ -28,13 +28,13 @@ Go to: **Settings → Secrets and variables → Actions → Variables → New re
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `SUPABASE_PROJECT_REF` | Supabase project reference ID | `plfhfykcoytxkjxnjnez` |
+| `SUPABASE_PROJECT_REF` | Supabase project reference ID | `bspljbxwbjiqueeyzyat` |
 
 ## Getting the Values
 
 ### Supabase
 1. Go to [supabase.com](https://supabase.com) → Your project
-2. **Project ref**: First part of URL (e.g., `plfhfykcoytxkjxnjnez` from `https://plfhfykcoytxkjxnjnez.supabase.co`)
+2. **Project ref**: First part of URL (e.g., `bspljbxwbjiqueeyzyat` from `https://bspljbxwbjiqueeyzyat.supabase.co`)
 3. **Anon key**: Settings → API → `anon` `public` key
 4. **Service key**: Settings → API → `service_role` key
 5. **DB password**: Settings → Database → Connection string → Password
