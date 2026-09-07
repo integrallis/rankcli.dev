@@ -112,6 +112,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      # paths-filter's `base` must be a real ref/SHA it can `git fetch` -
+      # relative expressions like HEAD~1 aren't valid there (confirmed:
+      # "fatal: invalid refspec 'HEAD~1'"), so resolve it to a concrete SHA
+      # first. Falls back to HEAD itself (an empty, harmless diff) on a
+      # single-commit repo where HEAD~1 doesn't exist.
+      - name: Resolve diff base
+        id: base
+        run: echo "sha=$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -120,7 +130,7 @@ jobs:
           # fall back to just the most recent commit - an honest "did the
           # last change touch this path", not a guess at some undefined
           # "since last deploy" window this repo doesn't track anywhere.
-          base: ${{ github.event.before || 'HEAD~1' }}
+          base: ${{ github.event.before || steps.base.outputs.sha }}
           filters: |
             frontend:
               - 'packages/saas/**'
