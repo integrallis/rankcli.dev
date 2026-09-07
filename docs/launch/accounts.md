@@ -26,6 +26,9 @@ where.
 | mcp.so | **Live** (from earlier session), via merged GitHub issue | github.com/chatmcp/mcpso/issues/3963 |
 | `awesome-mcp-servers` (punkpeye, 94k★) | PR open | github.com/punkpeye/awesome-mcp-servers/pull/13779 |
 | `awesome-seo-tools` (serpapi) | PR open | github.com/serpapi/awesome-seo-tools/pull/340 |
+| Google Search Console | **Live**, domain verified via DNS TXT, sitemap submitted (13 pages) | search.google.com/search-console?resource_id=sc-domain:rankcli.dev |
+| Bing Webmaster Tools | **Live**, imported from GSC, sitemap submitted | bing.com/webmasters/home?siteUrl=https://rankcli.dev/ |
+| IndexNow | **Live**, key hosted at rankcli.dev, 13 URLs submitted 2026-09-06 (`scripts/indexnow-submit.mjs`, re-run after publishing new/changed pages) | api.indexnow.org |
 
 ## Staged, not yet submitted
 
