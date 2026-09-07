@@ -431,6 +431,13 @@ jobs:
           if [ -n "${{ secrets.INTERNAL_WEBHOOK_SECRET }}" ]; then
             OPTIONAL_SECRETS="$OPTIONAL_SECRETS INTERNAL_WEBHOOK_SECRET=\"${{ secrets.INTERNAL_WEBHOOK_SECRET }}\""
           fi
+          # /rankcli Slack slash command (slack-commands) - verifies
+          # inbound requests are really from Slack via this signing secret.
+          # Optional so deploys don't break before the Slack App exists;
+          # slack-commands itself rejects every request (401) without it.
+          if [ -n "${{ secrets.SLACK_SIGNING_SECRET }}" ]; then
+            OPTIONAL_SECRETS="$OPTIONAL_SECRETS SLACK_SIGNING_SECRET=\"${{ secrets.SLACK_SIGNING_SECRET }}\""
+          fi
           if [ -n "$OPTIONAL_SECRETS" ]; then
             eval "supabase secrets set $OPTIONAL_SECRETS"
           fi
