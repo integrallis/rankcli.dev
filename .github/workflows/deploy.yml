@@ -102,10 +102,25 @@ jobs:
       pricing: ${{ steps.filter.outputs.pricing }}
       worker: ${{ steps.filter.outputs.worker }}
     steps:
+      # Full history, not the default shallow (depth-1) clone - paths-filter
+      # needs real commits to diff against below. Without this, `base` (and
+      # dorny/paths-filter's own before/after fallback on push events) has
+      # nothing to resolve, and the action's documented safe-default is to
+      # report every filter as changed - which is what silently made the
+      # run_migrations/deploy_edge_functions/sync_stripe_pricing toggles
+      # above no-op on every workflow_dispatch run so far.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: dorny/paths-filter@v3
         id: filter
         with:
+          # push events (if this workflow ever gets one) have a real
+          # before-SHA to diff against; release/workflow_dispatch don't, so
+          # fall back to just the most recent commit - an honest "did the
+          # last change touch this path", not a guess at some undefined
+          # "since last deploy" window this repo doesn't track anywhere.
+          base: ${{ github.event.before || 'HEAD~1' }}
           filters: |
             frontend:
               - 'packages/saas/**'
