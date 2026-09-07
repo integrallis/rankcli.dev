@@ -24,7 +24,6 @@ interface SEOProps {
 const BASE_URL = 'https://rankcli.dev';
 const DEFAULT_IMAGE = `${BASE_URL}/og-image.png`;
 const SITE_NAME = 'RankCLI';
-const TWITTER_HANDLE = '@rankcli';
 
 export function SEO({
   title,
@@ -65,8 +64,6 @@ export function SEO({
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={fullImage} />
-      <meta name="twitter:site" content={TWITTER_HANDLE} />
-      <meta name="twitter:creator" content={TWITTER_HANDLE} />
 
       {/* Article-specific tags */}
       {type === 'article' && article && (

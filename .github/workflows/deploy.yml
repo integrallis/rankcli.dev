@@ -43,6 +43,10 @@ on:
         description: 'Run database migrations'
         type: boolean
         default: true
+      deploy_edge_functions:
+        description: 'Deploy Supabase edge functions'
+        type: boolean
+        default: true
       sync_stripe_pricing:
         description: 'Sync pricing to Stripe'
         type: boolean
@@ -94,6 +98,7 @@ jobs:
     outputs:
       frontend: ${{ steps.filter.outputs.frontend }}
       migrations: ${{ steps.filter.outputs.migrations }}
+      functions: ${{ steps.filter.outputs.functions }}
       pricing: ${{ steps.filter.outputs.pricing }}
       worker: ${{ steps.filter.outputs.worker }}
     steps:
@@ -106,6 +111,8 @@ jobs:
               - 'packages/saas/**'
             migrations:
               - 'packages/saas/supabase/migrations/**'
+            functions:
+              - 'packages/saas/supabase/functions/**'
             pricing:
               - 'packages/saas/src/config/pricing-tiers.json'
             worker:
@@ -268,13 +275,32 @@ jobs:
     needs: [preflight, changes]
     if: |
       needs.preflight.outputs.ready == 'true' && (
-        github.event_name == 'workflow_dispatch' && github.event.inputs.run_migrations == 'true' ||
+        github.event_name == 'workflow_dispatch' && (github.event.inputs.run_migrations == 'true' || github.event.inputs.deploy_edge_functions == 'true') ||
         github.event_name == 'release' ||
-        needs.changes.outputs.migrations == 'true'
+        needs.changes.outputs.migrations == 'true' ||
+        needs.changes.outputs.functions == 'true'
       )
 
     steps:
       - uses: actions/checkout@v4
+
+      # Migrations and edge-function deploys are two independent things that
+      # happen to share this job's setup steps - each gets its own on/off
+      # switch (instead of both riding on run_migrations) so an edge-function
+      # code change deploys even on a migrations=false run, and vice versa.
+      - name: Determine deploy scope
+        id: scope
+        run: |
+          if [ "${{ github.event_name == 'release' || needs.changes.outputs.migrations == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.run_migrations == 'true') }}" = "true" ]; then
+            echo "migrations=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "migrations=false" >> "$GITHUB_OUTPUT"
+          fi
+          if [ "${{ github.event_name == 'release' || needs.changes.outputs.functions == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_edge_functions == 'true') }}" = "true" ]; then
+            echo "functions=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "functions=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
@@ -303,11 +329,13 @@ jobs:
         run: supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF }}
 
       - name: Create Database Backup Note
+        if: steps.scope.outputs.migrations == 'true'
         run: |
           echo "Migration timestamp: $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_STEP_SUMMARY
           echo "Backup: Supabase Pro plan provides automatic Point-in-Time Recovery" >> $GITHUB_STEP_SUMMARY
 
       - name: Run Database Migrations
+        if: steps.scope.outputs.migrations == 'true'
         working-directory: packages/saas
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -315,6 +343,7 @@ jobs:
         run: supabase db push
 
       - name: Set Edge Function Secrets
+        if: steps.scope.outputs.functions == 'true'
         working-directory: packages/saas
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -382,6 +411,7 @@ jobs:
           fi
 
       - name: Deploy Edge Functions
+        if: steps.scope.outputs.functions == 'true'
         working-directory: packages/saas
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

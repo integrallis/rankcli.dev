@@ -82,6 +82,24 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      # Must run before "Build CLI TypeScript" below, which bakes whatever
+      # version is in package.json into the bundle via update-version.js
+      # (packages/cli's build:js script runs it automatically). This used to
+      # only happen in the publish job, AFTER this build already ran and its
+      # artifact was uploaded - so a release's actual tag version never made
+      # it into the compiled `rankcli --version` string, only into the
+      # package.json field npm itself reads. Setting it here, before the
+      # build, means both agree.
+      - name: Set CLI version from release tag
+        if: github.event_name == 'release'
+        working-directory: packages/cli
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
+          echo "Setting version to $VERSION"
+          sed -i "s|\"version\": \"[^\"]*\"|\"version\": \"$VERSION\"|" package.json
+          echo "Version set to: $(node -p "require('./package.json').version")"
+
       # Step 1a: Build agent-runtime's regular dist/ (index.js + index.d.ts)
       # so packages/cli's own TypeScript build - specifically wasm-engine.ts,
       # which imports agent-runtime's AuditIssue type - can resolve it. This
@@ -310,17 +328,6 @@ jobs:
           
           echo "After fix:"
           cat package.json | grep -A2 '"dependencies"'
-
-      - name: Set CLI version from release tag
-        if: github.event_name == 'release'
-        working-directory: packages/cli
-        run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          VERSION="${VERSION#v}"
-          echo "Setting version to $VERSION"
-          # Use sed instead of npm version to avoid workspace:* resolution issues
-          sed -i "s|\"version\": \"[^\"]*\"|\"version\": \"$VERSION\"|" package.json
-          echo "Version set to: $(node -p "require('./package.json').version")"
 
       - name: Publish CLI to npm
         working-directory: packages/cli

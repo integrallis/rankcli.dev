@@ -22,6 +22,7 @@ const corsHeaders = {
 const RANKCLI_KEY_FALLBACK_TIERS = new Set(['pro', 'pro_founding', 'agency', 'ltd_agency']);
 
 interface AuditIssue {
+  id: string;
   code: string;
   severity: string;
   category: string;
@@ -618,7 +619,7 @@ serve(async (req) => {
     // Get ALL issues except those that can't be auto-fixed
     const { data: rawIssues } = await supabase
       .from('audit_issues')
-      .select('code, severity, category, title, description, how_to_fix, details')
+      .select('id, code, severity, category, title, description, how_to_fix, details')
       .eq('audit_id', targetAuditId)
       .eq('status', 'open');
 
@@ -776,8 +777,11 @@ ${aiResult.files.map((f: FileChange) => `- \`${f.path}\``).join('\n')}
     console.log('Creating PR...');
     const pr = await createPullRequest(token, owner, repoName, prTitle, prBody, branchName, defaultBranch);
 
-    // Record PR in database
-    await supabase.from('github_prs').insert({
+    // Record PR in database, linked to the exact issues it addresses so the
+    // webhook can mark them fixed when this PR merges (see handlePullRequest
+    // in github-webhook/index.ts, which reads this column back by id).
+    const issueIds = issues.map((i: AuditIssue) => i.id);
+    const { error: prInsertError } = await supabase.from('github_prs').insert({
       project_id: project.id,
       audit_id: targetAuditId,
       pr_number: pr.number,
@@ -786,14 +790,22 @@ ${aiResult.files.map((f: FileChange) => `- \`${f.path}\``).join('\n')}
       pr_state: 'open',
       branch_name: branchName,
       files_changed: aiResult.files.length,
+      issue_ids: issueIds,
     });
+    if (prInsertError) {
+      console.error('Failed to record PR in database:', prInsertError.message);
+    }
 
-    // Update issues status
-    await supabase
+    // Update issues status - 'fixing' (not 'fixed') since the PR is only
+    // open, not merged yet. audit_issues.status has a CHECK constraint of
+    // 'open'|'fixing'|'fixed'|'ignored'|'wont_fix'; must match exactly.
+    const { error: issuesUpdateError } = await supabase
       .from('audit_issues')
-      .update({ status: 'fix_pending', fix_pr_url: pr.url })
-      .eq('audit_id', targetAuditId)
-      .in('code', issues.map((i: AuditIssue) => i.code));
+      .update({ status: 'fixing', fix_pr_url: pr.url })
+      .in('id', issueIds);
+    if (issuesUpdateError) {
+      console.error('Failed to update issue status:', issuesUpdateError.message);
+    }
 
     return new Response(JSON.stringify({
       success: true,

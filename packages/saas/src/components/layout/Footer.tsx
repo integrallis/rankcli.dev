@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Terminal, Github, Twitter } from 'lucide-react';
+import { Terminal, Github } from 'lucide-react';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
 
 const footerLinks = {
@@ -44,14 +44,6 @@ export function Footer() {
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Github className="h-5 w-5" />
-              </a>
-              <a
-                href="https://twitter.com/rankcli"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Twitter className="h-5 w-5" />
               </a>
             </div>
           </div>

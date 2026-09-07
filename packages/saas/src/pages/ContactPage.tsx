@@ -1,7 +1,7 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, Github, Twitter } from 'lucide-react';
+import { Mail, Github } from 'lucide-react';
 
 export function ContactPage() {
   return (
@@ -50,28 +50,6 @@ export function ContactPage() {
                 className="text-primary hover:underline"
               >
                 github.com/integrallis/rankcli-cli/issues
-              </a>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Twitter className="h-5 w-5" />
-                Twitter / X
-              </CardTitle>
-              <CardDescription>
-                For quick questions or to follow along with what's new.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <a
-                href="https://twitter.com/rankcli"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary hover:underline"
-              >
-                @rankcli
               </a>
             </CardContent>
           </Card>

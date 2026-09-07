@@ -1,6 +1,6 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { Github, Twitter } from 'lucide-react';
+import { Github } from 'lucide-react';
 
 export function AboutPage() {
   return (
@@ -53,15 +53,6 @@ export function AboutPage() {
           >
             <Github className="h-4 w-4" />
             GitHub
-          </a>
-          <a
-            href="https://twitter.com/rankcli"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <Twitter className="h-4 w-4" />
-            Twitter
           </a>
         </div>
       </main>
