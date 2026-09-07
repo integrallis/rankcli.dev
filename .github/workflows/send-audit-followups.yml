@@ -1,0 +1,55 @@
+# Triggers the send-audit-followups edge function, which finds free_audits
+# leads (email provided, never signed up, not already followed up, not
+# opted out) between 2-14 days old and sends each a single re-engagement
+# email via Resend. See packages/saas/supabase/functions/send-audit-followups/index.ts
+# for the actual logic and eligibility window.
+
+name: Send Audit Follow-up Emails
+
+on:
+  schedule:
+    # Daily, 10am UTC.
+    - cron: '0 10 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Compute and log who would be emailed, but do not actually send'
+        required: false
+        default: 'true'
+        type: boolean
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call send-audit-followups
+        env:
+          SUPABASE_URL: ${{ secrets.RANKCLI_SUPABASE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          # Same convention as send-weekly-reports.yml: workflow_dispatch's
+          # dry_run defaults to 'true'; the schedule trigger has no inputs
+          # at all, so DRY_RUN is empty there - treat "not explicitly
+          # false" as a real send.
+          BODY=$(node -e "
+            const dryRun = process.env.DRY_RUN === 'true';
+            console.log(JSON.stringify({ dryRun }));
+          ")
+          echo "Request body: $BODY"
+
+          RESPONSE=$(curl -sS -w '\n%{http_code}' -X POST "$SUPABASE_URL/functions/v1/send-audit-followups" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            -d "$BODY")
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          RESPONSE_BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "$RESPONSE_BODY"
+          echo "::notice::send-audit-followups responded $HTTP_CODE"
+
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "::error::send-audit-followups failed"
+            exit 1
+          fi
