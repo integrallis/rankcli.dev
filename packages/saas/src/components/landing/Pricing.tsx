@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Check, X, HelpCircle, Clock, Zap, AlertTriangle, Flame } from 'lucide-react';
+import { Check, X, HelpCircle, Clock, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,20 +15,9 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import pricingConfig from '@/config/pricing-tiers.json';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ui/scroll-reveal';
-import { supabase } from '@/integrations/supabase/client';
-
-type PricingView = 'lifetime' | 'monthly' | 'annual';
-
-interface SubscriptionTier {
-  id: string;
-  name: string;
-  price_cents: number;
-  price_cents_annual?: number;
-  billing_period: string;
-  tagline: string;
-  popular: boolean;
-  highlights: string[];
-}
+import { usePricingAvailability } from '@/hooks/usePricingAvailability';
+import { SubscriptionPricingCards, type SubscriptionTier } from '@/components/pricing/SubscriptionPricingCards';
+import { BillingIntervalToggle, type PricingView } from '@/components/pricing/BillingIntervalToggle';
 
 interface LTDTier {
   id: string;
@@ -52,39 +41,7 @@ interface LTDAvailability {
   isSoldOut: boolean;
 }
 
-interface FoundingOfferConfig {
-  enabled: boolean;
-  key: string;
-  plan_id: string;
-  base_plan_id: string;
-  name: string;
-  tagline: string;
-  discounted_price_cents: number;
-  original_price_cents: number;
-  discount_percent: number;
-  total_seats: number;
-  duration_days: number;
-  availability_endpoint: string;
-}
-
-interface FoundingAvailability {
-  remaining: number;
-  totalSeats: number;
-  claimedSeats: number;
-  isActive: boolean;
-  isLow: boolean;
-  isAlmostGone: boolean;
-  isSoldOut: boolean;
-}
-
 const subscriptionTiers = pricingConfig.subscriptions as SubscriptionTier[];
-const foundingOffer = pricingConfig.founding_offer as FoundingOfferConfig | undefined;
-const ltdConfig = pricingConfig.lifetime_deals as {
-  enabled: boolean;
-  show_remaining: boolean;
-  urgency_threshold: number;
-  tiers: LTDTier[];
-};
 
 // Free tier for display
 const freeTier = {
@@ -200,70 +157,14 @@ export function Pricing() {
   const navigate = useNavigate();
   const defaultView = pricingConfig.default_view === 'lifetime_deals' ? 'lifetime' : 'monthly';
   const [view, setView] = useState<PricingView>(defaultView);
-  const [ltdAvailability, setLtdAvailability] = useState<Record<string, LTDAvailability>>({});
-  const [loadingAvailability, setLoadingAvailability] = useState(true);
-  const [foundingAvailability, setFoundingAvailability] = useState<FoundingAvailability | null>(null);
-
-  // Fetch founding-offer availability. Fails soft: if the migration/function
-  // hasn't been deployed yet, the Pro card just falls back to list pricing.
-  useEffect(() => {
-    if (!foundingOffer?.enabled) return;
-
-    async function fetchFoundingAvailability() {
-      try {
-        const { data, error } = await supabase.functions.invoke(
-          foundingOffer!.availability_endpoint,
-          { body: { key: foundingOffer!.key } }
-        );
-        if (error) throw error;
-        setFoundingAvailability({
-          remaining: data.remaining,
-          totalSeats: data.totalSeats,
-          claimedSeats: data.claimedSeats,
-          isActive: data.isActive,
-          isLow: data.isLow,
-          isAlmostGone: data.isAlmostGone,
-          isSoldOut: data.isSoldOut,
-        });
-      } catch (err) {
-        console.error('Failed to fetch founding offer availability:', err);
-        setFoundingAvailability(null);
-      }
-    }
-
-    fetchFoundingAvailability();
-    const interval = setInterval(fetchFoundingAvailability, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Fetch LTD availability
-  useEffect(() => {
-    async function fetchAvailability() {
-      try {
-        const { data, error } = await supabase.functions.invoke('ltd-availability');
-        if (error) throw error;
-
-        const availabilityMap: Record<string, LTDAvailability> = {};
-        data.availability?.forEach((tier: LTDAvailability) => {
-          availabilityMap[tier.id] = tier;
-        });
-        setLtdAvailability(availabilityMap);
-      } catch (err) {
-        console.error('Failed to fetch LTD availability:', err);
-      } finally {
-        setLoadingAvailability(false);
-      }
-    }
-
-    if (ltdConfig.enabled) {
-      fetchAvailability();
-      // Refresh every 30 seconds
-      const interval = setInterval(fetchAvailability, 30000);
-      return () => clearInterval(interval);
-    } else {
-      setLoadingAvailability(false);
-    }
-  }, []);
+  const {
+    foundingOffer,
+    foundingAvailability,
+    ltdConfig,
+    ltdAvailability,
+    loadingAvailability,
+    anyLTDAvailable,
+  } = usePricingAvailability();
 
   const handleSelectPlan = (planId: string) => {
     if (planId === 'free') {
@@ -271,7 +172,7 @@ export function Pricing() {
       return;
     }
     if (user) {
-      navigate('/account/billing');
+      navigate(`/account/billing?plan=${planId}`);
     } else {
       navigate(`/signup?plan=${planId}`);
     }
@@ -286,10 +187,6 @@ export function Pricing() {
       navigate(`/signup?ltd=${tierId}`);
     }
   };
-
-  const anyLTDAvailable = ltdConfig.enabled && ltdConfig.tiers.some(
-    tier => !ltdAvailability[tier.id]?.isSoldOut
-  );
 
   return (
     <section id="pricing" className="py-24 border-t border-border">
@@ -306,49 +203,7 @@ export function Pricing() {
         {/* Pricing Toggle */}
         {ltdConfig.enabled && anyLTDAvailable && (
           <ScrollReveal delay={0.1} className="flex justify-center mb-10">
-            <div className="inline-flex items-center gap-1 p-1 rounded-lg bg-muted/50 border">
-              <button
-                onClick={() => setView('lifetime')}
-                className={cn(
-                  'px-4 py-2 rounded-md text-sm font-medium transition-all',
-                  view === 'lifetime'
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <span className="flex items-center gap-1.5">
-                  <Zap className="h-3.5 w-3.5" />
-                  Lifetime Deal
-                </span>
-              </button>
-              <button
-                onClick={() => setView('monthly')}
-                className={cn(
-                  'px-4 py-2 rounded-md text-sm font-medium transition-all',
-                  view === 'monthly'
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setView('annual')}
-                className={cn(
-                  'px-4 py-2 rounded-md text-sm font-medium transition-all',
-                  view === 'annual'
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <span className="flex items-center gap-1.5">
-                  Annual
-                  <Badge variant="secondary" className="text-xs px-1.5 py-0">
-                    -20%
-                  </Badge>
-                </span>
-              </button>
-            </div>
+            <BillingIntervalToggle view={view} onChange={setView} showLifetime />
           </ScrollReveal>
         )}
 
@@ -370,9 +225,10 @@ export function Pricing() {
         {/* Pricing Cards */}
         {view === 'lifetime' ? (
           <LTDPricingCards
-            tiers={ltdConfig.tiers}
+            tiers={ltdConfig.tiers as LTDTier[]}
             availability={ltdAvailability}
             loading={loadingAvailability}
+            showRemaining={ltdConfig.show_remaining}
             onSelect={handleSelectLTD}
           />
         ) : (
@@ -463,11 +319,13 @@ function LTDPricingCards({
   tiers,
   availability,
   loading,
+  showRemaining,
   onSelect,
 }: {
   tiers: LTDTier[];
   availability: Record<string, LTDAvailability>;
   loading: boolean;
+  showRemaining: boolean;
   onSelect: (tierId: string) => void;
 }) {
   return (
@@ -518,7 +376,7 @@ function LTDPricingCards({
               </CardHeader>
 
               {/* Availability Progress */}
-              {!loading && ltdConfig.show_remaining && (
+              {!loading && showRemaining && (
                 <div className="px-6 pb-4">
                   <div className="flex items-center justify-between text-xs mb-1.5">
                     <span className={cn(
@@ -568,173 +426,6 @@ function LTDPricingCards({
                   onClick={() => onSelect(tier.id)}
                 >
                   {isSoldOut ? 'Sold Out' : 'Get Lifetime Access'}
-                </Button>
-              </CardFooter>
-            </Card>
-          </StaggerItem>
-        );
-      })}
-    </StaggerContainer>
-  );
-}
-
-// Subscription Pricing Cards Component
-function SubscriptionPricingCards({
-  tiers,
-  freeTier,
-  isAnnual,
-  onSelectPlan,
-  foundingOffer,
-  foundingAvailability,
-}: {
-  tiers: SubscriptionTier[];
-  freeTier: {
-    id: string;
-    name: string;
-    price_cents: number;
-    billing_period: string;
-    tagline: string;
-    popular: boolean;
-    highlights: string[];
-  };
-  isAnnual: boolean;
-  onSelectPlan: (planId: string) => void;
-  foundingOffer?: FoundingOfferConfig;
-  foundingAvailability: FoundingAvailability | null;
-}) {
-  // Founding pricing only applies to the monthly, non-annual view — it's a
-  // recurring-price override, not a separate billing period.
-  const showFounding =
-    !isAnnual &&
-    foundingOffer?.enabled &&
-    (foundingAvailability === null || (foundingAvailability.isActive && !foundingAvailability.isSoldOut));
-  return (
-    <StaggerContainer className="grid md:grid-cols-4 gap-5 max-w-6xl mx-auto mb-16">
-      {/* Free Tier */}
-      <StaggerItem>
-        <Card className="relative flex flex-col h-full">
-          <CardHeader className="text-center pb-6">
-            <CardTitle className="text-lg font-medium">{freeTier.name}</CardTitle>
-            <p className="text-sm text-muted-foreground">{freeTier.tagline}</p>
-            <div className="mt-4">
-              <span className="text-3xl font-semibold tracking-tight">$0</span>
-              <span className="text-muted-foreground text-sm">/forever</span>
-            </div>
-          </CardHeader>
-
-          <CardContent className="flex-1">
-            <ul className="space-y-2.5">
-              {freeTier.highlights.map((feature, index) => (
-                <li key={index} className="flex items-start gap-2.5">
-                  <Check className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                  <span className="text-sm text-muted-foreground">{feature}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-
-          <CardFooter>
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={() => onSelectPlan('free')}
-            >
-              Sign Up Free
-            </Button>
-          </CardFooter>
-        </Card>
-      </StaggerItem>
-
-      {/* Paid Tiers */}
-      {tiers.map((plan) => {
-        const price = isAnnual && plan.price_cents_annual
-          ? Math.floor(plan.price_cents_annual / 12 / 100)
-          : Math.floor(plan.price_cents / 100);
-        const isFoundingPlan = showFounding && foundingOffer?.base_plan_id === plan.id;
-        const foundingPrice = isFoundingPlan ? Math.floor(foundingOffer!.discounted_price_cents / 100) : null;
-
-        return (
-          <StaggerItem key={plan.id}>
-            <Card
-              className={cn(
-                'relative flex flex-col h-full',
-                (plan.popular || isFoundingPlan) && 'border-primary',
-                isFoundingPlan && 'ring-1 ring-primary/30'
-              )}
-            >
-              {isFoundingPlan ? (
-                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-xs bg-primary text-primary-foreground flex items-center gap-1">
-                  <Flame className="h-3 w-3" />
-                  Founding Member
-                </Badge>
-              ) : plan.popular && (
-                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-xs bg-primary text-primary-foreground">
-                  Popular
-                </Badge>
-              )}
-
-              <CardHeader className="text-center pb-6">
-                <CardTitle className="text-lg font-medium">{plan.name}</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {isFoundingPlan ? foundingOffer!.tagline : plan.tagline}
-                </p>
-                <div className="mt-4">
-                  {isFoundingPlan ? (
-                    <>
-                      <span className="text-muted-foreground text-lg line-through mr-2">
-                        ${Math.floor(foundingOffer!.original_price_cents / 100)}
-                      </span>
-                      <span className="text-3xl font-semibold tracking-tight text-primary">
-                        ${foundingPrice}
-                      </span>
-                    </>
-                  ) : (
-                    <span className="text-3xl font-semibold tracking-tight">
-                      ${price}
-                    </span>
-                  )}
-                  <span className="text-muted-foreground text-sm">
-                    /month{isAnnual && ', billed annually'}
-                  </span>
-                </div>
-                {isAnnual && plan.price_cents_annual && (
-                  <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                    Save ${Math.floor((plan.price_cents * 12 - plan.price_cents_annual) / 100)}/year
-                  </p>
-                )}
-                {isFoundingPlan && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center justify-center gap-1">
-                    {foundingAvailability
-                      ? foundingAvailability.isAlmostGone
-                        ? `Only ${foundingAvailability.remaining} spots left`
-                        : `${foundingAvailability.remaining} of ${foundingOffer!.total_seats} founding spots left`
-                      : `Limited to the first ${foundingOffer!.total_seats} customers or ${foundingOffer!.duration_days} days, whichever comes first`}
-                  </p>
-                )}
-              </CardHeader>
-
-              <CardContent className="flex-1">
-                <ul className="space-y-2.5">
-                  {plan.highlights.map((feature, index) => (
-                    <li key={index} className="flex items-start gap-2.5">
-                      <Check className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                      <span className="text-sm text-muted-foreground">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-
-              <CardFooter>
-                <Button
-                  className="w-full"
-                  variant={plan.popular || isFoundingPlan ? 'default' : 'outline'}
-                  onClick={() => onSelectPlan(isFoundingPlan ? foundingOffer!.plan_id : plan.id)}
-                >
-                  {isFoundingPlan
-                    ? 'Claim Founding Pricing'
-                    : plan.id === 'agency'
-                      ? 'Contact Sales'
-                      : 'Get Started'}
                 </Button>
               </CardFooter>
             </Card>

@@ -1,11 +1,12 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Loader2, Terminal, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePendingPlan } from '@/hooks/usePendingPlan';
 
 // SVG icons for OAuth providers
 const GoogleIcon = () => (
@@ -39,8 +40,23 @@ export function SignupPage() {
 
   const { signup, loginWithGoogle, loginWithGitHub } = useAuth();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const { setPendingPlan, setPendingLTD } = usePendingPlan();
   const fromLocation = (location.state as { from?: { pathname: string; search: string } })?.from;
   const from = fromLocation ? `${fromLocation.pathname}${fromLocation.search}` : undefined;
+
+  // A plan/LTD tier chosen on the Pricing page while logged out (?plan= or
+  // ?ltd=) - persist it so it survives both OAuth's immediate redirect and
+  // email/password's delayed, post-email-confirmation login. ProtectedRoute
+  // consumes and clears it the first time the user lands anywhere
+  // authenticated.
+  useEffect(() => {
+    const plan = searchParams.get('plan');
+    const ltd = searchParams.get('ltd');
+    if (plan) setPendingPlan(plan);
+    if (ltd) setPendingLTD(ltd);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

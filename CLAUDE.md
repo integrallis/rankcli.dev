@@ -50,7 +50,7 @@ pnpm dev               # Start dev server on localhost:3005
 - **Developer focus**: "Engineering as Marketing"
 
 ## Pricing Tiers
-- **Free**: 1 site, 50 checks, manual audits
+- **Free**: 1 site, 100 checks, manual audits
 - **Solo** ($9/mo): 3 sites, 50+ checks, weekly audits, GitHub connect
 - **Pro** ($29/mo): 10 sites, daily audits, auto-fix PRs, Slack alerts
 - **Agency** ($99/mo): 50 sites, on-demand audits, white-label, API access

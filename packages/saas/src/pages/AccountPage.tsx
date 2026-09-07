@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom';
 import { User, CreditCard, Key, Bell, Bot, Loader2, AlertTriangle, Trash2, ArrowUpRight, CheckCircle, Copy, Check, Plus, X } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import pricingTiers from '@/config/pricing-tiers.json';
 import { useUserLTD } from '@/hooks/useLTD';
+import { usePricingAvailability } from '@/hooks/usePricingAvailability';
+import { usePendingPlan } from '@/hooks/usePendingPlan';
+import { SubscriptionPricingCards, type SubscriptionTier } from '@/components/pricing/SubscriptionPricingCards';
+import { BillingIntervalToggle, type PricingView } from '@/components/pricing/BillingIntervalToggle';
 import { AlertConfigForm } from '@/components/settings/AlertConfigForm';
 import { AIProviderSettings } from '@/components/settings/AIProviderSettings';
 
@@ -181,13 +185,25 @@ const tabs = [
   { id: 'notifications', label: 'Notifications', icon: Bell },
 ];
 
+// /account/<path> routes that should open a specific tab even though they
+// all render this same component (only /account/billing goes through a
+// redirect today - the others were silently falling back to Profile).
+const pathTabs: Record<string, string> = {
+  '/account/billing': 'billing',
+  '/account/api-keys': 'api-keys',
+};
+
 export function AccountPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, logout } = useAuth();
+  const { consumePendingPlan } = usePendingPlan();
   const [activeTab, setActiveTab] = useState('profile');
   const [isLoading, setIsLoading] = useState(false);
   const [upgradingPlanId, setUpgradingPlanId] = useState<string | null>(null);
+  const [highlightPlanId, setHighlightPlanId] = useState<string | null>(null);
+  const [billingView, setBillingView] = useState<PricingView>('monthly');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -215,7 +231,17 @@ export function AccountPage() {
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
 
-  // Check for URL params (tab, success, canceled, ltd_success)
+  // Check for a path-based tab (e.g. /account/api-keys, since every /account/*
+  // route renders this same component) before the query-param checks below,
+  // so a query-param tab can still override it.
+  useEffect(() => {
+    const pathTab = pathTabs[location.pathname];
+    if (pathTab) {
+      setActiveTab(pathTab);
+    }
+  }, [location.pathname]);
+
+  // Check for URL params (tab, plan, success, canceled, ltd_success)
   useEffect(() => {
     const tab = searchParams.get('tab');
     if (tab && tabs.some(t => t.id === tab)) {
@@ -229,9 +255,21 @@ export function AccountPage() {
     if (searchParams.get('canceled') === 'true' || searchParams.get('ltd_canceled') === 'true') {
       setActiveTab('billing');
     }
+    // A plan carried over from the Pricing page (?plan=) or from signup
+    // (persisted to localStorage, consumed once here) - highlight it on the
+    // Billing tab instead of losing the selection.
+    const carriedPlan = searchParams.get('plan') || consumePendingPlan();
+    if (carriedPlan) {
+      setActiveTab('billing');
+      setHighlightPlanId(carriedPlan);
+      if (carriedPlan.endsWith('_annual')) {
+        setBillingView('annual');
+      }
+    }
     if (searchParams.toString()) {
       setSearchParams({}, { replace: true });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, setSearchParams]);
 
   // Fetch subscription data
@@ -335,6 +373,10 @@ export function AccountPage() {
 
   // LTD status
   const { userLTD, hasLTD } = useUserLTD();
+
+  // Founding-offer availability, shared with the Pricing page so the price
+  // shown here never drifts from what the user clicked to get here.
+  const { foundingOffer, foundingAvailability } = usePricingAvailability();
 
   // Get current subscription info
   const planData = subscription?.plan;
@@ -760,46 +802,31 @@ export function AccountPage() {
                 {isFreeTier && !isLifetime && (
                   <Card>
                     <CardHeader>
-                      <CardTitle>Upgrade Your Plan</CardTitle>
-                      <CardDescription>Get more sites, checks, and features</CardDescription>
+                      <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div>
+                          <CardTitle>Upgrade Your Plan</CardTitle>
+                          <CardDescription>Get more sites, checks, and features</CardDescription>
+                        </div>
+                        <BillingIntervalToggle view={billingView} onChange={setBillingView} />
+                      </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="grid gap-4">
-                        {pricingTiers.subscriptions.map((plan) => (
-                          <div
-                            key={plan.id}
-                            className={cn(
-                              'flex items-center justify-between p-4 rounded-lg border',
-                              plan.popular && 'border-primary'
-                            )}
-                          >
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold">{plan.name}</span>
-                                {plan.popular && <Badge variant="secondary">Popular</Badge>}
-                              </div>
-                              <p className="text-sm text-muted-foreground">
-                                {plan.limits.sites} sites, {plan.limits.keywords} keywords
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-4">
-                              <span className="font-bold">${plan.price_cents / 100}/mo</span>
-                              <Button
-                                size="sm"
-                                variant={plan.popular ? 'default' : 'outline'}
-                                onClick={() => handleUpgrade(plan.id)}
-                                disabled={upgradingPlanId !== null}
-                              >
-                                {upgradingPlanId === plan.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  'Select'
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      <SubscriptionPricingCards
+                        tiers={pricingTiers.subscriptions as SubscriptionTier[]}
+                        isAnnual={billingView === 'annual'}
+                        onSelectPlan={handleUpgrade}
+                        foundingOffer={foundingOffer}
+                        foundingAvailability={foundingAvailability}
+                        currentPlanId={currentPlanId}
+                        highlightPlanId={highlightPlanId}
+                        isProcessing={upgradingPlanId !== null}
+                      />
+                      <p className="text-sm text-muted-foreground text-center">
+                        Looking for a one-time lifetime deal instead?{' '}
+                        <Link to="/pricing" className="text-foreground hover:text-primary transition-colors">
+                          See lifetime pricing
+                        </Link>
+                      </p>
                     </CardContent>
                   </Card>
                 )}

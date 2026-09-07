@@ -61,6 +61,7 @@ interface SubscriptionTier {
   id: string;
   name: string;
   price_cents: number;
+  price_cents_annual?: number;
   billing_period: 'month' | 'year' | 'lifetime';
   tagline: string;
   popular: boolean;
@@ -231,6 +232,67 @@ async function syncFoundingOffer(offer: FoundingOffer): Promise<void> {
   console.log(`  ✅ Synced ${offer.name} to Supabase (price: ${priceId})`);
 }
 
+/**
+ * Annual pricing is a second, coexisting Price on the base tier's EXISTING
+ * product (e.g. rankcli_pro), same reasoning as syncFoundingOffer above: not
+ * run through findOrCreateStripeProduct, which deactivates every other
+ * active price on the product when it creates a new one. The annual row
+ * (e.g. pro_annual) already exists from the annual-pricing migration - only
+ * the Stripe linkage is missing here.
+ */
+async function syncAnnualPricing(tier: SubscriptionTier): Promise<void> {
+  if (!stripe) throw new Error('Stripe not initialized');
+  if (!tier.price_cents_annual) return;
+
+  const productId = `rankcli_${tier.id}`;
+  const annualPlanId = `${tier.id}_annual`;
+
+  try {
+    await stripe.products.retrieve(productId);
+  } catch (error) {
+    throw new Error(`Base product ${productId} not found - run the base tier sync first: ${(error as Error).message}`);
+  }
+
+  const existingPrices = await stripe.prices.list({ product: productId, active: true });
+  const matchingPrice = existingPrices.data.find(
+    (price) =>
+      price.unit_amount === tier.price_cents_annual &&
+      price.recurring?.interval === 'year'
+  );
+
+  let priceId: string;
+  if (matchingPrice) {
+    console.log(`  💰 Using existing annual price: $${tier.price_cents_annual / 100}/year (${matchingPrice.id})`);
+    priceId = matchingPrice.id;
+  } else {
+    const price = await stripe.prices.create({
+      product: productId,
+      unit_amount: tier.price_cents_annual,
+      currency: 'usd',
+      recurring: { interval: 'year' },
+      nickname: `${tier.name} (Annual)`,
+      metadata: {
+        rankcli_plan_id: annualPlanId,
+      },
+    });
+    console.log(`  💰 Created annual price: $${tier.price_cents_annual / 100}/year (${price.id})`);
+    priceId = price.id;
+  }
+
+  // Targeted update, not upsert - the *_annual row (limits, features,
+  // sort_order) already exists from the annual-pricing migration. Only the
+  // Stripe linkage is missing here.
+  const { error } = await supabase
+    .from('subscription_plans')
+    .update({ stripe_price_id: priceId })
+    .eq('plan_id', annualPlanId);
+
+  if (error) {
+    throw new Error(`Failed to set stripe_price_id for ${annualPlanId}: ${error.message}`);
+  }
+  console.log(`  ✅ Synced ${tier.name} (Annual) to Supabase (price: ${priceId})`);
+}
+
 async function syncToSupabase(
   tier: SubscriptionTier,
   stripePriceId: string | null
@@ -293,10 +355,23 @@ async function main() {
 
     const synced = await syncToSupabase(tier, stripePriceId);
     if (!synced) success = false;
+
+    // Annual pricing: a second, coexisting price on the same product, only
+    // in --stripe mode (there's no meaningful Supabase-only sync for it,
+    // since its row already exists from the annual-pricing migration).
+    if (syncStripe && tier.price_cents_annual) {
+      console.log(`\n📋 Processing annual pricing: ${tier.name} ($${tier.price_cents_annual / 100}/year)`);
+      try {
+        await syncAnnualPricing(tier);
+      } catch (error) {
+        console.error(`  ❌ Annual pricing error:`, (error as Error).message);
+        success = false;
+      }
+    }
   }
 
   // Sync free tier config (no Stripe product needed)
-  if (pricingConfig.free_tier?.enabled) {
+  if (pricingConfig.free_registered?.enabled) {
     console.log('\n📋 Free tier is enabled (no Stripe product needed)');
   }
 
