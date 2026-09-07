@@ -1,0 +1,42 @@
+name: One-off - check null-plan active subscriptions
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project
+        working-directory: packages/saas
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase link --project-ref ${{ vars.SUPABASE_PROJECT_REF }}
+
+      - name: Inspect null-plan active subscriptions
+        working-directory: packages/saas
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase db query "
+            SELECT us.status, us.plan_id AS us_plan_id, sp.plan_id AS sp_plan_id
+            FROM user_subscriptions us
+            LEFT JOIN subscription_plans sp ON sp.id = us.plan_id
+            WHERE us.status IN ('active','trialing','lifetime');
+          " --linked
+
+      - name: List all subscription_plans rows
+        working-directory: packages/saas
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase db query "SELECT id, plan_id, name, price_cents, billing_period FROM subscription_plans ORDER BY plan_id;" --linked
