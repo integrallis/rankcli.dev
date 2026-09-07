@@ -106,10 +106,14 @@ async function handleBilling(supabase: ReturnType<typeof createClient>): Promise
   let ltdCount = 0;
 
   for (const row of rows) {
-    if (row.status === 'lifetime' || !row.plan) {
+    if (row.status === 'lifetime') {
       ltdCount++;
       continue;
     }
+    // Free-tier signups get a user_subscriptions row too (status 'active',
+    // plan_id NULL - see handle_new_user() in 001_initial_schema.sql), so a
+    // NULL plan join here means "not a paying customer," not "lifetime deal."
+    if (!row.plan) continue;
     const label = row.plan.name;
     byPlan.set(label, (byPlan.get(label) || 0) + 1);
 
