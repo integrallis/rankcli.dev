@@ -11,16 +11,16 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.RANKCLI_SUPABASE_URL }}
           SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          WORKER_SECRET: ${{ secrets.AUDIT_WORKER_SECRET }}
         run: |
-          for id in \
-            0cba3bfe-a6c3-4b69-9a0e-ec21ce058b85 \
-            834de941-a29f-466f-ba20-cd15cc649a3c \
-            2f9b82fc-a1a1-47d3-99fd-23efbd11f756 \
-          ; do
-            echo "=== $id ==="
-            curl -sS -X POST "$SUPABASE_URL/functions/v1/send-audit-email" \
-              -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
-              -H "Content-Type: application/json" \
-              -d "{\"auditId\":\"$id\"}"
-            echo
-          done
+          echo "--- attempt with service role key ---"
+          curl -sS -w '\nHTTP %{http_code}\n' -X POST "$SUPABASE_URL/functions/v1/send-audit-email" \
+            -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"auditId":"0cba3bfe-a6c3-4b69-9a0e-ec21ce058b85"}'
+          echo
+          echo "--- attempt with worker secret ---"
+          curl -sS -w '\nHTTP %{http_code}\n' -X POST "$SUPABASE_URL/functions/v1/send-audit-email" \
+            -H "Authorization: Bearer $WORKER_SECRET" \
+            -H "Content-Type: application/json" \
+            -d '{"auditId":"0cba3bfe-a6c3-4b69-9a0e-ec21ce058b85"}'
