@@ -1,0 +1,26 @@
+name: One-off - send audit complete emails for reran audits
+
+on:
+  workflow_dispatch:
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send audit-complete emails
+        env:
+          SUPABASE_URL: ${{ secrets.RANKCLI_SUPABASE_URL }}
+          SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          for id in \
+            0cba3bfe-a6c3-4b69-9a0e-ec21ce058b85 \
+            834de941-a29f-466f-ba20-cd15cc649a3c \
+            2f9b82fc-a1a1-47d3-99fd-23efbd11f756 \
+          ; do
+            echo "=== $id ==="
+            curl -sS -X POST "$SUPABASE_URL/functions/v1/send-audit-email" \
+              -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+              -H "Content-Type: application/json" \
+              -d "{\"auditId\":\"$id\"}"
+            echo
+          done
