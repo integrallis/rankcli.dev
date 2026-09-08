@@ -243,26 +243,33 @@ serve(async (req) => {
 
     // Save to database for lead tracking (non-blocking)
     const domain = new URL(targetUrl).hostname;
+    let auditRecordId: string | null = null;
     try {
-      const { error: insertError } = await supabase.from('free_audits').insert({
-        url: targetUrl,
-        domain,
-        score,
-        issues_summary: {
-          errors,
-          warnings,
-          notices,
-          total: allIssues.length,
-          displayed: displayedIssues.length,
-        },
-        top_issues: displayedIssues,
-        email: email || null,
-        ip_hash: ipHash,
-        user_agent: req.headers.get('user-agent'),
-        referrer: req.headers.get('referer'),
-      });
+      const { data: inserted, error: insertError } = await supabase
+        .from('free_audits')
+        .insert({
+          url: targetUrl,
+          domain,
+          score,
+          issues_summary: {
+            errors,
+            warnings,
+            notices,
+            total: allIssues.length,
+            displayed: displayedIssues.length,
+          },
+          top_issues: displayedIssues,
+          email: email || null,
+          ip_hash: ipHash,
+          user_agent: req.headers.get('user-agent'),
+          referrer: req.headers.get('referer'),
+        })
+        .select('id')
+        .single();
       if (insertError) {
         console.warn('Failed to save audit result (non-blocking):', insertError.message);
+      } else {
+        auditRecordId = inserted.id;
       }
     } catch (saveErr) {
       console.warn('Exception saving audit result (non-blocking):', saveErr.message);
@@ -290,6 +297,7 @@ serve(async (req) => {
       message,
       title: pageTitle,
       description: pageDescription,
+      auditRecordId,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

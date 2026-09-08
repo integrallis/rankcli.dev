@@ -44,11 +44,13 @@ export function FreeAuditPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<AuditResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [auditRecordId, setAuditRecordId] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setResult(null);
+    setAuditRecordId(null);
 
     // Basic URL validation
     let validUrl = url;
@@ -100,6 +102,7 @@ export function FreeAuditPage() {
         description: data.description,
         favicon: data.favicon,
       });
+      setAuditRecordId(data.auditRecordId ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to run audit');
     } finally {
@@ -164,6 +167,7 @@ export function FreeAuditPage() {
           categories: result.categories,
           issues: result.issues,
           checksRun: result.checksRun,
+          auditId: auditRecordId,
         }),
       });
 

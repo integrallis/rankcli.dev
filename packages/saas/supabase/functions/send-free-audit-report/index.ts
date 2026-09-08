@@ -4,12 +4,16 @@
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendEmail, isEmailConfigured } from '../_shared/resend.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 interface AuditIssue {
   code: string;
@@ -35,6 +39,7 @@ interface FreeAuditReportRequest {
   };
   issues: AuditIssue[];
   checksRun: number;
+  auditId?: string | null;
 }
 
 function generateReportHtml(data: FreeAuditReportRequest): string {
@@ -317,7 +322,26 @@ serve(async (req) => {
 
     console.log(`Audit report sent to ${data.email} for ${data.domain}, id: ${result.id}`);
 
-    return new Response(JSON.stringify({ 
+    // Best-effort: attach the email to the originating free_audits row so
+    // it becomes an eligible lead for send-audit-followups. Non-blocking -
+    // the report already sent successfully regardless of this outcome.
+    if (data.auditId) {
+      try {
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        const { error: updateError } = await supabase
+          .from('free_audits')
+          .update({ email: data.email })
+          .eq('id', data.auditId)
+          .is('email', null);
+        if (updateError) {
+          console.warn('Failed to attach email to free_audits row (non-blocking):', updateError.message);
+        }
+      } catch (attachErr) {
+        console.warn('Exception attaching email to free_audits row (non-blocking):', attachErr instanceof Error ? attachErr.message : attachErr);
+      }
+    }
+
+    return new Response(JSON.stringify({
       success: true, 
       message: 'Report sent successfully',
       emailId: result.id,
