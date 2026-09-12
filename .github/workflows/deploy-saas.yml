@@ -199,6 +199,53 @@ jobs:
           if [ -n "${{ secrets.PERPLEXITY_API_KEY }}" ]; then
             supabase secrets set PERPLEXITY_API_KEY="${{ secrets.PERPLEXITY_API_KEY }}"
           fi
+
+          # Everything below here mirrors deploy.yml's optional-secrets block.
+          # This workflow (not deploy.yml) is the one that actually runs on
+          # every push to packages/saas/** - deploy.yml only fires on a
+          # release or a manual dispatch. Without parity here, a secret added
+          # to the repo and picked up only by an occasional manual deploy.yml
+          # run would silently vanish from live functions the next time a
+          # plain push re-deploys via this workflow instead.
+          if [ -n "${{ secrets.RESEND_API_KEY }}" ]; then
+            supabase secrets set RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}"
+          fi
+          if [ -n "${{ secrets.BRAVE_API_KEY }}" ]; then
+            supabase secrets set BRAVE_API_KEY="${{ secrets.BRAVE_API_KEY }}"
+          fi
+          if [ -n "${{ secrets.SERPER_API_KEY }}" ]; then
+            supabase secrets set SERPER_API_KEY="${{ secrets.SERPER_API_KEY }}"
+          fi
+          if [ -n "${{ secrets.GITHUB_TOKEN_SEARCH }}" ]; then
+            supabase secrets set GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN_SEARCH }}"
+          fi
+          if [ -n "${{ secrets.RANKCLI_GITHUB_APP_ID }}" ]; then
+            supabase secrets set GITHUB_APP_ID="${{ secrets.RANKCLI_GITHUB_APP_ID }}"
+          fi
+          if [ -n "${{ secrets.RANKCLI_GITHUB_APP_PRIVATE_KEY }}" ]; then
+            supabase secrets set GITHUB_PRIVATE_KEY="${{ secrets.RANKCLI_GITHUB_APP_PRIVATE_KEY }}"
+          fi
+          if [ -n "${{ secrets.RANKCLI_GITHUB_APP_WEBHOOK_SECRET }}" ]; then
+            supabase secrets set GITHUB_WEBHOOK_SECRET="${{ secrets.RANKCLI_GITHUB_APP_WEBHOOK_SECRET }}"
+          fi
+          if [ -n "${{ secrets.AI_KEY_ENCRYPTION_SECRET }}" ]; then
+            supabase secrets set AI_KEY_ENCRYPTION_SECRET="${{ secrets.AI_KEY_ENCRYPTION_SECRET }}"
+          fi
+          if [ -n "${{ secrets.CRON_SECRET }}" ]; then
+            supabase secrets set CRON_SECRET="${{ secrets.CRON_SECRET }}"
+          fi
+          if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
+            supabase secrets set SLACK_WEBHOOK_URL="${{ secrets.SLACK_WEBHOOK_URL }}"
+          fi
+          if [ -n "${{ secrets.INTERNAL_WEBHOOK_SECRET }}" ]; then
+            supabase secrets set INTERNAL_WEBHOOK_SECRET="${{ secrets.INTERNAL_WEBHOOK_SECRET }}"
+          fi
+          if [ -n "${{ secrets.SLACK_SIGNING_SECRET }}" ]; then
+            supabase secrets set SLACK_SIGNING_SECRET="${{ secrets.SLACK_SIGNING_SECRET }}"
+          fi
+          if [ -n "${{ secrets.AUDIT_WORKER_SECRET }}" ]; then
+            supabase secrets set AUDIT_WORKER_SECRET="${{ secrets.AUDIT_WORKER_SECRET }}"
+          fi
         working-directory: packages/saas
 
       - name: Deploy Edge Functions
