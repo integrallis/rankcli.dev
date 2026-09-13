@@ -20,8 +20,8 @@ where.
 |---|---|---|
 | Smithery | **Live**, published, tested end-to-end | smithery.ai/servers/bsbodden/rankcli |
 | Indie Hackers | **Live**, product page up | indiehackers.com/product/rankcli |
-| cursor.directory | Submitted, pending their automated security scan | cursor.directory/plugins/rankcli |
-| SaaSHub | Submitted (free tier), in approval queue (up to 32 days) | saashub.com — search "RankCLI" |
+| cursor.directory | **Live** (confirmed 2026-09-13), passed their automated scan | cursor.directory/plugins/rankcli |
+| SaaSHub | **Live** (confirmed 2026-09-13), approved well inside the 32-day window | saashub.com/rankcli |
 | Glama | **Live** (from earlier session) | glama.ai/mcp/servers/integrallis/rankcli-mcp-server |
 | mcp.so | **Live** (from earlier session), via merged GitHub issue | github.com/chatmcp/mcpso/issues/3963 |
 | `awesome-mcp-servers` (punkpeye, 94k★) | PR open | github.com/punkpeye/awesome-mcp-servers/pull/13779 |
