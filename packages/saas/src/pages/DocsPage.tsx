@@ -284,7 +284,7 @@ function GettingStartedSection() {
                 <td className="py-2 pr-4">GitHub Connect</td>
                 <td className="text-center py-2 px-4">-</td>
                 <td className="text-center py-2 px-4">-</td>
-                <td className="text-center py-2 px-4"><CheckCircle className="h-4 w-4 text-green-500 inline" /></td>
+                <td className="text-center py-2 px-4">-</td>
                 <td className="text-center py-2 px-4"><CheckCircle className="h-4 w-4 text-green-500 inline" /></td>
               </tr>
               <tr className="border-b">

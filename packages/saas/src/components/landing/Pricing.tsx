@@ -43,7 +43,8 @@ interface LTDAvailability {
 
 const subscriptionTiers = pricingConfig.subscriptions as SubscriptionTier[];
 
-// Free tier for display
+// Free tier for display. Must agree with pricing-tiers.json's
+// free_registered and free_mcp entries (100 checks, no GitHub features).
 const freeTier = {
   id: 'free',
   name: 'Free',
@@ -54,27 +55,30 @@ const freeTier = {
   highlights: [
     'Unlimited audits via MCP/CLI (your own AI key)',
     'No signup required for MCP',
-    '1 hosted site, all 280+ checks, audit history',
-    'GitHub auto-fix PRs (connect your own AI key)',
+    `1 hosted site, ${pricingConfig.free_registered.checks_limit} checks, audit history`,
     'GEO + AI-crawler-access checks included',
   ],
 };
 
-// Feature comparison for detailed view
+const tierLimits = (id: string) =>
+  (pricingConfig.subscriptions.find((tier) => tier.id === id) ?? pricingConfig.subscriptions[0]).limits;
+
+// Feature comparison for detailed view. Check and site counts come from
+// pricing-tiers.json so the table can't disagree with the cards.
 const featureComparison = [
   {
     name: 'SEO Checks',
-    free: '100',
-    solo: '280+',
-    pro: '280+',
-    agency: '280+'
+    free: String(pricingConfig.free_registered.checks_limit),
+    solo: `${tierLimits('solo').checks}+`,
+    pro: `${tierLimits('pro').checks}+`,
+    agency: `${tierLimits('agency').checks}+`,
   },
   {
     name: 'Sites',
-    free: '1',
-    solo: '3',
-    pro: '10',
-    agency: '50'
+    free: String(pricingConfig.free_registered.sites_limit),
+    solo: String(tierLimits('solo').sites),
+    pro: String(tierLimits('pro').sites),
+    agency: String(tierLimits('agency').sites),
   },
   {
     name: 'Audit History',
@@ -221,7 +225,7 @@ export function Pricing({ headingLevel = 'h2' }: PricingProps) {
               <p className="text-sm">
                 <span className="font-medium text-amber-600 dark:text-amber-400">Limited Time Offer:</span>{' '}
                 <span className="text-muted-foreground">
-                  Pay once, use forever. Only {ltdConfig.tiers.reduce((sum, t) => sum + (ltdAvailability[t.id]?.remaining || t.total_licenses), 0)} licenses remaining across all tiers.
+                  Pay once, use forever. Only {ltdConfig.tiers.reduce((sum, t) => sum + (ltdAvailability[t.id]?.remaining ?? t.total_licenses), 0)} licenses remaining across all tiers.
                 </span>
               </p>
             </div>

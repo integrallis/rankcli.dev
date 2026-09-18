@@ -1,6 +1,6 @@
 # RankCLI
 
-> RankCLI is a developer-first SEO automation tool that runs 200+ checks and creates auto-fix pull requests via GitHub integration. Unlike traditional SEO tools, RankCLI integrates directly into your CI/CD pipeline.
+> RankCLI is a developer-first SEO automation tool that runs 280+ checks and creates auto-fix pull requests via GitHub integration. Unlike traditional SEO tools, RankCLI integrates directly into your CI/CD pipeline.
 
 ## What is RankCLI?
 
@@ -15,7 +15,7 @@ RankCLI is a CLI-based SEO tool built for developers. It automates technical SEO
 
 ## Key Features
 
-- 200+ SEO checks (meta tags, schema, performance, security, accessibility)
+- 280+ SEO checks (meta tags, schema, performance, security, accessibility)
 - Auto-fix PRs via GitHub App integration
 - CI/CD pipeline integration (GitHub Actions, GitLab CI)
 - Weekly/daily automated audits
@@ -29,7 +29,7 @@ RankCLI is a CLI-based SEO tool built for developers. It automates technical SEO
 - Solo: $9/month - 3 sites, weekly audits, local auto-fix via the CLI
 - Pro: $29/month - 10 sites, daily audits, GitHub auto-fix PRs, Slack alerts
 - Agency: $99/month - 50 sites, unlimited team members, white-label reports
-- Annual billing: 20% off Solo, Pro and Agency
+- Annual billing: 33% off Solo, Pro and Agency (4 months free): $72, $232 and $792 a year
 - Lifetime deals: $79 / $149 / $299 one-time (limited availability)
 
 The Free tier needs no credit card. There is no trial on paid plans.
@@ -43,7 +43,7 @@ The Free tier needs no credit card. There is no trial on paid plans.
 ## Frequently Asked Questions
 
 **What SEO checks does RankCLI run?**
-RankCLI runs 200+ checks covering technical SEO (meta tags, schema, canonicals), content quality, Core Web Vitals, security headers, and AI readiness.
+RankCLI runs 280+ checks covering technical SEO (meta tags, schema, canonicals), content quality, Core Web Vitals, security headers, and AI readiness.
 
 **How is RankCLI different from Ahrefs or Semrush?**
 RankCLI is built for developers. Instead of a marketing dashboard, you get a CLI that integrates into your workflow. Instead of reports, you get auto-fix PRs.
@@ -57,11 +57,14 @@ Yes! The CLI works standalone for audits. GitHub integration is optional for aut
 - [Free Audit](https://rankcli.dev/free-audit): Try a free SEO audit
 - [Pricing](https://rankcli.dev/pricing): View pricing plans
 - [Documentation](https://rankcli.dev/docs): Full documentation
-- [GitHub](https://github.com/rankcli/rankcli): Source code
+- [Blog](https://rankcli.dev/blog): SEO guides for React, Next.js, Vue and Nuxt developers
+- [AI Visibility Checker](https://rankcli.dev/tools/ai-visibility): Check whether ChatGPT, Claude, Gemini and Perplexity mention a site
+- [Meta Tag Analyzer](https://rankcli.dev/tools/meta-tag-analyzer): Validate a page's meta, Open Graph and Twitter Card tags
+- [GitHub](https://github.com/integrallis/rankcli-cli): CLI source code and releases
 
 ## Contact
 
 - Website: https://rankcli.dev
 - Email: support@rankcli.dev
 - Twitter: @rankcli
-- GitHub: github.com/rankcli
+- GitHub: github.com/integrallis/rankcli-cli
