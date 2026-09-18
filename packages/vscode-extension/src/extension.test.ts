@@ -69,6 +69,33 @@ vi.mock('vscode', () => {
 // Import after mocking
 import { analyzeDocument, SEOIssue } from './extension.js';
 import * as vscode from 'vscode';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+describe('manifest agreement', () => {
+  // Every command the code registers or binds must be declared in
+  // package.json, or VS Code reports "command not found" - which is what
+  // happened to both commands when the code said seo-autopilot.* and the
+  // manifest said rankcli.*. The settings section had the same split.
+  const source = readFileSync(join(__dirname, 'extension.ts'), 'utf8');
+  const manifest = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8'));
+
+  it('declares every command id the code uses', () => {
+    const declared = new Set(manifest.contributes.commands.map((c: { command: string }) => c.command));
+    const used = [...source.matchAll(/(?:registerCommand\(|\.command = )'([^']+)'/g)].map(m => m[1]);
+    expect(used.length).toBeGreaterThan(0);
+    for (const id of used) expect(declared.has(id), id).toBe(true);
+  });
+
+  it('reads the configuration section the manifest declares', () => {
+    const sections = [...source.matchAll(/getConfiguration\('([^']+)'\)/g)].map(m => m[1]);
+    const properties = Object.keys(manifest.contributes.configuration.properties);
+    expect(sections.length).toBeGreaterThan(0);
+    for (const section of sections) {
+      expect(properties.some(p => p.startsWith(`${section}.`)), section).toBe(true);
+    }
+  });
+});
 
 // Mock document
 const createMockDocument = (text: string) => ({

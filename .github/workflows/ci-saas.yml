@@ -151,7 +151,10 @@ jobs:
       - name: Lint
         run: pnpm lint
         working-directory: packages/saas
-        continue-on-error: true  # Don't fail on lint warnings for now
+        # Still non-blocking: packages/saas declares `eslint .` but has no
+        # ESLint installed or configured, so this cannot pass yet. Make it
+        # blocking once saas adds eslint + an eslint.config.js.
+        continue-on-error: true
 
   # ============================================
   # E2E Database Tests (Keyword Persistence)

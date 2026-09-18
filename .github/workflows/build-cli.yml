@@ -134,6 +134,13 @@ jobs:
         working-directory: packages/cli
         run: pnpm build:js
 
+      # Step 3b: Unit tests, including the spawned-CLI exit-code tests
+      # (src/__tests__/exit-codes.test.ts) that CI pipelines depend on - a
+      # release must not ship a `rankcli audit` that can't fail a build.
+      - name: Run CLI tests
+        working-directory: packages/cli
+        run: pnpm test
+
       # Step 4: Run WASM integration tests
       # Note: Full tests only run for dev builds (no RANKCLI_BUILD_KEY)
       # Production builds just verify WASM loads correctly

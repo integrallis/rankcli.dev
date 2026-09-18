@@ -28,6 +28,8 @@ jobs:
       agent: ${{ steps.filter.outputs.agent }}
       plugins: ${{ steps.filter.outputs.plugins }}
       native: ${{ steps.filter.outputs.native }}
+      action: ${{ steps.filter.outputs.action }}
+      mcp: ${{ steps.filter.outputs.mcp }}
     steps:
       - uses: actions/checkout@v4
 
@@ -45,8 +47,13 @@ jobs:
               - 'packages/vite-plugin/**'
               - 'packages/next-plugin/**'
               - 'packages/astro-plugin/**'
+              - 'packages/vscode-extension/**'
             native:
               - 'packages/cli/native/**'
+            action:
+              - 'packages/github-action/**'
+            mcp:
+              - 'packages/mcp-server/**'
 
   # ---------------------------------------------------------------------------
   # SaaS Frontend Tests
@@ -78,8 +85,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Run linter
-        run: pnpm lint || true
+      # Nothing ran these, which is how an OOM that hid two never-passing
+      # tests went unnoticed. (The `pnpm lint || true` step that stood here
+      # could never pass - saas has no ESLint installed - and is dropped;
+      # ci-saas.yml keeps the lint job, still non-blocking, for when it does.)
+      - name: Unit tests
+        run: npx vitest run
 
       - name: Build
         run: pnpm build
@@ -195,7 +206,7 @@ jobs:
 
     strategy:
       matrix:
-        plugin: [vite-plugin, next-plugin, astro-plugin]
+        plugin: [vite-plugin, next-plugin, astro-plugin, vscode-extension]
 
     defaults:
       run:
@@ -222,12 +233,95 @@ jobs:
         run: pnpm test
 
   # ---------------------------------------------------------------------------
+  # GitHub Action + MCP server (both bundle agent-runtime, so build it first)
+  # ---------------------------------------------------------------------------
+  action-tests:
+    name: GitHub Action Tests
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.action == 'true' || needs.changes.outputs.agent == 'true' || github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build agent-runtime
+        working-directory: packages/agent-runtime
+        run: pnpm build
+
+      # The ncc bundle is what users run; dist.test.ts executes it the way
+      # the Actions runner does.
+      - name: Build action
+        working-directory: packages/github-action
+        run: pnpm build
+
+      - name: Type check
+        working-directory: packages/github-action
+        run: pnpm exec tsc --noEmit
+
+      - name: Run tests
+        working-directory: packages/github-action
+        run: pnpm test
+
+  mcp-tests:
+    name: MCP Server Tests
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.mcp == 'true' || needs.changes.outputs.agent == 'true' || github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build agent-runtime
+        working-directory: packages/agent-runtime
+        run: pnpm build
+
+      - name: Build
+        working-directory: packages/mcp-server
+        run: pnpm build
+
+      - name: Type check
+        working-directory: packages/mcp-server
+        run: pnpm exec tsc --noEmit
+
+      - name: Run tests
+        working-directory: packages/mcp-server
+        run: pnpm test
+
+  # ---------------------------------------------------------------------------
   # Summary job that other workflows can depend on
   # ---------------------------------------------------------------------------
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-latest
-    needs: [changes, saas-tests, agent-tests, cli-tests, plugin-tests]
+    needs: [changes, saas-tests, agent-tests, cli-tests, plugin-tests, action-tests, mcp-tests]
     if: always()
     steps:
       - name: Check results
@@ -235,7 +329,9 @@ jobs:
           if [[ "${{ needs.saas-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.agent-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.cli-tests.result }}" == "failure" ]] || \
-             [[ "${{ needs.plugin-tests.result }}" == "failure" ]]; then
+             [[ "${{ needs.plugin-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.action-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.mcp-tests.result }}" == "failure" ]]; then
             echo "CI failed"
             exit 1
           fi

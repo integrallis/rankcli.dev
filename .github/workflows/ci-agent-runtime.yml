@@ -34,6 +34,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Build first. agent-runtime-premium imports @rankcli/agent-runtime,
+      # which resolves to this package's dist/ - so type-checking
+      # wasm-adapter.ts/deno-entry.ts (which import premium) before a build
+      # fails on the missing dist types. So does packaging.test.ts, which
+      # inspects the built bundle. Running tsc first made most runs red.
+      - name: Build
+        working-directory: packages/agent-runtime
+        run: pnpm build
+
       - name: Type check
         working-directory: packages/agent-runtime
         run: pnpm exec tsc --noEmit
@@ -42,30 +51,6 @@ jobs:
         working-directory: packages/agent-runtime
         run: pnpm test
 
-      - name: Build
-        working-directory: packages/agent-runtime
-        run: pnpm build
-
-  lint:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 9
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Lint
-        working-directory: packages/agent-runtime
-        run: pnpm lint || true  # Don't fail on lint for now
+  # The lint job ran `pnpm lint || true`, but this package never had ESLint
+  # installed or configured, so it could only fail and be ignored. The
+  # script is gone; tsc above is the static check.

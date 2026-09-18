@@ -1,5 +1,5 @@
 /**
- * SEO Autopilot VS Code Extension
+ * RankCLI VS Code Extension
  *
  * Provides real-time SEO linting for HTML, React, Vue, and Astro files.
  */
@@ -30,12 +30,12 @@ let statusBarItem: vscode.StatusBarItem;
  */
 export function activate(context: vscode.ExtensionContext): void {
   // Create diagnostic collection
-  diagnosticCollection = vscode.languages.createDiagnosticCollection('seo-autopilot');
+  diagnosticCollection = vscode.languages.createDiagnosticCollection('rankcli');
   context.subscriptions.push(diagnosticCollection);
 
   // Create status bar item
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-  statusBarItem.command = 'seo-autopilot.showReport';
+  statusBarItem.command = 'rankcli.showReport';
   context.subscriptions.push(statusBarItem);
 
   // Register diagnostic provider
@@ -66,8 +66,8 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Register commands
   context.subscriptions.push(
-    vscode.commands.registerCommand('seo-autopilot.runAudit', () => runAudit()),
-    vscode.commands.registerCommand('seo-autopilot.showReport', () => showReport())
+    vscode.commands.registerCommand('rankcli.runAudit', () => runAudit()),
+    vscode.commands.registerCommand('rankcli.showReport', () => showReport())
   );
 
   // Initial scan of open documents
@@ -91,7 +91,7 @@ class SEODiagnosticProvider {
       return;
     }
 
-    const config = vscode.workspace.getConfiguration('seo-autopilot');
+    const config = vscode.workspace.getConfiguration('rankcli');
     if (!config.get('enabled', true)) {
       diagnosticCollection.delete(document.uri);
       updateStatusBar(0);
@@ -119,7 +119,7 @@ class SEOCodeActionProvider implements vscode.CodeActionProvider {
     const actions: vscode.CodeAction[] = [];
 
     for (const diagnostic of context.diagnostics) {
-      if (diagnostic.source !== 'seo-autopilot') continue;
+      if (diagnostic.source !== 'rankcli') continue;
 
       const fix = getQuickFix(diagnostic.code as string, document, diagnostic.range);
       if (fix) {
@@ -410,7 +410,7 @@ function getSeverityLevel(severity: string): vscode.DiagnosticSeverity {
 function createDiagnostic(issue: SEOIssue): vscode.Diagnostic {
   const diagnostic = new vscode.Diagnostic(issue.range, issue.message, issue.severity);
   diagnostic.code = issue.code;
-  diagnostic.source = 'seo-autopilot';
+  diagnostic.source = 'rankcli';
   return diagnostic;
 }
 
@@ -490,7 +490,7 @@ function runAudit(): void {
     return;
   }
 
-  const config = vscode.workspace.getConfiguration('seo-autopilot');
+  const config = vscode.workspace.getConfiguration('rankcli');
   const issues = analyzeDocument(editor.document.getText(), editor.document, config);
 
   if (issues.length === 0) {
