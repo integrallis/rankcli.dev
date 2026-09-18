@@ -387,7 +387,7 @@ export function FreeAuditPage() {
                   <div className="flex justify-center gap-4">
                     <Link to="/signup">
                       <Button className="gap-2">
-                        Start Free Trial
+                        Sign Up Free
                         <ArrowRight className="h-4 w-4" />
                       </Button>
                     </Link>
