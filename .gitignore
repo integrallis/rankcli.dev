@@ -45,6 +45,10 @@ playwright-report/
 
 # Build artifacts
 *.tsbuildinfo
+# tsc -b used to emit these next to vite.config.ts; Vite resolves
+# vite.config.js first, so a stale copy silently shadows the real config.
+packages/saas/vite.config.js
+packages/saas/vite.config.d.ts
 
 # Rust
 **/target/
