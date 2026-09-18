@@ -1,0 +1,6 @@
+# Everything is excluded unless listed below. Without this file vsce walked up the
+# pnpm workspace and packaged the repo root, .env and .git included.
+**
+!dist/extension.js
+!README.md
+!package.json
