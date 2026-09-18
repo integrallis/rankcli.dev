@@ -242,16 +242,13 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          # fly.toml's auto_start_machines/auto_stop_machines + concurrency
-          # limits (packages/audit-worker/fly.toml) only govern machines that
-          # already exist - they're not a field fly.toml can express, and
-          # `fly deploy` alone never changes how many there are. This is the
-          # step that actually provisions the pool Fly bursts into: 1 stays
-          # running normally (min_machines_running), up to 3 total start
-          # automatically once concurrent requests cross the soft_limit, and
-          # the extras stop again once load clears. Idempotent - a no-op if
-          # already at this count.
-          flyctl scale count 3 --app rankcli-audit-worker --yes
+          # `fly deploy` never changes how many machines there are; this does.
+          # fly.toml has auto_stop_machines off - Fly stopped machines that were
+          # running background audits, because it only counts HTTP traffic - so
+          # every machine here runs all the time. Two gives redundancy (a deploy
+          # or a crash doesn't take audits down) at the cost of two small VMs.
+          # Idempotent - a no-op if already at this count.
+          flyctl scale count 2 --app rankcli-audit-worker --yes
 
       - name: Set Fly.io Secrets
         env:

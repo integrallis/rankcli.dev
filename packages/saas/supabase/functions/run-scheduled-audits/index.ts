@@ -26,8 +26,13 @@ export const CADENCE_MS: Record<BaseTier, number> = {
 };
 // The worker handles a handful of deep audits at once; a backlog drains over later runs.
 const MAX_PER_RUN = 20;
-// An audit that never finished doesn't block the next one forever.
-const STUCK_AFTER_MS = 2 * HOUR;
+// The worker times a deep audit out after 5 minutes, so one still pending or running after 30
+// died with its machine (a deploy, a crash). It's marked failed as interrupted, and doesn't
+// count against the cadence - the next run retries it.
+const STUCK_AFTER_MS = 30 * 60 * 1000;
+const INTERRUPTED = 'Audit interrupted before it finished (the worker restarted). It will be retried.';
+// A real failure (site down, blocked, ...) is retried after this, not every hour.
+const FAILURE_BACKOFF_MS = 6 * HOUR;
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -48,6 +53,15 @@ serve(async (req) => {
     if (error) throw error;
 
     const now = Date.now();
+
+    if (!dryRun) {
+      await supabase
+        .from('audits')
+        .update({ status: 'failed', error_message: INTERRUPTED, completed_at: new Date(now).toISOString() })
+        .in('status', ['pending', 'running'])
+        .lt('created_at', new Date(now - STUCK_AFTER_MS).toISOString());
+    }
+
     const tiers = new Map<string, BaseTier>();
     const due: { project: { id: string; url: string; user_id: string }; lastAt: number; tier: BaseTier }[] = [];
     let busy = 0;
@@ -67,19 +81,25 @@ serve(async (req) => {
       if (!tiers.has(project.user_id)) tiers.set(project.user_id, (await getEntitlement(supabase, project.user_id)).tier);
       const tier = tiers.get(project.user_id)!;
 
-      const { data: last } = await supabase
+      const { data: recent } = await supabase
         .from('audits')
-        .select('status, created_at')
+        .select('status, created_at, error_message')
         .eq('project_id', project.id)
         .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      const lastAt = last ? new Date(last.created_at).getTime() : 0;
+        .limit(10);
+      const audits = recent || [];
+      const at = (a: { created_at: string }) => new Date(a.created_at).getTime();
 
-      if (last && (last.status === 'pending' || last.status === 'running') && now - lastAt < STUCK_AFTER_MS) {
+      if (audits.some((a) => (a.status === 'pending' || a.status === 'running') && now - at(a) < STUCK_AFTER_MS)) {
         busy++;
         continue;
       }
+      const lastFailure = audits.find((a) => a.status === 'failed' && a.error_message !== INTERRUPTED);
+      if (lastFailure && now - at(lastFailure) < FAILURE_BACKOFF_MS) continue;
+
+      // The cadence counts from the last audit that finished; interrupted ones don't count.
+      const lastCompleted = audits.find((a) => a.status === 'completed');
+      const lastAt = lastCompleted ? at(lastCompleted) : 0;
       if (now - lastAt >= CADENCE_MS[tier]) due.push({ project, lastAt, tier });
     }
 
