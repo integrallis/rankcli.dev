@@ -1,4 +1,4 @@
-# SEO Autopilot for VS Code
+# RankCLI for VS Code
 
 Real-time SEO linting for HTML, React, Vue, and Astro files.
 
@@ -36,9 +36,9 @@ Real-time SEO linting for HTML, React, Vue, and Astro files.
 
 ```json
 {
-  "seo-autopilot.enabled": true,
-  "seo-autopilot.severity": "warning",
-  "seo-autopilot.checks": {
+  "rankcli.enabled": true,
+  "rankcli.severity": "warning",
+  "rankcli.checks": {
     "title": true,
     "metaDescription": true,
     "openGraph": true,
@@ -53,17 +53,19 @@ Real-time SEO linting for HTML, React, Vue, and Astro files.
 
 ## Commands
 
-- `SEO Autopilot: Run SEO Audit` - Run a full audit on the current file
-- `SEO Autopilot: Show SEO Report` - Show all SEO issues in the current file
+- `RankCLI: Run SEO Audit` - Run a full audit on the current file
+- `RankCLI: Show SEO Report` - Show all SEO issues in the current file
 
 ## Installation
 
-Search for "SEO Autopilot" in the VS Code marketplace.
+> **Not on the Marketplace or Open VSX yet.** Build a `.vsix` from this repo (`pnpm --filter rankcli-vscode package`) and install it with `code --install-extension <file>.vsix`.
+
+Once published: search for "RankCLI" in the VS Code marketplace.
 
 Or install via command line:
 
 ```bash
-code --install-extension seo-autopilot.seo-autopilot
+code --install-extension rankcli.rankcli-vscode
 ```
 
 ## Development
