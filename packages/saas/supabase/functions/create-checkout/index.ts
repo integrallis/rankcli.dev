@@ -55,6 +55,31 @@ serve(async (req) => {
       });
     }
 
+    // A launch-offer plan (pro_founding) is only sold while its offer is open: within its
+    // window and under its seat cap. The pricing page hides the offer once it closes, but
+    // nothing stopped a direct call from buying it.
+    const { data: offer, error: offerError } = await supabase
+      .from('launch_offers')
+      .select('key')
+      .eq('plan_id', planId)
+      .maybeSingle();
+    if (offerError) throw offerError;
+
+    if (offer) {
+      const { data: availability, error: availabilityError } = await supabase
+        .rpc('get_launch_offer_availability', { p_key: offer.key })
+        .maybeSingle();
+      if (availabilityError) throw availabilityError;
+
+      const open = availability as { is_active: boolean; remaining: number } | null;
+      if (!open?.is_active || open.remaining <= 0) {
+        return new Response(JSON.stringify({ error: 'This offer has closed. Choose another plan.' }), {
+          status: 409,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // Use URLs from request, or fall back to APP_URL env var
     const appUrl = Deno.env.get('APP_URL') || 'http://localhost:3005';
     const finalSuccessUrl = successUrl || `${appUrl}/account/billing?success=true`;
