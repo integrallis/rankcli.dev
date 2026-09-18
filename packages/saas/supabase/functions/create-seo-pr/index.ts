@@ -6,6 +6,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getInstallationToken } from '../_shared/github-app.ts';
 import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
 import { resolveAIConfig, aiConfigErrorMessage } from '../_shared/resolve-ai-config.ts';
+import { getEntitlement } from '../_shared/tier.ts';
+
+// pricing-tiers.json: Free includes 3 auto-fix PRs a calendar month; paid plans are unlimited
+// (Solo's are naturally bounded by its 3 sites).
+const FREE_PRS_PER_MONTH = 3;
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -543,6 +548,27 @@ serve(async (req) => {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    const { tier } = await getEntitlement(supabase, project.user_id);
+    if (tier === 'free') {
+      const monthStart = new Date();
+      monthStart.setUTCDate(1);
+      monthStart.setUTCHours(0, 0, 0, 0);
+      const { count } = await supabase
+        .from('github_prs')
+        .select('id, projects!inner(user_id)', { count: 'exact', head: true })
+        .eq('projects.user_id', project.user_id)
+        .gte('created_at', monthStart.toISOString());
+      if ((count ?? 0) >= FREE_PRS_PER_MONTH) {
+        return new Response(JSON.stringify({
+          error: `The Free plan includes ${FREE_PRS_PER_MONTH} auto-fix PRs a month, and this month's are used. Upgrade to Solo for unlimited auto-fix PRs: https://rankcli.dev/pricing`,
+          code: 'pr_limit_reached',
+        }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     const aiResolution = await resolveAIConfig(supabase, project.user_id);
