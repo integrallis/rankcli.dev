@@ -1,0 +1,49 @@
+name: Stripe Webhook Events
+
+# Sets the live Stripe webhook endpoint's enabled events to exactly what
+# supabase/functions/stripe-webhook handles. Update-only: it never creates an endpoint,
+# because a new endpoint gets a new signing secret and every webhook would then fail
+# verification until STRIPE_WEBHOOK_SECRET was changed to match. Keep the list in step
+# with packages/saas/scripts/setup-stripe-webhook.ts.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update enabled events on the existing endpoint
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          WEBHOOK_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co/functions/v1/stripe-webhook
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const key = process.env.STRIPE_SECRET_KEY
+          const url = process.env.WEBHOOK_URL
+          const events = [
+            'checkout.session.completed',
+            'checkout.session.expired',
+            'checkout.session.async_payment_succeeded',
+            'customer.subscription.created',
+            'customer.subscription.updated',
+            'customer.subscription.deleted',
+            'invoice.paid',
+            'invoice.payment_failed',
+            'charge.refunded',
+          ]
+          const auth = { Authorization: `Bearer ${key}` }
+          const list = await (await fetch('https://api.stripe.com/v1/webhook_endpoints?limit=100', { headers: auth })).json()
+          if (list.error) throw new Error(list.error.message)
+          const endpoint = list.data.find((e) => e.url === url)
+          if (!endpoint) throw new Error(`No existing endpoint for ${url} - refusing to create one (it would get a new signing secret)`)
+          console.log(`endpoint ${endpoint.id} (${endpoint.status}), before: ${endpoint.enabled_events.join(', ')}`)
+          const body = new URLSearchParams()
+          for (const e of events) body.append('enabled_events[]', e)
+          const updated = await (await fetch(`https://api.stripe.com/v1/webhook_endpoints/${endpoint.id}`, {
+            method: 'POST', headers: { ...auth, 'Content-Type': 'application/x-www-form-urlencoded' }, body,
+          })).json()
+          if (updated.error) throw new Error(updated.error.message)
+          console.log(`after: ${updated.enabled_events.join(', ')}`)
+          NODE
