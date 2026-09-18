@@ -21,6 +21,7 @@ Status: `open` · `in progress` · `closed` (with commit) · `needs founder` (bl
 | OpenRouter default model withdrawn; OpenRouter is now the primary bridge | `79712e9` |
 | Visibility question named the brand, so every site scored as visible | `c114a77` |
 | Cheap inference providers as first-class keys | `78a56a0` |
+| **Gap 9 — release v0.0.30**: `@rankcli/cli@0.0.30`, `agent-runtime@0.0.21`, `mcp-server@0.0.9` on npm; native release built; MCP Registry now lists 0.0.9 (the registry step waits for npm). Verified: `npx @rankcli/cli@0.0.30` on a clean cache exits 3 / score 0 on a 404 page, and a `--fail-on error` gate passes on example.com | release `v0.0.30` |
 | **Gap 3 — CLI / CI product**: `--fail-on` / `--min-score` exit codes (1 gate, 2 bad invocation, 3 no real audit), fetch failures and 4xx/5xx score 0, X-Robots-Tag noindex, API-key plan in CI, generated workflow fixed, Action gate honest (create-pr removed), local + cheap inference in the CLI, mcp-server robots/SSRF option, plugin fixes, CI jobs (agent-runtime CI green for the first time since Sept 5), Node 20.19/22.12 launcher; hosted provider defaults aligned (deepseek-chat was retired). Verified: CLI exits 3/1/0/2 on real targets; live free audit scores a 404 and an unreachable host 0 | merge + `0319368` |
 | **Gap 1 — security**: GitHub link lock, caller auth on run-audit/local-seo/sync-*, RLS on the visibility tables and free_audits, SECURITY DEFINER lockdown, mcp-connect approve step with a user code, email relay closed, webhooks fail closed, GSC state signed, SSRF guards (worker process-wide after DNS; edge guarded fetch). Verified in production: free audit works, metadata/localhost refused, visibility tool asks all 4, every open function now 401s, tables/RPCs deny anon, unsigned GitHub webhook 401, connect page no longer auto-approves | merge `f2d0907` |
 | **Gap 2 — billing and tiers**: one tier resolver (TS, Node, SQL), lifetime-deal entitlement, webhook retries + plan-follows-price, founding cap, LTD sign-in + reservation release, site-limit trigger, Stripe events updated in place. Verified: 0 stranded subscriptions, tiers resolve (3 free / 2 Pro / 1 Solo), checkout 401s without auth | merge `6ca240e`, `4748f34`, `0419913` |
@@ -30,7 +31,7 @@ Status: `open` · `in progress` · `closed` (with commit) · `needs founder` (bl
 1. ~~Security~~ — closed (see above).
 2. ~~Billing and tiers~~ — closed (see above).
 3. ~~CLI / CI product~~ — closed (see above); reaches npm users with 9.
-4. **Site SEO and frontend** (agent branch): prerendering, per-route SEO, real 404, fake testimonials, pricing copy, sitemap/robots, bundle size, analytics snippet, account-page bugs, agency gating. — in progress
+4. **Site SEO and frontend** (agent branch): prerendering, per-route SEO, real 404, fake testimonials, pricing copy, sitemap/robots, bundle size, analytics snippet, account-page bugs, agency gating. — in progress (integrating)
 5. **Slack / Discord alerts are never sent.** Pro advertises them; nothing reads `alert_configs`. — open
 6a. **Decisions carried into pricing (6)**: the per-plan audit schedule cap has never run (ambiguous SQL overloads) and would limit Solo to one manual deep audit a week if enabled; create-seo-pr has no plan gate (free/Solo can open auto-fix PRs); free users have no domain limit window.
 6b. **create-checkout allows a second subscription** for a user who already has one. — open
@@ -38,7 +39,7 @@ Status: `open` · `in progress` · `closed` (with commit) · `needs founder` (bl
 6. **Pricing shape** (approved): richer Free, Solo gets auto-fix PRs + alerts, founding offer without the 90-day clock, lifetime deals pulled, annual = 2 months free, Agency +$2/site over 50. Only features that work get advertised. — open (after 2, 4, 5)
 7. **Rank-tracking cost cap**: Agency's "unlimited" keywords has no ceiling on Serper spend. — open
 8. **Edge functions are never type-checked** (no deno anywhere): add `deno check` to CI. — open
-9. **CLI release v0.0.30** with gap 3's fixes (bump agent-runtime and mcp-server first - the publish job skips existing versions); MCP Registry listing still on 0.0.7. — in progress
+9. ~~CLI release v0.0.30~~ — closed (see above).
 10. **Dead code**: root `supabase/` legacy schema, functions with no callers, the worker keyword path. — open
 11. **Deep audit via start-deep-audit** not yet exercised with a paid account. — open
 11b. **Worker type errors**: `tier` passed to AuditOptions (no such field), the domain-limit query's embed typing, missing mcp-server `.d.ts`. Harmless at runtime (tsup doesn't typecheck), but they hide real errors. — open
