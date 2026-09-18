@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
+import { getEntitlement } from '../_shared/tier.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -9,13 +10,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
 };
 
-// Rate limits per plan (requests per day)
-const RATE_LIMITS: Record<string, number> = {
-  solo: 100,
-  pro: 1000,
-  agency: 10000,
-  free: 0, // No API access for free tier
-};
+// Daily request limits per plan are tier.ts's limits.apiRequestsPerDay (0 = no API access).
 
 // Hash the API key using SHA-256
 async function hashKey(key: string): Promise<string> {
@@ -87,26 +82,12 @@ serve(async (req) => {
       });
     }
 
-    // Get subscription info
-    const { data: subscription } = await supabase
-      .from('user_subscriptions')
-      .select(`
-        plan_id,
-        status,
-        plan:subscription_plans (
-          plan_id,
-          name,
-          sites_limit
-        )
-      `)
-      .eq('user_id', keyData.user_id)
-      .single();
-
-    const plan = subscription?.plan as { plan_id: string; name: string; sites_limit: number } | null;
-    const planId = plan?.plan_id || 'free';
+    // Keyed on the bare plan_id, annual, founding and lifetime-deal customers were refused
+    // as free; a canceled or expired subscription still kept its limit.
+    const entitlement = await getEntitlement(supabase, keyData.user_id);
 
     // Check if plan has API access
-    const rateLimit = RATE_LIMITS[planId] ?? 0;
+    const rateLimit = entitlement.limits.apiRequestsPerDay;
     if (rateLimit === 0) {
       return new Response(JSON.stringify({
         error: 'API access requires a paid subscription (Solo, Pro, or Agency)',
@@ -136,7 +117,7 @@ serve(async (req) => {
         limit: rateLimit,
         used: currentCount,
         resets_at: new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString(),
-        upgrade_url: planId !== 'agency' ? 'https://rankcli.dev/pricing' : undefined
+        upgrade_url: entitlement.tier !== 'agency' ? 'https://rankcli.dev/pricing' : undefined
       }), {
         status: 429,
         headers: {
@@ -166,10 +147,13 @@ serve(async (req) => {
         email: userData.user.email,
       },
       subscription: {
-        planId: planId,
-        planName: plan?.name || 'Free',
-        sitesLimit: plan?.sites_limit || 1,
-        status: subscription?.status || 'active',
+        // The CLI and the GitHub Action key their check limits on planId, and know the
+        // base tier names; tier.ts maps billing variants and lifetime deals onto them.
+        planId: entitlement.tier,
+        planName: entitlement.planName,
+        sitesLimit: entitlement.limits.sites,
+        status: entitlement.source === 'lifetime' ? 'lifetime' : 'active',
+        source: entitlement.source,
       },
       key: {
         id: keyData.id,
