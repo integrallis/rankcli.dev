@@ -1,6 +1,6 @@
 -- Lifetime deals: make a paid purchase stick, and give inventory back reliably.
 --
--- Entitlement comes from ltd_purchases (see effective_entitlement() in 20260919105000),
+-- Entitlement comes from ltd_purchases (see effective_entitlement() in 20260919111000),
 -- not from user_subscriptions: the webhook used to write status 'lifetime' there, which
 -- user_subscriptions' CHECK constraint rejects, so every LTD buyer stayed on free. Reading
 -- ltd_purchases also means buyers whose purchase row was recorded before this fix get

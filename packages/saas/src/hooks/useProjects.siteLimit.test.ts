@@ -14,7 +14,7 @@ vi.mock('@/contexts/AuthContext', () => ({
 import { supabase } from '@/integrations/supabase/client';
 import { useProjects } from './useProjects';
 
-// What PostgREST returns when enforce_project_site_limit (migration 20260919107000) refuses
+// What PostgREST returns when enforce_project_site_limit (migration 20260919113000) refuses
 // the insert.
 const SITE_LIMIT_ERROR = {
   code: 'P0001',

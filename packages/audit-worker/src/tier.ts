@@ -1,6 +1,6 @@
 // Node copy of packages/saas/supabase/functions/_shared/tier.ts - Deno and npm can't share a
 // module, so the two name each other (as ai-provider.ts and models.ts do). Keep them in step,
-// along with public.effective_entitlement() in saas migration 20260919105000;
+// along with public.effective_entitlement() in saas migration 20260919111000;
 // packages/saas/src/test/tier.test.ts runs both copies against the same cases.
 //
 // A user's effective plan: billing rows (user_subscriptions + subscription_plans, and

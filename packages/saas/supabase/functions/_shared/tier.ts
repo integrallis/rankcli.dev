@@ -6,7 +6,7 @@
 //
 // Copies, kept in step with this file:
 //   - packages/audit-worker/src/tier.ts (Node; Deno and npm can't share a module)
-//   - public.effective_entitlement() in migration 20260919105000 (the projects site-limit
+//   - public.effective_entitlement() in migration 20260919111000 (the projects site-limit
 //     trigger needs the same answer inside the database)
 // packages/saas/src/test/tier.test.ts runs both TS copies against the same cases and checks
 // the limits below against src/config/pricing-tiers.json.

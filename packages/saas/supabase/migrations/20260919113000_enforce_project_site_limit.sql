@@ -3,7 +3,7 @@
 -- Nothing enforced subscription_plans.sites_limit: the dashboard hides its "Add project"
 -- button at the limit, but the projects INSERT policy only checks ownership, so any client
 -- could insert past it. This trigger uses the user's effective plan (effective_entitlement,
--- 20260919105000), so annual, founding and lifetime-deal customers get their real limit.
+-- 20260919111000), so annual, founding and lifetime-deal customers get their real limit.
 --
 -- Only a row becoming an active site counts: a new project, or a soft-deleted one
 -- (deleting a project sets is_active = false) being reactivated or moved to another user.
