@@ -21,6 +21,7 @@ Status: `open` · `in progress` · `closed` (with commit) · `needs founder` (bl
 | OpenRouter default model withdrawn; OpenRouter is now the primary bridge | `79712e9` |
 | Visibility question named the brand, so every site scored as visible | `c114a77` |
 | Cheap inference providers as first-class keys | `78a56a0` |
+| **Gap 4 — site SEO and frontend**: prerendered public pages (19 + 404.html) with per-route head, real 404s, app routes as a noindex shell, generated sitemap, robots.txt bot groups fixed, invented testimonials removed, pricing copy from the config (annual 33%), main chunk 1,723 kB → 268 kB, Cloudflare Web Analytics wiring, profile save / sites meter / login ?redirect= / missing assets, Agency UI gate. Verified live as GPTBot: every public page 200 with its own title/canonical and real content (home 1,828 words), unknown URL 404 noindex, OAuth handoff + /auth/callback + signed-out /dashboard redirect all work | merge `12a5d98` |
 | **Gap 9 — release v0.0.30**: `@rankcli/cli@0.0.30`, `agent-runtime@0.0.21`, `mcp-server@0.0.9` on npm; native release built; MCP Registry now lists 0.0.9 (the registry step waits for npm). Verified: `npx @rankcli/cli@0.0.30` on a clean cache exits 3 / score 0 on a 404 page, and a `--fail-on error` gate passes on example.com | release `v0.0.30` |
 | **Gap 3 — CLI / CI product**: `--fail-on` / `--min-score` exit codes (1 gate, 2 bad invocation, 3 no real audit), fetch failures and 4xx/5xx score 0, X-Robots-Tag noindex, API-key plan in CI, generated workflow fixed, Action gate honest (create-pr removed), local + cheap inference in the CLI, mcp-server robots/SSRF option, plugin fixes, CI jobs (agent-runtime CI green for the first time since Sept 5), Node 20.19/22.12 launcher; hosted provider defaults aligned (deepseek-chat was retired). Verified: CLI exits 3/1/0/2 on real targets; live free audit scores a 404 and an unreachable host 0 | merge + `0319368` |
 | **Gap 1 — security**: GitHub link lock, caller auth on run-audit/local-seo/sync-*, RLS on the visibility tables and free_audits, SECURITY DEFINER lockdown, mcp-connect approve step with a user code, email relay closed, webhooks fail closed, GSC state signed, SSRF guards (worker process-wide after DNS; edge guarded fetch). Verified in production: free audit works, metadata/localhost refused, visibility tool asks all 4, every open function now 401s, tables/RPCs deny anon, unsigned GitHub webhook 401, connect page no longer auto-approves | merge `f2d0907` |
@@ -31,7 +32,11 @@ Status: `open` · `in progress` · `closed` (with commit) · `needs founder` (bl
 1. ~~Security~~ — closed (see above).
 2. ~~Billing and tiers~~ — closed (see above).
 3. ~~CLI / CI product~~ — closed (see above); reaches npm users with 9.
-4. **Site SEO and frontend** (agent branch): prerendering, per-route SEO, real 404, fake testimonials, pricing copy, sitemap/robots, bundle size, analytics snippet, account-page bugs, agency gating. — in progress (integrating)
+4. ~~Site SEO and frontend~~ — closed (see above).
+4a. **Agency features server-side**: widget-data doesn't return `whiteLabel` (every widget shows the credit); widget_tokens, client_links, client-report and generate-pdf-report's white-label have no plan check. — open
+4b. **Check counts disagree in code**: free-audit runs 280 while the config says 50; start-deep-audit runs free accounts at 50 (fewer than anonymous visitors); the engine hardcodes "310". — open
+4c. **Links that now 404**: `/bot` (the URL in RankCLI's crawler User-Agent), `/account/alerts` (CLI), email links to `/projects/<id>`, CLI links to `/docs/cli-setup` and `/docs/keywords` (redirected, fix at source). — open
+4d. **ci-saas.yml / deploy-saas.yml builds skip prerendering** (no Chromium); harmless while deploy-saas doesn't deploy the frontend. — open
 5. **Slack / Discord alerts are never sent.** Pro advertises them; nothing reads `alert_configs`. — open
 6a. **Decisions carried into pricing (6)**: the per-plan audit schedule cap has never run (ambiguous SQL overloads) and would limit Solo to one manual deep audit a week if enabled; create-seo-pr has no plan gate (free/Solo can open auto-fix PRs); free users have no domain limit window.
 6b. **create-checkout allows a second subscription** for a user who already has one. — open
@@ -47,4 +52,4 @@ Status: `open` · `in progress` · `closed` (with commit) · `needs founder` (bl
 12. **GitHub Action publishing** needs a public repo. — needs founder (after 3)
 12b. **GitHub repo linking for email/Google sign-ups**: linking now proves write access on GitHub. Users with no GitHub identity can link only after enabling "Request user authorization (OAuth) during installation" on the GitHub App and adding `GITHUB_APP_CLIENT_ID` / `GITHUB_APP_CLIENT_SECRET` as Supabase secrets - or by signing in with GitHub once. — needs founder
 13. **Premium checks model** (WASM copy bug vs. extractable premium code). — needs founder
-14. **Analytics token**: Cloudflare Web Analytics beacon token. — needs founder (after 4)
+14. **Analytics token**: set repo variable `CF_BEACON_TOKEN` (Cloudflare → Web Analytics → Add site → manual JS snippet), then redeploy the frontend. Don't also enable Pages' automatic analytics (double counting). — needs founder
