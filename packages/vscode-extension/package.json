@@ -92,7 +92,6 @@
     "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
     "watch": "pnpm run build --watch",
     "test": "vitest run",
-    "lint": "eslint src --ext ts",
     "package": "vsce package --no-dependencies"
   },
   "devDependencies": {
