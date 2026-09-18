@@ -29,6 +29,8 @@ interface SseEvent {
   progress?: number;
   score?: number;
   error?: string;
+  question?: string;
+  category?: string | null;
 }
 
 interface AIVisibilityState {
@@ -38,6 +40,10 @@ interface AIVisibilityState {
   overallScore: number;
   error: string | null;
   brand: string | null;
+  // The buyer's question every assistant was asked. It never names the brand, so a mention
+  // means the assistant recommended it rather than repeated the question.
+  question: string | null;
+  category: string | null;
 }
 
 interface UseAIVisibilitySSEOptions {
@@ -56,6 +62,8 @@ export function useAIVisibilitySSE(options: UseAIVisibilitySSEOptions = {}) {
     overallScore: 0,
     error: null,
     brand: null,
+    question: null,
+    category: null,
   });
 
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -98,6 +106,8 @@ export function useAIVisibilitySSE(options: UseAIVisibilitySSEOptions = {}) {
             setState(prev => ({
               ...prev,
               status: 'running',
+              question: data.question ?? prev.question,
+              category: data.category ?? prev.category,
             }));
             break;
 
@@ -184,6 +194,8 @@ export function useAIVisibilitySSE(options: UseAIVisibilitySSEOptions = {}) {
       overallScore: 0,
       error: null,
       brand: null,
+    question: null,
+    category: null,
     });
 
     try {
@@ -244,6 +256,8 @@ export function useAIVisibilitySSE(options: UseAIVisibilitySSEOptions = {}) {
       overallScore: 0,
       error: null,
       brand: null,
+    question: null,
+    category: null,
     });
   }, [disconnect]);
 

@@ -1,7 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import type { AIProviderConfig } from '../_shared/ai-provider.ts';
-import { loadUserAIKeys, aiConfigErrorMessage } from '../_shared/resolve-ai-config.ts';
+import { loadUserAIKeys, preferredAIConfig, aiConfigErrorMessage } from '../_shared/resolve-ai-config.ts';
+import { buildVisibilityQuestion } from '../_shared/visibility-question.ts';
 import {
   OPENAI_FAST,
   ANTHROPIC_FAST,
@@ -45,6 +46,8 @@ interface AIVisibilityResult {
   overallScore: number;
   providers: ProviderResult[];
   queries_tested: string[];
+  category: string | null;
+  question_names_brand: boolean;
 }
 
 function json(body: unknown, status = 200): Response {
@@ -108,12 +111,16 @@ serve(async (req) => {
       .replace(/-/g, ' ')
       .replace(/\b\w/g, c => c.toUpperCase());
 
-    // Generate queries
-    const queries = [
-      `What are some good ${brand.toLowerCase()} alternatives?`,
-      `Can you recommend tools similar to ${domain}?`,
-      `What do you think about ${brand}?`,
-    ];
+    // Ask what a buyer would ask - about the category, never naming the brand - so a mention
+    // means the assistant recommended it rather than repeated the question. The category is
+    // inferred from the site on the user's own key (through OpenRouter, on the same model the
+    // ChatGPT check uses).
+    const preferred = preferredAIConfig(keys);
+    const inferenceKey = preferred?.provider === 'openrouter'
+      ? { ...preferred, model: OPENROUTER_VISIBILITY_MODELS.openai }
+      : preferred ?? undefined;
+    const built = await buildVisibilityQuestion({ url: targetUrl, brand, domain, ai: inferenceKey });
+    const queries = [built.question];
 
     const or = keys.openrouter;
     const results = await Promise.all([
@@ -177,6 +184,8 @@ serve(async (req) => {
       overallScore,
       providers: results,
       queries_tested: queries,
+      category: built.category,
+      question_names_brand: built.namesBrand,
     };
 
     return json(response);

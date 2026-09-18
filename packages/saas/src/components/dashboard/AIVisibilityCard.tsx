@@ -35,6 +35,7 @@ interface AIVisibilityCardProps {
     score: number;
     providers: ProviderStatus[];
     lastChecked: string;
+    question?: string;
   };
 }
 
@@ -83,6 +84,7 @@ export function AIVisibilityCard({
             score: latestCheck.overall_score,
             providers,
             lastChecked: latestCheck.created_at,
+            question: latestCheck.queries_tested?.[0],
           });
         }
       } catch (err) {
@@ -122,6 +124,7 @@ export function AIVisibilityCard({
           sentiment: p.sentiment,
         })),
         lastChecked: new Date().toISOString(),
+        question: result.queries_tested?.[0],
       });
     } catch (err) {
       console.error('AI visibility check error:', err);
@@ -265,6 +268,12 @@ export function AIVisibilityCard({
                 </div>
               ))}
             </div>
+
+            {data.question && (
+              <p className="text-xs text-muted-foreground" title="The question never names your brand, so a mention is a real recommendation">
+                Asked: "{data.question}"
+              </p>
+            )}
 
             {/* Last Checked */}
             {data.lastChecked && (

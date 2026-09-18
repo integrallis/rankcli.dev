@@ -90,6 +90,7 @@ export function AIVisibilityCheckerPage() {
     overallScore,
     error,
     brand,
+    question,
     checkVisibility,
     isLoading,
   } = useAIVisibilitySSE();
@@ -319,6 +320,17 @@ export function AIVisibilityCheckerPage() {
                       Share Results
                     </Button>
                   </div>
+                </div>
+              )}
+
+              {question && (
+                <div className="p-4 rounded-lg border bg-muted/20 text-sm">
+                  <span className="text-muted-foreground">We asked each assistant: </span>
+                  <span className="font-medium">"{question}"</span>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    The question never names {brand || 'your brand'}, so a mention means the assistant
+                    recommended it on its own.
+                  </p>
                 </div>
               )}
 

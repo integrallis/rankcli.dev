@@ -15,6 +15,7 @@ import { createAnalysisServer } from '@rankcli/mcp-server/server';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { EventEmitter } from 'events';
 import { callChatCompletion, type AIProviderConfig } from './ai-provider.js';
+import { buildVisibilityQuestion } from './visibility-question.js';
 import { randomUUID } from 'crypto';
 import {
   OPENAI_FAST,
@@ -93,6 +94,8 @@ interface SseEvent {
   // AI visibility specific
   provider?: string;
   provider_name?: string;
+  question?: string;
+  category?: string | null;
   status?: 'checked' | 'not_checked' | 'error';
   mentioned?: boolean;
   position?: number | null;
@@ -112,6 +115,11 @@ interface AIVisibilityJob {
   providersCompleted: number;
   results: AIProviderResult[];
   overallScore: number;
+  // The buyer's question each assistant was asked (never names the brand unless the site
+  // gave nothing to infer a category from - then questionNamesBrand is true).
+  question?: string;
+  category?: string | null;
+  questionNamesBrand?: boolean;
   startedAt?: Date;
   completedAt?: Date;
   error?: string;
@@ -1213,6 +1221,9 @@ app.get<{ Params: { jobId: string } }>('/ai-visibility/stream/:jobId', async (re
 
   // Check if job already has results (late connection)
   const job = aiVisibilityJobs.get(jobId);
+  if (job?.question) {
+    reply.raw.write(`data: ${JSON.stringify({ type: 'job_started', job_id: jobId, question: job.question, category: job.category })}\n\n`);
+  }
   if (job && job.results.length > 0) {
     // Send existing results
     for (const result of job.results) {
@@ -1281,14 +1292,29 @@ async function runAIVisibilityCheck(job: AIVisibilityJob, keys: ProviderKeys): P
     job.status = 'running';
     job.startedAt = new Date();
 
+    // Ask what a buyer would ask - about the category, never naming the brand - so a mention
+    // means the assistant recommended it, not that it repeated the question. The category is
+    // inferred from the site with the first key available, on its cheapest reliable model.
+    const inferenceKey: AIProviderConfig | undefined =
+      keys.openrouter ? { provider: 'openrouter', apiKey: keys.openrouter.apiKey, model: OPENROUTER_VISIBILITY_MODELS.openai }
+      : keys.openai ? { provider: 'openai', apiKey: keys.openai.apiKey, model: OPENAI_FAST }
+      : keys.anthropic ? { provider: 'anthropic', apiKey: keys.anthropic.apiKey, model: ANTHROPIC_FAST }
+      : keys.gemini ? { provider: 'gemini', apiKey: keys.gemini.apiKey, model: GOOGLE_FAST }
+      : undefined;
+    const built = await buildVisibilityQuestion({ url: job.url, brand: job.brand, domain: job.domain, ai: inferenceKey });
+    job.question = built.question;
+    job.category = built.category;
+    job.questionNamesBrand = built.namesBrand;
+    const query = built.question;
+
     broadcastEvent(job.id, {
       type: 'job_started',
       job_id: job.id,
+      question: built.question,
+      category: built.category,
     });
 
-    app.log.info({ jobId: job.id, brand: job.brand, domain: job.domain }, 'Starting AI visibility check');
-
-    const query = `What are some good alternatives to ${job.brand}? Can you recommend similar tools or services to ${job.domain}?`;
+    app.log.info({ jobId: job.id, brand: job.brand, domain: job.domain, category: built.category }, 'Starting AI visibility check');
 
     // Check each provider sequentially to stream results as they come in
     const or = keys.openrouter;
