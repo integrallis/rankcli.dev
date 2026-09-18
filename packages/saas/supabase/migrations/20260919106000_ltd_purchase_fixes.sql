@@ -91,8 +91,12 @@ BEGIN
     SET converted_to_purchase = true
     WHERE id = v_reservation.id;
   ELSE
+    -- The customer has paid, so the sale stands even if the lapsed reservation's license
+    -- went to someone else meanwhile: the cap grows by one rather than not_oversold
+    -- rejecting the purchase (and Stripe retrying it forever).
     UPDATE ltd_inventory
     SET sold_count = sold_count + 1,
+        total_licenses = GREATEST(total_licenses, sold_count + reserved_count + 1),
         updated_at = NOW()
     WHERE tier = v_tier;
   END IF;

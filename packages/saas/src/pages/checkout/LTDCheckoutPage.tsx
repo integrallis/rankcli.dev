@@ -1,10 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { Loader2, Check, AlertTriangle, ArrowLeft, Zap, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/hooks/useAuth';
 import { useLTDAvailability, useLTDCheckout, useUserLTD } from '@/hooks/useLTD';
@@ -32,13 +30,10 @@ export default function LTDCheckoutPage() {
   const tier = ltdTiers.find((t) => t.id === tierId);
   const tierAvailability = getTierAvailability(tierId);
 
-  const [email, setEmail] = useState('');
-
-  useEffect(() => {
-    if (user?.email) {
-      setEmail(user.email);
-    }
-  }, [user]);
+  // Purchases need an account (ltd-checkout requires sign-in). Login returns to
+  // location.state.from; signup carries ?ltd= through email confirmation or OAuth and
+  // ProtectedRoute brings the user back here.
+  const returnHere = { from: { pathname: '/checkout/ltd', search: `?tier=${tierId}` } };
 
   // Redirect if user already has LTD
   useEffect(() => {
@@ -48,13 +43,8 @@ export default function LTDCheckoutPage() {
   }, [hasLTD, ltdStatusLoading, navigate]);
 
   const handleCheckout = async () => {
-    if (!tier) return;
-
-    if (!user && !email) {
-      return;
-    }
-
-    await startCheckout(tier.id, email);
+    if (!tier || !user) return;
+    await startCheckout(tier.id);
   };
 
   if (authLoading || ltdStatusLoading || availabilityLoading) {
@@ -192,62 +182,53 @@ export default function LTDCheckoutPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {user ? (
-                  <div className="p-3 rounded-lg bg-muted/50">
-                    <p className="text-sm text-muted-foreground">Purchasing as:</p>
-                    <p className="font-medium">{user.email}</p>
-                  </div>
+                  <>
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <p className="text-sm text-muted-foreground">Purchasing as:</p>
+                      <p className="font-medium">{user.email}</p>
+                    </div>
+
+                    {checkoutError && (
+                      <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                        <p className="text-sm text-destructive">{checkoutError}</p>
+                      </div>
+                    )}
+
+                    <Button
+                      className="w-full"
+                      size="lg"
+                      onClick={handleCheckout}
+                      disabled={checkoutLoading}
+                    >
+                      {checkoutLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          Pay ${Math.floor(tier.price_cents / 100)} - Get Lifetime Access
+                        </>
+                      )}
+                    </Button>
+                  </>
                 ) : (
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      We'll create an account for you with this email.
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Your lifetime deal is tied to your RankCLI account. Create one or log in to continue.
                     </p>
+                    <Button className="w-full" size="lg" asChild>
+                      <Link to={`/signup?ltd=${tierId}`}>Create account and continue</Link>
+                    </Button>
+                    <Button className="w-full" variant="outline" asChild>
+                      <Link to="/login" state={returnHere}>Log in</Link>
+                    </Button>
                   </div>
                 )}
-
-                {checkoutError && (
-                  <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                    <p className="text-sm text-destructive">{checkoutError}</p>
-                  </div>
-                )}
-
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={handleCheckout}
-                  disabled={checkoutLoading || (!user && !email)}
-                >
-                  {checkoutLoading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      Pay ${Math.floor(tier.price_cents / 100)} - Get Lifetime Access
-                    </>
-                  )}
-                </Button>
 
                 <p className="text-xs text-center text-muted-foreground">
                   Secure payment powered by Stripe. Your payment information is encrypted.
                 </p>
-
-                {!user && (
-                  <p className="text-xs text-center">
-                    Already have an account?{' '}
-                    <Link to={`/login?redirect=/checkout/ltd?tier=${tierId}`} className="text-primary hover:underline">
-                      Log in
-                    </Link>
-                  </p>
-                )}
               </CardContent>
             </Card>
 
