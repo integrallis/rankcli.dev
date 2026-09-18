@@ -565,50 +565,32 @@ supabase functions deploy ltd-checkout --no-verify-jwt
 
 ### Step 5: Update Stripe Webhook
 
-Add these events to your Stripe webhook endpoint:
+`pnpm run setup:stripe` (in `packages/saas`) sets the endpoint's
+events to everything `stripe-webhook` handles. To do it by hand, the endpoint needs:
 
-1. Go to **Developers → Webhooks** in Stripe Dashboard
-2. Edit your webhook endpoint
-3. Add these events if not already present:
-   - `checkout.session.completed` (for LTD purchases)
-   - `checkout.session.expired` (for releasing reservations)
-   - `charge.refunded` (for LTD refunds)
+- `checkout.session.completed`, `checkout.session.expired`,
+  `checkout.session.async_payment_succeeded`
+- `customer.subscription.created`, `customer.subscription.updated`,
+  `customer.subscription.deleted`
+- `invoice.paid`, `invoice.payment_failed`
+- `charge.refunded`
 
-### Step 6: Set Up Reservation Cleanup (Optional)
+The webhook answers 500 when it fails to apply an event, so Stripe retries it; failed
+deliveries show under the endpoint in **Developers → Webhooks**.
 
-Expired reservations (30-min timeout) should be cleaned up periodically. Options:
+### Step 6: Reservation Cleanup
 
-**Option A: Supabase pg_cron (Recommended)**
-
-1. Enable pg_cron extension: Dashboard → Database → Extensions → pg_cron
-2. Schedule cleanup:
+Nothing to schedule. `checkout.session.expired` releases a reservation as soon as its
+Checkout session expires (sessions last 31 minutes), and `ltd-checkout` sweeps lapsed
+reservations (`release_expired_ltd_reservations`) on every call. A pg_cron job is
+optional:
 
 ```sql
 SELECT cron.schedule(
   'cleanup-ltd-reservations',
-  '*/5 * * * *',  -- Every 5 minutes
+  '*/5 * * * *',
   $$SELECT release_expired_ltd_reservations()$$
 );
-```
-
-**Option B: External cron (e.g., GitHub Action)**
-
-```yaml
-# .github/workflows/ltd-cleanup.yml
-name: LTD Reservation Cleanup
-on:
-  schedule:
-    - cron: '*/5 * * * *'  # Every 5 minutes
-
-jobs:
-  cleanup:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Call cleanup function
-        run: |
-          curl -X POST "${{ secrets.SUPABASE_URL }}/rest/v1/rpc/release_expired_ltd_reservations" \
-            -H "apikey: ${{ secrets.SUPABASE_SERVICE_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_KEY }}"
 ```
 
 ### Step 7: Configure Frontend Default View
