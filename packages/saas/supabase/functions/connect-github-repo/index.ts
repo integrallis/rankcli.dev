@@ -34,7 +34,7 @@ const corsHeaders = {
 
 // github.com/<owner>/<repo>, nothing else. Owner and repo end up in GitHub API
 // paths, so only GitHub's own name characters are accepted.
-const REPO_URL = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}))\/([A-Za-z0-9._-]{1,100}?)(?:\.git)?\/?$/;
+const REPO_URL = /^(?:https?:\/\/)?(?:www\.)?github\.com\/([A-Za-z0-9][A-Za-z0-9_-]{0,38})\/([A-Za-z0-9._-]{1,100}?)(?:\.git)?\/?$/;
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -52,6 +52,12 @@ function githubHeaders(token: string): Record<string, string> {
 }
 
 type AccessCheck = { ok: true } | { ok: false; reason: string; code: string };
+
+const IDENTITY_REQUIRED: AccessCheck = {
+  ok: false,
+  code: 'github_identity_required',
+  reason: 'Sign in to RankCLI with GitHub (using the same email) so we can confirm you have access to this repository, then connect it again.',
+};
 
 // Route 1: a user token from the App's OAuth code. GitHub fills in
 // `permissions` on the repo object for the authenticated user.
@@ -88,13 +94,7 @@ async function checkAccessWithIdentity(
 ): Promise<AccessCheck> {
   const identity = identities?.find((i) => i.provider === 'github');
   const githubUserId = String(identity?.identity_data?.provider_id ?? identity?.identity_data?.sub ?? identity?.id ?? '');
-  if (!identity || !/^\d+$/.test(githubUserId)) {
-    return {
-      ok: false,
-      code: 'github_identity_required',
-      reason: 'Sign in to RankCLI with GitHub (using the same email) so we can confirm you have access to this repository, then connect it again.',
-    };
-  }
+  if (!identity || !/^\d+$/.test(githubUserId)) return IDENTITY_REQUIRED;
 
   const userResponse = await fetch(`https://api.github.com/user/${githubUserId}`, {
     headers: githubHeaders(installationToken),
@@ -161,6 +161,13 @@ serve(async (req) => {
 
     if (projectError || !project) {
       return json({ error: 'Project not found' }, 404);
+    }
+
+    // With no way to prove access, stop before asking GitHub anything about
+    // the repo.
+    const canUseCode = typeof code === 'string' && !!code && !!githubAppClientId && !!githubAppClientSecret;
+    if (!canUseCode && !user.identities?.some((i) => i.provider === 'github')) {
+      return json({ linked: false, code: IDENTITY_REQUIRED.code, reason: IDENTITY_REQUIRED.reason });
     }
 
     const installationId = await getInstallationForRepo(owner, repoName, githubPrivateKey, githubAppId);

@@ -107,9 +107,11 @@ export function GitHubCallbackPage() {
           // Clear pending project
           localStorage.removeItem('pendingProject');
 
-          const link = pendingProject.github_repo_url
-            ? await linkRepository(project.id, pendingProject.github_repo_url, code)
-            : { linked: false, reason: undefined };
+          // The project exists at this point, so a failed link is reported
+          // on the success screen rather than as a failure.
+          const link: { linked: boolean; reason?: string } = pendingProject.github_repo_url
+            ? await linkRepository(project.id, pendingProject.github_repo_url, code).catch(() => ({ linked: false }))
+            : { linked: false };
 
           setStatus('success');
           setMessage(
