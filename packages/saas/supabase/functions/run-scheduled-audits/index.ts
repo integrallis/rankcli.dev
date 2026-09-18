@@ -11,6 +11,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { identifyCaller } from '../_shared/caller-auth.ts';
 import { getEntitlement, type BaseTier } from '../_shared/tier.ts';
 import { dispatchDeepAudit } from '../_shared/deep-audit.ts';
+import { assertPublicUrl } from '../_shared/url-guard.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -50,8 +51,19 @@ serve(async (req) => {
     const tiers = new Map<string, BaseTier>();
     const due: { project: { id: string; url: string; user_id: string }; lastAt: number; tier: BaseTier }[] = [];
     let busy = 0;
+    let localOnly = 0;
 
     for (const project of projects || []) {
+      // Projects synced from the CLI against a dev server (http://localhost:3010, ...) can only
+      // be audited on that machine; the hosted worker refuses private addresses. Skip them
+      // instead of writing a failed audit every cycle.
+      try {
+        await assertPublicUrl(project.url);
+      } catch {
+        localOnly++;
+        continue;
+      }
+
       if (!tiers.has(project.user_id)) tiers.set(project.user_id, (await getEntitlement(supabase, project.user_id)).tier);
       const tier = tiers.get(project.user_id)!;
 
@@ -88,6 +100,7 @@ serve(async (req) => {
       projects: projects?.length ?? 0,
       due: due.length,
       inProgress: busy,
+      localOnly,
       dispatched: results.filter((r) => r.dispatched).length,
       deferred: Math.max(0, due.length - batch.length),
       dryRun,
