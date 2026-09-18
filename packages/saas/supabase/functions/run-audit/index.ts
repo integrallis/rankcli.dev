@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { identifyCaller } from '../_shared/caller-auth.ts';
 
 // This was a referenced-but-never-implemented function: github-webhook/index.ts
 // has always called POST /functions/v1/run-audit on every push/comment/
@@ -64,6 +65,16 @@ serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
+    // github-webhook calls this with the service key. A signed-in user may
+    // also run an audit, but only on their own project (checked below).
+    const caller = await identifyCaller(req, supabase, supabaseServiceKey);
+    if (!caller) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { auditId } = await req.json();
     if (!auditId) {
       return new Response(JSON.stringify({ error: 'auditId required' }), {
@@ -87,9 +98,16 @@ serve(async (req) => {
 
     const { data: project, error: projectLookupError } = await supabase
       .from('projects')
-      .select('id, url')
+      .select('id, url, user_id')
       .eq('id', audit.project_id)
       .single();
+
+    if (caller.kind === 'user' && project?.user_id !== caller.userId) {
+      return new Response(JSON.stringify({ error: 'Audit not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     if (projectLookupError || !project?.url) {
       return new Response(JSON.stringify({ error: 'Project not found or missing URL' }), {

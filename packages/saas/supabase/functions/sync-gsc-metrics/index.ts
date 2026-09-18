@@ -12,6 +12,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { identifyCaller } from '../_shared/caller-auth.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -39,10 +40,42 @@ serve(async (req: Request) => {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
+    // Scheduled runs authenticate with the service key or CRON_SECRET. A
+    // signed-in user may sync only a project they own - the response carries
+    // that project's Search Console data.
+    const caller = await identifyCaller(req, supabase, supabaseServiceKey, { allowCron: true });
+    if (!caller) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Check if this is a manual sync for a specific project
     const body = await req.json().catch(() => ({}));
     const projectId = body.project_id;
     const forceSync = body.force === true;
+
+    if (caller.kind === 'user') {
+      if (!projectId) {
+        return new Response(JSON.stringify({ error: 'project_id is required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const { data: owned } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('id', projectId)
+        .eq('user_id', caller.userId)
+        .maybeSingle();
+      if (!owned) {
+        return new Response(JSON.stringify({ error: 'Project not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     if (projectId) {
       // Manual sync for specific project

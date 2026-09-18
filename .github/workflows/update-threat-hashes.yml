@@ -94,12 +94,14 @@ jobs:
         if: steps.generate.outputs.changed == 'true'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # sync-threat-hashes accepts the service role key or CRON_SECRET;
+          # the cron secret keeps the service role key inside Supabase.
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           # Optionally call the sync function to refresh from live URLhaus API
           # This ensures we have the absolute latest data
           curl -s -X POST "$SUPABASE_URL/functions/v1/sync-threat-hashes" \
-            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" || true
 
           echo "✅ Sync function called"
