@@ -11,7 +11,10 @@
 // no response_format; content comes back as an array of blocks) and gets
 // its own path.
 
-export type AIProvider = 'openai' | 'anthropic' | 'openrouter' | 'groq' | 'gemini' | 'perplexity' | 'custom';
+export type AIProvider =
+  | 'openai' | 'anthropic' | 'openrouter' | 'groq' | 'gemini' | 'perplexity'
+  | 'deepseek' | 'together' | 'fireworks' | 'mistral' | 'cerebras'
+  | 'custom';
 
 export interface AIProviderConfig {
   provider: AIProvider;
@@ -28,13 +31,21 @@ export interface AIProviderConfig {
 // whichever free models are live - pinning one free model (deepseek/deepseek-r1:free) is how this
 // broke: it was withdrawn, and every OpenRouter key saved without a model override then failed
 // verification.
-const PROVIDER_DEFAULTS: Record<Exclude<AIProvider, 'custom'>, { baseUrl: string; model: string }> = {
+// Cheap hosted providers speak the same OpenAI-shaped API. A default model is set only where
+// the provider keeps a stable alias (deepseek-chat, mistral-small-latest); Together, Fireworks
+// and Cerebras rename their catalogues often, so the user names the model.
+const PROVIDER_DEFAULTS: Record<Exclude<AIProvider, 'custom'>, { baseUrl: string; model?: string }> = {
   openai: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o' },
   anthropic: { baseUrl: 'https://api.anthropic.com/v1', model: 'claude-sonnet-4-5' },
   openrouter: { baseUrl: 'https://openrouter.ai/api/v1', model: 'openrouter/free' },
   groq: { baseUrl: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' },
   gemini: { baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.0-flash' },
   perplexity: { baseUrl: 'https://api.perplexity.ai', model: 'sonar' },
+  deepseek: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+  mistral: { baseUrl: 'https://api.mistral.ai/v1', model: 'mistral-small-latest' },
+  together: { baseUrl: 'https://api.together.xyz/v1' },
+  fireworks: { baseUrl: 'https://api.fireworks.ai/inference/v1' },
+  cerebras: { baseUrl: 'https://api.cerebras.ai/v1' },
 };
 
 // OpenAI's reasoning families (GPT-5.x, o-series) reject `temperature` at any value and
@@ -52,9 +63,11 @@ export function resolveProviderSettings(config: AIProviderConfig): { baseUrl: st
     return { baseUrl: config.baseUrl, model: config.model };
   }
   const defaults = PROVIDER_DEFAULTS[config.provider];
+  const model = config.model || defaults.model;
+  if (!model) throw new Error(`${config.provider} needs a model name`);
   return {
     baseUrl: config.baseUrl || defaults.baseUrl,
-    model: config.model || defaults.model,
+    model,
   };
 }
 
@@ -130,7 +143,7 @@ export async function callChatCompletion(
   // json_object response_format is an OpenAI-specific extension - not every
   // OpenAI-compatible server implements it (many local/custom servers
   // don't), so only request it for providers confirmed to support it.
-  if (options.jsonMode && (config.provider === 'openai' || config.provider === 'openrouter' || config.provider === 'groq')) {
+  if (options.jsonMode && ['openai', 'openrouter', 'groq', 'deepseek', 'mistral'].includes(config.provider)) {
     body.response_format = { type: 'json_object' };
   }
 

@@ -11,7 +11,11 @@ export type UserAIKeys = Partial<Record<AIProvider, AIProviderConfig>>;
 // SEO) uses when a user has connected several. OpenRouter is the primary bridge, so it goes
 // first. Perplexity is last: it's there for the visibility check's fourth assistant, and a
 // search-grounded model is a poor analyst.
-const PREFERENCE: AIProvider[] = ['openrouter', 'openai', 'anthropic', 'gemini', 'groq', 'custom', 'perplexity'];
+const PREFERENCE: AIProvider[] = [
+  'openrouter', 'openai', 'anthropic', 'gemini',
+  'deepseek', 'mistral', 'groq', 'together', 'fireworks', 'cerebras',
+  'custom', 'perplexity',
+];
 
 // deno-lint-ignore no-explicit-any
 export async function loadUserAIKeys(supabase: any, userId: string | null | undefined): Promise<UserAIKeys> {

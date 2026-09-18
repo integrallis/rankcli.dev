@@ -9,7 +9,23 @@ import { Select } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-type Provider = 'openai' | 'anthropic' | 'openrouter' | 'groq' | 'gemini' | 'perplexity' | 'custom';
+type Provider =
+  | 'openai' | 'anthropic' | 'openrouter' | 'groq' | 'gemini' | 'perplexity'
+  | 'deepseek' | 'together' | 'fireworks' | 'mistral' | 'cerebras'
+  | 'custom';
+
+// Providers whose model is required (catalogues rename often) or may be overridden, with an
+// example for the placeholder.
+const MODEL_FIELD: Partial<Record<Provider, { required: boolean; example: string }>> = {
+  openrouter: { required: false, example: 'openrouter/free (default) or e.g. openai/gpt-5.6-luna' },
+  groq: { required: false, example: 'Leave blank for our default' },
+  gemini: { required: false, example: 'Leave blank for our default' },
+  deepseek: { required: false, example: 'deepseek-chat (default)' },
+  mistral: { required: false, example: 'mistral-small-latest (default)' },
+  together: { required: true, example: 'e.g. meta-llama/Llama-3.3-70B-Instruct-Turbo' },
+  fireworks: { required: true, example: 'e.g. accounts/fireworks/models/llama-v3p3-70b-instruct' },
+  cerebras: { required: true, example: 'e.g. llama-3.3-70b' },
+};
 
 const PROVIDER_OPTIONS: { value: Provider; label: string; helpUrl: string; freeTierNote?: string }[] = [
   { value: 'openrouter', label: 'OpenRouter (recommended)', helpUrl: 'https://openrouter.ai/keys', freeTierNote: 'One key reaches ChatGPT, Claude, Gemini and Perplexity. Analysis defaults to openrouter/free - no cost to try' },
@@ -17,8 +33,13 @@ const PROVIDER_OPTIONS: { value: Provider; label: string; helpUrl: string; freeT
   { value: 'gemini', label: 'Google Gemini', helpUrl: 'https://aistudio.google.com/apikey', freeTierNote: 'Free tier available via Google AI Studio' },
   { value: 'openai', label: 'OpenAI', helpUrl: 'https://platform.openai.com/api-keys' },
   { value: 'anthropic', label: 'Anthropic', helpUrl: 'https://console.anthropic.com/settings/keys' },
+  { value: 'deepseek', label: 'DeepSeek', helpUrl: 'https://platform.deepseek.com/api_keys', freeTierNote: 'Among the cheapest capable models' },
+  { value: 'mistral', label: 'Mistral', helpUrl: 'https://console.mistral.ai/api-keys' },
+  { value: 'together', label: 'Together AI', helpUrl: 'https://api.together.ai/settings/api-keys', freeTierNote: 'Cheap open-weight models - name the model below' },
+  { value: 'fireworks', label: 'Fireworks AI', helpUrl: 'https://fireworks.ai/account/api-keys', freeTierNote: 'Cheap open-weight models - name the model below' },
+  { value: 'cerebras', label: 'Cerebras', helpUrl: 'https://cloud.cerebras.ai/', freeTierNote: 'Very fast inference, free tier available - name the model below' },
   { value: 'perplexity', label: 'Perplexity', helpUrl: 'https://www.perplexity.ai/settings/api' },
-  { value: 'custom', label: 'Custom (self-hosted / Ollama / LM Studio / vLLM)', helpUrl: 'https://github.com/ollama/ollama' },
+  { value: 'custom', label: 'Custom OpenAI-compatible server (self-hosted, vLLM, a tunnel to Ollama/LM Studio)', helpUrl: 'https://github.com/ollama/ollama' },
 ];
 
 interface StoredKeyMeta {
@@ -67,6 +88,10 @@ export function AIProviderSettings() {
     }
     if (provider === 'custom' && (!baseUrl.trim() || !model.trim())) {
       toast.error('Custom providers need both a base URL and a model name');
+      return;
+    }
+    if (MODEL_FIELD[provider]?.required && !model.trim()) {
+      toast.error(`${selectedOption?.label || provider} needs a model name`);
       return;
     }
 
@@ -262,12 +287,22 @@ export function AIProviderSettings() {
               </>
             )}
 
-            {(provider === 'openrouter' || provider === 'groq' || provider === 'gemini') && (
+            {provider === 'custom' && (
+              <p className="text-xs text-muted-foreground">
+                Running Ollama or LM Studio on your machine? The hosted app can't reach localhost - run
+                audits with the CLI instead (<code>rankcli audit --ai-provider ollama</code>), or expose
+                the server through a tunnel and use its public URL here.
+              </p>
+            )}
+
+            {MODEL_FIELD[provider] && (
               <div className="space-y-2">
-                <Label htmlFor="ai-model-override">Model (optional override)</Label>
+                <Label htmlFor="ai-model-override">
+                  {MODEL_FIELD[provider]!.required ? 'Model' : 'Model (optional override)'}
+                </Label>
                 <Input
                   id="ai-model-override"
-                  placeholder="Leave blank to use our recommended default"
+                  placeholder={MODEL_FIELD[provider]!.example}
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
                   disabled={isSaving}
