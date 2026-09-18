@@ -89,11 +89,13 @@ async function sendAuditNotification(auditId: string): Promise<void> {
  * the email above.
  */
 async function sendProjectAlerts(auditId: string): Promise<void> {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return;
+  if (!SUPABASE_URL) return;
   try {
+    // WORKER_SECRET, as for send-audit-email: this worker's service key isn't byte-identical
+    // to the one injected into the edge runtime, so project-alerts can't recognise it.
     const response = await fetch(`${SUPABASE_URL}/functions/v1/project-alerts`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${WORKER_SECRET}` },
       body: JSON.stringify({ auditId }),
     });
     if (!response.ok) console.warn(`Project alerts failed for audit ${auditId}:`, await response.text());

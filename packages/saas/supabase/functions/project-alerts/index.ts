@@ -1,6 +1,8 @@
 // Sends a project's Slack/Discord alerts (alert_configs, set up under Account > Notifications).
 //
-// Called server-side only, with the service role key:
+// Called server-side only - by edge functions with the service role key, and by the audit
+// worker with AUDIT_WORKER_SECRET (the worker's own service key is a different credential from
+// the SUPABASE_SERVICE_ROLE_KEY injected here, so it can't be compared):
 //   { auditId }                                   - audit-worker and run-audit, when an audit
 //                                                   finishes; fires `error` for a failed audit
 //                                                   and `score_drop` against the previous one
@@ -15,7 +17,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { identifyCaller } from '../_shared/caller-auth.ts';
+import { identifyCaller, bearerToken, safeEqual } from '../_shared/caller-auth.ts';
 import { getEntitlement } from '../_shared/tier.ts';
 import { configsFor, formatAlert, isAllowedWebhook, type AlertConfigRow, type AlertEvent } from '../_shared/alerts.ts';
 
@@ -55,7 +57,8 @@ serve(async (req) => {
       });
     }
 
-    if (caller?.kind !== 'service') return json({ error: 'Unauthorized' }, 401);
+    const fromWorker = safeEqual(bearerToken(req), Deno.env.get('AUDIT_WORKER_SECRET') || '');
+    if (caller?.kind !== 'service' && !fromWorker) return json({ error: 'Unauthorized' }, 401);
 
     let projectId: string | null = body.projectId ?? null;
     let event: AlertEvent | null = null;
