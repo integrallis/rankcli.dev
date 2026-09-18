@@ -176,16 +176,23 @@ serve(async (req: Request) => {
     // Get raw body for signature verification
     const rawBody = await req.text();
 
-    // Verify webhook signature (if secret is configured)
-    if (webhookSecret) {
-      const signature = req.headers.get('x-hub-signature-256');
-      if (!signature || !verifySignature(rawBody, signature, webhookSecret)) {
-        console.error('Invalid webhook signature');
-        return new Response(
-          JSON.stringify({ error: 'Invalid signature' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+    // Every event must be signed. Without GITHUB_WEBHOOK_SECRET nothing can
+    // be verified, so nothing is accepted: an unsigned push or comment event
+    // would otherwise let anyone start audits and auto-fix PRs.
+    if (!webhookSecret) {
+      console.error('GITHUB_WEBHOOK_SECRET is not set; rejecting webhook');
+      return new Response(
+        JSON.stringify({ error: 'Webhook secret not configured' }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const signature = req.headers.get('x-hub-signature-256');
+    if (!signature || !verifySignature(rawBody, signature, webhookSecret)) {
+      console.error('Invalid webhook signature');
+      return new Response(
+        JSON.stringify({ error: 'Invalid signature' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const event = req.headers.get('x-github-event');

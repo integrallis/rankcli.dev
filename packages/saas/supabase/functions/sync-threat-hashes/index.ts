@@ -11,10 +11,15 @@
  * Environment:
  * - SUPABASE_URL: Supabase project URL
  * - SUPABASE_SERVICE_ROLE_KEY: Service role key for admin access
+ * - CRON_SECRET: bearer token for the scheduled update-threat-hashes.yml run
+ *
+ * Callers must send the service role key or CRON_SECRET: a sync rewrites the
+ * whole threat_hashes table and downloads a large CSV, so it isn't public.
  */
 
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
+import { bearerToken, safeEqual } from '../_shared/caller-auth.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -200,6 +205,14 @@ serve(async (req: Request) => {
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error('Missing Supabase environment variables');
+    }
+
+    const token = bearerToken(req);
+    if (!safeEqual(token, supabaseServiceKey) && !safeEqual(token, Deno.env.get('CRON_SECRET') || '')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);

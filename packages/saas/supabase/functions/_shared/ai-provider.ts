@@ -9,6 +9,8 @@
 //
 // packages/audit-worker/src/ai-provider.ts is a Node copy of this file - keep them in step.
 
+import { guardedFetch } from './url-guard.ts';
+
 export type AIProvider =
   | 'openai' | 'anthropic' | 'openrouter' | 'groq' | 'gemini' | 'perplexity'
   | 'deepseek' | 'together' | 'fireworks' | 'mistral' | 'cerebras'
@@ -81,6 +83,10 @@ export async function callChatCompletion(
   options: { jsonMode?: boolean; maxTokens?: number; temperature?: number } = {}
 ): Promise<string> {
   const { baseUrl, model } = resolveProviderSettings(config);
+  // A base URL the user supplied is untrusted; the built-in provider URLs
+  // aren't. (The worker's Node copy has no equivalent: its process-wide
+  // outbound guard covers every connection.)
+  const fetch = config.baseUrl ? guardedFetch : globalThis.fetch;
   const maxTokens = options.maxTokens ?? 16000;
   const temperature = options.temperature ?? 0.3;
 

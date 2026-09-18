@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
@@ -19,6 +19,20 @@ interface PendingGitHubConnect {
   github_repo_url?: string;
 }
 
+// The installation_id GitHub appends to this URL is only a hint - anyone can
+// visit this page with any id. Linking goes through connect-github-repo, which
+// resolves the installation from the repository itself and checks on GitHub
+// that the user can write to it. `code` is present when the App requests user
+// authorization during installation; the function uses it as that proof.
+async function linkRepository(projectId: string, repoUrl: string, code: string | null) {
+  const { data, error } = await supabase.functions.invoke<{ linked: boolean; reason?: string }>(
+    'connect-github-repo',
+    { body: { projectId, repoUrl, ...(code ? { code } : {}) } }
+  );
+  if (error) throw error;
+  return { linked: data?.linked ?? false, reason: data?.reason };
+}
+
 export function GitHubCallbackPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -27,6 +41,10 @@ export function GitHubCallbackPage() {
   const [message, setMessage] = useState('Processing GitHub installation...');
 
   const installationId = searchParams.get('installation_id');
+  const code = searchParams.get('code');
+  // The OAuth code is single-use and the pending entries are consumed, so the
+  // callback must only run once even if the auth state re-renders.
+  const handled = useRef(false);
 
   useEffect(() => {
     async function handleCallback() {
@@ -36,11 +54,14 @@ export function GitHubCallbackPage() {
         return;
       }
 
-      if (!installationId) {
+      if (!installationId && !code) {
         setStatus('error');
         setMessage('No installation ID received from GitHub.');
         return;
       }
+
+      if (handled.current) return;
+      handled.current = true;
 
       try {
         // Check for pending project creation (from AddProjectModal)
@@ -75,8 +96,6 @@ export function GitHubCallbackPage() {
               name: pendingProject.name,
               url: pendingProject.url,
               domain: domain,
-              github_repo_url: pendingProject.github_repo_url || null,
-              github_installation_id: parseInt(installationId, 10),
             })
             .select()
             .single();
@@ -88,8 +107,18 @@ export function GitHubCallbackPage() {
           // Clear pending project
           localStorage.removeItem('pendingProject');
 
+          // The project exists at this point, so a failed link is reported
+          // on the success screen rather than as a failure.
+          const link: { linked: boolean; reason?: string } = pendingProject.github_repo_url
+            ? await linkRepository(project.id, pendingProject.github_repo_url, code).catch(() => ({ linked: false }))
+            : { linked: false };
+
           setStatus('success');
-          setMessage('Project created and GitHub connected!');
+          setMessage(
+            link.linked
+              ? 'Project created and GitHub connected!'
+              : `Project created. ${link.reason || 'Connect your repository from the project page to enable auto-fix PRs.'}`
+          );
 
           // Redirect to project page after a short delay
           setTimeout(() => {
@@ -100,21 +129,24 @@ export function GitHubCallbackPage() {
           // Case 2: Connect GitHub to existing project
           setMessage('Connecting GitHub to your project...');
 
-          const { error: updateError } = await supabase
-            .from('projects')
-            .update({
-              github_installation_id: parseInt(installationId, 10),
-              github_repo_url: pendingConnect.github_repo_url || null,
-            })
-            .eq('id', pendingConnect.projectId)
-            .eq('user_id', user.id);
-
-          if (updateError) {
-            throw updateError;
-          }
-
           // Clear pending connect
           localStorage.removeItem('pendingGitHubConnect');
+
+          if (!pendingConnect.github_repo_url) {
+            setStatus('success');
+            setMessage('GitHub App installed! Enter your repository URL on the project page to finish connecting.');
+            setTimeout(() => {
+              navigate(`/dashboard/projects/${pendingConnect.projectId}`);
+            }, 2000);
+            return;
+          }
+
+          const link = await linkRepository(pendingConnect.projectId, pendingConnect.github_repo_url, code);
+          if (!link.linked) {
+            setStatus('error');
+            setMessage(link.reason || 'Could not connect this repository.');
+            return;
+          }
 
           setStatus('success');
           setMessage('GitHub connected to your project!');
@@ -143,7 +175,7 @@ export function GitHubCallbackPage() {
     }
 
     handleCallback();
-  }, [user, installationId, navigate]);
+  }, [user, installationId, code, navigate]);
 
   return (
     <div className="min-h-screen bg-background">

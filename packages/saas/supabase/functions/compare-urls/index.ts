@@ -2,9 +2,16 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { runFullAudit } from '../_shared/audit/index.ts';
 import type { AuditReport } from '../_shared/audit/index.ts';
+import { assertPublicUrl, installFetchGuard } from '../_shared/url-guard.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+// This public tool audits two caller-chosen URLs inside the function, and the
+// audit engine calls fetch itself (page, robots.txt, sitemap, links). Every
+// fetch in this isolate except our own Supabase calls goes through the SSRF
+// guard, including each redirect hop.
+installFetchGuard([supabaseUrl]);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -65,6 +72,15 @@ serve(async (req) => {
       normalizedCompetitorUrl = new URL(competitorUrl.startsWith('http') ? competitorUrl : `https://${competitorUrl}`).toString();
     } catch {
       return new Response(JSON.stringify({ error: 'Invalid URL format' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    try {
+      await assertPublicUrl(normalizedYourUrl);
+      await assertPublicUrl(normalizedCompetitorUrl);
+    } catch (error) {
+      return new Response(JSON.stringify({ error: (error as Error).message }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

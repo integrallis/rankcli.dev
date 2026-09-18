@@ -17,6 +17,7 @@ import { EventEmitter } from 'events';
 import { callChatCompletion, type AIProviderConfig } from './ai-provider.js';
 import { buildVisibilityQuestion } from './visibility-question.js';
 import { getEntitlement } from './tier.js';
+import { installOutboundGuard, assertPublicUrl, hostPort } from './url-guard.js';
 import { randomUUID } from 'crypto';
 import {
   OPENAI_FAST,
@@ -248,6 +249,13 @@ function broadcastEvent(auditId: string, event: SseEvent) {
   sseEmitter.emit('audit:*', event); // Global broadcast
 }
 
+// Every URL this worker fetches comes from a caller, and it runs inside Fly's
+// private network. Block outbound connections to private, loopback,
+// link-local and metadata addresses for the whole process - audits,
+// redirects, crawled links, robots.txt reads and custom AI base URLs alike.
+// Supabase stays reachable even when it is local in development.
+installOutboundGuard([hostPort(SUPABASE_URL)]);
+
 // Initialize Fastify
 const app = Fastify({
   logger: true,
@@ -374,6 +382,11 @@ app.post<{
   if (!auditId || !projectId || !url) {
     return reply.status(400).send({ error: 'Missing required fields: auditId, projectId, url' });
   }
+  try {
+    await assertPublicUrl(url);
+  } catch (error) {
+    return reply.status(400).send({ error: (error as Error).message });
+  }
 
   const jobId = `job_${randomUUID()}`;
 
@@ -432,6 +445,11 @@ app.post<{
 
   if (!url) {
     return reply.status(400).send({ error: 'Missing required field: url' });
+  }
+  try {
+    await assertPublicUrl(url);
+  } catch (error) {
+    return reply.status(400).send({ error: (error as Error).message });
   }
 
   app.log.info({ url, maxPages, checksLimit }, 'Starting quick audit');
@@ -1856,6 +1874,11 @@ function analyzeRobotsTxtForAI(robotsTxt: string): string {
 
 // Handle MCP tool calls
 async function handleMCPToolCall(name: string, args: Record<string, unknown>): Promise<string> {
+  // A clear error up front; the outbound guard would also refuse these.
+  for (const key of ['url', 'url1', 'url2']) {
+    if (typeof args[key] === 'string' && args[key]) await assertPublicUrl(args[key] as string);
+  }
+
   switch (name) {
     case 'seo_audit': {
       const url = args.url as string;

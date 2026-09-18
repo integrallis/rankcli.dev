@@ -1,5 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { clientIp, hashIP } from '../_shared/client-ip.ts';
+import { assertPublicUrl } from '../_shared/url-guard.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -84,12 +86,19 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    // The worker enforces this on every connection too; checking here gives
+    // a clear 400 instead of an audit full of fetch errors.
+    try {
+      await assertPublicUrl(targetUrl);
+    } catch (error) {
+      return new Response(JSON.stringify({ error: (error as Error).message }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Get IP for rate limiting
-    const ip = req.headers.get('x-forwarded-for')?.split(',')[0] ||
-               req.headers.get('cf-connecting-ip') ||
-               'unknown';
-    const ipHash = await hashIP(ip);
+    const ipHash = await hashIP(clientIp(req));
 
     // Check rate limit
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -166,7 +175,14 @@ serve(async (req) => {
       if (!workerResponse.ok) {
         const errorText = await workerResponse.text();
         console.error('Worker error response:', workerResponse.status, errorText);
-        throw new Error(`Worker returned ${workerResponse.status}: ${errorText}`);
+        // Only the worker's own error message reaches the page, not the raw
+        // response body.
+        let message = 'the audit service could not complete this audit';
+        try {
+          const parsed = JSON.parse(errorText);
+          if (typeof parsed?.error === 'string') message = parsed.error;
+        } catch { /* not JSON */ }
+        throw new Error(message);
       }
 
       const auditResult: WorkerAuditResponse = await workerResponse.json();
@@ -251,12 +267,17 @@ serve(async (req) => {
           url: targetUrl,
           domain,
           score,
+          // send-free-audit-report builds the emailed report from this row,
+          // not from what the browser sends, so it needs the category scores
+          // and check count too.
           issues_summary: {
             errors,
             warnings,
             notices,
             total: allIssues.length,
             displayed: displayedIssues.length,
+            categories,
+            checksRun: totalChecksRun,
           },
           top_issues: displayedIssues,
           email: email || null,
@@ -303,22 +324,12 @@ serve(async (req) => {
     });
 
   } catch (error) {
+    // The stack and internal error text stay in the function logs; the
+    // browser gets a generic message.
     console.error('Error running free audit:', error);
-    console.error('Error stack:', error.stack);
-    return new Response(JSON.stringify({ 
-      error: `Audit failed: ${error.message}`,
-      details: error.stack?.split('\n').slice(0, 3).join(' | ') || 'No stack trace'
-    }), {
+    return new Response(JSON.stringify({ error: 'Audit failed. Please try again in a moment.' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
-
-async function hashIP(ip: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(ip + Deno.env.get('IP_SALT') || 'rankcli');
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 32);
-}

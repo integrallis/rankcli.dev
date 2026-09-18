@@ -12,6 +12,8 @@ import {
 } from '../_shared/free-seo-data.ts';
 import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
 import { resolveAIConfig, aiConfigErrorMessage } from '../_shared/resolve-ai-config.ts';
+import { identifyCaller } from '../_shared/caller-auth.ts';
+import { guardedFetch } from '../_shared/url-guard.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -90,7 +92,7 @@ async function analyzeLocalSEO(
   // Fetch the website
   let html = '';
   try {
-    const response = await fetch(url, {
+    const response = await guardedFetch(url, {
       headers: { 'User-Agent': 'RankCLI/1.0 (+https://rankcli.dev)' }
     });
     if (response.ok) {
@@ -207,6 +209,17 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // This runs on the project owner's own AI key, so only the owner (or
+    // another function holding the service key) may call it.
+    const caller = await identifyCaller(req, supabase, supabaseServiceKey);
+    if (!caller) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const body = await req.json();
 
     const {
@@ -238,7 +251,14 @@ serve(async (req) => {
       .eq('id', projectId)
       .single();
 
-    const aiResolution = await resolveAIConfig(supabase, project?.user_id);
+    if (!project || (caller.kind === 'user' && project.user_id !== caller.userId)) {
+      return new Response(JSON.stringify({ error: 'Project not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const aiResolution = await resolveAIConfig(supabase, project.user_id);
     if (!aiResolution.ok) {
       return new Response(JSON.stringify({ error: aiConfigErrorMessage('local SEO analysis') }), {
         status: 400,

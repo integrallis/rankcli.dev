@@ -15,6 +15,7 @@ import * as cheerio from 'https://esm.sh/cheerio@1.0.0';
 import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
 import { resolveAIConfig, aiConfigErrorMessage } from '../_shared/resolve-ai-config.ts';
 import { getEntitlement } from '../_shared/tier.ts';
+import { guardedFetch } from '../_shared/url-guard.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -141,7 +142,7 @@ interface CrawledPage {
 
 async function crawlPage(url: string): Promise<CrawledPage | null> {
   try {
-    const response = await fetch(url, {
+    const response = await guardedFetch(url, {
       headers: {
         'User-Agent': 'RankCLI-Bot/1.0 (SEO Analyzer)',
       },

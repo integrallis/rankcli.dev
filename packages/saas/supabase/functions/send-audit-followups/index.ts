@@ -14,6 +14,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendEmail, isEmailConfigured } from '../_shared/resend.ts';
+import { escapeHtml } from '../_shared/email-templates.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -35,7 +36,10 @@ interface FollowupRequest {
   dryRun?: boolean;
 }
 
-function followupEmailHtml(domain: string, score: number, unsubscribeUrl: string): string {
+function followupEmailHtml(rawDomain: string, score: number, unsubscribeUrl: string): string {
+  // free_audits.domain is whatever hostname the visitor audited; escape it
+  // before it goes into HTML.
+  const domain = escapeHtml(rawDomain);
   const scoreColor = score >= 80 ? '#22c55e' : score >= 60 ? '#eab308' : '#ef4444';
   return `
 <!DOCTYPE html>
@@ -79,7 +83,7 @@ function followupEmailHtml(domain: string, score: number, unsubscribeUrl: string
         <a href="https://rankcli.dev" style="color: #22c55e; text-decoration: none;">rankcli.dev</a> — Ship code, get ranked.
       </p>
       <p style="margin: 0 0 8px 0;">© ${new Date().getFullYear()} Integrallis Software, LLC. All rights reserved.</p>
-      <p style="margin: 0;"><a href="${unsubscribeUrl}" style="color: #9ca3af;">Unsubscribe from this reminder</a></p>
+      <p style="margin: 0;"><a href="${escapeHtml(unsubscribeUrl)}" style="color: #9ca3af;">Unsubscribe from this reminder</a></p>
     </div>
   </div>
 </body>
@@ -200,7 +204,8 @@ serve(async (req) => {
           text,
           tags: [
             { name: 'type', value: 'free-audit-followup' },
-            { name: 'domain', value: lead.domain.replace(/\./g, '_') },
+            // Resend tag values allow only letters, digits, _ and -.
+            { name: 'domain', value: lead.domain.replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 256) },
           ],
         });
 
