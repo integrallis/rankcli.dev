@@ -127,6 +127,10 @@ jobs:
           }
           echo "--- scheduled audits in the last 6 hours ---"
           query "SELECT status, COUNT(*) AS n, ROUND(AVG(score)) AS avg_score, MIN(error_message) AS sample_error FROM audits WHERE triggered_by = 'scheduled' AND created_at > NOW() - INTERVAL '6 hours' GROUP BY status"
+          echo "--- scheduled audit history ---"
+          query "SELECT to_char(created_at, 'HH24:MI:SS') AS created, status, left(coalesce(error_message, ''), 40) AS error FROM audits WHERE triggered_by = 'scheduled' ORDER BY created_at"
+          echo "--- db now ---"
+          query "SELECT to_char(NOW(), 'HH24:MI:SS') AS now"
           echo "--- unfinished audits (age) ---"
           query "SELECT status, triggered_by, NOW() - created_at AS age FROM audits WHERE status IN ('pending','running') ORDER BY created_at"
           echo "--- active projects whose URL is not a public host ---"
