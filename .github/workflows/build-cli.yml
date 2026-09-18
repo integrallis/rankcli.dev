@@ -307,6 +307,14 @@ jobs:
         if: github.event_name == 'release'
         working-directory: packages/mcp-server
         run: |
+          # The registry validates the package against npm, and a version published seconds
+          # earlier isn't visible yet - v0.0.29's listing failed with "version '0.0.8' was not
+          # found". Wait for npm (up to 5 minutes) before publishing.
+          VERSION=$(node -p "require('./package.json').version")
+          for i in $(seq 1 30); do
+            if npm view "@rankcli/mcp-server@$VERSION" version >/dev/null 2>&1; then break; fi
+            echo "Waiting for @rankcli/mcp-server@$VERSION on npm ($i/30)..."; sleep 10
+          done
           ./mcp-publisher login github-oidc
           ./mcp-publisher publish
         continue-on-error: true # distribution nice-to-have, never block the npm publish this job already completed
