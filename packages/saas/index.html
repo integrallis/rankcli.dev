@@ -49,9 +49,10 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
 
-    <!-- Preconnect to external domains -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Self-hosted fonts used above the fold -->
+    <link rel="preload" href="/fonts/MonaSansVF-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/ArchivoVF-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/MonaspaceKryptonVF-latin.woff2" as="font" type="font/woff2" crossorigin />
 
     <!-- JSON-LD Structured Data -->
     <script type="application/ld+json">
@@ -189,7 +190,7 @@
     
     <!-- Noscript fallback for crawlers and no-JS users -->
     <noscript>
-      <div style="max-width: 800px; margin: 0 auto; padding: 40px 20px; font-family: system-ui, sans-serif; color: #e4e4e7; background: #0a0a0a;">
+      <div style="max-width: 800px; margin: 0 auto; padding: 40px 20px; font-family: 'Mona Sans', system-ui, sans-serif; color: #e4e4e7; background: #0a0a0a;">
         <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">RankCLI - Ship code, get ranked</h1>
         <p style="font-size: 1.25rem; color: #a1a1aa; margin-bottom: 2rem;">
           RankCLI is the developer-first SEO tool that runs 200+ automated checks and creates auto-fix pull requests via GitHub integration. 

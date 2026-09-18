@@ -66,9 +66,10 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        sans: ['Geist', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
-        heading: ['Bricolage Grotesque', 'system-ui', 'sans-serif'],
+        sans: ['Mona Sans', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        mono: ['IBM Plex Mono', 'Consolas', 'monospace'],
+        heading: ['Archivo', 'Helvetica Neue', 'Arial', 'sans-serif'],
+        tech: ['Monaspace Krypton', 'IBM Plex Mono', 'monospace'],
       },
       fontSize: {
         base: ['15px', { lineHeight: '1.6' }],  /* Relaxed body text */

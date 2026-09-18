@@ -1,27 +1,42 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600&display=swap');
-
-/* Geist font - Vercel's crisp sans-serif */
+/* Type system shared with integrallis.com. Self-hosted, Latin-subset, all SIL OFL.
+   Mona Sans (body), Archivo (display), Monaspace Krypton (UI chrome), IBM Plex Mono (code/labels). */
 @font-face {
-  font-family: 'Geist';
-  src: url('https://cdn.jsdelivr.net/npm/geist@1.2.0/dist/fonts/geist-sans/Geist-Regular.woff2') format('woff2');
+  font-family: 'Mona Sans';
+  src: url('/fonts/MonaSansVF-latin.woff2') format('woff2');
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Archivo';
+  src: url('/fonts/ArchivoVF-latin.woff2') format('woff2');
+  font-weight: 100 900;
+  font-stretch: 62% 125%;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Monaspace Krypton';
+  src: url('/fonts/MonaspaceKryptonVF-latin.woff2') format('woff2');
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  src: url('/fonts/IBMPlexMono-400-latin.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
 @font-face {
-  font-family: 'Geist';
-  src: url('https://cdn.jsdelivr.net/npm/geist@1.2.0/dist/fonts/geist-sans/Geist-Medium.woff2') format('woff2');
+  font-family: 'IBM Plex Mono';
+  src: url('/fonts/IBMPlexMono-500-latin.woff2') format('woff2');
   font-weight: 500;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'Geist';
-  src: url('https://cdn.jsdelivr.net/npm/geist@1.2.0/dist/fonts/geist-sans/Geist-SemiBold.woff2') format('woff2');
-  font-weight: 600;
   font-style: normal;
   font-display: swap;
 }
@@ -98,11 +113,13 @@
     @apply scroll-smooth;
   }
   h1, h2 {
-    @apply font-heading font-semibold;
+    @apply font-heading font-medium;
+    font-variation-settings: 'wdth' 88;
+    letter-spacing: -0.035em;
   }
 }
 
-/* Terminal styling - warm, minimal, JetBrains Mono Medium */
+/* Terminal styling - warm, minimal, IBM Plex Mono Medium */
 .terminal {
   @apply bg-card rounded-lg border border-border font-mono text-xs font-medium;
 }

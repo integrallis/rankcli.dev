@@ -56,7 +56,7 @@ export function Navbar() {
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                className="font-tech text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
               >
                 <Github className="h-4 w-4" />
                 {link.label}
@@ -66,7 +66,7 @@ export function Navbar() {
                 key={link.href}
                 to={link.href}
                 className={cn(
-                  'text-sm transition-colors',
+                  'font-tech text-sm transition-colors',
                   location.pathname === link.href
                     ? 'text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
@@ -156,7 +156,7 @@ export function Navbar() {
                   href={link.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+                  className="font-tech text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <Github className="h-4 w-4" />
@@ -166,7 +166,7 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   to={link.href}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="font-tech text-sm text-muted-foreground hover:text-foreground transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   {link.label}

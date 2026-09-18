@@ -126,7 +126,7 @@ export function SubscriptionPricingCards({
 
         return (
           <StaggerItem key={plan.id}>
-            <div ref={isHighlighted ? highlightRef : undefined}>
+            <div ref={isHighlighted ? highlightRef : undefined} className="h-full">
               <Card
                 className={cn(
                   'relative flex flex-col h-full',
@@ -136,12 +136,12 @@ export function SubscriptionPricingCards({
                 )}
               >
                 {isFoundingPlan ? (
-                  <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-xs bg-primary text-primary-foreground flex items-center gap-1">
+                  <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs bg-primary text-primary-foreground flex items-center gap-1">
                     <Flame className="h-3 w-3" />
                     Founding Member
                   </Badge>
                 ) : plan.popular && (
-                  <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-xs bg-primary text-primary-foreground">
+                  <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs bg-primary text-primary-foreground">
                     Popular
                   </Badge>
                 )}

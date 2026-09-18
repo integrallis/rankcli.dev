@@ -348,13 +348,13 @@ function LTDPricingCards({
               )}
             >
               {tier.popular && !isSoldOut && (
-                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-xs bg-primary text-primary-foreground">
+                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs bg-primary text-primary-foreground">
                   Best Value
                 </Badge>
               )}
 
               {isSoldOut && (
-                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 text-xs bg-destructive text-destructive-foreground">
+                <Badge className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap text-xs bg-destructive text-destructive-foreground">
                   Sold Out
                 </Badge>
               )}
