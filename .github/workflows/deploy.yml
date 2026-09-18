@@ -254,6 +254,10 @@ jobs:
           # The public no-signup AI-visibility tool asks each assistant on RankCLI's own key
           # (every signed-in feature uses the user's). An assistant without a key here is
           # shown as "not checked".
+          # OpenRouter is the primary bridge - with OPENROUTER_API_KEY set, one key asks all four.
+          if [ -n "${{ secrets.OPEN_ROUTER_API_KEY }}" ]; then
+            SECRETS_CMD="$SECRETS_CMD OPENROUTER_API_KEY=\"${{ secrets.OPEN_ROUTER_API_KEY }}\""
+          fi
           if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
             SECRETS_CMD="$SECRETS_CMD ANTHROPIC_API_KEY=\"${{ secrets.ANTHROPIC_API_KEY }}\""
           fi

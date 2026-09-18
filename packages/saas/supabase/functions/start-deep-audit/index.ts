@@ -114,7 +114,15 @@ serve(async (req) => {
       return json({ error: 'Could not start the audit', audit: { ...audit, status: 'failed' } }, 502);
     }
 
-    return json({ audit, aiAnalysis: isPaid ? (aiConfig ? 'enabled' : 'no_key') : 'plan' });
+    // The worker runs on several machines; the dashboard streams progress from the one
+    // running this audit by passing its id as /stream/:auditId?instance=.
+    const { instance } = await workerResponse.json().catch(() => ({} as { instance?: string }));
+
+    return json({
+      audit,
+      workerInstance: instance || null,
+      aiAnalysis: isPaid ? (aiConfig ? 'enabled' : 'no_key') : 'plan',
+    });
   } catch (error) {
     console.error('start-deep-audit error:', error);
     return json({ error: error instanceof Error ? error.message : 'Unknown error' }, 500);

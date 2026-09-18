@@ -74,6 +74,7 @@ export function ProjectPage() {
 
   // Track pending audit for SSE connection
   const [pendingAuditId, setPendingAuditId] = useState<string | null>(null);
+  const [pendingAuditInstance, setPendingAuditInstance] = useState<string | null>(null);
   const [auditProgress, setAuditProgress] = useState<{
     progress: number;
     pagesCompleted: number;
@@ -87,6 +88,7 @@ export function ProjectPage() {
   // SSE connection for real-time audit updates (paid users using worker)
   useAuditSSE({
     auditId: pendingAuditId,
+    instance: pendingAuditInstance,
     enabled: !!pendingAuditId,
     onProgress: (_auditId, progress, pagesCompleted, pagesTotal) => {
       setAuditProgress({ progress, pagesCompleted, pagesTotal });
@@ -199,6 +201,7 @@ export function ProjectPage() {
     const audit = await runAudit();
     // Set pending audit ID to enable SSE connection
     if (audit?.id) {
+      setPendingAuditInstance(audit.worker_instance ?? null);
       setPendingAuditId(audit.id);
       setAuditProgress(null);
     }

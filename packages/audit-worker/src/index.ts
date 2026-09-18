@@ -1,4 +1,4 @@
-import Fastify from 'fastify';
+import Fastify, { type FastifyReply } from 'fastify';
 import cors from '@fastify/cors';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
@@ -21,6 +21,7 @@ import {
   ANTHROPIC_FAST,
   GOOGLE_FAST,
   PERPLEXITY_SEARCH,
+  OPENROUTER_VISIBILITY_MODELS,
 } from './models.js';
 
 // Environment
@@ -132,18 +133,39 @@ interface AIProviderResult {
 
 const aiVisibilityJobs = new Map<string, AIVisibilityJob>();
 
+// The worker runs on several Fly machines and keeps jobs in memory, so a stream or status
+// request that lands on a machine other than the one running the job used to find nothing
+// and hang forever. Visibility job ids carry the owning machine's id, deep-audit streams
+// take it as ?instance=, and any other machine hands the request to the owner with
+// fly-replay. FLY_MACHINE_ID is unset locally, where there's only one process anyway.
+const MACHINE_ID = process.env.FLY_MACHINE_ID || '';
+
+function ownerOfVisibilityJob(jobId: string): string {
+  const match = /^aiv_([a-z0-9]+)_/.exec(jobId);
+  return match ? match[1] : '';
+}
+
+function replayToOwner(reply: FastifyReply, owner: string): boolean {
+  if (!owner || !MACHINE_ID || owner === MACHINE_ID) return false;
+  reply.header('fly-replay', `instance=${owner}`).status(307).send();
+  return true;
+}
+
 // One key per assistant. Held only in the closure of the job that uses it - never on the
 // job object, which GET /ai-visibility/jobs/:jobId returns.
 interface ProviderKey { apiKey: string; model?: string }
-interface ProviderKeys { openai?: ProviderKey; anthropic?: ProviderKey; gemini?: ProviderKey; perplexity?: ProviderKey }
+interface ProviderKeys { openrouter?: ProviderKey; openai?: ProviderKey; anthropic?: ProviderKey; gemini?: ProviderKey; perplexity?: ProviderKey }
 
 // The public, no-signup visibility tool (/tools/ai-visibility, /tools/chatgpt-checker) is the
 // one AI feature that runs on RankCLI's own keys - a deliberate marketing cost, kept small by
 // the fast-tier models and the per-IP limit below. Every signed-in feature runs on the
-// user's own keys. An assistant RankCLI has no key for is reported as not checked.
+// user's own keys. OpenRouter is the primary bridge: with OPENROUTER_API_KEY set, all four
+// assistants are asked through it; otherwise each needs its direct key. An assistant RankCLI
+// can't reach is reported as not checked.
 function rankcliVisibilityKeys(): ProviderKeys {
   const key = (apiKey?: string) => (apiKey ? { apiKey } : undefined);
   return {
+    openrouter: key(process.env.OPENROUTER_API_KEY),
     openai: key(process.env.OPENAI_API_KEY),
     anthropic: key(process.env.ANTHROPIC_API_KEY),
     gemini: key(process.env.GOOGLE_API_KEY),
@@ -375,6 +397,8 @@ app.post<{
   return reply.status(202).send({
     jobId,
     status: 'pending',
+    // Pass as /stream/:auditId?instance= so the stream reaches the machine running the audit.
+    instance: MACHINE_ID || undefined,
     message: 'Audit job submitted. Connect to /stream/:auditId for real-time updates.',
   });
 });
@@ -440,8 +464,9 @@ app.post<{
 });
 
 // SSE stream for audit updates
-app.get<{ Params: { auditId: string } }>('/stream/:auditId', async (request, reply) => {
+app.get<{ Params: { auditId: string }; Querystring: { instance?: string } }>('/stream/:auditId', async (request, reply) => {
   const { auditId } = request.params;
+  if (replayToOwner(reply, (request.query.instance || '').toLowerCase().replace(/[^a-z0-9]/g, ''))) return;
 
   // Set SSE headers
   reply.raw.writeHead(200, {
@@ -1134,7 +1159,7 @@ app.post<{
     return reply.status(400).send({ error: 'Invalid URL' });
   }
 
-  const jobId = `aiv_${randomUUID()}`;
+  const jobId = `aiv_${MACHINE_ID || 'local'}_${randomUUID()}`;
 
   const job: AIVisibilityJob = {
     id: jobId,
@@ -1173,6 +1198,7 @@ app.post<{
 // SSE stream for AI visibility updates
 app.get<{ Params: { jobId: string } }>('/ai-visibility/stream/:jobId', async (request, reply) => {
   const { jobId } = request.params;
+  if (!aiVisibilityJobs.has(jobId) && replayToOwner(reply, ownerOfVisibilityJob(jobId))) return;
 
   // Set SSE headers
   reply.raw.writeHead(200, {
@@ -1195,6 +1221,8 @@ app.get<{ Params: { jobId: string } }>('/ai-visibility/stream/:jobId', async (re
         job_id: jobId,
         provider: result.provider,
         provider_name: result.name,
+        status: result.status,
+        error: result.error,
         mentioned: result.mentioned,
         position: result.position,
         sentiment: result.sentiment,
@@ -1236,6 +1264,7 @@ app.get<{ Params: { jobId: string } }>('/ai-visibility/stream/:jobId', async (re
 
 // Get AI visibility job status
 app.get<{ Params: { jobId: string } }>('/ai-visibility/jobs/:jobId', async (request, reply) => {
+  if (!aiVisibilityJobs.has(request.params.jobId) && replayToOwner(reply, ownerOfVisibilityJob(request.params.jobId))) return;
   const { jobId } = request.params;
   const job = aiVisibilityJobs.get(jobId);
 
@@ -1262,12 +1291,22 @@ async function runAIVisibilityCheck(job: AIVisibilityJob, keys: ProviderKeys): P
     const query = `What are some good alternatives to ${job.brand}? Can you recommend similar tools or services to ${job.domain}?`;
 
     // Check each provider sequentially to stream results as they come in
-    const providers = [
-      { id: 'openai', name: 'ChatGPT', key: keys.openai, check: (k: ProviderKey) => checkOpenAI(job.brand, job.domain, query, k) },
-      { id: 'anthropic', name: 'Claude', key: keys.anthropic, check: (k: ProviderKey) => checkAnthropic(job.brand, job.domain, query, k) },
-      { id: 'google', name: 'Gemini', key: keys.gemini, check: (k: ProviderKey) => checkGoogle(job.brand, job.domain, query, k) },
-      { id: 'perplexity', name: 'Perplexity', key: keys.perplexity, check: (k: ProviderKey) => checkPerplexity(job.brand, job.domain, query, k) },
-    ];
+    const or = keys.openrouter;
+    const viaOpenRouter = (id: keyof typeof OPENROUTER_VISIBILITY_MODELS, name: string) =>
+      (k: ProviderKey) => checkViaOpenRouter(job.brand, job.domain, query, k, id, name);
+    const providers = or
+      ? [
+        { id: 'openai', name: 'ChatGPT', key: or, check: viaOpenRouter('openai', 'ChatGPT') },
+        { id: 'anthropic', name: 'Claude', key: or, check: viaOpenRouter('anthropic', 'Claude') },
+        { id: 'google', name: 'Gemini', key: or, check: viaOpenRouter('google', 'Gemini') },
+        { id: 'perplexity', name: 'Perplexity', key: or, check: viaOpenRouter('perplexity', 'Perplexity') },
+      ]
+      : [
+        { id: 'openai', name: 'ChatGPT', key: keys.openai, check: (k: ProviderKey) => checkOpenAI(job.brand, job.domain, query, k) },
+        { id: 'anthropic', name: 'Claude', key: keys.anthropic, check: (k: ProviderKey) => checkAnthropic(job.brand, job.domain, query, k) },
+        { id: 'google', name: 'Gemini', key: keys.gemini, check: (k: ProviderKey) => checkGoogle(job.brand, job.domain, query, k) },
+        { id: 'perplexity', name: 'Perplexity', key: keys.perplexity, check: (k: ProviderKey) => checkPerplexity(job.brand, job.domain, query, k) },
+      ];
 
     for (const provider of providers) {
       if (!provider.key) {
@@ -1422,6 +1461,43 @@ async function providerError(response: Response): Promise<Error> {
   return new Error(`HTTP ${response.status}${text ? `: ${text.slice(0, 200)}` : ''}`);
 }
 
+const RECOMMENDER_PROMPT = 'You are a helpful assistant that recommends tools and websites. List your top recommendations.';
+
+// One OpenRouter key reaches all four assistants. Messages match each direct check (only
+// ChatGPT's has a system prompt), so the route doesn't change the question.
+async function checkViaOpenRouter(
+  brand: string,
+  domain: string,
+  query: string,
+  key: ProviderKey,
+  provider: keyof typeof OPENROUTER_VISIBILITY_MODELS,
+  name: string,
+): Promise<AIProviderResult> {
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${key.apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': 'https://rankcli.dev',
+      'X-Title': 'RankCLI',
+    },
+    body: JSON.stringify({
+      model: OPENROUTER_VISIBILITY_MODELS[provider],
+      messages: provider === 'openai'
+        ? [{ role: 'system', content: RECOMMENDER_PROMPT }, { role: 'user', content: query }]
+        : [{ role: 'user', content: query }],
+      max_tokens: 500,
+    }),
+  });
+
+  if (!response.ok) throw await providerError(response);
+
+  const data = await response.json() as { choices?: { message?: { content?: string } }[] };
+  const content = data.choices?.[0]?.message?.content || '';
+
+  return analyzeProviderResponse(content, brand, domain, provider, name);
+}
+
 async function checkOpenAI(brand: string, domain: string, query: string, key: ProviderKey): Promise<AIProviderResult> {
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
@@ -1432,7 +1508,7 @@ async function checkOpenAI(brand: string, domain: string, query: string, key: Pr
     body: JSON.stringify({
       model: key.model || OPENAI_FAST,
       messages: [
-        { role: 'system', content: 'You are a helpful assistant that recommends tools and websites. List your top recommendations.' },
+        { role: 'system', content: RECOMMENDER_PROMPT },
         { role: 'user', content: query },
       ],
       // GPT-5.6 rejects temperature and max_tokens outright (see models.ts).

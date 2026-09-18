@@ -22,10 +22,14 @@ export interface AIProviderConfig {
 // hosted providers - 'custom' always requires baseUrl+model since there's
 // no way to guess a self-hosted server's address or which model it's
 // serving.
+// OpenRouter is the primary bridge. Its default is openrouter/free, OpenRouter's own router over
+// whichever free models are live - pinning one free model (deepseek/deepseek-r1:free) is how this
+// broke: it was withdrawn, and every OpenRouter key saved without a model override then failed
+// verification.
 const PROVIDER_DEFAULTS: Record<Exclude<AIProvider, 'custom'>, { baseUrl: string; model: string }> = {
   openai: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o' },
   anthropic: { baseUrl: 'https://api.anthropic.com/v1', model: 'claude-sonnet-4-5' },
-  openrouter: { baseUrl: 'https://openrouter.ai/api/v1', model: 'deepseek/deepseek-r1:free' },
+  openrouter: { baseUrl: 'https://openrouter.ai/api/v1', model: 'openrouter/free' },
   groq: { baseUrl: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' },
   gemini: { baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.0-flash' },
   perplexity: { baseUrl: 'https://api.perplexity.ai', model: 'sonar' },

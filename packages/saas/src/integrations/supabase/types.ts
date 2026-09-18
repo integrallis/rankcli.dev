@@ -98,6 +98,9 @@ export interface Audit {
   completed_at: string | null;
   duration_ms: number | null;
   created_at: string;
+  // Not a column: set by useProject().runAudit from start-deep-audit so the progress
+  // stream reaches the worker machine running this audit.
+  worker_instance?: string | null;
 }
 
 export interface AuditIssue {

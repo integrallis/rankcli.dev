@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 type Provider = 'openai' | 'anthropic' | 'openrouter' | 'groq' | 'gemini' | 'perplexity' | 'custom';
 
 const PROVIDER_OPTIONS: { value: Provider; label: string; helpUrl: string; freeTierNote?: string }[] = [
-  { value: 'openrouter', label: 'OpenRouter', helpUrl: 'https://openrouter.ai/keys', freeTierNote: 'Free models available (e.g. DeepSeek R1) - no cost to try' },
+  { value: 'openrouter', label: 'OpenRouter (recommended)', helpUrl: 'https://openrouter.ai/keys', freeTierNote: 'One key reaches ChatGPT, Claude, Gemini and Perplexity. Analysis defaults to openrouter/free - no cost to try' },
   { value: 'groq', label: 'Groq', helpUrl: 'https://console.groq.com/keys', freeTierNote: 'Free tier, no credit card required' },
   { value: 'gemini', label: 'Google Gemini', helpUrl: 'https://aistudio.google.com/apikey', freeTierNote: 'Free tier available via Google AI Studio' },
   { value: 'openai', label: 'OpenAI', helpUrl: 'https://platform.openai.com/api-keys' },
@@ -137,11 +137,11 @@ export function AIProviderSettings() {
       <CardHeader>
         <CardTitle>AI Providers</CardTitle>
         <CardDescription>
-          RankCLI's AI features run on your own keys, on every plan. Auto-fix PRs, keyword research
-          and audit analysis use one key - the first of OpenAI, Anthropic, Gemini, OpenRouter, Groq,
-          Custom you've connected. The AI visibility check asks each assistant with its own key:
-          OpenAI for ChatGPT, Anthropic for Claude, Gemini for Gemini, Perplexity for Perplexity.
-          OpenRouter, Groq and Gemini all offer free tiers with no card required.
+          RankCLI's AI features run on your own keys, on every plan. We recommend OpenRouter: one
+          key covers everything, and the AI visibility check asks ChatGPT, Claude, Gemini and
+          Perplexity through it. Without OpenRouter, the visibility check asks each assistant with
+          its own key, and auto-fix PRs, keyword research and audit analysis use the first of
+          OpenAI, Anthropic, Gemini, Groq, Custom you've connected.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

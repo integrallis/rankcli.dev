@@ -36,3 +36,13 @@ export const GOOGLE_ENDPOINT =
 /** Perplexity — replaces the retired `llama-3.1-sonar-small-128k-online`. `sonar` is its
  *  search-grounded base model, the same role the `-online` suffix used to mark. */
 export const PERPLEXITY_SEARCH = 'sonar';
+
+/** The same four assistants through OpenRouter - the primary bridge. One OpenRouter key reaches
+ *  all of them, so a user (or RankCLI's free tool) needs one key instead of four. Same models as
+ *  the direct ids above; keep the two in step. */
+export const OPENROUTER_VISIBILITY_MODELS = {
+  openai: 'openai/gpt-5.6-luna',
+  anthropic: 'anthropic/claude-haiku-4.5',
+  google: 'google/gemini-3.7-flash',
+  perplexity: 'perplexity/sonar',
+} as const;

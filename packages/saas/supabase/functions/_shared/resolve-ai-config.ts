@@ -8,9 +8,10 @@ import type { AIProvider, AIProviderConfig } from './ai-provider.ts';
 export type UserAIKeys = Partial<Record<AIProvider, AIProviderConfig>>;
 
 // Which key a single-model feature (keyword research, auto-fix PRs, audit analysis, local
-// SEO) uses when a user has connected several. Perplexity is last: it's there for the
-// visibility check's fourth assistant, and a search-grounded model is a poor analyst.
-const PREFERENCE: AIProvider[] = ['openai', 'anthropic', 'gemini', 'openrouter', 'groq', 'custom', 'perplexity'];
+// SEO) uses when a user has connected several. OpenRouter is the primary bridge, so it goes
+// first. Perplexity is last: it's there for the visibility check's fourth assistant, and a
+// search-grounded model is a poor analyst.
+const PREFERENCE: AIProvider[] = ['openrouter', 'openai', 'anthropic', 'gemini', 'groq', 'custom', 'perplexity'];
 
 // deno-lint-ignore no-explicit-any
 export async function loadUserAIKeys(supabase: any, userId: string | null | undefined): Promise<UserAIKeys> {
@@ -56,5 +57,5 @@ export async function resolveAIConfig(supabase: any, userId: string | null | und
 }
 
 export function aiConfigErrorMessage(feature = 'this feature'): string {
-  return `Connect an AI provider key to use ${feature} - RankCLI runs AI features on your own key. Any provider works, including free-tier keys from OpenRouter, Groq, or Google AI Studio. Add one at https://rankcli.dev/account?tab=ai-provider`;
+  return `Connect an AI provider key to use ${feature} - RankCLI runs AI features on your own key. We recommend OpenRouter: one key reaches ChatGPT, Claude, Gemini and Perplexity, and its free models cost nothing. Add one at https://rankcli.dev/account?tab=ai-provider`;
 }

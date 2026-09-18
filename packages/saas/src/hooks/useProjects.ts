@@ -325,7 +325,8 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
       });
       if (fnError) throw new Error(await functionErrorMessage(fnError, 'Failed to start audit'));
 
-      const audit = data.audit as Audit;
+      // worker_instance routes the progress stream to the machine running this audit.
+      const audit = { ...(data.audit as Audit), worker_instance: data.workerInstance ?? null };
 
       // Refresh to show pending state
       await fetchProject();

@@ -173,8 +173,8 @@ export function AIVisibilityCard({
         {needsKey && (
           <div className="text-sm mb-4 space-y-2">
             <p className="text-muted-foreground">
-              AI visibility checks run on your own keys: OpenAI for ChatGPT, Anthropic for Claude,
-              Gemini for Gemini, Perplexity for Perplexity. Connect one or more.
+              AI visibility checks run on your own keys. One OpenRouter key asks ChatGPT, Claude,
+              Gemini and Perplexity; or connect each provider's key.
             </p>
             <Link to="/account?tab=ai-provider">
               <Button size="sm" variant="outline"><KeyRound className="h-4 w-4 mr-2" />Connect AI keys</Button>

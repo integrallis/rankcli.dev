@@ -18,6 +18,9 @@ interface SseEvent {
 
 interface UseAuditSSEOptions {
   auditId: string | null;
+  // The worker machine running this audit (from start-deep-audit). The worker runs on
+  // several machines with jobs in memory; this routes the stream to the right one.
+  instance?: string | null;
   enabled?: boolean;
   onCompleted?: (auditId: string, score: number) => void;
   onFailed?: (auditId: string, error: string) => void;
@@ -25,7 +28,7 @@ interface UseAuditSSEOptions {
 }
 
 export function useAuditSSE(options: UseAuditSSEOptions) {
-  const { auditId, enabled = true, onCompleted, onFailed, onProgress } = options;
+  const { auditId, instance, enabled = true, onCompleted, onFailed, onProgress } = options;
   const queryClient = useQueryClient();
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -48,7 +51,7 @@ export function useAuditSSE(options: UseAuditSSEOptions) {
     disconnect();
 
     // Create SSE connection
-    const url = `${WORKER_URL}/stream/${auditId}`;
+    const url = `${WORKER_URL}/stream/${auditId}${instance ? `?instance=${encodeURIComponent(instance)}` : ''}`;
     console.log('Connecting to SSE:', url);
     const eventSource = new EventSource(url);
     eventSourceRef.current = eventSource;
@@ -133,7 +136,7 @@ export function useAuditSSE(options: UseAuditSSEOptions) {
         connect();
       }, 5000);
     };
-  }, [auditId, queryClient, onCompleted, onFailed, onProgress, disconnect]);
+  }, [auditId, instance, queryClient, onCompleted, onFailed, onProgress, disconnect]);
 
   useEffect(() => {
     if (enabled && auditId) {

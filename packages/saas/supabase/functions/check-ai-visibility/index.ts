@@ -7,15 +7,18 @@ import {
   ANTHROPIC_FAST,
   GOOGLE_FAST,
   PERPLEXITY_SEARCH,
+  OPENROUTER_VISIBILITY_MODELS,
 } from '../_shared/models.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-// Asks ChatGPT, Claude, Gemini and Perplexity what they say about a brand, each on the
-// signed-in user's own key for that provider. RankCLI's keys are never used. An assistant
-// the user has no key for is reported as `not_checked`, and one whose API call fails as
-// `error` - neither is ever counted as "not mentioned", and neither counts toward the score.
+// Asks ChatGPT, Claude, Gemini and Perplexity what they say about a brand, on the signed-in
+// user's own keys - RankCLI's keys are never used. OpenRouter is the primary bridge: with an
+// OpenRouter key, every assistant is asked through it; otherwise each needs its own
+// provider key. An assistant the user can't reach is reported as `not_checked`, and one whose
+// API call fails as `error` - neither is ever counted as "not mentioned", and neither counts
+// toward the score.
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -96,11 +99,8 @@ serve(async (req) => {
     }
 
     const keys = await loadUserAIKeys(supabase, user.id);
-    if (!keys.openai && !keys.anthropic && !keys.gemini && !keys.perplexity) {
-      return json({
-        error: aiConfigErrorMessage('the AI visibility check') +
-          ' Each assistant is asked with its own provider key: OpenAI for ChatGPT, Anthropic for Claude, Gemini for Gemini, Perplexity for Perplexity.',
-      }, 400);
+    if (!keys.openrouter && !keys.openai && !keys.anthropic && !keys.gemini && !keys.perplexity) {
+      return json({ error: aiConfigErrorMessage('the AI visibility check') }, 400);
     }
 
     // Extract brand name
@@ -115,11 +115,12 @@ serve(async (req) => {
       `What do you think about ${brand}?`,
     ];
 
+    const or = keys.openrouter;
     const results = await Promise.all([
-      checkOpenAI(brand, domain, queries[0], keys.openai),
-      checkAnthropic(brand, domain, queries[0], keys.anthropic),
-      checkGoogle(brand, domain, queries[0], keys.gemini),
-      checkPerplexity(brand, domain, queries[0], keys.perplexity),
+      or ? checkViaOpenRouter(brand, domain, queries[0], or, 'openai', 'ChatGPT') : checkOpenAI(brand, domain, queries[0], keys.openai),
+      or ? checkViaOpenRouter(brand, domain, queries[0], or, 'anthropic', 'Claude') : checkAnthropic(brand, domain, queries[0], keys.anthropic),
+      or ? checkViaOpenRouter(brand, domain, queries[0], or, 'google', 'Gemini') : checkGoogle(brand, domain, queries[0], keys.gemini),
+      or ? checkViaOpenRouter(brand, domain, queries[0], or, 'perplexity', 'Perplexity') : checkPerplexity(brand, domain, queries[0], keys.perplexity),
     ]);
 
     // Score only the assistants actually asked: with all four checked this is the old
@@ -194,6 +195,49 @@ async function apiError(response: Response): Promise<string> {
   return `HTTP ${response.status}${text ? `: ${text.slice(0, 200)}` : ''}`;
 }
 
+const RECOMMENDER_PROMPT = 'You are a helpful assistant that recommends tools and websites. List your top recommendations.';
+
+// One OpenRouter key reaches all four assistants. The messages match each direct check below
+// (only ChatGPT's has a system prompt), so the route doesn't change the question. The key's
+// own model setting is for analysis features and is ignored here - the assistant is the
+// instrument.
+async function checkViaOpenRouter(
+  brand: string,
+  domain: string,
+  query: string,
+  key: AIProviderConfig,
+  provider: ProviderId,
+  name: string,
+): Promise<ProviderResult> {
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${key.apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://rankcli.dev',
+        'X-Title': 'RankCLI',
+      },
+      body: JSON.stringify({
+        model: OPENROUTER_VISIBILITY_MODELS[provider],
+        messages: provider === 'openai'
+          ? [{ role: 'system', content: RECOMMENDER_PROMPT }, { role: 'user', content: query }]
+          : [{ role: 'user', content: query }],
+        max_tokens: 500,
+      }),
+    });
+
+    if (!response.ok) return emptyResult(provider, name, 'error', await apiError(response));
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content || '';
+
+    return analyzeResponse(content, brand, domain, provider, name);
+  } catch (err) {
+    return emptyResult(provider, name, 'error', err instanceof Error ? err.message : 'Request failed');
+  }
+}
+
 async function checkOpenAI(brand: string, domain: string, query: string, key?: AIProviderConfig): Promise<ProviderResult> {
   if (!key) return emptyResult('openai', 'ChatGPT', 'not_checked');
 
@@ -207,7 +251,7 @@ async function checkOpenAI(brand: string, domain: string, query: string, key?: A
       body: JSON.stringify({
         model: key.model || OPENAI_FAST,
         messages: [
-          { role: 'system', content: 'You are a helpful assistant that recommends tools and websites. List your top recommendations.' },
+          { role: 'system', content: RECOMMENDER_PROMPT },
           { role: 'user', content: query },
         ],
         // GPT-5.6 rejects temperature and max_tokens outright (see _shared/models.ts).
