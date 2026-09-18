@@ -26,6 +26,7 @@ import pricingTiers from '@/config/pricing-tiers.json';
 import { useUserLTD } from '@/hooks/useLTD';
 import { usePricingAvailability } from '@/hooks/usePricingAvailability';
 import { usePendingPlan } from '@/hooks/usePendingPlan';
+import { useEntitlement } from '@/hooks/useEntitlement';
 import { SubscriptionPricingCards, type SubscriptionTier } from '@/components/pricing/SubscriptionPricingCards';
 import { BillingIntervalToggle, type PricingView } from '@/components/pricing/BillingIntervalToggle';
 import { AlertConfigForm } from '@/components/settings/AlertConfigForm';
@@ -201,6 +202,15 @@ export function AccountPage() {
   const { consumePendingPlan } = usePendingPlan();
   const [activeTab, setActiveTab] = useState('profile');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  // Our own metadata key: GitHub/Google sign-ins refresh `name`/`full_name`
+  // from the provider, which would undo the user's edit.
+  const savedDisplayName =
+    (user?.user_metadata?.display_name as string | undefined) ??
+    (user?.user_metadata?.name as string | undefined) ??
+    (user?.user_metadata?.full_name as string | undefined) ??
+    '';
+  const [displayName, setDisplayName] = useState(savedDisplayName);
   const [upgradingPlanId, setUpgradingPlanId] = useState<string | null>(null);
   const [highlightPlanId, setHighlightPlanId] = useState<string | null>(null);
   const [billingView, setBillingView] = useState<PricingView>('monthly');
@@ -389,14 +399,32 @@ export function AccountPage() {
     ? { name: planData.name, price_cents: planData.price_cents }
     : { name: 'Free', price_cents: 0 };
 
-  const subscriptionPlan = pricingTiers.subscriptions.find(s => s.id === currentPlanId);
+  // The limit the projects insert trigger enforces. Looking the plan_id up in
+  // pricing-tiers.json directly found nothing for pro_founding or *_annual,
+  // so those subscribers were shown a 1-site limit.
+  const { data: entitlement } = useEntitlement();
+  const baseTierId = currentPlanId.replace(/_(annual|founding)$/, '');
   const sitesUsed = sitesCount;
-  const sitesLimit = subscriptionPlan?.limits.sites || 1;
+  const sitesLimit =
+    entitlement?.sites_limit ??
+    pricingTiers.subscriptions.find((s) => s.id === baseTierId)?.limits.sites ??
+    1;
 
+  // Saved to the auth user's metadata; there is no name column in profiles.
   const handleSaveProfile = async () => {
-    setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    setIsLoading(false);
+    const name = displayName.trim();
+    setIsSavingProfile(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ data: { display_name: name } });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      setDisplayName(name);
+      toast.success('Profile saved');
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const handleUpgrade = async (planId: string) => {
@@ -657,13 +685,19 @@ export function AccountPage() {
                       <Input
                         id="name"
                         placeholder="Your name"
-                        defaultValue={user?.user_metadata?.name || ''}
+                        value={displayName}
+                        onChange={(e) => setDisplayName(e.target.value)}
+                        maxLength={100}
+                        disabled={isSavingProfile}
                       />
                     </div>
 
                     <div className="flex gap-4">
-                      <Button onClick={handleSaveProfile} disabled={isLoading}>
-                        {isLoading ? (
+                      <Button
+                        onClick={handleSaveProfile}
+                        disabled={isSavingProfile || displayName.trim() === savedDisplayName}
+                      >
+                        {isSavingProfile ? (
                           <>
                             <Loader2 className="h-4 w-4 animate-spin mr-2" />
                             Saving...

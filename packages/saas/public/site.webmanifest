@@ -6,13 +6,12 @@
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",
-  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "/favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/favicon-192x192.png",
@@ -25,13 +24,5 @@
       "type": "image/png"
     }
   ],
-  "categories": ["developer tools", "productivity", "utilities"],
-  "screenshots": [
-    {
-      "src": "/screenshots/dashboard.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "label": "Dashboard showing SEO audit results"
-    }
-  ]
+  "categories": ["developer tools", "productivity", "utilities"]
 }

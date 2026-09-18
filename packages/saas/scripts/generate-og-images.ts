@@ -13,6 +13,8 @@
  *   public/og-image.png           # Default/landing page
  *   public/og-pricing.png         # Pricing page
  *   public/og-audit.png           # Free audit page
+ *   public/og/ai-visibility.png   # AI visibility checker
+ *   public/og/chatgpt-checker.png # ChatGPT checker
  */
 
 import satori from 'satori';
@@ -98,8 +100,20 @@ const images: OGImageConfig[] = [
   {
     name: 'og-audit',
     title: 'Free SEO Audit',
-    subtitle: '200+ automated checks. No signup required.',
+    subtitle: '280+ automated checks. No signup required.',
     badge: 'Try Now',
+  },
+  {
+    name: 'og/ai-visibility',
+    title: 'AI Visibility Checker',
+    subtitle: 'Do ChatGPT, Claude, Gemini and Perplexity mention you?',
+    badge: 'Free Tool',
+  },
+  {
+    name: 'og/chatgpt-checker',
+    title: 'ChatGPT Checker',
+    subtitle: 'Does ChatGPT recommend your site?',
+    badge: 'Free Tool',
   },
   {
     name: 'og-dashboard',
@@ -402,6 +416,7 @@ async function generateImage(config: OGImageConfig, fonts: Awaited<ReturnType<ty
 
   // Write files
   const pngPath = path.join(OUTPUT_DIR, `${config.name}.png`);
+  fs.mkdirSync(path.dirname(pngPath), { recursive: true });
   fs.writeFileSync(pngPath, pngBuffer);
   console.log(`  🖼️  Generated: ${config.name}.png`);
 }
