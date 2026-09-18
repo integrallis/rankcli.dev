@@ -23,11 +23,14 @@ serve(async (req) => {
 
   try {
     // Get user from auth header
-    const authHeader = req.headers.get('Authorization')!;
+    // No header used to crash on the non-null assertion and return a 500.
+    const authHeader = req.headers.get('Authorization') || '';
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { data: { user }, error: authError } = token
+      ? await supabase.auth.getUser(token)
+      : { data: { user: null }, error: null };
 
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
