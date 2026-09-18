@@ -190,6 +190,8 @@ jobs:
         env:
           # Fail the deploy rather than ship pages crawlers can't read.
           PRERENDER: required
+          # Cloudflare Web Analytics (cookieless). Unset: no beacon.
+          VITE_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
           VITE_SUPABASE_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           VITE_AUDIT_WORKER_URL: https://rankcli-audit-worker.fly.dev
