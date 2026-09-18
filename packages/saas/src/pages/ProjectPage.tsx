@@ -32,6 +32,7 @@ import { ConnectGitHubModal } from '@/components/project/ConnectGitHubModal';
 import { ProjectSettingsModal } from '@/components/project/ProjectSettingsModal';
 import { IssuesList } from '@/components/project/IssuesList';
 import { AIVisibilityCard } from '@/components/dashboard/AIVisibilityCard';
+import { ReadmeBadgeCard } from '@/components/project/ReadmeBadgeCard';
 import { CategoryRadarChart } from '@/components/audit/CategoryRadarChart';
 import {
   Tooltip,
@@ -538,6 +539,10 @@ export function ProjectPage() {
             domain={new URL(project.url).hostname}
             brand={project.name}
           />
+        </div>
+
+        <div className="mb-6">
+          <ReadmeBadgeCard projectId={project.id} initiallyEnabled={!!project.badge_enabled} />
         </div>
 
         {/* Checks Summary */}

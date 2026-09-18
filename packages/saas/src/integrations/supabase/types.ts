@@ -61,6 +61,8 @@ export interface Project {
   is_active: boolean;
   last_audit_at: string | null;
   last_audit_score: number | null;
+  // Opt-in README score badge (the badge edge function).
+  badge_enabled?: boolean;
   created_at: string;
   updated_at: string;
   // Joined data
