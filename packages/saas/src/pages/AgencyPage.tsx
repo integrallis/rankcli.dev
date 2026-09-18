@@ -23,6 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProject } from '@/hooks/useProjects';
+import { useEntitlement } from '@/hooks/useEntitlement';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
@@ -44,11 +45,16 @@ interface ClientLink {
 export function AgencyPage() {
   const { id: projectId } = useParams();
   const { project, audits, issues, isLoading, error } = useProject(projectId);
+  // White-label reports, widgets and client links are Agency features
+  // (pricing-tiers.json: white_label is agency-only). The tier is the
+  // server's (get_my_entitlement), so annual, founding and lifetime Agency
+  // plans all count.
+  const { data: entitlement, isLoading: entitlementLoading } = useEntitlement();
+  const isAgency = entitlement?.tier === 'agency';
 
   // Widget state
   const [widgetTokens, setWidgetTokens] = useState<WidgetToken[]>([]);
   const [widgetTheme, setWidgetTheme] = useState<'light' | 'dark'>('light');
-  const [showBranding, setShowBranding] = useState(true);
   const [generatingWidget, setGeneratingWidget] = useState(false);
 
   // Client link state
@@ -238,11 +244,12 @@ export function AgencyPage() {
     setTimeout(() => setCopied(null), 2000);
   };
 
+  // No branding parameter: whether a widget is white-labelled is decided by
+  // the server from the owner's plan, never by the embed code.
   const getEmbedCode = (token: string) => {
     const params = new URLSearchParams({
       token,
       theme: widgetTheme,
-      branding: showBranding.toString(),
     });
     return `<div id="rankcli-widget"></div>
 <script src="https://rankcli.dev/widget.js?${params.toString()}"></script>`;
@@ -252,7 +259,6 @@ export function AgencyPage() {
     const params = new URLSearchParams({
       token,
       theme: widgetTheme,
-      branding: showBranding.toString(),
     });
     return `<iframe
   src="https://rankcli.dev/widget?${params.toString()}"
@@ -267,7 +273,7 @@ export function AgencyPage() {
     return `https://rankcli.dev/report/${token}`;
   };
 
-  if (isLoading || loadingTokens) {
+  if (isLoading || loadingTokens || entitlementLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -304,6 +310,45 @@ export function AgencyPage() {
     );
   }
 
+  if (!isAgency) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <main className="container py-8">
+          <div className="mb-6">
+            <Link
+              to={`/dashboard/projects/${projectId}`}
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to {project.name}
+            </Link>
+          </div>
+          <Card className="max-w-2xl">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-primary" />
+                Agency tools are part of the Agency plan
+              </CardTitle>
+              <CardDescription>
+                White-label PDF reports, embeddable score widgets and shareable client report
+                links come with the Agency plan.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-3">
+              <Button asChild>
+                <Link to="/account/billing?plan=agency">Upgrade to Agency</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link to="/pricing">Compare plans</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+      </div>
+    );
+  }
+
   const activeWidgetToken = widgetTokens[0];
 
   return (
@@ -328,7 +373,7 @@ export function AgencyPage() {
             <div className="flex items-center gap-3 mb-2">
               <Building2 className="h-8 w-8 text-primary" />
               <h1 className="text-3xl font-bold">Agency Tools</h1>
-              <Badge variant="secondary">Pro Feature</Badge>
+              <Badge variant="secondary">Agency plan</Badge>
             </div>
             <p className="text-muted-foreground">
               White-label reports, embeddable widgets, and client sharing for{' '}
@@ -363,7 +408,6 @@ export function AgencyPage() {
                 </CardTitle>
                 <CardDescription>
                   Embed SEO score widgets on your clients' dashboards or your agency website.
-                  White-label option removes RankCLI branding.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -386,18 +430,6 @@ export function AgencyPage() {
                       >
                         Dark
                       </Button>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Branding</Label>
-                    <div className="flex items-center gap-3">
-                      <Switch
-                        checked={showBranding}
-                        onCheckedChange={setShowBranding}
-                      />
-                      <span className="text-sm text-muted-foreground">
-                        {showBranding ? 'Show "Powered by RankCLI"' : 'White-label (hidden)'}
-                      </span>
                     </div>
                   </div>
                 </div>
@@ -506,7 +538,7 @@ export function AgencyPage() {
                         )}
                       >
                         <iframe
-                          src={`/widget?token=${activeWidgetToken.token}&theme=${widgetTheme}&branding=${showBranding}`}
+                          src={`/widget?token=${activeWidgetToken.token}&theme=${widgetTheme}`}
                           width="340"
                           height="180"
                           frameBorder="0"

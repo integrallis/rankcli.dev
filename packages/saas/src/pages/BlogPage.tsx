@@ -1,4 +1,4 @@
-import { Helmet } from 'react-helmet-async';
+import { SEO } from '@/components/SEO';
 import { Link } from 'react-router-dom';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -12,19 +12,11 @@ export function BlogPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>Blog | RankCLI - SEO Engineering Insights</title>
-        <meta
-          name="description"
-          content="Learn about SEO for developers: framework-specific guides, engineering as marketing, and technical SEO best practices."
-        />
-        <meta property="og:title" content="RankCLI Blog - SEO Engineering Insights" />
-        <meta
-          property="og:description"
-          content="Learn about SEO for developers: framework-specific guides, engineering as marketing, and technical SEO best practices."
-        />
-        <link rel="canonical" href="https://rankcli.dev/blog" />
-      </Helmet>
+      <SEO
+        title="Blog: SEO engineering for developers"
+        description="SEO for developers: framework guides for React, Next.js, Vue and Nuxt, engineering as marketing, and technical SEO best practices you can ship."
+        path="/blog"
+      />
 
       <Navbar />
 
@@ -66,6 +58,7 @@ export function BlogPage() {
                   <span className="flex items-center gap-1">
                     <Calendar className="h-4 w-4" />
                     {new Date(featuredPosts[0].publishedAt).toLocaleDateString('en-US', {
+                      timeZone: 'UTC',
                       month: 'long',
                       day: 'numeric',
                       year: 'numeric',
@@ -114,6 +107,7 @@ export function BlogPage() {
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       {new Date(post.publishedAt).toLocaleDateString('en-US', {
+                        timeZone: 'UTC',
                         month: 'short',
                         day: 'numeric',
                       })}

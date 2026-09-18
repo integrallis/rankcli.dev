@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
@@ -19,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { SEO } from '@/components/SEO';
 
 interface ComparisonResult {
   yourUrl: string;
@@ -135,20 +135,12 @@ export function CompetitorAnalyzerPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>SEO Competitor Analyzer - Compare Your Site vs Competitors | RankCLI</title>
-        <meta
-          name="description"
-          content="Compare your website's SEO score against competitors. See where you're winning and where you need to improve."
-        />
-        <meta property="og:title" content="SEO Competitor Analyzer | RankCLI" />
-        <meta
-          property="og:description"
-          content="Side-by-side SEO comparison. Find out where competitors beat you and how to catch up."
-        />
-        <link rel="canonical" href="https://rankcli.dev/tools/compare" />
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
-      </Helmet>
+      <SEO
+        fullTitle="SEO Competitor Analyzer - Compare Your Site vs Competitors | RankCLI"
+        description="Compare your website's SEO score against a competitor side by side, and see where they beat you and how to catch up. Free, no signup required."
+        path="/tools/compare"
+        jsonLd={jsonLd}
+      />
 
       <Navbar />
 

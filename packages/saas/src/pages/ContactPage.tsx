@@ -2,10 +2,16 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Mail, Github } from 'lucide-react';
+import { SEO } from '@/components/SEO';
 
 export function ContactPage() {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Contact"
+        description="Contact RankCLI: email support@rankcli.dev for account, billing and general questions, or open an issue on GitHub for bugs and feature requests."
+        path="/contact"
+      />
       <Navbar />
 
       <main className="container py-16 max-w-2xl mx-auto">

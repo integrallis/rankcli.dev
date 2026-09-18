@@ -1,11 +1,17 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { SEO } from '@/components/SEO';
 
-const LAST_UPDATED = 'September 6, 2026';
+const LAST_UPDATED = 'September 18, 2026';
 
 export function PrivacyPage() {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Privacy Policy"
+        description="How RankCLI (Integrallis Software, LLC) collects, uses and protects information across the website, dashboard, CLI, GitHub App and MCP server."
+        path="/privacy"
+      />
       <Navbar />
 
       <main className="container py-16 max-w-3xl mx-auto">
@@ -76,7 +82,7 @@ export function PrivacyPage() {
           <p>Running the Service means some data necessarily passes through infrastructure providers we use:</p>
           <ul>
             <li><strong>Supabase</strong> - database, authentication, and serverless functions</li>
-            <li><strong>Cloudflare</strong> - content delivery and DNS</li>
+            <li><strong>Cloudflare</strong> - content delivery, DNS, and Web Analytics (cookieless page-view counts; no cookies or cross-site identifiers)</li>
             <li><strong>Fly.io</strong> - runs the audit engine that crawls and analyzes URLs</li>
             <li><strong>Stripe</strong> - payment processing for paid subscriptions</li>
             <li><strong>Resend</strong> - transactional email delivery</li>
@@ -99,7 +105,9 @@ export function PrivacyPage() {
           <h2>Cookies</h2>
           <p>
             The dashboard uses essential cookies/local storage to keep you signed in.
-            We do not use third-party advertising or cross-site tracking cookies.
+            We do not use third-party advertising or cross-site tracking cookies. We
+            count page views with Cloudflare Web Analytics, which sets no cookies and
+            doesn't track you across sites.
           </p>
 
           <h2>Data retention and deletion</h2>

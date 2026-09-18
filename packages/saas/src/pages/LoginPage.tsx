@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Loader2, Terminal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,6 +35,22 @@ const GitHubIcon = () => (
   </svg>
 );
 
+/**
+ * A ?redirect= target, if it is a path on this site. Anything else (another
+ * origin, a protocol-relative //host, a backslash trick) is ignored, so the
+ * login page can't be used to bounce users to an attacker's site.
+ */
+function safeRedirect(value: string | null): string | null {
+  if (!value || !value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) return null;
+  try {
+    const url = new URL(value, window.location.origin);
+    if (url.origin !== window.location.origin) return null;
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return null;
+  }
+}
+
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -44,8 +60,15 @@ export function LoginPage() {
   const { login, loginWithGoogle, loginWithGitHub } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const fromLocation = (location.state as { from?: { pathname: string; search: string } })?.from;
-  const from = fromLocation ? `${fromLocation.pathname}${fromLocation.search}` : '/dashboard';
+  // Where to go after signing in: the page that sent us here (router state
+  // from ProtectedRoute, or ?redirect= from links like the LTD checkout's),
+  // else the dashboard.
+  const from =
+    (fromLocation ? `${fromLocation.pathname}${fromLocation.search}` : null) ??
+    safeRedirect(searchParams.get('redirect')) ??
+    '/dashboard';
   const isGitHubInstallReturn = fromLocation?.pathname === '/dashboard/github-callback';
   const isMcpConnectReturn = fromLocation?.pathname === '/connect';
 

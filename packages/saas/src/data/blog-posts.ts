@@ -4,6 +4,8 @@ export interface BlogPost {
   excerpt: string;
   content: string;
   publishedAt: string;
+  /** Set when a post is substantially revised (YYYY-MM-DD); feeds dateModified and the sitemap's lastmod. */
+  updatedAt?: string;
   author: string;
   readTime: number;
   tags: string[];

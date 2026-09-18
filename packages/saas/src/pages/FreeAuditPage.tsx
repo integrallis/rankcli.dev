@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import { SEO } from '@/components/SEO';
 import { Search, Loader2, ArrowRight, AlertCircle, CheckCircle, XCircle, Bot, Sparkles } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -131,7 +131,7 @@ export function FreeAuditPage() {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
     name: 'Free SEO Audit Tool',
-    description: 'Get instant SEO analysis for any website. 50+ checks including technical SEO, content, performance, and AI readiness. No signup required.',
+    description: 'Get instant SEO analysis for any website. 280+ checks including technical SEO, content, performance, and AI readiness. No signup required.',
     applicationCategory: 'DeveloperApplication',
     operatingSystem: 'Any',
     offers: {
@@ -181,20 +181,14 @@ export function FreeAuditPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>Free SEO Audit - 50+ Checks, Instant Results | RankCLI</title>
-        <meta
-          name="description"
-          content="Get instant SEO analysis for any website. 50+ checks including technical SEO, content, performance, and AI readiness. No signup required."
-        />
-        <meta property="og:title" content="Free SEO Audit Tool | RankCLI" />
-        <meta
-          property="og:description"
-          content="Analyze your website's SEO health with 50+ checks. Get instant results for free."
-        />
-        <link rel="canonical" href="https://rankcli.dev/free-audit" />
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
-      </Helmet>
+      <SEO
+        fullTitle="Free SEO Audit - 280+ Checks, Instant Results | RankCLI"
+        description="Get an instant SEO audit of any website: 280+ checks covering technical SEO, content, performance, security and AI readiness. Free, no signup required."
+        path="/free-audit"
+        image="/og-audit.png"
+        imageAlt="RankCLI free SEO audit"
+        jsonLd={jsonLd}
+      />
 
       <Navbar />
 
@@ -209,7 +203,7 @@ export function FreeAuditPage() {
               Free SEO Audit
             </h1>
             <p className="text-lg text-muted-foreground">
-              50+ SEO checks. No signup required.
+              280+ SEO checks. No signup required.
             </p>
           </div>
 
@@ -251,7 +245,7 @@ export function FreeAuditPage() {
                 <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
                 <p className="text-lg font-medium mb-2">Analyzing your site...</p>
                 <p className="text-muted-foreground">
-                  Running 50+ SEO checks. This usually takes 1-3 minutes.
+                  Running 280+ SEO checks. This usually takes 1-3 minutes.
                 </p>
               </CardContent>
             </Card>

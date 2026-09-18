@@ -1,10 +1,16 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Github } from 'lucide-react';
+import { SEO } from '@/components/SEO';
 
 export function AboutPage() {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="About"
+        description="RankCLI is a developer-first SEO tool built by Integrallis Software: 280+ checks from the command line and CI, framework-aware fixes, auto-fix pull requests and a free local MCP server."
+        path="/about"
+      />
       <Navbar />
 
       <main className="container py-16 max-w-3xl mx-auto">

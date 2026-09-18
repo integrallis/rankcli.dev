@@ -1,87 +1,47 @@
-import { lazy, Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import { LandingPage } from './pages/LandingPage';
-import { FreeAuditPage } from './pages/FreeAuditPage';
-import { PricingPage } from './pages/PricingPage';
-import { DocsPage } from './pages/DocsPage';
-import { BlogPage } from './pages/BlogPage';
-import { BlogPostPage } from './pages/BlogPostPage';
-import { AboutPage } from './pages/AboutPage';
-import { ContactPage } from './pages/ContactPage';
-import { ChangelogPage } from './pages/ChangelogPage';
-import { PrivacyPage } from './pages/PrivacyPage';
-import { TermsPage } from './pages/TermsPage';
-import { MetaTagAnalyzerPage } from './pages/tools/MetaTagAnalyzerPage';
-import { OgImagePreviewPage } from './pages/tools/OgImagePreviewPage';
-import { ChatGPTCheckerPage } from './pages/tools/ChatGPTCheckerPage';
-import { AIVisibilityCheckerPage } from './pages/tools/AIVisibilityCheckerPage';
-import { CompetitorAnalyzerPage } from './pages/tools/CompetitorAnalyzerPage';
-import { WidgetPage } from './pages/WidgetPage';
-import { LoginPage } from './pages/LoginPage';
-import { SignupPage } from './pages/SignupPage';
-import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
-import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { AuthCallbackPage } from './pages/AuthCallbackPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { ProjectPage } from './pages/ProjectPage';
-import { KeywordsPage } from './pages/KeywordsPage';
-import { AgencyPage } from './pages/AgencyPage';
-import { ClientReportPage } from './pages/ClientReportPage';
-import { AccountPage } from './pages/AccountPage';
-import { BillingPage } from './pages/BillingPage';
-import { GitHubCallbackPage } from './pages/GitHubCallbackPage';
-import { ConnectPage } from './pages/ConnectPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { DefaultSEO, SEO } from './components/SEO';
+import { endFirstRender } from './lib/prerender';
+import { publicRoutes, protectedRoutes, NotFoundPage, type AppRoute } from './routes';
 
-// Lazy-loaded checkout pages
-const LTDCheckoutPage = lazy(() => import('./pages/checkout/LTDCheckoutPage'));
+// App screens are noindex. Everything behind sign-in is, even without a title.
+function routeElement({ page: Page, appTitle }: AppRoute, isProtected: boolean) {
+  if (!appTitle && !isProtected) return <Page />;
+  return (
+    <>
+      <SEO title={appTitle} noindex />
+      <Page />
+    </>
+  );
+}
 
 function App() {
-  return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<LandingPage />} />
-      <Route path="/free-audit" element={<FreeAuditPage />} />
-      <Route path="/pricing" element={<PricingPage />} />
-      <Route path="/docs" element={<DocsPage />} />
-      <Route path="/blog" element={<BlogPage />} />
-      <Route path="/blog/:slug" element={<BlogPostPage />} />
-      <Route path="/about" element={<AboutPage />} />
-      <Route path="/contact" element={<ContactPage />} />
-      <Route path="/changelog" element={<ChangelogPage />} />
-      <Route path="/privacy" element={<PrivacyPage />} />
-      <Route path="/terms" element={<TermsPage />} />
-      <Route path="/tools/meta-tag-analyzer" element={<MetaTagAnalyzerPage />} />
-      <Route path="/tools/og-image-preview" element={<OgImagePreviewPage />} />
-      <Route path="/tools/chatgpt-checker" element={<ChatGPTCheckerPage />} />
-      <Route path="/tools/ai-visibility" element={<AIVisibilityCheckerPage />} />
-      <Route path="/tools/compare" element={<CompetitorAnalyzerPage />} />
-      <Route path="/widget" element={<WidgetPage />} />
-      <Route path="/report/:token" element={<ClientReportPage />} />
-      <Route path="/checkout/ltd" element={
-        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-          <LTDCheckoutPage />
-        </Suspense>
-      } />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/signup" element={<SignupPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/auth/callback" element={<AuthCallbackPage />} />
+  useEffect(() => {
+    endFirstRender();
+  }, []);
 
-      {/* Protected routes */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/dashboard/github-callback" element={<GitHubCallbackPage />} />
-        <Route path="/dashboard/projects/:id" element={<ProjectPage />} />
-        <Route path="/dashboard/projects/:id/keywords" element={<KeywordsPage />} />
-        <Route path="/dashboard/projects/:id/agency" element={<AgencyPage />} />
-        <Route path="/account" element={<AccountPage />} />
-        <Route path="/account/billing" element={<BillingPage />} />
-        <Route path="/account/api-keys" element={<AccountPage />} />
-        <Route path="/connect" element={<ConnectPage />} />
-      </Route>
-    </Routes>
+  return (
+    <>
+      <DefaultSEO />
+      {/* Navigations run in a transition (see main.tsx), so this fallback
+          only shows if a page chunk is still loading on the first render. */}
+      <Suspense fallback={<div className="min-h-screen bg-background" />}>
+        <Routes>
+          {publicRoutes.map((route) => (
+            <Route key={route.path} path={route.path} element={routeElement(route, false)} />
+          ))}
+
+          <Route element={<ProtectedRoute />}>
+            {protectedRoutes.map((route) => (
+              <Route key={route.path} path={route.path} element={routeElement(route, true)} />
+            ))}
+          </Route>
+
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
+    </>
   );
 }
 

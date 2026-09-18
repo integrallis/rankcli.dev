@@ -2,6 +2,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink } from 'lucide-react';
+import { SEO } from '@/components/SEO';
 
 const highlights = [
   {
@@ -34,6 +35,11 @@ const highlights = [
 export function ChangelogPage() {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Changelog"
+        description="What's new in RankCLI: agentic auto-fix, keyword rank tracking, GEO checks for AI search, the MCP server for AI assistants, and framework-specific fix recipes."
+        path="/changelog"
+      />
       <Navbar />
 
       <main className="container py-16 max-w-2xl mx-auto">

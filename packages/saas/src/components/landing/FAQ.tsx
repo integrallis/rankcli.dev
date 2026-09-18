@@ -1,44 +1,12 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
+import { ChevronDown } from 'lucide-react';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
+import { faqs } from '@/data/faqs';
 
-const faqs = [
-  {
-    question: 'What SEO checks does it run?',
-    answer:
-      'We run 280+ checks covering technical SEO (meta tags, schema, canonicals), content quality (headings, word count, readability), performance (Core Web Vitals, page speed), security (HTTPS, headers), and more. The same checks you\'d get from Ahrefs or Screaming Frog.',
-  },
-  {
-    question: 'How does the GitHub integration work?',
-    answer:
-      'You install our GitHub App on your repositories. When enabled, we automatically create branches and pull requests with SEO fixes. You review the changes and merge when ready. No manual code changes needed.',
-  },
-  {
-    question: 'Can I use it without GitHub?',
-    answer:
-      'Yes! The CLI works standalone. You can run audits locally, and the dashboard shows all issues. GitHub integration is optional for automated fixes.',
-  },
-  {
-    question: 'What frameworks do you support?',
-    answer:
-      'We support 11 frameworks: Next.js, React, Vue, Nuxt, Astro, SvelteKit, Angular, Rails, Django, Laravel, and WordPress. The CLI auto-detects your framework and generates appropriate fixes.',
-  },
-  {
-    question: 'Is there a free tier?',
-    answer:
-      'Yes! Run a free audit on any URL with no signup at all. Create a free account for more checks and audit history. Paid plans unlock GitHub auto-fix PRs, full checks, and more - upgrade or cancel anytime, no long-term commitment.',
-  },
-  {
-    question: 'How do I cancel my subscription?',
-    answer:
-      'You can cancel anytime from your account settings. Your access continues until the end of your billing period. No questions asked, no cancellation fees.',
-  },
-];
-
+// Native <details> rather than the Radix accordion: the accordion only
+// renders an answer while it's open, so the prerendered page (and any
+// crawler that doesn't run JS) would have the questions but none of the
+// answers. <details> keeps every answer in the HTML, and name="faq" still
+// lets only one be open at a time.
 export function FAQ() {
   return (
     <section className="py-24 bg-muted/30">
@@ -53,18 +21,17 @@ export function FAQ() {
         </ScrollReveal>
 
         <ScrollReveal delay={0.2} className="max-w-3xl mx-auto">
-          <Accordion type="single" collapsible className="w-full">
-            {faqs.map((faq, index) => (
-              <AccordionItem key={index} value={`item-${index}`}>
-                <AccordionTrigger className="text-left">
-                  {faq.question}
-                </AccordionTrigger>
-                <AccordionContent className="text-muted-foreground">
-                  {faq.answer}
-                </AccordionContent>
-              </AccordionItem>
+          <div className="w-full">
+            {faqs.map((faq) => (
+              <details key={faq.question} name="faq" className="group border-b">
+                <summary className="flex cursor-pointer list-none items-center justify-between py-4 text-left font-medium transition-all hover:underline [&::-webkit-details-marker]:hidden">
+                  <h3>{faq.question}</h3>
+                  <ChevronDown className="h-4 w-4 shrink-0 transition-transform duration-200 group-open:rotate-180" />
+                </summary>
+                <p className="pb-4 text-sm text-muted-foreground">{faq.answer}</p>
+              </details>
             ))}
-          </Accordion>
+          </div>
         </ScrollReveal>
       </div>
     </section>

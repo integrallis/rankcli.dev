@@ -214,11 +214,12 @@ export function ProjectPage() {
         description: result.reason || 'Please try again in a moment.',
       });
     } else if (!result.linked) {
-      // Repo URL saved, but the App isn't installed there yet - auto-fix
-      // PRs won't work until it is. Worth a clear heads-up, not a silent
-      // "success" that leaves the user wondering why nothing ever happens.
-      toast.warning('Repository saved, but not fully connected', {
-        description: result.reason || 'Install the RankCLI GitHub App on this repository to enable auto-fix PRs.',
+      // connect-github-repo saves nothing unless it can link the repo (the
+      // App is installed there and the user has access), so don't claim
+      // anything was saved; the reason says what to fix before trying again.
+      const reason = result.reason || 'Install the RankCLI GitHub App on this repository, then connect it again';
+      toast.warning('Repository not connected', {
+        description: `${reason.replace(/\.$/, '')}. Nothing was saved.`,
       });
     } else {
       toast.success('GitHub repository connected');

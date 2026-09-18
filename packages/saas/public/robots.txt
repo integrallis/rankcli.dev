@@ -1,33 +1,147 @@
 # RankCLI robots.txt
 # https://rankcli.dev
+#
+# A crawler obeys only the most specific group that names it (RFC 9309), so
+# the AI crawlers below would ignore the "*" group's Disallow lines. Each
+# group repeats them: keep the lists identical when changing one.
+#
+# /widget$ and /widget? block the embeddable widget page without blocking
+# /widget.js, which sites that embed the widget load.
 
 User-agent: *
 Allow: /
 Disallow: /dashboard
 Disallow: /account
 Disallow: /auth
+Disallow: /connect
+Disallow: /checkout
+Disallow: /report/
+Disallow: /widget$
+Disallow: /widget?
+Disallow: /app-shell
 
-# Sitemap
-Sitemap: https://rankcli.dev/sitemap.xml
-
-# AI Crawlers - Allow for visibility
+# AI crawlers: welcome, with the same exclusions
 User-agent: GPTBot
 Allow: /
+Disallow: /dashboard
+Disallow: /account
+Disallow: /auth
+Disallow: /connect
+Disallow: /checkout
+Disallow: /report/
+Disallow: /widget$
+Disallow: /widget?
+Disallow: /app-shell
 
 User-agent: ChatGPT-User
 Allow: /
+Disallow: /dashboard
+Disallow: /account
+Disallow: /auth
+Disallow: /connect
+Disallow: /checkout
+Disallow: /report/
+Disallow: /widget$
+Disallow: /widget?
+Disallow: /app-shell
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /dashboard
+Disallow: /account
+Disallow: /auth
+Disallow: /connect
+Disallow: /checkout
+Disallow: /report/
+Disallow: /widget$
+Disallow: /widget?
+Disallow: /app-shell
 
 User-agent: ClaudeBot
 Allow: /
+Disallow: /dashboard
+Disallow: /account
+Disallow: /auth
+Disallow: /connect
+Disallow: /checkout
+Disallow: /report/
+Disallow: /widget$
+Disallow: /widget?
+Disallow: /app-shell
+
+User-agent: Claude-User
+Allow: /
+Disallow: /dashboard
+Disallow: /account
+Disallow: /auth
+Disallow: /connect
+Disallow: /checkout
+Disallow: /report/
+Disallow: /widget$
+Disallow: /widget?
+Disallow: /app-shell
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /dashboard
+Disallow: /account
+Disallow: /auth
+Disallow: /connect
+Disallow: /checkout
+Disallow: /report/
+Disallow: /widget$
+Disallow: /widget?
+Disallow: /app-shell
 
 User-agent: Anthropic-AI
 Allow: /
+Disallow: /dashboard
+Disallow: /account
+Disallow: /auth
+Disallow: /connect
+Disallow: /checkout
+Disallow: /report/
+Disallow: /widget$
+Disallow: /widget?
+Disallow: /app-shell
 
 User-agent: Google-Extended
 Allow: /
+Disallow: /dashboard
+Disallow: /account
+Disallow: /auth
+Disallow: /connect
+Disallow: /checkout
+Disallow: /report/
+Disallow: /widget$
+Disallow: /widget?
+Disallow: /app-shell
 
 User-agent: PerplexityBot
 Allow: /
+Disallow: /dashboard
+Disallow: /account
+Disallow: /auth
+Disallow: /connect
+Disallow: /checkout
+Disallow: /report/
+Disallow: /widget$
+Disallow: /widget?
+Disallow: /app-shell
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /dashboard
+Disallow: /account
+Disallow: /auth
+Disallow: /connect
+Disallow: /checkout
+Disallow: /report/
+Disallow: /widget$
+Disallow: /widget?
+Disallow: /app-shell
 
 User-agent: Bytespider
 Disallow: /
+
+Sitemap: https://rankcli.dev/sitemap.xml
