@@ -132,6 +132,7 @@ serve(async (req) => {
             domain,
             last_audit_score,
             audits (
+              id,
               score,
               issues_found,
               created_at
@@ -154,7 +155,7 @@ serve(async (req) => {
         // Build site data for the report
         const sites = await Promise.all(projects.map(async (project) => {
           // Get latest and previous audit scores
-          const audits = (project.audits as Array<{ score: number; issues_found: number; created_at: string }>)
+          const audits = (project.audits as Array<{ id: string; score: number; issues_found: number; created_at: string }>)
             ?.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) || [];
           
           const latestAudit = audits[0];
@@ -165,11 +166,12 @@ serve(async (req) => {
           let warnings = 0;
 
           if (latestAudit) {
-            // Get actual issue counts from latest audit
+            // Open issues from the latest audit. This compared audit_id to the project's id,
+            // so every report said 0 errors and 0 warnings.
             const { data: issues } = await supabase
               .from('audit_issues')
               .select('severity')
-              .eq('audit_id', project.id)
+              .eq('audit_id', latestAudit.id)
               .eq('status', 'open');
 
             if (issues) {
@@ -185,7 +187,9 @@ serve(async (req) => {
             previousScore: previousAudit?.score,
             errors,
             warnings,
-            projectUrl: `https://rankcli.dev/projects/${project.id}`,
+            projectUrl: `https://rankcli.dev/dashboard/projects/${project.id}`,
+            projectId: project.id,
+            openIssues: errors + warnings,
           };
         }));
 
@@ -228,6 +232,22 @@ serve(async (req) => {
           console.log(`Weekly report sent to ${userEmail}`);
         } else {
           errors.push({ userId: uid, error: result.error || 'Send failed' });
+        }
+
+        // The same weekly summary to each project's Slack/Discord, where the owner turned
+        // on "weekly report" (project-alerts decides; a free plan is skipped there).
+        for (const site of validSites) {
+          await fetch(`${supabaseUrl}/functions/v1/project-alerts`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${supabaseServiceKey}` },
+            body: JSON.stringify({
+              projectId: site.projectId,
+              event: 'weekly_report',
+              score: site.score,
+              change: typeof site.previousScore === 'number' ? site.score - site.previousScore : null,
+              openIssues: site.openIssues,
+            }),
+          }).catch((err) => console.warn('project-alerts call failed:', err));
         }
 
         // Rate limiting: wait 100ms between emails to avoid hitting Resend limits

@@ -83,6 +83,25 @@ async function sendAuditNotification(auditId: string): Promise<void> {
   }
 }
 
+/**
+ * Tell the project-alerts edge function an audit finished, so the project's Slack/Discord
+ * alerts fire (audit failed, or score dropped past a config's threshold). Non-blocking like
+ * the email above.
+ */
+async function sendProjectAlerts(auditId: string): Promise<void> {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) return;
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/project-alerts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` },
+      body: JSON.stringify({ auditId }),
+    });
+    if (!response.ok) console.warn(`Project alerts failed for audit ${auditId}:`, await response.text());
+  } catch (err) {
+    console.warn(`Project alerts error for audit ${auditId}:`, err);
+  }
+}
+
 // SSE event types
 interface SseEvent {
   type: 'job_created' | 'job_started' | 'job_progress' | 'job_completed' | 'job_failed' | 'heartbeat' | 'provider_result';
@@ -879,6 +898,7 @@ async function runDeepAudit(
     }, 'Audit completed');
 
     // Trigger email notification (non-blocking)
+    sendProjectAlerts(job.auditId).catch(() => {});
     sendAuditNotification(job.auditId).catch(err => {
       app.log.warn({ err, auditId: job.auditId }, 'Failed to send audit notification email');
     });
@@ -910,6 +930,7 @@ async function runDeepAudit(
         completed_at: new Date().toISOString(),
       })
       .eq('id', job.auditId);
+    sendProjectAlerts(job.auditId).catch(() => {});
 
     // Clean up job after 5 minutes
     setTimeout(() => jobs.delete(job.id), 300000);

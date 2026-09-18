@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useEntitlement } from '@/hooks/useEntitlement';
 import { Loader2, Plus, Trash2, TestTube, Check, X, Slack } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,7 +43,10 @@ export function AlertConfigForm({ projectId }: AlertConfigFormProps) {
     updateConfig,
     deleteConfig,
     testWebhook,
+    alertsActive,
   } = useAlertConfigs(projectId);
+  const { data: entitlement } = useEntitlement();
+  const onFreePlan = entitlement?.tier === 'free' || alertsActive === false;
 
   const [isAdding, setIsAdding] = useState(false);
   const [newChannel, setNewChannel] = useState<AlertChannel>('slack');
@@ -121,8 +126,15 @@ export function AlertConfigForm({ projectId }: AlertConfigFormProps) {
         <CardHeader>
           <CardTitle>Webhook Notifications</CardTitle>
           <CardDescription>
-            Receive alerts in Slack or Discord when SEO events occur
+            Receive alerts in Slack or Discord when an audit fails, your score drops, an auto-fix
+            PR opens, or your weekly report is ready
           </CardDescription>
+          {onFreePlan && (
+            <p className="text-xs text-muted-foreground">
+              Alerts are sent on Solo and above. You can add and test webhooks now; they start
+              firing when you upgrade. <Link to="/pricing" className="text-primary hover:underline">See plans</Link>
+            </p>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
           {error && (

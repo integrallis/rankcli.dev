@@ -6,6 +6,7 @@ const mockSelect = vi.fn();
 const mockInsert = vi.fn();
 const mockUpdate = vi.fn();
 const mockDelete = vi.fn();
+const mockInvoke = vi.fn();
 
 vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
@@ -15,6 +16,7 @@ vi.mock('@/integrations/supabase/client', () => ({
       update: mockUpdate,
       delete: mockDelete,
     }),
+    functions: { invoke: (...args: unknown[]) => mockInvoke(...args) },
     auth: {
       getSession: vi.fn().mockResolvedValue({
         data: { session: { access_token: 'test-token' } },
@@ -207,42 +209,48 @@ describe('useAlertConfigs', () => {
   });
 
   describe('testWebhook', () => {
-    it('should send a test message to webhook', async () => {
-      global.fetch = vi.fn().mockResolvedValue({ ok: true });
+    // Tests go through the project-alerts edge function: a browser can't post to a Slack
+    // webhook (no CORS headers), so the old direct fetch always failed for Slack.
+    it('sends the test through project-alerts', async () => {
+      mockInvoke.mockResolvedValue({ data: { sent: true, status: 200, alertsActive: true }, error: null });
 
       const { result } = renderHook(() => useAlertConfigs('project-1'));
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       await act(async () => {
-        const success = await result.current.testWebhook('slack', 'https://hooks.slack.com/test');
+        const success = await result.current.testWebhook('slack', 'https://hooks.slack.com/services/T/B/X');
         expect(success).toBe(true);
       });
 
-      expect(global.fetch).toHaveBeenCalledWith(
-        'https://hooks.slack.com/test',
-        expect.objectContaining({
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        })
-      );
+      expect(mockInvoke).toHaveBeenCalledWith('project-alerts', {
+        body: { event: 'test', channel: 'slack', webhookUrl: 'https://hooks.slack.com/services/T/B/X' },
+      });
+      expect(result.current.alertsActive).toBe(true);
     });
 
-    it('should handle webhook test failure', async () => {
-      global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404 });
+    it('reports a webhook that rejected the test', async () => {
+      mockInvoke.mockResolvedValue({ data: { sent: false, status: 404, alertsActive: true }, error: null });
 
       const { result } = renderHook(() => useAlertConfigs('project-1'));
-
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
-      });
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
 
       await act(async () => {
-        const success = await result.current.testWebhook('slack', 'https://hooks.slack.com/test');
+        const success = await result.current.testWebhook('slack', 'https://hooks.slack.com/services/T/B/X');
         expect(success).toBe(false);
       });
+      expect(result.current.error).toBe('Webhook test failed with status 404');
+    });
+
+    it('says when the webhook works but the plan does not send alerts', async () => {
+      mockInvoke.mockResolvedValue({ data: { sent: true, status: 200, alertsActive: false }, error: null });
+
+      const { result } = renderHook(() => useAlertConfigs('project-1'));
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      await act(async () => {
+        expect(await result.current.testWebhook('discord', 'https://discord.com/api/webhooks/1/x')).toBe(true);
+      });
+      expect(result.current.alertsActive).toBe(false);
     });
   });
 });

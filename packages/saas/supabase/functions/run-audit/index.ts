@@ -57,6 +57,20 @@ interface WorkerAuditResponse {
   error?: string;
 }
 
+// Slack/Discord alerts for this project (failed audit, or score drop) - see project-alerts.
+// Never lets an alert failure fail the audit.
+async function notifyProjectAlerts(auditId: string): Promise<void> {
+  try {
+    await fetch(`${supabaseUrl}/functions/v1/project-alerts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${supabaseServiceKey}` },
+      body: JSON.stringify({ auditId }),
+    });
+  } catch (err) {
+    console.warn('project-alerts call failed:', err);
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -132,9 +146,11 @@ serve(async (req) => {
 
     if (!workerResponse.ok) {
       const errText = await workerResponse.text();
-      // audits has no dedicated error column - summary (jsonb) is the
-      // closest existing place to record why a run failed.
-      await supabase.from('audits').update({ status: 'failed', summary: { error: errText } }).eq('id', auditId);
+      await supabase
+        .from('audits')
+        .update({ status: 'failed', error_message: `Audit worker failed: ${errText}`.slice(0, 500), summary: { error: errText } })
+        .eq('id', auditId);
+      await notifyProjectAlerts(auditId);
       return new Response(JSON.stringify({ error: `Audit worker failed: ${errText}` }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -189,6 +205,8 @@ serve(async (req) => {
 
       await supabase.from('audit_issues').insert(issueRecords);
     }
+
+    await notifyProjectAlerts(auditId);
 
     return new Response(
       JSON.stringify({

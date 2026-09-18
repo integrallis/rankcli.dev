@@ -817,6 +817,13 @@ ${aiResult.files.map((f: FileChange) => `- \`${f.path}\``).join('\n')}
       console.error('Failed to update issue status:', issuesUpdateError.message);
     }
 
+    // Slack/Discord "PR opened" alert (project-alerts); never fails the PR.
+    await fetch(`${supabaseUrl}/functions/v1/project-alerts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${supabaseServiceKey}` },
+      body: JSON.stringify({ projectId: project.id, event: 'pr_created', prUrl: pr.url, issuesFixed: issues.length }),
+    }).catch((err) => console.warn('project-alerts call failed:', err));
+
     return new Response(JSON.stringify({
       success: true,
       prCreated: true,

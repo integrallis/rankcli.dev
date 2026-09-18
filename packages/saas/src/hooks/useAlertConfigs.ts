@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { functionErrorMessage } from '@/lib/utils';
 
 export type AlertChannel = 'slack' | 'discord';
 
@@ -38,6 +39,8 @@ interface UseAlertConfigsReturn {
   updateConfig: (id: string, updates: Partial<AlertConfig>) => Promise<boolean>;
   deleteConfig: (id: string) => Promise<boolean>;
   testWebhook: (channel: AlertChannel, webhookUrl: string) => Promise<boolean>;
+  // From the last test: false means the webhook works but the plan doesn't send alerts.
+  alertsActive: boolean | null;
   refetch: () => Promise<void>;
 }
 
@@ -58,60 +61,6 @@ function isValidWebhookUrl(url: string): boolean {
 }
 
 /**
- * Formats a Slack test message
- */
-function formatSlackTestMessage(): object {
-  return {
-    text: '🔔 RankCLI Alert Test',
-    blocks: [
-      {
-        type: 'header',
-        text: {
-          type: 'plain_text',
-          text: '🔔 RankCLI Alert Test',
-          emoji: true,
-        },
-      },
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: 'This is a test message from RankCLI. If you see this, your webhook is configured correctly!',
-        },
-      },
-      {
-        type: 'context',
-        elements: [
-          {
-            type: 'mrkdwn',
-            text: '🤖 Sent by RankCLI',
-          },
-        ],
-      },
-    ],
-  };
-}
-
-/**
- * Formats a Discord test message
- */
-function formatDiscordTestMessage(): object {
-  return {
-    embeds: [
-      {
-        title: '🔔 RankCLI Alert Test',
-        description: 'This is a test message from RankCLI. If you see this, your webhook is configured correctly!',
-        color: 0x2563eb,
-        footer: {
-          text: '🤖 Sent by RankCLI',
-        },
-        timestamp: new Date().toISOString(),
-      },
-    ],
-  };
-}
-
-/**
  * Hook for managing alert configurations
  */
 export function useAlertConfigs(projectId?: string): UseAlertConfigsReturn {
@@ -119,6 +68,7 @@ export function useAlertConfigs(projectId?: string): UseAlertConfigsReturn {
   const [configs, setConfigs] = useState<AlertConfig[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [alertsActive, setAlertsActive] = useState<boolean | null>(null);
 
   /**
    * Fetch alert configs from database
@@ -291,6 +241,11 @@ export function useAlertConfigs(projectId?: string): UseAlertConfigsReturn {
   /**
    * Test a webhook by sending a test message
    */
+  /**
+   * Send a test message to a webhook. Goes through the project-alerts edge function: a
+   * browser can't post to a Slack webhook itself (Slack sends no CORS headers), so a test
+   * from here always failed. The reply also says whether the plan sends real alerts.
+   */
   const testWebhook = useCallback(async (
     channel: AlertChannel,
     webhookUrl: string
@@ -300,27 +255,19 @@ export function useAlertConfigs(projectId?: string): UseAlertConfigsReturn {
       return false;
     }
 
-    const payload = channel === 'slack'
-      ? formatSlackTestMessage()
-      : formatDiscordTestMessage();
-
-    try {
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        setError(`Webhook test failed with status ${response.status}`);
-        return false;
-      }
-
-      return true;
-    } catch (err) {
-      setError((err as Error).message);
+    const { data, error: fnError } = await supabase.functions.invoke('project-alerts', {
+      body: { event: 'test', channel, webhookUrl },
+    });
+    if (fnError) {
+      setError(await functionErrorMessage(fnError, 'Webhook test failed'));
       return false;
     }
+    setAlertsActive(!!data?.alertsActive);
+    if (!data?.sent) {
+      setError(`Webhook test failed${data?.status ? ` with status ${data.status}` : ''}`);
+      return false;
+    }
+    return true;
   }, []);
 
   // Fetch configs on mount and when dependencies change
@@ -336,6 +283,7 @@ export function useAlertConfigs(projectId?: string): UseAlertConfigsReturn {
     updateConfig,
     deleteConfig,
     testWebhook,
+    alertsActive,
     refetch: fetchConfigs,
   };
 }
