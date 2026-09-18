@@ -7,6 +7,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     steps:
+      # Email confirmation needs working delivery: the built-in Supabase mailer only sends
+      # to the project team, so without custom SMTP public email signups never get their
+      # confirmation link. SMTP is reported by presence only - never the password.
       - name: Get Supabase auth provider config
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -25,9 +28,6 @@ jobs:
                 disable_signup: c.disable_signup,
                 site_url: c.site_url,
                 uri_allow_list: c.uri_allow_list,
-                // Email confirmation needs working delivery. Supabase's built-in mailer only
-                // sends to the project team, so without custom SMTP public email signups never
-                // get their confirmation link. Presence only - never the password.
                 mailer_autoconfirm: c.mailer_autoconfirm,
                 smtp_configured: Boolean(c.smtp_host),
                 smtp_host: c.smtp_host || null,
