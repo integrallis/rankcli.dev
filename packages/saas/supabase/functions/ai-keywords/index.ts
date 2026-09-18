@@ -14,6 +14,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import * as cheerio from 'https://esm.sh/cheerio@1.0.0';
 import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
 import { resolveAIConfig, aiConfigErrorMessage } from '../_shared/resolve-ai-config.ts';
+import { getEntitlement } from '../_shared/tier.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -593,20 +594,8 @@ serve(async (req) => {
       userId = user?.id || null;
 
       if (userId) {
-        const { data: subscription, error: subError } = await supabase
-          .from('user_subscriptions')
-          .select('*, plan:subscription_plans(*)')
-          .eq('user_id', userId)
-          .eq('status', 'active')
-          .single();
-
-        console.log('[ai-keywords] Subscription lookup:', { subscription, error: subError?.message });
-
-        if (subscription?.plan) {
-          const planId = (subscription.plan as { plan_id: string }).plan_id;
-          planTier = planId as 'free' | 'solo' | 'pro' | 'agency';
-          console.log('[ai-keywords] Found plan_id:', planId);
-        }
+        // The raw plan_id ('pro_annual', ...) used to be passed on as the tier.
+        planTier = (await getEntitlement(supabase, userId)).tier;
       }
     }
 

@@ -9,6 +9,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { resolveAIConfig } from '../_shared/resolve-ai-config.ts';
+import { getEntitlement } from '../_shared/tier.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -25,13 +26,6 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
-}
-
-// plan_id rows include billing variants (solo_annual, pro_founding, ...) that share
-// their base tier's audit depth.
-function baseTier(planId: string | undefined | null): 'free' | 'solo' | 'pro' | 'agency' {
-  const base = (planId || '').replace(/_(annual|founding)$/, '');
-  return base === 'solo' || base === 'pro' || base === 'agency' ? base : 'free';
 }
 
 serve(async (req) => {
@@ -60,16 +54,9 @@ serve(async (req) => {
     if (!project) return json({ error: 'Project not found' }, 404);
     if (!project.url) return json({ error: 'Project has no URL' }, 400);
 
-    const { data: subscription } = await supabase
-      .from('user_subscriptions')
-      .select('status, plan:subscription_plans (plan_id)')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    const plan = subscription?.plan as { plan_id: string } | null;
-    // past_due is Stripe's retry window; a paying customer keeps their tier through it.
-    const tier = ['active', 'trialing', 'past_due'].includes(subscription?.status ?? '')
-      ? baseTier(plan?.plan_id)
-      : 'free';
+    // Billing variants share their base tier's audit depth; lifetime deals get the tier
+    // they were sold as.
+    const { tier } = await getEntitlement(supabase, user.id);
     const isPaid = tier !== 'free';
 
     // AI analysis is a paid-tier feature, and it runs on the user's own key.

@@ -131,6 +131,11 @@ export function useProjects(): UseProjectsReturn {
         if (error.code === '23505' && (error.message?.includes('projects_user_id_name') || error.message?.includes('duplicate key'))) {
           throw new Error(`A project named "${input.name}" already exists. Please choose a different name.`);
         }
+        // The database enforces the plan's site limit (enforce_project_site_limit) and
+        // words the message for the user.
+        if (error.hint === 'site_limit_reached') {
+          throw new Error(error.message);
+        }
         throw error;
       }
 

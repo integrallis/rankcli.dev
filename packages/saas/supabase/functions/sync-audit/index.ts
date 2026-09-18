@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getEntitlement } from '../_shared/tier.ts';
 
 // The CLI's syncToCloud() used to write directly to projects/audits/audit_issues
 // via the client SDK, scoped by RLS (user_id = auth.uid()). That only ever
@@ -109,13 +110,9 @@ serve(async (req) => {
       });
     }
 
-    const { data: subscription } = await supabase
-      .from('user_subscriptions')
-      .select('plan:subscription_plans(sites_limit)')
-      .eq('user_id', userId)
-      .single();
-    const plan = subscription?.plan as { sites_limit: number } | null;
-    sitesLimit = plan?.sites_limit || 1;
+    // Lifetime-deal buyers have no plan row and got 1 site here; a lapsed subscription kept
+    // its plan's limit. The projects trigger enforces the same limit.
+    sitesLimit = (await getEntitlement(supabase, userId)).limits.sites;
 
     const body: SyncAuditBody = await req.json();
     const parsedUrl = new URL(body.url);
@@ -156,6 +153,17 @@ serve(async (req) => {
         .insert({ user_id: userId, name: domain, url: body.url, domain })
         .select('id')
         .single();
+
+      if (projectError?.hint === 'site_limit_reached') {
+        return new Response(JSON.stringify({
+          error: 'project_limit_reached',
+          limit: sitesLimit,
+          message: projectError.message,
+        }), {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
       if (projectError || !newProject) {
         console.error('Failed to create project:', projectError?.message);

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { functionErrorMessage } from '@/lib/utils';
 import { useAuth } from './useAuth';
 
 interface LTDTierAvailability {
@@ -122,13 +123,13 @@ export function useUserLTD() {
   return { userLTD, loading, hasLTD: userLTD?.hasLtd || false };
 }
 
+// ltd-checkout requires a signed-in user and buys for that account.
 export function useLTDCheckout() {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const startCheckout = useCallback(
-    async (tierId: string, email?: string): Promise<CheckoutResult | null> => {
+    async (tierId: string): Promise<CheckoutResult | null> => {
       setLoading(true);
       setError(null);
 
@@ -138,14 +139,13 @@ export function useLTDCheckout() {
           {
             body: {
               tier: tierId,
-              email: email || user?.email,
               successUrl: `${window.location.origin}/account/billing?ltd_success=true`,
               cancelUrl: `${window.location.origin}/pricing?ltd_canceled=true`,
             },
           }
         );
 
-        if (checkoutError) throw checkoutError;
+        if (checkoutError) throw new Error(await functionErrorMessage(checkoutError, 'Failed to start checkout'));
 
         if (data?.url) {
           // Redirect to Stripe checkout
@@ -163,7 +163,7 @@ export function useLTDCheckout() {
         setLoading(false);
       }
     },
-    [user]
+    []
   );
 
   return { startCheckout, loading, error };

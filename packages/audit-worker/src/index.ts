@@ -16,6 +16,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { EventEmitter } from 'events';
 import { callChatCompletion, type AIProviderConfig } from './ai-provider.js';
 import { buildVisibilityQuestion } from './visibility-question.js';
+import { getEntitlement } from './tier.js';
 import { randomUUID } from 'crypto';
 import {
   OPENAI_FAST,
@@ -534,24 +535,28 @@ async function runDeepAudit(
         .eq('user_id', project.user_id)
         .single();
 
-      // Determine domain limit (paid users only use worker)
-      const planLimits: Record<string, number | null> = {
-        'solo': 5,
-        'pro': 15,
-        'agency': null, // unlimited
-      };
-      const domainsPerMonth = subDetails?.plan_id
-        ? (planLimits[subDetails.plan_id] ?? 5)
-        : 5; // Default for paid
+      // user_subscriptions.plan_id is a UUID, so looking it up in a table keyed by tier
+      // names gave every paid user the fallback 5 domains; the tier comes from tier.ts.
+      const entitlement = await getEntitlement(supabase, project.user_id);
+      const domainsPerMonth = entitlement.limits.domainsPerMonth;
+
+      // The window is the billing period. Lifetime deals have none, so theirs is the
+      // calendar month. Free users have neither and, as before, no domain limit.
+      const now = new Date();
+      const periodStart = entitlement.source === 'subscription'
+        ? subDetails?.current_period_start ?? null
+        : entitlement.source === 'lifetime'
+          ? new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString()
+          : null;
 
       // Check domain limit (null = unlimited)
-      if (domainsPerMonth !== null && subDetails?.current_period_start) {
+      if (domainsPerMonth !== null && periodStart) {
         // Get unique domains audited this billing cycle
         const { data: auditedDomains } = await supabase
           .from('audits')
           .select('projects!inner(domain)')
           .eq('projects.user_id', project.user_id)
-          .gte('created_at', subDetails.current_period_start)
+          .gte('created_at', periodStart)
           .eq('status', 'completed');
 
         const uniqueDomains = new Set<string>();
@@ -591,6 +596,11 @@ async function runDeepAudit(
 
       // ========== CHECK SCHEDULE LIMIT (TIER-BASED) ==========
       // Solo: weekly, Pro: daily, Agency: hourly
+      // NOTE: this has never run. check_audit_schedule has a TEXT and a UUID overload with
+      // the same parameter names, so PostgREST answers PGRST203 and we continue. Making it
+      // work would cap Solo customers at one manual dashboard audit per project per week
+      // (start-deep-audit is the only caller of /audit), which is a pricing decision, not a
+      // fix - left as is until it's made.
       if (subDetails?.plan_id) {
         const { data: scheduleCheck, error: scheduleError } = await supabase.rpc('check_audit_schedule', {
           p_user_id: project.user_id,
@@ -631,7 +641,7 @@ async function runDeepAudit(
             job.status = 'failed';
             job.error = JSON.stringify({
               code: 'schedule_exceeded',
-              tier: subDetails.plan_id,
+              tier: entitlement.planId,
               allowed_schedule: scheduleName,
               last_audit_at: check.last_audit_at,
               next_allowed_at: check.next_allowed_at,
@@ -1729,18 +1739,10 @@ const MCP_TOOLS = [
   },
 ];
 
-// Rate limits per plan (requests per day) - must match
-// packages/saas/supabase/functions/validate-api-key/index.ts exactly. This
-// hosted MCP endpoint is a second, independent path to the same api_keys,
-// and previously enforced none of this - any free-tier key (the default
-// for every signup, zero payment required) got unlimited access to every
-// tool, silently bypassing the paywall the CLI already enforces.
-const MCP_RATE_LIMITS: Record<string, number> = {
-  solo: 100,
-  pro: 1000,
-  agency: 10000,
-  free: 0,
-};
+// Daily request limits come from tier.ts (limits.apiRequestsPerDay), the same table
+// validate-api-key uses. This hosted MCP endpoint is a second, independent path to the
+// same api_keys, and used to enforce none of this - any free-tier key got unlimited access
+// to every tool, bypassing the paywall the CLI enforces.
 
 interface MCPKeyValidation {
   valid: boolean;
@@ -1778,17 +1780,11 @@ async function validateMCPApiKey(apiKey: string): Promise<MCPKeyValidation> {
     return { valid: false, error: 'Invalid or revoked API key' };
   }
 
-  // Get subscription tier - plan_id on user_subscriptions is a UUID FK into
-  // subscription_plans, not the tier name itself, so this must join through.
-  const { data: subscription } = await supabase
-    .from('user_subscriptions')
-    .select('plan:subscription_plans (plan_id)')
-    .eq('user_id', keyData.user_id)
-    .single();
-
-  const plan = subscription?.plan as unknown as { plan_id: string } | null;
-  const tier = plan?.plan_id || 'free';
-  const limit = MCP_RATE_LIMITS[tier] ?? 0;
+  // Annual, founding and lifetime-deal plans used to miss the tier-name lookup and be
+  // refused as free.
+  const entitlement = await getEntitlement(supabase, keyData.user_id);
+  const tier = entitlement.planId;
+  const limit = entitlement.limits.apiRequestsPerDay;
 
   if (limit === 0) {
     return { valid: false, userId: keyData.user_id, tier, error: 'API access requires a paid subscription (Solo, Pro, or Agency). Upgrade at https://rankcli.dev/pricing' };

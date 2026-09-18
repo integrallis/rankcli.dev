@@ -91,11 +91,23 @@ async function handleBilling(supabase: ReturnType<typeof createClient>): Promise
   const { data: subs, error: subsError } = await supabase
     .from('user_subscriptions')
     .select('status, plan:subscription_plans(plan_id, name, price_cents, billing_period)')
-    .in('status', ['active', 'trialing', 'lifetime']);
+    .in('status', ['active', 'trialing']);
 
   if (subsError) {
     console.error('billing stats error:', subsError);
     return `:warning: Couldn't fetch billing stats: ${subsError.message}`;
+  }
+
+  // Lifetime deals live in ltd_purchases; user_subscriptions never held a 'lifetime' status
+  // (its CHECK constraint forbids it).
+  const { count: ltdCount, error: ltdError } = await supabase
+    .from('ltd_purchases')
+    .select('id', { count: 'exact', head: true })
+    .is('refunded_at', null);
+
+  if (ltdError) {
+    console.error('LTD stats error:', ltdError);
+    return `:warning: Couldn't fetch lifetime deal stats: ${ltdError.message}`;
   }
 
   type Row = { status: string; plan: { plan_id: string; name: string; price_cents: number; billing_period: string } | null };
@@ -103,13 +115,8 @@ async function handleBilling(supabase: ReturnType<typeof createClient>): Promise
 
   const byPlan = new Map<string, number>();
   let mrrCents = 0;
-  let ltdCount = 0;
 
   for (const row of rows) {
-    if (row.status === 'lifetime') {
-      ltdCount++;
-      continue;
-    }
     // Free-tier signups get a user_subscriptions row too (status 'active',
     // plan_id NULL - see handle_new_user() in 001_initial_schema.sql), so a
     // NULL plan join here means "not a paying customer," not "lifetime deal."
@@ -123,8 +130,6 @@ async function handleBilling(supabase: ReturnType<typeof createClient>): Promise
       } else if (row.plan.billing_period === 'month') {
         mrrCents += row.plan.price_cents;
       }
-      // 'lifetime' billing_period plans (shouldn't occur outside status
-      // 'lifetime', but excluded defensively) contribute nothing to MRR.
     }
   }
 
@@ -138,7 +143,7 @@ async function handleBilling(supabase: ReturnType<typeof createClient>): Promise
     planLines,
     '',
     `Estimated MRR: *$${(mrrCents / 100).toFixed(2)}*`,
-    `Lifetime deal customers: *${ltdCount}*`,
+    `Lifetime deal customers: *${ltdCount ?? 0}*`,
   ].join('\n');
 }
 

@@ -38,13 +38,18 @@ const webhookUrl =
   customWebhookUrl ||
   `https://${supabaseProjectRef}.supabase.co/functions/v1/stripe-webhook`;
 
+// Every event supabase/functions/stripe-webhook handles. Re-running this replaces the
+// endpoint's list, so anything missing here stops being delivered.
 const enabledEvents: Stripe.WebhookEndpointCreateParams.EnabledEvent[] = [
   'checkout.session.completed',
+  'checkout.session.expired', // releases a lifetime-deal license reservation
+  'checkout.session.async_payment_succeeded', // lifetime deals paid by delayed methods
   'customer.subscription.created',
   'customer.subscription.updated',
   'customer.subscription.deleted',
   'invoice.paid',
   'invoice.payment_failed',
+  'charge.refunded', // revokes a refunded lifetime deal
 ];
 
 async function main() {

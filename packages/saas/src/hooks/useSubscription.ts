@@ -30,6 +30,14 @@ export interface UserSubscription {
   plan?: SubscriptionPlan;
 }
 
+// get_my_entitlement(): see supabase/functions/_shared/tier.ts for how it's resolved.
+interface Entitlement {
+  tier: 'free' | 'solo' | 'pro' | 'agency';
+  plan_id: string;
+  source: 'free' | 'subscription' | 'lifetime';
+  sites_limit: number;
+}
+
 export function useSubscription() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -55,6 +63,18 @@ export function useSubscription() {
 
       if (error) throw error;
       return data;
+    },
+    enabled: !!user,
+  });
+
+  // The effective plan as the database enforces it (effective_entitlement): counts
+  // lifetime deals, which have no plan row, and ignores a subscription that has ended.
+  const { data: entitlement } = useQuery({
+    queryKey: ['entitlement', user?.id],
+    queryFn: async (): Promise<Entitlement | null> => {
+      const { data, error } = await supabase.rpc('get_my_entitlement').maybeSingle();
+      if (error) throw error;
+      return (data as Entitlement | null) ?? null;
     },
     enabled: !!user,
   });
@@ -143,6 +163,9 @@ export function useSubscription() {
 
   // Get limit for a specific resource
   const getLimit = (resource: 'sites' | 'keywords' | 'team_members' | 'historical_days'): number => {
+    // The same number the projects insert trigger enforces.
+    if (resource === 'sites' && entitlement) return entitlement.sites_limit;
+
     if (!subscription?.plan) {
       // Free tier limits
       return { sites: 1, keywords: 10, team_members: 1, historical_days: 7 }[resource];
@@ -165,7 +188,11 @@ export function useSubscription() {
   const isFreeTier = !subscription?.plan_id;
 
   // Get current plan name
-  const planName = subscription?.plan?.name || 'Free';
+  const planName = entitlement?.source === 'lifetime'
+    ? `Lifetime ${entitlement.tier.charAt(0).toUpperCase()}${entitlement.tier.slice(1)}`
+    : entitlement?.source === 'free'
+      ? 'Free'
+      : subscription?.plan?.name || 'Free';
 
   return {
     subscription,
