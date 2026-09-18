@@ -1,0 +1,33 @@
+name: Scheduled Audits
+
+# Runs each plan's automatic audits (Free and Solo weekly, Pro and Agency daily) - see
+# packages/saas/supabase/functions/run-scheduled-audits. Hourly, so a project is audited
+# within an hour of becoming due; a run only dispatches projects whose cadence has elapsed.
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'List due projects without starting audits'
+        type: boolean
+        default: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call run-scheduled-audits
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SUPABASE_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: |
+          set -euo pipefail
+          test -n "$CRON_SECRET" || { echo "CRON_SECRET is not set"; exit 1; }
+          curl -sS --fail-with-body -X POST "$SUPABASE_URL/functions/v1/run-scheduled-audits?dry_run=$DRY_RUN" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            -H "Content-Type: application/json" \
+            -d '{}'
+          echo

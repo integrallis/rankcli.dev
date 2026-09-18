@@ -78,6 +78,7 @@ serve(async (req) => {
         status,
         issues_found,
         created_at,
+        triggered_by,
         project:projects (
           id,
           name,
@@ -94,6 +95,14 @@ serve(async (req) => {
       console.error('Audit not found:', auditError);
       return new Response(JSON.stringify({ error: 'Audit not found' }), {
         status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Scheduled audits (run-scheduled-audits: weekly or daily) would email every run. Their
+    // results reach the user through score-drop alerts and the weekly report instead.
+    if (audit.triggered_by === 'scheduled') {
+      return new Response(JSON.stringify({ success: false, reason: 'scheduled audit - summarized in the weekly report' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
