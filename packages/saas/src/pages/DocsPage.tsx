@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { InstallTabs } from '@/components/InstallTabs';
@@ -21,6 +22,7 @@ import {
   Search,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SEO } from '@/components/SEO';
 
 const sections = [
   {
@@ -79,46 +81,85 @@ const sections = [
   },
 ];
 
+const sectionContent: Record<string, () => JSX.Element> = {
+  'getting-started': GettingStartedSection,
+  geo: GEOSection,
+  'mcp-server': MCPServerSection,
+  'cli-reference': CLIReferenceSection,
+  dashboard: DashboardSection,
+  github: GitHubSection,
+  frameworks: FrameworksSection,
+  workflows: WorkflowsSection,
+  api: APISection,
+};
+
+// Every section is rendered and the inactive ones are `hidden`, so the whole
+// manual is in the prerendered HTML that crawlers read, not just the first
+// tab. The active section is the URL hash (/docs#cli-reference), which also
+// makes sections linkable.
 export function DocsPage() {
-  const [activeSection, setActiveSection] = useState('getting-started');
+  const { hash } = useLocation();
+  const requested = hash.slice(1);
+  const activeSection = requested in sectionContent ? requested : 'getting-started';
+
+  useEffect(() => {
+    if (requested) window.scrollTo(0, 0);
+  }, [requested]);
+
+  const navLinkClass = (id: string) =>
+    cn(
+      'flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors text-left whitespace-nowrap',
+      activeSection === id
+        ? 'bg-primary/10 text-primary font-medium'
+        : 'text-muted-foreground hover:bg-muted'
+    );
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Documentation"
+        description="RankCLI documentation: install the CLI, run SEO and GEO audits, use the MCP server with AI assistants, connect GitHub for auto-fix PRs, run audits in CI, and call the API."
+        path="/docs"
+      />
       <Navbar />
       <div className="container py-8">
+        <header className="mb-8">
+          <h1 className="text-sm font-medium uppercase tracking-wider text-muted-foreground">
+            RankCLI documentation
+          </h1>
+          {/* Section nav for small screens (the sidebar is lg+ only) */}
+          <nav className="lg:hidden mt-4 -mx-1 flex gap-1 overflow-x-auto pb-2" aria-label="Documentation sections">
+            {sections.map((section) => (
+              <Link key={section.id} to={`#${section.id}`} className={navLinkClass(section.id)}>
+                <section.icon className="h-4 w-4" />
+                {section.title}
+              </Link>
+            ))}
+          </nav>
+        </header>
         <div className="flex gap-8">
           {/* Sidebar */}
           <aside className="hidden lg:block w-64 shrink-0">
-            <nav className="sticky top-8 space-y-1">
+            <nav className="sticky top-8 space-y-1" aria-label="Documentation sections">
               {sections.map((section) => (
-                <button
-                  key={section.id}
-                  onClick={() => setActiveSection(section.id)}
-                  className={cn(
-                    'w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors text-left',
-                    activeSection === section.id
-                      ? 'bg-primary/10 text-primary font-medium'
-                      : 'text-muted-foreground hover:bg-muted'
-                  )}
-                >
+                <Link key={section.id} to={`#${section.id}`} className={cn('w-full', navLinkClass(section.id))}>
                   <section.icon className="h-4 w-4" />
                   {section.title}
-                </button>
+                </Link>
               ))}
             </nav>
           </aside>
 
           {/* Main Content */}
           <main className="flex-1 min-w-0">
-            {activeSection === 'getting-started' && <GettingStartedSection />}
-            {activeSection === 'geo' && <GEOSection />}
-            {activeSection === 'mcp-server' && <MCPServerSection />}
-            {activeSection === 'cli-reference' && <CLIReferenceSection />}
-            {activeSection === 'dashboard' && <DashboardSection />}
-            {activeSection === 'github' && <GitHubSection />}
-            {activeSection === 'frameworks' && <FrameworksSection />}
-            {activeSection === 'workflows' && <WorkflowsSection />}
-            {activeSection === 'api' && <APISection />}
+            {sections.map((section) => {
+              const Content = sectionContent[section.id];
+              return (
+                <section key={section.id} id={section.id} hidden={section.id !== activeSection}>
+                  <Content />
+                </section>
+              );
+            })}
           </main>
         </div>
       </div>
@@ -131,7 +172,7 @@ function GettingStartedSection() {
   return (
     <div className="space-y-12">
       <div>
-        <h1 className="text-3xl font-bold mb-4">Getting Started</h1>
+        <h2 className="text-3xl font-bold mb-4">Getting Started</h2>
         <p className="text-muted-foreground text-lg">
           Get up and running with RankCLI in minutes. Choose between the CLI for local development
           or the web dashboard for a visual experience.
@@ -140,10 +181,10 @@ function GettingStartedSection() {
 
       {/* Installation */}
       <section id="installation">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Terminal className="h-5 w-5" />
           Installation
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           npm works everywhere Node does. Homebrew and Scoop install a standalone binary instead — no Node required.
         </p>
@@ -168,10 +209,10 @@ function GettingStartedSection() {
 
       {/* Authentication */}
       <section id="authentication">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Key className="h-5 w-5" />
           Authentication
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           Link your CLI to your RankCLI account to unlock full features:
         </p>
@@ -260,10 +301,10 @@ function GettingStartedSection() {
 
       {/* First Audit */}
       <section id="first-audit">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Scan className="h-5 w-5" />
           Running Your First Audit
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           Run a comprehensive SEO audit on any URL:
         </p>
@@ -315,7 +356,7 @@ function GEOSection() {
   return (
     <div className="space-y-12">
       <div>
-        <h1 className="text-3xl font-bold mb-4">GEO: Generative Engine Optimization</h1>
+        <h2 className="text-3xl font-bold mb-4">GEO: Generative Engine Optimization</h2>
         <p className="text-muted-foreground text-lg">
           Optimize your site for AI search engines like ChatGPT, Perplexity, Claude, and Google AI Overviews.
         </p>
@@ -323,10 +364,10 @@ function GEOSection() {
 
       {/* What is GEO */}
       <section id="what-is-geo">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Search className="h-5 w-5" />
           What is GEO?
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           <strong>Generative Engine Optimization (GEO)</strong> is SEO for AI-powered search engines.
           As users shift from traditional search to AI assistants, your content needs to be optimized
@@ -380,10 +421,10 @@ function GEOSection() {
 
       {/* AI Crawlers */}
       <section id="ai-crawlers">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Bot className="h-5 w-5" />
           AI Crawlers
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           RankCLI tracks access for all major AI crawlers:
         </p>
@@ -425,10 +466,10 @@ function GEOSection() {
 
       {/* GEO Command */}
       <section id="geo-command">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Terminal className="h-5 w-5" />
           Using rankcli geo
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           Run a GEO analysis on any URL:
         </p>
@@ -457,10 +498,10 @@ function GEOSection() {
 
       {/* Optimization Tips */}
       <section id="optimization">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <CheckCircle className="h-5 w-5" />
           GEO Optimization Tips
-        </h2>
+        </h3>
 
         <div className="space-y-4">
           <div className="p-4 border rounded-lg">
@@ -517,7 +558,7 @@ function MCPServerSection() {
   return (
     <div className="space-y-12">
       <div>
-        <h1 className="text-3xl font-bold mb-4">MCP Server for AI Assistants</h1>
+        <h2 className="text-3xl font-bold mb-4">MCP Server for AI Assistants</h2>
         <p className="text-muted-foreground text-lg">
           Let Claude, ChatGPT, and other AI assistants run SEO audits directly using the Model Context Protocol.
         </p>
@@ -525,10 +566,10 @@ function MCPServerSection() {
 
       {/* What is MCP */}
       <section id="what-is-mcp">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Bot className="h-5 w-5" />
           What is MCP?
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           The <strong>Model Context Protocol (MCP)</strong> is an open standard that lets AI assistants
           use external tools. RankCLI's MCP server gives AI assistants direct access to SEO analysis capabilities.
@@ -554,10 +595,10 @@ function MCPServerSection() {
 
       {/* Setup - Free & Local (primary) */}
       <section id="installation-mcp">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Terminal className="h-5 w-5" />
           Setup
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           The MCP server is <strong>free, local, and requires no signup</strong> — nothing is sent to
           RankCLI's servers. For centralized dashboard sync across a team, a hosted option is also
@@ -575,10 +616,10 @@ function MCPServerSection() {
 
       {/* Claude Desktop Setup */}
       <section id="claude-desktop">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Settings className="h-5 w-5" />
           Claude Desktop Setup
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           Add RankCLI to your Claude Desktop configuration:
         </p>
@@ -648,10 +689,10 @@ function MCPServerSection() {
 
       {/* Available Tools */}
       <section id="available-tools">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Code className="h-5 w-5" />
           Available Tools
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           The MCP server provides 4 SEO tools:
         </p>
@@ -694,7 +735,7 @@ function CLIReferenceSection() {
   return (
     <div className="space-y-12">
       <div>
-        <h1 className="text-3xl font-bold mb-4">CLI Reference</h1>
+        <h2 className="text-3xl font-bold mb-4">CLI Reference</h2>
         <p className="text-muted-foreground text-lg">
           Complete reference for all RankCLI commands.
         </p>
@@ -702,7 +743,7 @@ function CLIReferenceSection() {
 
       {/* Auth commands */}
       <section id="auth">
-        <h2 className="text-xl font-semibold mb-4">Authentication Commands</h2>
+        <h3 className="text-xl font-semibold mb-4">Authentication Commands</h3>
         <p className="text-muted-foreground mb-4">
           Manage your RankCLI authentication.
         </p>
@@ -729,7 +770,7 @@ rankcli whoami              Show current logged in user`}
 
       {/* rankcli audit */}
       <section id="audit">
-        <h2 className="text-xl font-semibold mb-4">rankcli audit</h2>
+        <h3 className="text-xl font-semibold mb-4">rankcli audit</h3>
         <p className="text-muted-foreground mb-4">
           Run a comprehensive SEO audit on a URL or local project.
         </p>
@@ -756,7 +797,7 @@ Options:
 
       {/* rankcli fix */}
       <section id="fix">
-        <h2 className="text-xl font-semibold mb-4">rankcli fix</h2>
+        <h3 className="text-xl font-semibold mb-4">rankcli fix</h3>
         <p className="text-muted-foreground mb-4">
           Agentic SEO fixer - automatically detect issues, generate fixes, apply them, 
           commit, and push. Full CI/CD automation.
@@ -796,7 +837,7 @@ Options:
 
       {/* rankcli track */}
       <section id="track">
-        <h2 className="text-xl font-semibold mb-4">rankcli track</h2>
+        <h3 className="text-xl font-semibold mb-4">rankcli track</h3>
         <p className="text-muted-foreground mb-4">
           Keyword rank tracking - monitor your SERP positions over time.
         </p>
@@ -837,7 +878,7 @@ Common Options:
 
       {/* rankcli apply */}
       <section id="apply">
-        <h2 className="text-xl font-semibold mb-4">rankcli apply</h2>
+        <h3 className="text-xl font-semibold mb-4">rankcli apply</h3>
         <p className="text-muted-foreground mb-4">
           Generate and apply SEO fixes to your local codebase. Detects your framework
           and generates appropriate fixes.
@@ -872,7 +913,7 @@ Options:
 
       {/* rankcli keywords */}
       <section id="keywords">
-        <h2 className="text-xl font-semibold mb-4">rankcli keywords</h2>
+        <h3 className="text-xl font-semibold mb-4">rankcli keywords</h3>
         <p className="text-muted-foreground mb-4">
           AI-powered keyword research and analysis.
         </p>
@@ -900,7 +941,7 @@ Options:
 
       {/* rankcli content */}
       <section id="content">
-        <h2 className="text-xl font-semibold mb-4">rankcli content</h2>
+        <h3 className="text-xl font-semibold mb-4">rankcli content</h3>
         <p className="text-muted-foreground mb-4">
           Analyze content for readability, keyword density, and featured snippet optimization.
         </p>
@@ -922,7 +963,7 @@ Options:
 
       {/* rankcli intent */}
       <section id="intent">
-        <h2 className="text-xl font-semibold mb-4">rankcli intent</h2>
+        <h3 className="text-xl font-semibold mb-4">rankcli intent</h3>
         <p className="text-muted-foreground mb-4">
           Classify search intent for a keyword.
         </p>
@@ -939,7 +980,7 @@ Arguments:
 
       {/* rankcli setup */}
       <section id="setup">
-        <h2 className="text-xl font-semibold mb-4">rankcli setup</h2>
+        <h3 className="text-xl font-semibold mb-4">rankcli setup</h3>
         <p className="text-muted-foreground mb-4">
           Configure tracking and CI/CD integrations.
         </p>
@@ -964,7 +1005,7 @@ Options:
 
       {/* rankcli gsc-setup */}
       <section id="gsc-setup">
-        <h2 className="text-xl font-semibold mb-4">rankcli gsc-setup</h2>
+        <h3 className="text-xl font-semibold mb-4">rankcli gsc-setup</h3>
         <p className="text-muted-foreground mb-4">
           Show Google Search Console API setup instructions.
         </p>
@@ -978,7 +1019,7 @@ function DashboardSection() {
   return (
     <div className="space-y-12">
       <div>
-        <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
+        <h2 className="text-3xl font-bold mb-4">Dashboard</h2>
         <p className="text-muted-foreground text-lg">
           The web dashboard provides a visual interface for managing your SEO audits,
           tracking issues, and creating fix PRs.
@@ -987,10 +1028,10 @@ function DashboardSection() {
 
       {/* Projects */}
       <section id="projects">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <LayoutDashboard className="h-5 w-5" />
           Managing Projects
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           Projects represent websites you want to audit. Each project tracks:
         </p>
@@ -1025,10 +1066,10 @@ function DashboardSection() {
 
       {/* Audits */}
       <section id="audits">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Scan className="h-5 w-5" />
           Understanding Audits
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           Each audit runs 280+ SEO checks and produces a comprehensive report.
         </p>
@@ -1072,10 +1113,10 @@ function DashboardSection() {
 
       {/* Issues */}
       <section id="issues">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <AlertTriangle className="h-5 w-5" />
           Managing Issues
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           Issues are SEO problems discovered during audits. Each issue includes:
         </p>
@@ -1124,10 +1165,10 @@ function DashboardSection() {
 
       {/* Exports */}
       <section id="exports">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <FileCode className="h-5 w-5" />
           Exporting Reports
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           Export your audit results in various formats:
         </p>
@@ -1162,7 +1203,7 @@ function GitHubSection() {
   return (
     <div className="space-y-12">
       <div>
-        <h1 className="text-3xl font-bold mb-4">GitHub Integration</h1>
+        <h2 className="text-3xl font-bold mb-4">GitHub Integration</h2>
         <p className="text-muted-foreground text-lg">
           Connect your GitHub repository to enable automatic audits, fix PRs, and deployment triggers.
         </p>
@@ -1170,10 +1211,10 @@ function GitHubSection() {
 
       {/* Install App */}
       <section id="install-app">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Github className="h-5 w-5" />
           Installing the GitHub App
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           The RankCLI GitHub App needs to be installed on your repository to enable integrations.
         </p>
@@ -1252,10 +1293,10 @@ function GitHubSection() {
 
       {/* Connect Repo */}
       <section id="connect-repo">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <GitPullRequest className="h-5 w-5" />
           Route Discovery
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           When connected to GitHub, RankCLI can discover your routes from your source code
           instead of just crawling links. This finds pages that aren't linked from the homepage.
@@ -1279,10 +1320,10 @@ function GitHubSection() {
 
       {/* Auto PRs */}
       <section id="auto-prs">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <GitPullRequest className="h-5 w-5" />
           Automatic Fix PRs
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           Create pull requests with AI-generated fixes for your SEO issues.
         </p>
@@ -1357,10 +1398,10 @@ function GitHubSection() {
 
       {/* Webhooks */}
       <section id="webhooks">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Settings className="h-5 w-5" />
           Automatic Triggers
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           Once connected, RankCLI automatically responds to GitHub events:
         </p>
@@ -1394,7 +1435,7 @@ function FrameworksSection() {
   return (
     <div className="space-y-12">
       <div>
-        <h1 className="text-3xl font-bold mb-4">Framework-Specific Checks</h1>
+        <h2 className="text-3xl font-bold mb-4">Framework-Specific Checks</h2>
         <p className="text-muted-foreground text-lg">
           RankCLI includes specialized SEO checks and fixes tailored to your framework.
         </p>
@@ -1402,10 +1443,10 @@ function FrameworksSection() {
 
       {/* Supported Frameworks */}
       <section id="supported">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Layers className="h-5 w-5" />
           Supported Frameworks
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           We support the most popular web frameworks with specific SEO guidance:
         </p>
@@ -1493,10 +1534,10 @@ function FrameworksSection() {
 
       {/* Detection */}
       <section id="detection">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Scan className="h-5 w-5" />
           How Detection Works
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           RankCLI detects your framework using multiple signals:
         </p>
@@ -1537,10 +1578,10 @@ function FrameworksSection() {
 
       {/* Recipes */}
       <section id="recipes">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <FileCode className="h-5 w-5" />
           Framework Recipes
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           Each framework has a "recipe" containing specialized SEO guidance:
         </p>
@@ -1574,7 +1615,7 @@ function WorkflowsSection() {
   return (
     <div className="space-y-12">
       <div>
-        <h1 className="text-3xl font-bold mb-4">Workflows</h1>
+        <h2 className="text-3xl font-bold mb-4">Workflows</h2>
         <p className="text-muted-foreground text-lg">
           Choose the workflow that fits your needs. Full control or full automation.
         </p>
@@ -1582,10 +1623,10 @@ function WorkflowsSection() {
 
       {/* Local Workflow */}
       <section id="local-workflow">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Upload className="h-5 w-5" />
           Local Workflow (Solo Plan)
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           Keep full control over your repository. No GitHub access required.
         </p>
@@ -1644,10 +1685,10 @@ function WorkflowsSection() {
 
       {/* GitHub Workflow */}
       <section id="github-workflow">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <GitPullRequest className="h-5 w-5" />
           GitHub Workflow (Pro Plan)
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           Full automation with GitHub integration. PRs created automatically from the dashboard or CLI.
         </p>
@@ -1697,10 +1738,10 @@ function WorkflowsSection() {
 
       {/* CI/CD */}
       <section id="ci-cd">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Settings className="h-5 w-5" />
           CI/CD Integration
-        </h2>
+        </h3>
         <p className="text-muted-foreground mb-4">
           Run SEO audits as part of your CI/CD pipeline to catch issues before deployment.
         </p>
@@ -1755,7 +1796,7 @@ function APISection() {
   return (
     <div className="space-y-12">
       <div>
-        <h1 className="text-3xl font-bold mb-4">API Reference</h1>
+        <h2 className="text-3xl font-bold mb-4">API Reference</h2>
         <p className="text-muted-foreground text-lg">
           REST API for programmatic access (Agency plan only).
         </p>
@@ -1763,7 +1804,7 @@ function APISection() {
 
       {/* REST API */}
       <section id="rest-api">
-        <h2 className="text-xl font-semibold mb-4">REST API</h2>
+        <h3 className="text-xl font-semibold mb-4">REST API</h3>
         <p className="text-muted-foreground mb-4">
           The RankCLI API allows you to run audits programmatically and integrate
           SEO checks into your own tools and workflows.
@@ -1835,7 +1876,7 @@ function APISection() {
 
       {/* Webhooks */}
       <section id="webhooks-api">
-        <h2 className="text-xl font-semibold mb-4">Webhooks</h2>
+        <h3 className="text-xl font-semibold mb-4">Webhooks</h3>
         <p className="text-muted-foreground mb-4">
           Receive notifications when audits complete or issues are found.
         </p>

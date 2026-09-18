@@ -4,40 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    <!-- Primary Meta Tags -->
+    <!-- Fallback title only. Each page sets its own title, description,
+         canonical, Open Graph tags and structured data with react-helmet-async
+         (src/components/SEO.tsx), and the build prerenders them into each
+         page's HTML. Don't add those tags here: Helmet can't remove static
+         tags, so every page would carry the homepage's canonical. -->
     <title>RankCLI - Ship code, get ranked</title>
-    <meta name="title" content="RankCLI - Ship code, get ranked" />
-    <meta name="description" content="RankCLI: Developer-first SEO tool with 200+ checks, auto-fix PRs via GitHub, and CI/CD integration. Ship code, get ranked." />
-    <meta name="keywords" content="SEO, automation, developer tools, CLI, GitHub, technical SEO, site audit, meta tags, sitemap, robots.txt, CI/CD" />
-    <meta name="author" content="RankCLI" />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://rankcli.dev" />
-
-    <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://rankcli.dev/" />
-    <meta property="og:title" content="RankCLI - Ship code, get ranked" />
-    <meta property="og:description" content="RankCLI: The developer-first SEO tool. 200+ automated checks, auto-fix PRs via GitHub, CI/CD integration. Ship code, get ranked." />
-    <meta property="og:image" content="https://rankcli.dev/og-image.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="RankCLI - Terminal showing SEO audit results" />
-    <meta property="og:site_name" content="RankCLI" />
-    <meta property="og:locale" content="en_US" />
-
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://rankcli.dev/" />
-    <meta name="twitter:title" content="RankCLI - Ship code, get ranked" />
-    <meta name="twitter:description" content="SEO meets CI/CD. 200+ automated checks, auto-fix PRs, GitHub integration." />
-    <meta name="twitter:image" content="https://rankcli.dev/og-image.png" />
-    <meta name="twitter:image:alt" content="RankCLI - Terminal showing SEO audit results" />
-
-    <!-- LinkedIn -->
-    <meta property="linkedin:owner" content="rankcli" />
-
-    <!-- Slack Unfurling -->
-    <meta name="slack-app-id" content="" />
 
     <!-- Theme & Icons -->
     <meta name="theme-color" content="#0a0a0a" />
@@ -53,132 +25,6 @@
     <link rel="preload" href="/fonts/MonaSansVF-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/ArchivoVF-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/MonaspaceKryptonVF-latin.woff2" as="font" type="font/woff2" crossorigin />
-
-    <!-- JSON-LD Structured Data -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "RankCLI",
-      "applicationCategory": "DeveloperApplication",
-      "operatingSystem": "Cross-platform",
-      "description": "RankCLI is a developer-first SEO automation tool that runs 200+ checks and creates auto-fix pull requests via GitHub integration. Ship code, get ranked.",
-      "url": "https://rankcli.dev",
-      "datePublished": "2024-01-01",
-      "dateModified": "2026-01-22",
-      "mainEntityOfPage": {
-        "@type": "WebPage",
-        "@id": "https://rankcli.dev"
-      },
-      "author": {
-        "@type": "Organization",
-        "name": "RankCLI"
-      },
-      "offers": [
-        {
-          "@type": "Offer",
-          "name": "Solo",
-          "price": "9",
-          "priceCurrency": "USD",
-          "priceValidUntil": "2026-12-31",
-          "availability": "https://schema.org/InStock"
-        },
-        {
-          "@type": "Offer",
-          "name": "Pro",
-          "price": "29",
-          "priceCurrency": "USD",
-          "priceValidUntil": "2026-12-31",
-          "availability": "https://schema.org/InStock"
-        },
-        {
-          "@type": "Offer",
-          "name": "Agency",
-          "price": "99",
-          "priceCurrency": "USD",
-          "priceValidUntil": "2026-12-31",
-          "availability": "https://schema.org/InStock"
-        }
-      ],
-      "featureList": [
-        "200+ SEO checks",
-        "Auto-fix PRs via GitHub App",
-        "CLI with API access",
-        "Weekly/Daily automated audits",
-        "Keyword tracking",
-        "Competitor analysis"
-      ]
-    }
-    </script>
-
-    <!-- FAQ Schema -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
-        {
-          "@type": "Question",
-          "name": "What SEO checks does RankCLI run?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "RankCLI runs 200+ checks covering technical SEO (meta tags, schema, canonicals), content quality (headings, word count, readability), performance (Core Web Vitals, page speed), security (HTTPS, headers), and more."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How does the GitHub integration work?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "You install the RankCLI GitHub App on your repositories. When enabled, it automatically creates branches and pull requests with SEO fixes. You review the changes and merge when ready."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Can I use RankCLI without GitHub?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes! The CLI works standalone. You can run audits locally, and the dashboard shows all issues. GitHub integration is optional for automated fixes."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "What frameworks does RankCLI support?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "RankCLI supports all major frameworks: Next.js, React, Vue, Vite, Astro, Gatsby, plain HTML, and more. The CLI auto-detects your framework and generates appropriate fixes."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "Is there a free tier?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes! The free audit tool lets you analyze any URL without signing up. For ongoing monitoring, the Free plan covers 1 site with 100 checks and audit history. No credit card required."
-          }
-        }
-      ]
-    }
-    </script>
-
-    <!-- Organization Schema -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "RankCLI",
-      "url": "https://rankcli.dev",
-      "logo": "https://rankcli.dev/logo.png",
-      "sameAs": [
-        "https://github.com/apps/rankcli"
-      ],
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "contactType": "customer support",
-        "email": "support@rankcli.dev"
-      }
-    }
-    </script>
   </head>
   <body>
     <div id="root"></div>
@@ -188,7 +34,7 @@
       <div style="max-width: 800px; margin: 0 auto; padding: 40px 20px; font-family: 'Mona Sans', system-ui, sans-serif; color: #e4e4e7; background: #0a0a0a;">
         <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">RankCLI - Ship code, get ranked</h1>
         <p style="font-size: 1.25rem; color: #a1a1aa; margin-bottom: 2rem;">
-          RankCLI is the developer-first SEO tool that runs 200+ automated checks and creates auto-fix pull requests via GitHub integration. 
+          RankCLI is the developer-first SEO tool that runs 280+ automated checks and creates auto-fix pull requests via GitHub integration. 
           Built for developers who ship code daily and need SEO that keeps up.
         </p>
         
@@ -200,7 +46,7 @@
         
         <h2 style="font-size: 1.5rem; margin: 2rem 0 1rem;">Key Features</h2>
         <ul style="color: #a1a1aa; margin-bottom: 2rem; padding-left: 1.5rem;">
-          <li>200+ SEO checks covering technical SEO, content quality, performance, and security</li>
+          <li>280+ SEO checks covering technical SEO, content quality, performance, and security</li>
           <li>Auto-fix PRs via GitHub App integration</li>
           <li>CLI with API access for CI/CD pipelines</li>
           <li>GEO analysis for AI search visibility</li>
@@ -214,7 +60,7 @@
             <li><a href="/free-audit" style="color: #3b82f6;">Free SEO Audit</a></li>
             <li><a href="/pricing" style="color: #3b82f6;">Pricing</a></li>
             <li><a href="/docs" style="color: #3b82f6;">Documentation</a></li>
-            <li><a href="/tools" style="color: #3b82f6;">Free Tools</a></li>
+            <li><a href="/blog" style="color: #3b82f6;">Blog</a></li>
             <li><a href="/login" style="color: #3b82f6;">Login</a></li>
             <li><a href="/signup" style="color: #3b82f6;">Sign Up</a></li>
           </ul>
@@ -225,10 +71,9 @@
           <ul style="list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 1rem;">
             <li><a href="/tools/og-image-preview" style="color: #3b82f6;">OG Image Preview</a></li>
             <li><a href="/tools/meta-tag-analyzer" style="color: #3b82f6;">Meta Tag Analyzer</a></li>
-            <li><a href="/tools/sitemap-validator" style="color: #3b82f6;">Sitemap Validator</a></li>
-            <li><a href="/tools/robots-checker" style="color: #3b82f6;">Robots.txt Checker</a></li>
             <li><a href="/tools/compare" style="color: #3b82f6;">Competitor Comparison</a></li>
             <li><a href="/tools/ai-visibility" style="color: #3b82f6;">AI Visibility Checker</a></li>
+            <li><a href="/tools/chatgpt-checker" style="color: #3b82f6;">ChatGPT Checker</a></li>
           </ul>
         </nav>
         

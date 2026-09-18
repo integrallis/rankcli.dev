@@ -1,15 +1,46 @@
-import { useParams, Link, Navigate } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { PrismLight as SyntaxHighlighter } from 'react-syntax-highlighter';
+import oneDark from 'react-syntax-highlighter/dist/esm/styles/prism/one-dark';
+import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash';
+import javascript from 'react-syntax-highlighter/dist/esm/languages/prism/javascript';
+import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
+import markdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown';
+import markup from 'react-syntax-highlighter/dist/esm/languages/prism/markup';
+import tsx from 'react-syntax-highlighter/dist/esm/languages/prism/tsx';
+import typescript from 'react-syntax-highlighter/dist/esm/languages/prism/typescript';
+import yaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
+import { SEO } from '@/components/SEO';
+import { NotFoundPage } from '@/pages/NotFoundPage';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { getBlogPost, getAllBlogPosts } from '@/data/blog-posts';
 import { Calendar, Clock, ArrowLeft, User, Copy, Check } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
+
+// Only the grammars the posts use (the full Prism build is ~1 MB of every
+// language). Fences name them as below; unknown ones render as plain text.
+SyntaxHighlighter.registerLanguage('bash', bash);
+SyntaxHighlighter.registerLanguage('javascript', javascript);
+SyntaxHighlighter.registerLanguage('json', json);
+SyntaxHighlighter.registerLanguage('markdown', markdown);
+SyntaxHighlighter.registerLanguage('markup', markup);
+SyntaxHighlighter.registerLanguage('tsx', tsx);
+SyntaxHighlighter.registerLanguage('typescript', typescript);
+SyntaxHighlighter.registerLanguage('yaml', yaml);
+
+const grammarFor: Record<string, string> = {
+  html: 'markup',
+  vue: 'markup',
+  js: 'javascript',
+  ts: 'typescript',
+  md: 'markdown',
+  sh: 'bash',
+  shell: 'bash',
+  yml: 'yaml',
+};
 
 function CodeBlock({ language, children }: { language: string; children: string }) {
   const [copied, setCopied] = useState(false);
@@ -39,7 +70,7 @@ function CodeBlock({ language, children }: { language: string; children: string 
         )}
       </button>
       <SyntaxHighlighter
-        language={language || 'text'}
+        language={grammarFor[language] ?? (language || 'text')}
         style={oneDark}
         customStyle={{
           margin: 0,
@@ -60,7 +91,7 @@ export function BlogPostPage() {
   const allPosts = getAllBlogPosts();
 
   if (!post) {
-    return <Navigate to="/blog" replace />;
+    return <NotFoundPage />;
   }
 
   // Get related posts (same tags, different post)
@@ -78,7 +109,7 @@ export function BlogPostPage() {
       name: post.author,
     },
     datePublished: post.publishedAt,
-    dateModified: post.publishedAt,
+    dateModified: post.updatedAt ?? post.publishedAt,
     publisher: {
       '@type': 'Organization',
       name: 'RankCLI',
@@ -95,24 +126,19 @@ export function BlogPostPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>{post.title} | RankCLI Blog</title>
-        <meta name="description" content={post.excerpt} />
-        <meta property="og:title" content={post.title} />
-        <meta property="og:description" content={post.excerpt} />
-        <meta property="og:type" content="article" />
-        <meta property="og:url" content={`https://rankcli.dev/blog/${post.slug}`} />
-        <meta property="article:published_time" content={post.publishedAt} />
-        <meta property="article:author" content={post.author} />
-        {post.tags.map((tag) => (
-          <meta key={tag} property="article:tag" content={tag} />
-        ))}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={post.title} />
-        <meta name="twitter:description" content={post.excerpt} />
-        <link rel="canonical" href={`https://rankcli.dev/blog/${post.slug}`} />
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
-      </Helmet>
+      <SEO
+        fullTitle={`${post.title} | RankCLI Blog`}
+        description={post.excerpt}
+        path={`/blog/${post.slug}`}
+        type="article"
+        article={{
+          publishedTime: post.publishedAt,
+          modifiedTime: post.updatedAt,
+          author: post.author,
+          tags: post.tags,
+        }}
+        jsonLd={jsonLd}
+      />
 
       <Navbar />
 
@@ -147,6 +173,7 @@ export function BlogPostPage() {
               <span className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4" />
                 {new Date(post.publishedAt).toLocaleDateString('en-US', {
+                  timeZone: 'UTC',
                   month: 'long',
                   day: 'numeric',
                   year: 'numeric',

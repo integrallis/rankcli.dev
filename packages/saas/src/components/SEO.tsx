@@ -1,173 +1,114 @@
 import { Helmet } from 'react-helmet-async';
 
+export const SITE_URL = 'https://rankcli.dev';
+const SITE_NAME = 'RankCLI';
+const DEFAULT_TITLE = 'RankCLI - Ship code, get ranked';
+const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
+export const DEFAULT_DESCRIPTION =
+  'RankCLI is a developer-first SEO and GEO tool: 280+ automated checks from your terminal, CI pipeline or dashboard, framework-aware fixes, and GitHub auto-fix PRs.';
+
 interface SEOProps {
+  /** Page name; rendered as "<title> | RankCLI". */
   title?: string;
+  /** Used verbatim instead of the "<title> | RankCLI" template. */
+  fullTitle?: string;
   description?: string;
+  /** Site-relative path of the canonical URL, e.g. "/pricing". */
+  path?: string;
   image?: string;
-  url?: string;
-  type?: 'website' | 'article' | 'product';
+  imageAlt?: string;
+  type?: 'website' | 'article';
+  /** Keeps the page out of search results; also drops the canonical. */
   noindex?: boolean;
   article?: {
     publishedTime?: string;
     modifiedTime?: string;
     author?: string;
-    section?: string;
     tags?: string[];
   };
-  product?: {
-    price?: number;
-    currency?: string;
-    availability?: 'in stock' | 'out of stock' | 'preorder';
-  };
+  /** Structured data for this page only. */
+  jsonLd?: object | object[];
 }
 
-const BASE_URL = 'https://rankcli.dev';
-const DEFAULT_IMAGE = `${BASE_URL}/og-image.png`;
-const SITE_NAME = 'RankCLI';
+/** JSON for a <script> body: `<` is escaped so no string can close the tag. */
+function toScriptJson(data: object) {
+  return JSON.stringify(data).replace(/</g, '\\u003c');
+}
 
-export function SEO({
-  title,
-  description = 'Ship code, get ranked. Get cited, not just crawled. 280+ automated SEO + GEO checks, auto-fix PRs, GitHub integration.',
-  image = DEFAULT_IMAGE,
-  url,
-  type = 'website',
-  noindex = false,
-  article,
-  product,
-}: SEOProps) {
-  const fullTitle = title ? `${title} | ${SITE_NAME}` : `${SITE_NAME} - Ship code, get ranked`;
-  const fullUrl = url ? `${BASE_URL}${url}` : BASE_URL;
-  const fullImage = image.startsWith('http') ? image : `${BASE_URL}${image}`;
-
+/**
+ * Site-wide head defaults. Page-level <SEO> tags override these (Helmet
+ * dedupes by name/property, and the deeper component wins). They live here
+ * rather than in index.html because Helmet can't remove static tags, which
+ * left every page with a second, homepage canonical and description.
+ */
+export function DefaultSEO() {
   return (
-    <Helmet>
-      {/* Primary Meta Tags */}
-      <title>{fullTitle}</title>
-      <meta name="title" content={fullTitle} />
-      <meta name="description" content={description} />
-      {noindex && <meta name="robots" content="noindex, nofollow" />}
-      <link rel="canonical" href={fullUrl} />
-
-      {/* Open Graph / Facebook */}
-      <meta property="og:type" content={type} />
-      <meta property="og:url" content={fullUrl} />
-      <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
-      <meta property="og:image" content={fullImage} />
+    <Helmet defaultTitle={DEFAULT_TITLE}>
+      <meta name="description" content={DEFAULT_DESCRIPTION} />
+      <meta property="og:site_name" content={SITE_NAME} />
+      <meta property="og:locale" content="en_US" />
+      <meta property="og:type" content="website" />
+      <meta property="og:image" content={DEFAULT_IMAGE} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
-      <meta property="og:site_name" content={SITE_NAME} />
-
-      {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:url" content={fullUrl} />
-      <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={fullImage} />
-
-      {/* Article-specific tags */}
-      {type === 'article' && article && (
-        <>
-          {article.publishedTime && (
-            <meta property="article:published_time" content={article.publishedTime} />
-          )}
-          {article.modifiedTime && (
-            <meta property="article:modified_time" content={article.modifiedTime} />
-          )}
-          {article.author && <meta property="article:author" content={article.author} />}
-          {article.section && <meta property="article:section" content={article.section} />}
-          {article.tags?.map((tag) => (
-            <meta key={tag} property="article:tag" content={tag} />
-          ))}
-        </>
-      )}
-
-      {/* Product-specific tags */}
-      {type === 'product' && product && (
-        <>
-          {product.price && (
-            <>
-              <meta property="product:price:amount" content={String(product.price)} />
-              <meta property="product:price:currency" content={product.currency || 'USD'} />
-            </>
-          )}
-          {product.availability && (
-            <meta property="product:availability" content={product.availability} />
-          )}
-        </>
-      )}
+      <meta name="twitter:image" content={DEFAULT_IMAGE} />
     </Helmet>
   );
 }
 
-/**
- * Pre-configured SEO for common pages
- */
-export const PageSEO = {
-  Landing: () => (
-    <SEO
-      description="Ship code, get ranked. Get cited, not just crawled. 280+ automated SEO + GEO checks, auto-fix PRs, GitHub integration. Engineering as marketing."
-      url="/"
-    />
-  ),
+export function SEO({
+  title,
+  fullTitle,
+  description = DEFAULT_DESCRIPTION,
+  path,
+  image = DEFAULT_IMAGE,
+  imageAlt,
+  type = 'website',
+  noindex = false,
+  article,
+  jsonLd,
+}: SEOProps) {
+  const pageTitle = fullTitle ?? (title ? `${title} | ${SITE_NAME}` : DEFAULT_TITLE);
+  const url = path ? `${SITE_URL}${path === '/' ? '/' : path}` : undefined;
+  const imageUrl = image.startsWith('http') ? image : `${SITE_URL}${image}`;
+  const structuredData = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 
-  Pricing: () => (
-    <SEO
-      title="Pricing"
-      description="Simple, transparent pricing for RankCLI. Start free, upgrade when you need more. Solo, Pro, and Agency plans available."
-      url="/pricing"
-    />
-  ),
+  return (
+    <Helmet>
+      <title>{pageTitle}</title>
+      <meta name="description" content={description} />
+      {noindex && <meta name="robots" content="noindex, nofollow" />}
+      {url && !noindex && <link rel="canonical" href={url} />}
 
-  FreeAudit: () => (
-    <SEO
-      title="Free SEO Audit"
-      description="Get a free SEO audit of your website. Analyze meta tags, headings, images, and more. No signup required."
-      url="/free-audit"
-    />
-  ),
+      <meta property="og:type" content={type} />
+      <meta property="og:title" content={pageTitle} />
+      <meta property="og:description" content={description} />
+      {url && <meta property="og:url" content={url} />}
+      <meta property="og:image" content={imageUrl} />
+      {imageAlt && <meta property="og:image:alt" content={imageAlt} />}
 
-  Login: () => (
-    <SEO
-      title="Login"
-      description="Sign in to your RankCLI account to manage your sites and SEO audits."
-      url="/login"
-      noindex
-    />
-  ),
+      <meta name="twitter:title" content={pageTitle} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={imageUrl} />
 
-  Signup: () => (
-    <SEO
-      title="Sign Up"
-      description="Create your RankCLI account. Start with a free audit and upgrade anytime."
-      url="/signup"
-    />
-  ),
+      {type === 'article' && article?.publishedTime && (
+        <meta property="article:published_time" content={article.publishedTime} />
+      )}
+      {type === 'article' && article?.modifiedTime && (
+        <meta property="article:modified_time" content={article.modifiedTime} />
+      )}
+      {type === 'article' && article?.author && (
+        <meta property="article:author" content={article.author} />
+      )}
+      {type === 'article' &&
+        article?.tags?.map((tag) => <meta key={tag} property="article:tag" content={tag} />)}
 
-  Dashboard: () => (
-    <SEO
-      title="Dashboard"
-      description="Manage your sites, view audit results, and track SEO improvements."
-      url="/dashboard"
-      noindex
-    />
-  ),
-
-  Billing: () => (
-    <SEO
-      title="Billing"
-      description="Manage your subscription and billing details."
-      url="/account/billing"
-      noindex
-    />
-  ),
-
-  Account: () => (
-    <SEO
-      title="Account Settings"
-      description="Manage your account settings and preferences."
-      url="/account"
-      noindex
-    />
-  ),
-};
+      {structuredData.map((data, index) => (
+        <script key={index} type="application/ld+json">
+          {toScriptJson(data)}
+        </script>
+      ))}
+    </Helmet>
+  );
+}

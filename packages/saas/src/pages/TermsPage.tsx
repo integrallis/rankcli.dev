@@ -1,11 +1,17 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { SEO } from '@/components/SEO';
 
 const LAST_UPDATED = 'September 6, 2026';
 
 export function TermsPage() {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Terms of Service"
+        description="The terms that govern your use of RankCLI: the website, dashboard, command-line tool, GitHub App and MCP server, provided by Integrallis Software, LLC."
+        path="/terms"
+      />
       <Navbar />
 
       <main className="container py-16 max-w-3xl mx-auto">

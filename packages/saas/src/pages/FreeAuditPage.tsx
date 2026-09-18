@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet-async';
+import { SEO } from '@/components/SEO';
 import { Search, Loader2, ArrowRight, AlertCircle, CheckCircle, XCircle, Bot, Sparkles } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -181,20 +181,14 @@ export function FreeAuditPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>Free SEO Audit - 50+ Checks, Instant Results | RankCLI</title>
-        <meta
-          name="description"
-          content="Get instant SEO analysis for any website. 50+ checks including technical SEO, content, performance, and AI readiness. No signup required."
-        />
-        <meta property="og:title" content="Free SEO Audit Tool | RankCLI" />
-        <meta
-          property="og:description"
-          content="Analyze your website's SEO health with 50+ checks. Get instant results for free."
-        />
-        <link rel="canonical" href="https://rankcli.dev/free-audit" />
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
-      </Helmet>
+      <SEO
+        fullTitle="Free SEO Audit - 50+ Checks, Instant Results | RankCLI"
+        description="Get an instant SEO audit of any website: 50+ checks covering technical SEO, content, performance, security and AI readiness. Free, no signup required."
+        path="/free-audit"
+        image="/og-audit.png"
+        imageAlt="RankCLI free SEO audit"
+        jsonLd={jsonLd}
+      />
 
       <Navbar />
 

@@ -152,7 +152,13 @@ const featureComparison = [
   },
 ];
 
-export function Pricing() {
+interface PricingProps {
+  /** h1 on /pricing, where this section is the page; h2 inside the landing page. */
+  headingLevel?: 'h1' | 'h2';
+}
+
+export function Pricing({ headingLevel = 'h2' }: PricingProps) {
+  const Heading = headingLevel;
   const { user } = useAuth();
   const navigate = useNavigate();
   const defaultView = pricingConfig.default_view === 'lifetime_deals' ? 'lifetime' : 'monthly';
@@ -192,9 +198,9 @@ export function Pricing() {
     <section id="pricing" className="py-24 border-t border-border">
       <div className="container">
         <ScrollReveal className="text-center mb-8">
-          <h2 className="text-2xl md:text-3xl font-semibold tracking-tighter mb-4">
+          <Heading className="text-2xl md:text-3xl font-semibold tracking-tighter mb-4">
             Simple, transparent pricing
-          </h2>
+          </Heading>
           <p className="text-muted-foreground max-w-xl mx-auto">
             Unlimited audits free via MCP. Upgrade for CI, auto-fix PRs, and hosted tracking. No credit card for Free.
           </p>

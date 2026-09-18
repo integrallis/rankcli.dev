@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
@@ -18,6 +17,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { SEO } from '@/components/SEO';
 
 interface OGData {
   title: string;
@@ -91,20 +91,12 @@ export function OgImagePreviewPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>Free OG Image Preview - Social Media Card Checker | RankCLI</title>
-        <meta
-          name="description"
-          content="Free tool to preview how your webpage looks when shared on social media. Check Facebook, Twitter, LinkedIn, and Slack previews."
-        />
-        <meta property="og:title" content="Free OG Image Preview Tool | RankCLI" />
-        <meta
-          property="og:description"
-          content="Preview how your webpage looks when shared on social media. Check Facebook, Twitter, LinkedIn previews."
-        />
-        <link rel="canonical" href="https://rankcli.dev/tools/og-image-preview" />
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
-      </Helmet>
+      <SEO
+        fullTitle="Free OG Image Preview - Social Media Card Checker | RankCLI"
+        description="Free tool to preview how a webpage looks when shared on Facebook, X (Twitter), LinkedIn and Slack, and to check its Open Graph and Twitter Card tags."
+        path="/tools/og-image-preview"
+        jsonLd={jsonLd}
+      />
 
       <Navbar />
 

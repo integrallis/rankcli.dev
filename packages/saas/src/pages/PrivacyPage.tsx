@@ -1,11 +1,17 @@
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
+import { SEO } from '@/components/SEO';
 
 const LAST_UPDATED = 'September 6, 2026';
 
 export function PrivacyPage() {
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Privacy Policy"
+        description="How RankCLI (Integrallis Software, LLC) collects, uses and protects information across the website, dashboard, CLI, GitHub App and MCP server."
+        path="/privacy"
+      />
       <Navbar />
 
       <main className="container py-16 max-w-3xl mx-auto">

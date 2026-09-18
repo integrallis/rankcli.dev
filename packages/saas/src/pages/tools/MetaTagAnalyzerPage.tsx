@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
@@ -16,6 +15,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { SEO } from '@/components/SEO';
 
 interface MetaTag {
   name: string;
@@ -167,20 +167,12 @@ export function MetaTagAnalyzerPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Helmet>
-        <title>Free Meta Tag Analyzer - Check SEO Meta Tags | RankCLI</title>
-        <meta
-          name="description"
-          content="Free tool to analyze and validate meta tags on any webpage. Check title, description, Open Graph, and Twitter Card tags instantly."
-        />
-        <meta property="og:title" content="Free Meta Tag Analyzer | RankCLI" />
-        <meta
-          property="og:description"
-          content="Analyze and validate meta tags on any webpage. Check title, description, OG tags, and Twitter Cards."
-        />
-        <link rel="canonical" href="https://rankcli.dev/tools/meta-tag-analyzer" />
-        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
-      </Helmet>
+      <SEO
+        fullTitle="Free Meta Tag Analyzer - Check SEO Meta Tags | RankCLI"
+        description="Free tool to analyze and validate the meta tags on any webpage: title, description, canonical, robots, Open Graph and Twitter Card tags, checked instantly."
+        path="/tools/meta-tag-analyzer"
+        jsonLd={jsonLd}
+      />
 
       <Navbar />
 
