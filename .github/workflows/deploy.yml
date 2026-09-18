@@ -160,6 +160,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history: the sitemap dates each page by its last commit.
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
@@ -176,9 +179,17 @@ jobs:
         working-directory: packages/saas
         run: pnpm install
 
+      # The build prerenders the public pages in headless Chromium
+      # (scripts/prerender.ts). Installs the version @playwright/test pins.
+      - name: Install Chromium for prerendering
+        working-directory: packages/saas
+        run: pnpm exec playwright install --with-deps --only-shell chromium
+
       - name: Build
         working-directory: packages/saas
         env:
+          # Fail the deploy rather than ship pages crawlers can't read.
+          PRERENDER: required
           VITE_SUPABASE_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           VITE_AUDIT_WORKER_URL: https://rankcli-audit-worker.fly.dev
