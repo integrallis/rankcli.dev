@@ -58,3 +58,26 @@ jobs:
           query "SELECT date_trunc('week', created_at)::date AS week, COUNT(*) AS free_audits, COUNT(*) FILTER (WHERE email IS NOT NULL) AS with_email, COUNT(*) FILTER (WHERE converted_to_signup) AS converted FROM free_audits GROUP BY 1 ORDER BY 1"
           echo "--- AI visibility checks per week ---"
           query "SELECT date_trunc('week', created_at)::date AS week, COUNT(*) AS checks FROM ai_visibility_checks GROUP BY 1 ORDER BY 1"
+
+      - name: Billing integrity (aggregates only, no personal data)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          PROJECT_REF="bspljbxwbjiqueeyzyat"
+          query() {
+            node -e 'process.stdout.write(JSON.stringify({ query: process.argv[1] }))' "$1" \
+              | curl -s "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+                  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  --data-binary @-
+            echo
+          }
+          echo "--- paying subscriptions with no plan (the old webhook bug) ---"
+          query "SELECT COUNT(*) AS stranded FROM user_subscriptions WHERE stripe_subscription_id IS NOT NULL AND plan_id IS NULL"
+          echo "--- effective plan per user (effective_entitlement) ---"
+          query "SELECT e.tier, e.source, e.sites_limit, COUNT(*) AS users FROM auth.users u CROSS JOIN LATERAL effective_entitlement(u.id) e GROUP BY 1,2,3 ORDER BY 1"
+          echo "--- lifetime deals ---"
+          query "SELECT (SELECT COUNT(*) FROM ltd_purchases) AS purchases, (SELECT COUNT(*) FROM ltd_reservations WHERE NOT converted_to_purchase) AS open_reservations"
+          echo "--- users over their site limit (left alone by the trigger; downgrades) ---"
+          query "SELECT COUNT(*) AS over_limit FROM auth.users u CROSS JOIN LATERAL effective_entitlement(u.id) e WHERE (SELECT COUNT(*) FROM projects p WHERE p.user_id = u.id AND p.is_active) > e.sites_limit"
