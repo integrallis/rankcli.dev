@@ -21,11 +21,12 @@ Status: `open` · `in progress` · `closed` (with commit) · `needs founder` (bl
 | OpenRouter default model withdrawn; OpenRouter is now the primary bridge | `79712e9` |
 | Visibility question named the brand, so every site scored as visible | `c114a77` |
 | Cheap inference providers as first-class keys | `78a56a0` |
+| **Gap 1 — security**: GitHub link lock, caller auth on run-audit/local-seo/sync-*, RLS on the visibility tables and free_audits, SECURITY DEFINER lockdown, mcp-connect approve step with a user code, email relay closed, webhooks fail closed, GSC state signed, SSRF guards (worker process-wide after DNS; edge guarded fetch). Verified in production: free audit works, metadata/localhost refused, visibility tool asks all 4, every open function now 401s, tables/RPCs deny anon, unsigned GitHub webhook 401, connect page no longer auto-approves | merge `f2d0907` |
 | **Gap 2 — billing and tiers**: one tier resolver (TS, Node, SQL), lifetime-deal entitlement, webhook retries + plan-follows-price, founding cap, LTD sign-in + reservation release, site-limit trigger, Stripe events updated in place. Verified: 0 stranded subscriptions, tiers resolve (3 free / 2 Pro / 1 Solo), checkout 401s without auth | merge `6ca240e`, `4748f34`, `0419913` |
 
 ## Open, in order
 
-1. **Security** (agent branch): GitHub App link lock, caller auth on run-audit/local-seo/sync-*, RLS on visibility tables, SECURITY DEFINER grants, mcp-connect approve step, email relay, webhook signing, SSRF in hosted fetches. — in progress
+1. ~~Security~~ — closed (see above).
 2. ~~Billing and tiers~~ — closed (see above).
 3. **CLI / CI product** (agent branch): `--fail-on` / `--min-score` exit codes, honest scoring (fetch failure, 5xx, noindex), API-key plan in CI, generated workflow, GitHub Action inputs/create-pr, local and cheap inference in the CLI, plugins, CI jobs, Node compatibility. — in progress
 4. **Site SEO and frontend** (agent branch): prerendering, per-route SEO, real 404, fake testimonials, pricing copy, sitemap/robots, bundle size, analytics snippet, account-page bugs, agency gating. — in progress
@@ -39,6 +40,9 @@ Status: `open` · `in progress` · `closed` (with commit) · `needs founder` (bl
 9. **CLI release v0.0.30** with gap 3's fixes; MCP Registry listing still on 0.0.7. — open (after 3)
 10. **Dead code**: root `supabase/` legacy schema, functions with no callers, the worker keyword path. — open
 11. **Deep audit via start-deep-audit** not yet exercised with a paid account. — open
+11b. **Worker type errors**: `tier` passed to AuditOptions (no such field), the domain-limit query's embed typing, missing mcp-server `.d.ts`. Harmless at runtime (tsup doesn't typecheck), but they hide real errors. — open
+11c. **create-checkout / create-portal 500 without auth** — closed `0419913`.
 12. **GitHub Action publishing** needs a public repo. — needs founder (after 3)
+12b. **GitHub repo linking for email/Google sign-ups**: linking now proves write access on GitHub. Users with no GitHub identity can link only after enabling "Request user authorization (OAuth) during installation" on the GitHub App and adding `GITHUB_APP_CLIENT_ID` / `GITHUB_APP_CLIENT_SECRET` as Supabase secrets - or by signing in with GitHub once. — needs founder
 13. **Premium checks model** (WASM copy bug vs. extractable premium code). — needs founder
 14. **Analytics token**: Cloudflare Web Analytics beacon token. — needs founder (after 4)
