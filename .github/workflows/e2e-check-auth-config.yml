@@ -110,3 +110,22 @@ jobs:
           else
             echo "alert configs exist - not calling, so no real alert is sent from a diagnostic"
           fi
+
+      - name: Scheduled audits (aggregates; hostnames only for localhost-style URLs)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          PROJECT_REF="bspljbxwbjiqueeyzyat"
+          query() {
+            node -e 'process.stdout.write(JSON.stringify({ query: process.argv[1] }))' "$1" \
+              | curl -s "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+                  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  --data-binary @-
+            echo
+          }
+          echo "--- scheduled audits in the last 6 hours ---"
+          query "SELECT status, COUNT(*) AS n, ROUND(AVG(score)) AS avg_score, MIN(error_message) AS sample_error FROM audits WHERE triggered_by = 'scheduled' AND created_at > NOW() - INTERVAL '6 hours' GROUP BY status"
+          echo "--- active projects whose URL is not a public host ---"
+          query "SELECT COUNT(*) AS n, array_agg(DISTINCT split_part(split_part(url, '://', 2), '/', 1)) FILTER (WHERE url ~* '://(localhost|127\\.|0\\.0\\.0\\.0|10\\.|192\\.168\\.)') AS hosts FROM projects WHERE is_active AND url ~* '://(localhost|127\\.|0\\.0\\.0\\.0|10\\.|192\\.168\\.)'"
