@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { clientIp, hashIP } from '../_shared/client-ip.ts';
+import { assertPublicUrl } from '../_shared/url-guard.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -81,6 +82,16 @@ serve(async (req) => {
       targetUrl = parsed.toString();
     } catch {
       return new Response(JSON.stringify({ error: 'Invalid URL' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    // The worker enforces this on every connection too; checking here gives
+    // a clear 400 instead of an audit full of fetch errors.
+    try {
+      await assertPublicUrl(targetUrl);
+    } catch (error) {
+      return new Response(JSON.stringify({ error: (error as Error).message }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

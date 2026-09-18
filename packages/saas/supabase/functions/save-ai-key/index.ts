@@ -7,6 +7,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { encryptSecret } from '../_shared/crypto.ts';
 import { testProviderConnection, type AIProvider } from '../_shared/ai-provider.ts';
+import { assertPublicUrl } from '../_shared/url-guard.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -70,6 +71,19 @@ serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // The base URL is called from RankCLI's servers, which can't reach a
+    // user's localhost anyway - and must not reach our own private network.
+    if (baseUrl) {
+      try {
+        await assertPublicUrl(baseUrl);
+      } catch (error) {
+        return new Response(JSON.stringify({ error: `Base URL must be a public http(s) address: ${(error as Error).message}` }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     const test = await testProviderConnection({ provider, apiKey: apiKey || '', baseUrl, model });

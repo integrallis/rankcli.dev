@@ -13,6 +13,7 @@ import {
 import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
 import { resolveAIConfig, aiConfigErrorMessage } from '../_shared/resolve-ai-config.ts';
 import { identifyCaller } from '../_shared/caller-auth.ts';
+import { guardedFetch } from '../_shared/url-guard.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -91,7 +92,7 @@ async function analyzeLocalSEO(
   // Fetch the website
   let html = '';
   try {
-    const response = await fetch(url, {
+    const response = await guardedFetch(url, {
       headers: { 'User-Agent': 'RankCLI/1.0 (+https://rankcli.dev)' }
     });
     if (response.ok) {
