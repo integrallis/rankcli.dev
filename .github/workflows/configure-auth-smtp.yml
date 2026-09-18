@@ -1,0 +1,84 @@
+name: Configure Auth SMTP
+
+# Supabase Auth was on its built-in mailer, which only delivers to the project team and
+# sends 2 emails an hour. Email signup requires confirmation, so every public email signup
+# got no confirmation link and could never log in. This points Auth at Resend (the provider
+# the app already sends notifications@rankcli.dev mail through), then proves delivery with
+# a signup to Resend's simulated-delivery address and deletes that test user.
+# Re-run it after rotating RESEND_API_KEY.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Point Supabase Auth at Resend SMTP
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$RESEND_API_KEY" || { echo "RESEND_API_KEY secret is not set"; exit 1; }
+          node <<'NODE'
+          const endpoint = 'https://api.supabase.com/v1/projects/bspljbxwbjiqueeyzyat/config/auth'
+          const headers = {
+            Authorization: `Bearer ${process.env.SUPABASE_ACCESS_TOKEN}`,
+            'Content-Type': 'application/json',
+          }
+          const patch = await fetch(endpoint, {
+            method: 'PATCH',
+            headers,
+            body: JSON.stringify({
+              smtp_host: 'smtp.resend.com',
+              smtp_port: '465',
+              smtp_user: 'resend',
+              smtp_pass: process.env.RESEND_API_KEY,
+              smtp_admin_email: 'notifications@rankcli.dev',
+              smtp_sender_name: 'RankCLI',
+              rate_limit_email_sent: 100,
+            }),
+          })
+          if (!patch.ok) throw new Error(`Auth config update failed: HTTP ${patch.status} ${await patch.text()}`)
+          const c = await (await fetch(endpoint, { headers })).json()
+          if (c.smtp_host !== 'smtp.resend.com') throw new Error('SMTP host did not persist')
+          console.log(JSON.stringify({
+            smtp_host: c.smtp_host,
+            smtp_port: c.smtp_port,
+            smtp_sender: c.smtp_admin_email,
+            smtp_sender_name: c.smtp_sender_name,
+            rate_limit_email_sent: c.rate_limit_email_sent,
+            mailer_autoconfirm: c.mailer_autoconfirm,
+          }, null, 2))
+          NODE
+
+      - name: Prove a public email signup gets its confirmation email
+        env:
+          SUPABASE_URL: https://bspljbxwbjiqueeyzyat.supabase.co
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const { SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY } = process.env
+          // Resend's simulated-delivery address: accepted and reported delivered, sent nowhere.
+          const email = `delivered+rankcli-smtp-check-${Date.now()}@resend.dev`
+          const signup = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+            method: 'POST',
+            headers: { apikey: SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password: crypto.randomUUID() + 'Aa1!' }),
+          })
+          const body = await signup.json().catch(() => ({}))
+          // Clean up the test user whatever happened.
+          const id = body.id || body.user?.id
+          if (id) {
+            const del = await fetch(`${SUPABASE_URL}/auth/v1/admin/users/${id}`, {
+              method: 'DELETE',
+              headers: { apikey: SUPABASE_SERVICE_KEY, Authorization: `Bearer ${SUPABASE_SERVICE_KEY}` },
+            })
+            console.log(`test user deleted: ${del.ok}`)
+          }
+          if (!signup.ok) throw new Error(`Signup failed - confirmation email not sent: HTTP ${signup.status} ${JSON.stringify(body)}`)
+          console.log(`Signup accepted and confirmation email sent (HTTP ${signup.status})`)
+          NODE
