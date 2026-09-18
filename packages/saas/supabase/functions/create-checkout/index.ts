@@ -36,10 +36,20 @@ serve(async (req) => {
       });
     }
 
-    const { priceId, planId, successUrl, cancelUrl } = await req.json();
+    const { planId, successUrl, cancelUrl } = await req.json();
 
-    if (!priceId) {
-      return new Response(JSON.stringify({ error: 'Price ID required' }), {
+    // The price comes from our plan row, never from the client. The webhook grants
+    // whatever metadata.plan_id says, so a client-chosen price would let the $9 Solo
+    // price buy Agency.
+    const { data: plan } = await supabase
+      .from('subscription_plans')
+      .select('stripe_price_id')
+      .eq('plan_id', planId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (!plan?.stripe_price_id) {
+      return new Response(JSON.stringify({ error: 'Unknown or unavailable plan' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -82,7 +92,7 @@ serve(async (req) => {
       mode: 'subscription',
       line_items: [
         {
-          price: priceId,
+          price: plan.stripe_price_id,
           quantity: 1,
         },
       ],
