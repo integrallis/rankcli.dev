@@ -21,7 +21,40 @@ jobs:
                 external_github_enabled: c.external_github_enabled,
                 external_github_client_id: c.external_github_client_id,
                 external_google_enabled: c.external_google_enabled,
+                external_email_enabled: c.external_email_enabled,
+                disable_signup: c.disable_signup,
                 site_url: c.site_url,
                 uri_allow_list: c.uri_allow_list,
+                // Email confirmation needs working delivery. Supabase's built-in mailer only
+                // sends to the project team, so without custom SMTP public email signups never
+                // get their confirmation link. Presence only - never the password.
+                mailer_autoconfirm: c.mailer_autoconfirm,
+                smtp_configured: Boolean(c.smtp_host),
+                smtp_host: c.smtp_host || null,
+                smtp_sender: c.smtp_admin_email || null,
+                rate_limit_email_sent: c.rate_limit_email_sent,
               }, null, 2)
             '
+
+      - name: Signup funnel (aggregates only, no personal data)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          PROJECT_REF="bspljbxwbjiqueeyzyat"
+          query() {
+            node -e 'process.stdout.write(JSON.stringify({ query: process.argv[1] }))' "$1" \
+              | curl -s "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+                  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  --data-binary @-
+            echo
+          }
+          echo "--- accounts per week (confirmed = email confirmed or OAuth) ---"
+          query "SELECT date_trunc('week', created_at)::date AS week, COUNT(*) AS signups, COUNT(*) FILTER (WHERE email_confirmed_at IS NOT NULL) AS confirmed, COUNT(*) FILTER (WHERE last_sign_in_at IS NOT NULL) AS ever_signed_in FROM auth.users GROUP BY 1 ORDER BY 1"
+          echo "--- sign-up method ---"
+          query "SELECT COALESCE(raw_app_meta_data->>'provider', 'unknown') AS provider, COUNT(*) AS users, COUNT(*) FILTER (WHERE email_confirmed_at IS NULL) AS unconfirmed FROM auth.users GROUP BY 1 ORDER BY 2 DESC"
+          echo "--- anonymous free audits per week ---"
+          query "SELECT date_trunc('week', created_at)::date AS week, COUNT(*) AS free_audits, COUNT(*) FILTER (WHERE email IS NOT NULL) AS with_email, COUNT(*) FILTER (WHERE converted_to_signup) AS converted FROM free_audits GROUP BY 1 ORDER BY 1"
+          echo "--- AI visibility checks per week ---"
+          query "SELECT date_trunc('week', created_at)::date AS week, COUNT(*) AS checks FROM ai_visibility_checks GROUP BY 1 ORDER BY 1"
