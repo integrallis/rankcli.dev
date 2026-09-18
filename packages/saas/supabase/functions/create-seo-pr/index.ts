@@ -484,6 +484,22 @@ serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Functions deploy with --no-verify-jwt, so the caller is checked here: either
+    // github-webhook with the service key, or a signed-in user who owns the project.
+    const bearer = (req.headers.get('Authorization') || '').replace('Bearer ', '');
+    let callerId: string | null = null;
+    if (bearer !== supabaseServiceKey) {
+      const { data: { user } } = await supabase.auth.getUser(bearer);
+      if (!user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      callerId = user.id;
+    }
+
     const { projectId, auditId } = await req.json();
 
     if (!projectId && !auditId) {
@@ -528,7 +544,7 @@ serve(async (req) => {
       .eq('id', targetProjectId)
       .single();
 
-    if (projectError || !project) {
+    if (projectError || !project || (callerId && project.user_id !== callerId)) {
       return new Response(JSON.stringify({ error: 'Project not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
