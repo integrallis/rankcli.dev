@@ -23,12 +23,13 @@ vi.mock('@/integrations/supabase/client', () => ({
   },
 }));
 
-// Mock useAuth
-vi.mock('@/contexts/AuthContext', () => ({
-  useAuth: vi.fn(() => ({
-    user: { id: 'test-user-id' },
-  })),
-}));
+// Mock useAuth - one stable object, as the real context keeps `user` in state.
+// A fresh object per render changes the hook's [user] deps every render and
+// loops the fetch effect until the worker runs out of heap.
+vi.mock('@/contexts/AuthContext', () => {
+  const auth = { user: { id: 'test-user-id' } };
+  return { useAuth: vi.fn(() => auth) };
+});
 
 // Import after mocks
 import { useAlertConfigs, type AlertConfig } from './useAlertConfigs';
@@ -67,15 +68,18 @@ describe('useAlertConfigs', () => {
     },
   ];
 
+  // select().eq(user_id).eq(project_id).order() - eq chains any number of times
+  const selectChain = (result: { data: unknown; error: unknown }) => {
+    const chain = { eq: vi.fn(), order: vi.fn().mockResolvedValue(result) };
+    chain.eq.mockReturnValue(chain);
+    return chain;
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     
     // Default mock implementations
-    mockSelect.mockReturnValue({
-      eq: vi.fn().mockReturnValue({
-        order: vi.fn().mockResolvedValue({ data: mockConfigs, error: null }),
-      }),
-    });
+    mockSelect.mockReturnValue(selectChain({ data: mockConfigs, error: null }));
     
     mockInsert.mockReturnValue({
       select: vi.fn().mockReturnValue({
@@ -106,11 +110,7 @@ describe('useAlertConfigs', () => {
     });
 
     it('should handle fetch errors gracefully', async () => {
-      mockSelect.mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          order: vi.fn().mockResolvedValue({ data: null, error: { message: 'Database error' } }),
-        }),
-      });
+      mockSelect.mockReturnValue(selectChain({ data: null, error: { message: 'Database error' } }));
 
       const { result } = renderHook(() => useAlertConfigs('project-1'));
 
