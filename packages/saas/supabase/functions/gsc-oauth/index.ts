@@ -31,6 +31,58 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const frontendUrl = Deno.env.get('FRONTEND_URL') || 'http://localhost:3005';
+
+// The OAuth state says which user (and project) the Google tokens get saved
+// under, and it round-trips through the browser. It is signed so the
+// callback can't be pointed at another user's account. The key is derived
+// from the service role key, which every function already has.
+const STATE_TTL_MS = 10 * 60 * 1000;
+
+async function stateKey(): Promise<CryptoKey> {
+  return await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(`gsc-oauth-state:${supabaseServiceKey}`),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
+  );
+}
+
+function toBase64Url(bytes: Uint8Array): string {
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function fromBase64Url(text: string): Uint8Array {
+  const base64 = text.replace(/-/g, '+').replace(/_/g, '/');
+  return Uint8Array.from(atob(base64 + '='.repeat((4 - (base64.length % 4)) % 4)), (c) => c.charCodeAt(0));
+}
+
+async function signState(data: { user_id: string; project_id: string | null; timestamp: number }): Promise<string> {
+  const payload = toBase64Url(new TextEncoder().encode(JSON.stringify(data)));
+  const signature = new Uint8Array(await crypto.subtle.sign('HMAC', await stateKey(), new TextEncoder().encode(payload)));
+  return `${payload}.${toBase64Url(signature)}`;
+}
+
+async function verifyState(state: string): Promise<{ user_id: string; project_id: string | null; timestamp: number } | null> {
+  const [payload, signature, extra] = state.split('.');
+  if (!payload || !signature || extra !== undefined) return null;
+  try {
+    const valid = await crypto.subtle.verify(
+      'HMAC',
+      await stateKey(),
+      fromBase64Url(signature),
+      new TextEncoder().encode(payload)
+    );
+    if (!valid) return null;
+    const data = JSON.parse(new TextDecoder().decode(fromBase64Url(payload)));
+    if (typeof data?.user_id !== 'string' || typeof data?.timestamp !== 'number') return null;
+    return { user_id: data.user_id, project_id: typeof data.project_id === 'string' ? data.project_id : null, timestamp: data.timestamp };
+  } catch {
+    return null;
+  }
+}
+
 serve(async (req: Request) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -95,16 +147,29 @@ async function handleStart(req: Request): Promise<Response> {
     });
   }
 
-  // Get project_id from body if provided
+  // Get project_id from body if provided - it must be the caller's project.
   const body = await req.json().catch(() => ({}));
-  const projectId = body.project_id;
+  const projectId = typeof body.project_id === 'string' ? body.project_id : null;
+  if (projectId) {
+    const { data: project } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('id', projectId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (!project) {
+      return new Response(JSON.stringify({ error: 'Project not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
 
-  // Create state token with user info
-  const state = btoa(JSON.stringify({
+  const state = await signState({
     user_id: user.id,
     project_id: projectId,
     timestamp: Date.now(),
-  }));
+  });
 
   // Build authorization URL
   const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
@@ -133,7 +198,7 @@ async function handleCallback(req: Request): Promise<Response> {
   if (error) {
     // Redirect to frontend with error
     return Response.redirect(
-      `${Deno.env.get('FRONTEND_URL') || 'http://localhost:3005'}/settings/integrations?error=${error}`,
+      `${frontendUrl}/settings/integrations?error=${encodeURIComponent(error)}`,
       302
     );
   }
@@ -142,18 +207,15 @@ async function handleCallback(req: Request): Promise<Response> {
     return new Response('Missing code or state', { status: 400 });
   }
 
-  // Decode state
-  let stateData: { user_id: string; project_id?: string; timestamp: number };
-  try {
-    stateData = JSON.parse(atob(state));
-  } catch {
+  const stateData = await verifyState(state);
+  if (!stateData) {
     return new Response('Invalid state', { status: 400 });
   }
 
   // Check state timestamp (10 minute expiry)
-  if (Date.now() - stateData.timestamp > 10 * 60 * 1000) {
+  if (Date.now() - stateData.timestamp > STATE_TTL_MS) {
     return Response.redirect(
-      `${Deno.env.get('FRONTEND_URL') || 'http://localhost:3005'}/settings/integrations?error=expired`,
+      `${frontendUrl}/settings/integrations?error=expired`,
       302
     );
   }
@@ -175,7 +237,7 @@ async function handleCallback(req: Request): Promise<Response> {
     const errorText = await tokenResponse.text();
     console.error('Token exchange failed:', errorText);
     return Response.redirect(
-      `${Deno.env.get('FRONTEND_URL') || 'http://localhost:3005'}/settings/integrations?error=token_exchange_failed`,
+      `${frontendUrl}/settings/integrations?error=token_exchange_failed`,
       302
     );
   }
@@ -211,14 +273,14 @@ async function handleCallback(req: Request): Promise<Response> {
   if (insertError) {
     console.error('Failed to store tokens:', insertError);
     return Response.redirect(
-      `${Deno.env.get('FRONTEND_URL') || 'http://localhost:3005'}/settings/integrations?error=storage_failed`,
+      `${frontendUrl}/settings/integrations?error=storage_failed`,
       302
     );
   }
 
   // Redirect to frontend with success
   return Response.redirect(
-    `${Deno.env.get('FRONTEND_URL') || 'http://localhost:3005'}/settings/integrations?gsc=connected`,
+    `${frontendUrl}/settings/integrations?gsc=connected`,
     302
   );
 }
