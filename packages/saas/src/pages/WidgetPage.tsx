@@ -16,7 +16,6 @@ export function WidgetPage() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
   const theme = (searchParams.get('theme') || 'light') as 'light' | 'dark';
-  const showBranding = searchParams.get('branding') !== 'false';
 
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<WidgetData | null>(null);
@@ -46,7 +45,10 @@ export function WidgetPage() {
         setData({
           ...result,
           theme,
-          branding: showBranding,
+          // White-label is an Agency feature, so only the server decides it
+          // (widget-data, from the token owner's plan). A `branding=false` URL
+          // parameter used to let anyone remove the RankCLI credit.
+          branding: result.whiteLabel !== true,
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load widget');
@@ -56,7 +58,7 @@ export function WidgetPage() {
     };
 
     fetchData();
-  }, [token, theme, showBranding]);
+  }, [token, theme]);
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return '#22c55e';

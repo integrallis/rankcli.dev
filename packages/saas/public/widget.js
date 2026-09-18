@@ -3,7 +3,10 @@
  *
  * Usage:
  * <div id="rankcli-widget"></div>
- * <script src="https://rankcli.dev/widget.js?token=widget_xxx&theme=light&branding=true"></script>
+ * <script src="https://rankcli.dev/widget.js?token=widget_xxx&theme=light"></script>
+ *
+ * White-labelling (no "Powered by RankCLI") follows the widget owner's plan
+ * and is decided server-side; an old `branding` parameter is ignored.
  */
 (function () {
   'use strict';
@@ -13,7 +16,6 @@
   var params = new URLSearchParams(script.src.split('?')[1] || '');
   var token = params.get('token');
   var theme = params.get('theme') || 'light';
-  var branding = params.get('branding') !== 'false';
 
   if (!token) {
     console.error('RankCLI Widget: Missing token parameter');
@@ -32,7 +34,6 @@
   var iframeParams = new URLSearchParams({
     token: token,
     theme: theme,
-    branding: branding.toString(),
   });
 
   iframe.src = 'https://rankcli.dev/widget?' + iframeParams.toString();
