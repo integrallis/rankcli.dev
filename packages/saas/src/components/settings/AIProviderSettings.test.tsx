@@ -54,13 +54,17 @@ describe('AIProviderSettings', () => {
     expect(screen.getByLabelText('Disconnect openrouter')).toBeInTheDocument();
   });
 
-  it('requires a model for providers without a stable default', async () => {
+  it('connects a cheap provider with just a key (its default model applies)', async () => {
     render(<AIProviderSettings />);
     await screen.findByLabelText('Disconnect openrouter');
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'together' } });
+    expect(screen.getByLabelText('Model (optional override)')).toHaveAttribute('placeholder', 'openai/gpt-oss-120b (default)');
     fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'tg-key' } });
     fireEvent.click(screen.getByRole('button', { name: /connect & verify/i }));
-    expect(toast.error).toHaveBeenCalledWith('Together AI needs a model name');
-    expect(global.fetch).not.toHaveBeenCalled();
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+    const [url, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(url).toContain('/functions/v1/save-ai-key');
+    expect(JSON.parse(init.body)).toMatchObject({ provider: 'together', apiKey: 'tg-key' });
+    expect(toast.error).not.toHaveBeenCalled();
   });
 });

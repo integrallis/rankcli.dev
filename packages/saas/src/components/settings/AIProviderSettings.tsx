@@ -14,17 +14,17 @@ type Provider =
   | 'deepseek' | 'together' | 'fireworks' | 'mistral' | 'cerebras'
   | 'custom';
 
-// Providers whose model is required (catalogues rename often) or may be overridden, with an
-// example for the placeholder.
+// Providers whose model may be overridden, with the default shown as the placeholder. Defaults
+// match the CLI and the edge functions (_shared/ai-provider.ts).
 const MODEL_FIELD: Partial<Record<Provider, { required: boolean; example: string }>> = {
   openrouter: { required: false, example: 'openrouter/free (default) or e.g. openai/gpt-5.6-luna' },
-  groq: { required: false, example: 'Leave blank for our default' },
-  gemini: { required: false, example: 'Leave blank for our default' },
-  deepseek: { required: false, example: 'deepseek-chat (default)' },
+  groq: { required: false, example: 'llama-3.3-70b-versatile (default)' },
+  gemini: { required: false, example: 'gemini-3.7-flash (default)' },
+  deepseek: { required: false, example: 'deepseek-flash (default)' },
   mistral: { required: false, example: 'mistral-small-latest (default)' },
-  together: { required: true, example: 'e.g. meta-llama/Llama-3.3-70B-Instruct-Turbo' },
-  fireworks: { required: true, example: 'e.g. accounts/fireworks/models/llama-v3p3-70b-instruct' },
-  cerebras: { required: true, example: 'e.g. llama-3.3-70b' },
+  together: { required: false, example: 'openai/gpt-oss-120b (default)' },
+  fireworks: { required: false, example: 'accounts/fireworks/models/gpt-oss-120b (default)' },
+  cerebras: { required: false, example: 'gpt-oss-120b (default)' },
 };
 
 const PROVIDER_OPTIONS: { value: Provider; label: string; helpUrl: string; freeTierNote?: string }[] = [
@@ -35,9 +35,9 @@ const PROVIDER_OPTIONS: { value: Provider; label: string; helpUrl: string; freeT
   { value: 'anthropic', label: 'Anthropic', helpUrl: 'https://console.anthropic.com/settings/keys' },
   { value: 'deepseek', label: 'DeepSeek', helpUrl: 'https://platform.deepseek.com/api_keys', freeTierNote: 'Among the cheapest capable models' },
   { value: 'mistral', label: 'Mistral', helpUrl: 'https://console.mistral.ai/api-keys' },
-  { value: 'together', label: 'Together AI', helpUrl: 'https://api.together.ai/settings/api-keys', freeTierNote: 'Cheap open-weight models - name the model below' },
-  { value: 'fireworks', label: 'Fireworks AI', helpUrl: 'https://fireworks.ai/account/api-keys', freeTierNote: 'Cheap open-weight models - name the model below' },
-  { value: 'cerebras', label: 'Cerebras', helpUrl: 'https://cloud.cerebras.ai/', freeTierNote: 'Very fast inference, free tier available - name the model below' },
+  { value: 'together', label: 'Together AI', helpUrl: 'https://api.together.ai/settings/api-keys', freeTierNote: 'Cheap open-weight models' },
+  { value: 'fireworks', label: 'Fireworks AI', helpUrl: 'https://fireworks.ai/account/api-keys', freeTierNote: 'Cheap open-weight models' },
+  { value: 'cerebras', label: 'Cerebras', helpUrl: 'https://cloud.cerebras.ai/', freeTierNote: 'Very fast inference, free tier available' },
   { value: 'perplexity', label: 'Perplexity', helpUrl: 'https://www.perplexity.ai/settings/api' },
   { value: 'custom', label: 'Custom OpenAI-compatible server (self-hosted, vLLM, a tunnel to Ollama/LM Studio)', helpUrl: 'https://github.com/ollama/ollama' },
 ];

@@ -22,8 +22,7 @@ const VALID_PROVIDERS: AIProvider[] = [
   'openai', 'anthropic', 'openrouter', 'groq', 'gemini', 'perplexity',
   'deepseek', 'together', 'fireworks', 'mistral', 'cerebras', 'custom',
 ];
-// Catalogues that rename models often get no default; the user names one.
-const MODEL_REQUIRED: AIProvider[] = ['together', 'fireworks', 'cerebras'];
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -67,12 +66,6 @@ serve(async (req) => {
     }
     if (!apiKey && provider !== 'custom') {
       return new Response(JSON.stringify({ error: 'apiKey is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    if (MODEL_REQUIRED.includes(provider) && !model) {
-      return new Response(JSON.stringify({ error: `${provider} needs a model name` }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

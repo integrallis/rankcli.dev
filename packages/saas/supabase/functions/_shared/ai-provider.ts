@@ -31,21 +31,22 @@ export interface AIProviderConfig {
 // whichever free models are live - pinning one free model (deepseek/deepseek-r1:free) is how this
 // broke: it was withdrawn, and every OpenRouter key saved without a model override then failed
 // verification.
-// Cheap hosted providers speak the same OpenAI-shaped API. A default model is set only where
-// the provider keeps a stable alias (deepseek-chat, mistral-small-latest); Together, Fireworks
-// and Cerebras rename their catalogues often, so the user names the model.
+// Cheap hosted providers speak the same OpenAI-shaped API. Defaults match the CLI's
+// (packages/cli/src/commands/audit.ts), checked against each provider's docs on 2026-09-18 -
+// catalogues rename often (deepseek-chat was retired 2026-07-24; deepseek/deepseek-r1:free left
+// OpenRouter), so a saved key is always verified with a real call first.
 const PROVIDER_DEFAULTS: Record<Exclude<AIProvider, 'custom'>, { baseUrl: string; model?: string }> = {
   openai: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o' },
   anthropic: { baseUrl: 'https://api.anthropic.com/v1', model: 'claude-sonnet-4-5' },
   openrouter: { baseUrl: 'https://openrouter.ai/api/v1', model: 'openrouter/free' },
   groq: { baseUrl: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' },
-  gemini: { baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.0-flash' },
+  gemini: { baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-3.7-flash' },
   perplexity: { baseUrl: 'https://api.perplexity.ai', model: 'sonar' },
-  deepseek: { baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+  deepseek: { baseUrl: 'https://api.deepseek.com', model: 'deepseek-flash' },
   mistral: { baseUrl: 'https://api.mistral.ai/v1', model: 'mistral-small-latest' },
-  together: { baseUrl: 'https://api.together.xyz/v1' },
-  fireworks: { baseUrl: 'https://api.fireworks.ai/inference/v1' },
-  cerebras: { baseUrl: 'https://api.cerebras.ai/v1' },
+  together: { baseUrl: 'https://api.together.xyz/v1', model: 'openai/gpt-oss-120b' },
+  fireworks: { baseUrl: 'https://api.fireworks.ai/inference/v1', model: 'accounts/fireworks/models/gpt-oss-120b' },
+  cerebras: { baseUrl: 'https://api.cerebras.ai/v1', model: 'gpt-oss-120b' },
 };
 
 // OpenAI's reasoning families (GPT-5.x, o-series) reject `temperature` at any value and

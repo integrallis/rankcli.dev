@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-05T23:17:36.039Z
+// Generated: 2026-09-18T22:34:40.792Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -8480,6 +8480,15 @@ var ISSUE_DEFINITIONS = {
     impact: "Your entire site will not be indexed by search engines.",
     howToFix: "Update robots.txt to allow crawling of important pages."
   },
+  ROBOTS_TXT_SERVER_ERROR: {
+    code: "ROBOTS_TXT_SERVER_ERROR",
+    severity: "warning",
+    category: "crawlability",
+    title: "robots.txt returns a server error",
+    description: "Requesting /robots.txt returned a 5xx (or 429) status instead of the file or a 404.",
+    impact: 'Google treats a 5xx/429 robots.txt as "disallow everything" and stops crawling the whole site until it gets a real answer.',
+    howToFix: "Serve robots.txt with a 200 (or return a 404 if you have none). Check the server/CDN route for /robots.txt."
+  },
   SITEMAP_MISSING: {
     code: "SITEMAP_MISSING",
     severity: "warning",
@@ -8544,14 +8553,35 @@ var ISSUE_DEFINITIONS = {
     howToFix: "Add internal links from relevant pages to this page."
   },
   // ==================== INDEXABILITY ====================
+  // Base severity for a noindexed page other than the audited root;
+  // on-page.ts raises it to 'error' on the site root (a noindexed homepage
+  // takes the whole site out of search).
   NOINDEX_TAG: {
     code: "NOINDEX_TAG",
-    severity: "notice",
+    severity: "warning",
     category: "indexability",
-    title: "Page has noindex tag",
-    description: "The page contains a noindex meta tag or X-Robots-Tag header.",
+    title: "Page has noindex meta tag",
+    description: "The page contains a robots/googlebot meta tag with noindex (or none).",
     impact: "This page will not appear in search results.",
-    howToFix: "Remove the noindex tag if you want this page indexed."
+    howToFix: "Remove the noindex directive from the robots meta tag if you want this page indexed."
+  },
+  NOINDEX_HEADER: {
+    code: "NOINDEX_HEADER",
+    severity: "warning",
+    category: "indexability",
+    title: "Page sends X-Robots-Tag: noindex",
+    description: "The HTTP response carries an X-Robots-Tag header with noindex (or none).",
+    impact: "This page will not appear in search results, whatever the HTML says.",
+    howToFix: "Remove noindex from the X-Robots-Tag header in your server, CDN or hosting config."
+  },
+  HTTP_ERROR_STATUS: {
+    code: "HTTP_ERROR_STATUS",
+    severity: "error",
+    category: "indexability",
+    title: "Page returns an HTTP error status",
+    description: "The audited URL answered with a 4xx or 5xx status code.",
+    impact: "Search engines drop pages that return 4xx, and stop crawling pages (and eventually sites) that keep returning 5xx.",
+    howToFix: "Make the URL return 200. For a moved page use a 301 to its new address; for a server error check the application logs."
   },
   CANONICAL_MISSING: {
     code: "CANONICAL_MISSING",
@@ -11089,10 +11119,22 @@ async function checkRobotsTxt(baseUrl) {
       timeout: 1e4,
       validateStatus: () => true
     });
-    if (response.status === 404) {
+    if (response.status >= 500 || response.status === 429) {
+      issues.push({
+        ...ISSUE_DEFINITIONS.ROBOTS_TXT_SERVER_ERROR,
+        affectedUrls: [url],
+        details: { status: response.status }
+      });
+      return {
+        issues,
+        data: { exists: false, blocksAll: false, hasSitemap: false, sitemapUrls: [] }
+      };
+    }
+    if (response.status >= 400) {
       issues.push({
         ...ISSUE_DEFINITIONS.ROBOTS_TXT_MISSING,
-        affectedUrls: [url]
+        affectedUrls: [url],
+        ...response.status !== 404 && { details: { status: response.status } }
       });
       return {
         issues,
@@ -11257,14 +11299,61 @@ async function runCrawlabilityChecks(baseUrl) {
 
 // src/audit/checks/on-page.ts
 import * as cheerio from "https://esm.sh/cheerio@1.0.0";
-function analyzeOnPage(html, url) {
+var PREVIEW_HOST_SUFFIXES = [".vercel.app", ".netlify.app", ".pages.dev"];
+function isPreviewDeploymentHost(hostname) {
+  const host = hostname.toLowerCase();
+  return PREVIEW_HOST_SUFFIXES.some((suffix) => host.endsWith(suffix));
+}
+function xRobotsTagHasNoindex(value) {
+  if (!value)
+    return false;
+  const valued = /* @__PURE__ */ new Set(["unavailable_after", "max-snippet", "max-image-preview", "max-video-preview"]);
+  let agent = null;
+  for (const raw of value.toLowerCase().split(",")) {
+    let part = raw.trim();
+    const scoped = part.match(/^([a-z0-9_.*-]+)\s*:\s*(.*)$/);
+    if (scoped && !valued.has(scoped[1])) {
+      agent = scoped[1];
+      part = scoped[2].trim();
+    }
+    if (part === "noindex" || part === "none") {
+      if (agent === null || agent === "*" || agent === "googlebot" || agent === "bingbot")
+        return true;
+    }
+  }
+  return false;
+}
+function metaHasNoindex(content) {
+  if (!content)
+    return false;
+  return content.toLowerCase().split(",").some((d) => ["noindex", "none"].includes(d.trim()));
+}
+function isSiteRoot(url) {
+  try {
+    const u = new URL(url);
+    return (u.pathname === "/" || u.pathname === "") && !u.search;
+  } catch {
+    return false;
+  }
+}
+function analyzeOnPage(html, url, headers, options = {}) {
   const issues = [];
   const $ = cheerio.load(html);
   const title = $("title").text().trim();
   const description = $('meta[name="description"]').attr("content")?.trim();
   const canonical = $('link[rel="canonical"]').attr("href");
   const metaRobots = $('meta[name="robots"]').attr("content");
-  const hasNoindex = metaRobots?.toLowerCase().includes("noindex") || false;
+  const robotsMetaValues = [];
+  $("meta[name]").each((_, el) => {
+    const name = ($(el).attr("name") || "").toLowerCase();
+    if (name === "robots" || name === "googlebot") {
+      robotsMetaValues.push($(el).attr("content") || "");
+    }
+  });
+  const metaNoindex = robotsMetaValues.some(metaHasNoindex);
+  const headerLookup = headers ? Object.entries(headers).find(([k]) => k.toLowerCase() === "x-robots-tag")?.[1] : void 0;
+  const headerNoindex = xRobotsTagHasNoindex(headerLookup);
+  const hasNoindex = metaNoindex || headerNoindex;
   const h1s = [];
   $("h1").each((_, el) => {
     h1s.push($(el).text().trim());
@@ -11290,7 +11379,8 @@ function analyzeOnPage(html, url) {
     wordCount,
     textToHtmlRatio,
     hasNoindex,
-    metaRobots
+    metaRobots,
+    xRobotsTag: headerLookup
   };
   if (!title) {
     issues.push({
@@ -11404,11 +11494,29 @@ function analyzeOnPage(html, url) {
       details: { ratio: textToHtmlRatio.toFixed(1) + "%" }
     });
   }
-  if (hasNoindex) {
+  const root = options.auditRoot ?? isSiteRoot(url);
+  if (metaNoindex) {
     issues.push({
       ...ISSUE_DEFINITIONS.NOINDEX_TAG,
+      severity: root ? "error" : "warning",
       affectedUrls: [url],
-      details: { metaRobots }
+      details: { metaRobots: robotsMetaValues.join(", "), siteRoot: root }
+    });
+  }
+  if (headerNoindex) {
+    let preview = false;
+    try {
+      preview = isPreviewDeploymentHost(new URL(url).hostname);
+    } catch {
+    }
+    issues.push({
+      ...ISSUE_DEFINITIONS.NOINDEX_HEADER,
+      severity: preview ? "notice" : root ? "error" : "warning",
+      ...preview && {
+        description: `${ISSUE_DEFINITIONS.NOINDEX_HEADER.description} This host is a preview-deployment domain (Vercel, Netlify or Cloudflare Pages), which adds this header to non-production deployments automatically - your production domain won't send it.`
+      },
+      affectedUrls: [url],
+      details: { xRobotsTag: headerLookup, siteRoot: root, previewHost: preview }
     });
   }
   return { issues, data };
@@ -17301,7 +17409,7 @@ async function validateRobotsTxt(url) {
       timeout: 1e4,
       validateStatus: () => true
     });
-    if (response.status === 404) {
+    if (response.status >= 400) {
       return {
         issues,
         data: {
@@ -20173,8 +20281,19 @@ function analyzeTrackingVerification(html, url) {
 }
 
 // src/audit/engine.ts
+function sameUrl(a, b) {
+  try {
+    const ua = new URL(a);
+    const ub = new URL(b);
+    const path = (u) => u.pathname.replace(/\/+$/, "") || "/";
+    return ua.origin === ub.origin && path(ua) === path(ub) && ua.search === ub.search;
+  } catch {
+    return a === b;
+  }
+}
 async function runFullAudit(options) {
   const { url, checkBrokenLinks = false, checkHreflangUrls = false, checkCanonicalChain = false, cruxApiKey, checksLimit = 280, premiumChecks } = options;
+  const auditRoot = isSiteRoot(url) || sameUrl(url, options.auditRootUrl ?? url);
   const allIssues = [];
   const pages = [];
   const tier = checksLimit <= 50 ? "free" : checksLimit <= 100 ? "registered" : "paid";
@@ -20216,17 +20335,31 @@ async function runFullAudit(options) {
       affectedUrls: [url],
       details: { error: errorMsg, cause: errorCause || void 0 }
     });
-    return createReport(url, domain, allIssues, pages);
+    return createReport(url, domain, allIssues, pages, { kind: "unreachable" });
   }
-  const html = fetchResult.data.replace(/<\/?noscript[^>]*>/gi, "");
+  const statusCode = fetchResult.status;
+  if (statusCode >= 400) {
+    const blocked = statusCode === 401 || statusCode === 403 || statusCode === 429;
+    allIssues.push({
+      ...ISSUE_DEFINITIONS.HTTP_ERROR_STATUS,
+      title: `Page returns HTTP ${statusCode}`,
+      description: `The audited URL answered with HTTP ${statusCode}${fetchResult.statusText ? ` ${fetchResult.statusText}` : ""}. Page content checks were skipped - they would only be grading the error page.${blocked ? " This status often means a firewall or bot protection (Cloudflare, Vercel, etc.) is refusing automated clients: check that search engine crawlers get the page, and allowlist the RankCLI user agent or audit a preview URL." : ""}`,
+      affectedUrls: [url],
+      details: { statusCode, ...blocked && { likelyBotProtection: true } }
+    });
+    pages.push({ url, statusCode, wordCount: 0, loadTime: 0, issues: allIssues.map((i) => i.code) });
+    return createReport(url, domain, allIssues, pages, { kind: "http-error", statusCode });
+  }
+  const body = typeof fetchResult.data === "string" ? fetchResult.data : JSON.stringify(fetchResult.data ?? "");
+  const html = body.replace(/<\/?noscript[^>]*>/gi, "");
   const headers = fetchResult.headers;
   console.error(`\u{1F4DD} Phase 2: Running synchronous HTML checks (tier: ${tier}, limit: ${checksLimit})...`);
-  const onPageResult = analyzeOnPage(html, url);
+  const onPageResult = analyzeOnPage(html, url, headers, { auditRoot });
   const structuredDataResult = analyzeStructuredData(html, url);
   const mobileResult = analyzeMobile(html, url);
   const mobileResourceIssues = checkMobileResources(html, url);
   const socialResult = analyzeSocialMeta(html, url);
-  const soft404Result = detectSoft404(html, url, 200);
+  const soft404Result = detectSoft404(html, url, statusCode);
   const serpResult = analyzeSERPPreview(html, url);
   const domResult = analyzeDOMStructure(html, url);
   const techResult = detectTechnologies(html, url, headers);
@@ -20324,13 +20457,20 @@ async function runFullAudit(options) {
     }
   }
   console.error("\u{1F517} Phase 3: Running async checks (parallel)...");
+  const withTimeout = async (name, promise, timeoutMs) => {
+    let timer;
+    const timeoutPromise = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`${name} timed out`)), timeoutMs);
+    });
+    try {
+      return await Promise.race([promise, timeoutPromise]);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
   const safeAsync = async (name, fn, timeoutMs = 1e4) => {
     try {
-      const resultPromise = fn();
-      const timeoutPromise = new Promise(
-        (_, reject) => setTimeout(() => reject(new Error(`${name} timed out`)), timeoutMs)
-      );
-      const result = await Promise.race([resultPromise, timeoutPromise]);
+      const result = await withTimeout(name, fn(), timeoutMs);
       return result.issues;
     } catch (err) {
       console.error(`${name} failed:`, err);
@@ -20339,11 +20479,7 @@ async function runFullAudit(options) {
   };
   const safeAsyncIssues = async (name, fn, timeoutMs = 1e4) => {
     try {
-      const resultPromise = fn();
-      const timeoutPromise = new Promise(
-        (_, reject) => setTimeout(() => reject(new Error(`${name} timed out`)), timeoutMs)
-      );
-      return await Promise.race([resultPromise, timeoutPromise]);
+      return await withTimeout(name, fn(), timeoutMs);
     } catch (err) {
       console.error(`${name} failed:`, err);
       return [];
@@ -20433,7 +20569,7 @@ async function runFullAudit(options) {
   }
   pages.push({
     url,
-    statusCode: 200,
+    statusCode,
     title: onPageResult.data.title,
     description: onPageResult.data.description,
     canonical: onPageResult.data.canonical,
@@ -20445,8 +20581,14 @@ async function runFullAudit(options) {
   console.error("\n\u2705 Audit complete!\n");
   return createReport(url, domain, allIssues, pages);
 }
-function createReport(url, domain, issues, pages) {
+function createReport(url, domain, issues, pages, pageFailure) {
   const healthScore = calculateHealthScore(issues);
+  if (pageFailure) {
+    for (const key of Object.keys(healthScore)) {
+      if (key !== "crawlability")
+        healthScore[key] = 0;
+    }
+  }
   const errors = issues.filter((i) => i.severity === "error").length;
   const warnings = issues.filter((i) => i.severity === "warning").length;
   const notices = issues.filter((i) => i.severity === "notice").length;
@@ -20458,8 +20600,8 @@ function createReport(url, domain, issues, pages) {
     timestamp: (/* @__PURE__ */ new Date()).toISOString(),
     crawlStats: {
       totalUrls: 1,
-      crawledUrls: 1,
-      errorUrls: 0,
+      crawledUrls: pageFailure?.kind === "unreachable" ? 0 : 1,
+      errorUrls: pageFailure ? 1 : 0,
       redirectUrls: 0,
       blockedUrls: 0
     },
