@@ -3,6 +3,13 @@
 // session row for the waiting local MCP process to pick up exactly once via
 // mcp-connect-status. The browser never sees the raw key - only the local
 // process that started the flow does, matching device-flow trust semantics.
+//
+// Whoever starts a session can send its link to anyone, so opening the page
+// must not grant anything. The page first asks for the session ('describe'),
+// shows its user code - the same code the CLI/MCP client printed - and only
+// an explicit Approve click ('approve', with that code) mints the key. 'deny'
+// discards the session. A request without an action mints nothing: that is
+// what the old page sent on load.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -52,9 +59,15 @@ serve(async (req) => {
       });
     }
 
-    const { connectId } = await req.json();
-    if (!connectId) {
+    const { connectId, action, userCode } = await req.json();
+    if (!connectId || typeof connectId !== 'string') {
       return new Response(JSON.stringify({ error: 'connectId is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if (action !== 'describe' && action !== 'approve' && action !== 'deny') {
+      return new Response(JSON.stringify({ error: 'Reload this page and approve the connection to continue.' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -62,7 +75,7 @@ serve(async (req) => {
 
     const { data: session } = await supabase
       .from('mcp_connect_sessions')
-      .select('id, status, expires_at')
+      .select('id, status, expires_at, user_code, created_at')
       .eq('id', connectId)
       .single();
 
@@ -78,9 +91,33 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    if (new Date(session.expires_at).getTime() < Date.now()) {
+    // Sessions started before user codes existed can't be confirmed; they
+    // expire within 10 minutes anyway.
+    if (new Date(session.expires_at).getTime() < Date.now() || !session.user_code) {
       return new Response(JSON.stringify({ error: 'This connection link has expired. Run the connect command again.' }), {
         status: 410,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'describe') {
+      return new Response(
+        JSON.stringify({ userCode: session.user_code, createdAt: session.created_at, expiresAt: session.expires_at }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (action === 'deny') {
+      await supabase.from('mcp_connect_sessions').delete().eq('id', connectId).eq('status', 'pending');
+      return new Response(JSON.stringify({ denied: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const normalizeCode = (code: unknown) => String(code ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (normalizeCode(userCode) !== normalizeCode(session.user_code)) {
+      return new Response(JSON.stringify({ error: 'The confirmation code does not match this connection request.' }), {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -120,7 +157,8 @@ serve(async (req) => {
         api_key_name: apiKeyName,
         claimed_at: new Date().toISOString(),
       })
-      .eq('id', connectId);
+      .eq('id', connectId)
+      .eq('status', 'pending');
     if (updateError) throw updateError;
 
     return new Response(JSON.stringify({ success: true, email: user.email }), {
