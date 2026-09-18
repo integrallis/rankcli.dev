@@ -240,8 +240,9 @@ async function checkOpenAI(brand: string, domain: string, query: string, byok?: 
           { role: 'system', content: 'You are a helpful assistant that recommends tools and websites. List your top recommendations.' },
           { role: 'user', content: query },
         ],
-        max_tokens: 500,
-        temperature: 0.7,
+        // GPT-5.6 rejects temperature and max_tokens outright (see _shared/models.ts).
+        // max_completion_tokens is accepted by every current OpenAI chat model, BYOK ones too.
+        max_completion_tokens: 500,
       }),
     });
 

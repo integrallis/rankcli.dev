@@ -16,6 +16,10 @@
  * runtimes cannot share a module — one is Deno, one is npm — so this is the seam where they agree.
  */
 
+/* GPT-5.6 is a reasoning family: on chat/completions it rejects `temperature` (and `top_p`) at any
+ * value and takes `max_completion_tokens`, not `max_tokens`. A rejected call looks like "not
+ * mentioned" wherever the caller swallows !response.ok, so send neither. */
+
 /** ChatGPT — the fast tier these checks have always used. */
 export const OPENAI_FAST = 'gpt-5.6-luna';
 

@@ -931,7 +931,7 @@ Return JSON with:
           { role: 'system', content: 'You are an SEO expert. Respond with valid JSON only.' },
           { role: 'user', content: prompt },
         ],
-        max_tokens: 1500,
+        max_completion_tokens: 1500,
         response_format: { type: 'json_object' },
       }),
     });
@@ -1406,8 +1406,8 @@ async function checkOpenAI(brand: string, domain: string, query: string): Promis
         { role: 'system', content: 'You are a helpful assistant that recommends tools and websites. List your top recommendations.' },
         { role: 'user', content: query },
       ],
-      max_tokens: 500,
-      temperature: 0.7,
+      // GPT-5.6 rejects temperature and max_tokens outright (see models.ts).
+      max_completion_tokens: 500,
     }),
   });
 

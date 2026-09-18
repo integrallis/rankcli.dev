@@ -11,6 +11,10 @@
  * the price tier the one it replaced occupied, so this refresh moves the answers and not the bill.
  */
 
+/* GPT-5.6 is a reasoning family: on chat/completions it rejects `temperature` (and `top_p`) at any
+ * value and takes `max_completion_tokens`, not `max_tokens`. A rejected call looks like "not
+ * mentioned" wherever the caller swallows !response.ok, so send neither. */
+
 /** ChatGPT — the fast tier the audit has always used. */
 export const OPENAI_FAST = 'gpt-5.6-luna';
 
