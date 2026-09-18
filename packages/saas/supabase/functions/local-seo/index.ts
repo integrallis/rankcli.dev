@@ -15,12 +15,6 @@ import { resolveAIConfig, aiConfigErrorMessage } from '../_shared/resolve-ai-con
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const rankcliOpenAIKey = Deno.env.get('OPENAI_API_KEY');
-
-// Matches pricing-tiers.json's features.local_seo: true (solo, pro, agency
-// all have it - the LTD tiers don't declare this key at all, so they must
-// bring a key too).
-const LOCAL_SEO_FALLBACK_TIERS = new Set(['solo', 'pro', 'agency']);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -244,9 +238,9 @@ serve(async (req) => {
       .eq('id', projectId)
       .single();
 
-    const aiResolution = await resolveAIConfig(supabase, project?.user_id, rankcliOpenAIKey, LOCAL_SEO_FALLBACK_TIERS);
+    const aiResolution = await resolveAIConfig(supabase, project?.user_id);
     if (!aiResolution.ok) {
-      return new Response(JSON.stringify({ error: aiConfigErrorMessage(aiResolution.reason, 'local SEO analysis') }), {
+      return new Response(JSON.stringify({ error: aiConfigErrorMessage('local SEO analysis') }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

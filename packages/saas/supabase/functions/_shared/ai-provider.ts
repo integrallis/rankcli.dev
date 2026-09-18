@@ -1,13 +1,15 @@
 // Unified chat-completion call across BYOK providers. OpenAI, OpenRouter,
-// Groq, Gemini (via its OpenAI-compatibility endpoint), and any self-hosted/
+// Groq, Gemini (via its OpenAI-compatibility endpoint), Perplexity, and any self-hosted/
 // custom server (Ollama, LM Studio, vLLM, ...) all speak the same
 // OpenAI-shaped /chat/completions request - only the base URL and model
 // name differ, so they share one request path. Anthropic's Messages API is
 // a genuinely different shape (system is a top-level field, not a message;
 // no response_format; content comes back as an array of blocks) and gets
 // its own path.
+//
+// packages/audit-worker/src/ai-provider.ts is a Node copy of this file - keep them in step.
 
-export type AIProvider = 'openai' | 'anthropic' | 'openrouter' | 'groq' | 'gemini' | 'custom';
+export type AIProvider = 'openai' | 'anthropic' | 'openrouter' | 'groq' | 'gemini' | 'perplexity' | 'custom';
 
 export interface AIProviderConfig {
   provider: AIProvider;
@@ -26,7 +28,15 @@ const PROVIDER_DEFAULTS: Record<Exclude<AIProvider, 'custom'>, { baseUrl: string
   openrouter: { baseUrl: 'https://openrouter.ai/api/v1', model: 'deepseek/deepseek-r1:free' },
   groq: { baseUrl: 'https://api.groq.com/openai/v1', model: 'llama-3.3-70b-versatile' },
   gemini: { baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.0-flash' },
+  perplexity: { baseUrl: 'https://api.perplexity.ai', model: 'sonar' },
 };
+
+// OpenAI's reasoning families (GPT-5.x, o-series) reject `temperature` at any value and
+// take `max_completion_tokens` instead of `max_tokens`. Users pick their own model, so
+// this is decided per request rather than per provider.
+function isOpenAIReasoningModel(model: string): boolean {
+  return /^(gpt-5|o\d)/.test(model);
+}
 
 export function resolveProviderSettings(config: AIProviderConfig): { baseUrl: string; model: string } {
   if (config.provider === 'custom') {
@@ -84,7 +94,7 @@ export async function callChatCompletion(
     return text;
   }
 
-  // OpenAI-compatible path: openai, openrouter, groq, gemini, custom.
+  // OpenAI-compatible path: openai, openrouter, groq, gemini, perplexity, custom.
   const headers: Record<string, string> = {
     Authorization: `Bearer ${config.apiKey}`,
     'Content-Type': 'application/json',
@@ -102,9 +112,15 @@ export async function callChatCompletion(
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userPrompt },
     ],
-    temperature,
-    max_tokens: maxTokens,
   };
+  if (config.provider === 'openai') {
+    // Every current OpenAI chat model accepts max_completion_tokens; max_tokens is legacy.
+    body.max_completion_tokens = maxTokens;
+    if (!isOpenAIReasoningModel(model)) body.temperature = temperature;
+  } else {
+    body.max_tokens = maxTokens;
+    body.temperature = temperature;
+  }
   // json_object response_format is an OpenAI-specific extension - not every
   // OpenAI-compatible server implements it (many local/custom servers
   // don't), so only request it for providers confirmed to support it.
@@ -133,7 +149,9 @@ export async function callChatCompletion(
 // the next time an auto-fix PR silently fails hours later.
 export async function testProviderConnection(config: AIProviderConfig): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
-    await callChatCompletion(config, 'Reply with exactly: OK', 'OK', { maxTokens: 5, temperature: 0 });
+    // 256, not 5: a reasoning model can spend a tiny budget thinking and return no text,
+    // which would fail a perfectly good key.
+    await callChatCompletion(config, 'Reply with exactly: OK', 'OK', { maxTokens: 256, temperature: 0 });
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : 'Unknown error' };

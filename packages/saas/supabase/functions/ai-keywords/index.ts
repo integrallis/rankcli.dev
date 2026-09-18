@@ -13,49 +13,10 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import * as cheerio from 'https://esm.sh/cheerio@1.0.0';
 import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
-import { decryptSecret } from '../_shared/crypto.ts';
+import { resolveAIConfig, aiConfigErrorMessage } from '../_shared/resolve-ai-config.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
-
-// Previously: free tier ran the SAME two full gpt-4o calls (site analysis +
-// keyword generation) as paid tiers, on RankCLI's own key, and only
-// truncated the DISPLAYED response to a teaser - identical cost to a paid
-// request for every free-tier call. BYOK wins for every tier; absent one,
-// only tiers past the free-tier branch below (solo/pro/agency, all of
-// which have keyword_research: true in pricing-tiers.json) fall back to
-// RankCLI's key - free tier without BYOK gets no AI call at all now.
-type AIConfigResolution =
-  | { ok: true; config: AIProviderConfig }
-  | { ok: false; reason: 'no_key_byok_required' };
-
-// deno-lint-ignore no-explicit-any
-async function resolveAIConfig(supabase: any, userId: string | null, planTier: string): Promise<AIConfigResolution> {
-  if (userId) {
-    const { data: byok } = await supabase
-      .from('user_ai_keys')
-      .select('provider, encrypted_key, base_url, model')
-      .eq('user_id', userId)
-      .single();
-    if (byok) {
-      const encryptionSecret = Deno.env.get('AI_KEY_ENCRYPTION_SECRET');
-      if (encryptionSecret) {
-        const apiKey = await decryptSecret(byok.encrypted_key, encryptionSecret);
-        return {
-          ok: true,
-          config: { provider: byok.provider, apiKey, baseUrl: byok.base_url || undefined, model: byok.model || undefined },
-        };
-      }
-    }
-  }
-
-  if (planTier === 'free') {
-    return { ok: false, reason: 'no_key_byok_required' };
-  }
-  return { ok: true, config: { provider: 'openai', apiKey: openaiApiKey, model: 'gpt-4o-mini' } };
-}
-
 // Worker configuration for paid keyword research
 const WORKER_URL = Deno.env.get('AUDIT_WORKER_URL') || 'http://localhost:8080';
 // No 'dev-secret' fallback - audit-worker no longer accepts that guessable
@@ -671,10 +632,11 @@ serve(async (req) => {
 
     console.log(`AI Keyword Research for ${url} (plan: ${planTier}, mode: ${mode})`);
 
-    const aiResolution = await resolveAIConfig(supabase, userId, planTier);
+    // The customer's own key, for every tier - RankCLI's keys are never a fallback.
+    const aiResolution = await resolveAIConfig(supabase, userId);
     if (!aiResolution.ok) {
       return new Response(JSON.stringify({
-        error: 'Connect an AI provider key to run keyword research on the free plan - any provider works, including free-tier keys from OpenRouter, Groq, or Google AI Studio. Add one at https://rankcli.dev/account?tab=ai-provider',
+        error: aiConfigErrorMessage('keyword research'),
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -784,7 +746,9 @@ serve(async (req) => {
 
     // Paid tier: Full results
     // For paid tiers, route to worker if enabled (enhanced tool ideas with competitive search)
-    if (USE_WORKER_FOR_PAID && planTier !== 'free') {
+    // The worker's keyword research is OpenAI-only and runs on the key passed to it, so
+    // it's only an option when the user's key is an OpenAI one.
+    if (USE_WORKER_FOR_PAID && planTier !== 'free' && aiConfig.provider === 'openai') {
       console.log('Routing to worker for enhanced keyword research...');
 
       try {
@@ -798,6 +762,7 @@ serve(async (req) => {
             url,
             projectId,
             tier: planTier,
+            openaiApiKey: aiConfig.apiKey,
             wizardResponses: wizardResponses
               ? Object.entries(wizardResponses).map(([q, a]) => ({ id: q, answer: a }))
               : undefined,

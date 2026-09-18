@@ -21,11 +21,13 @@ import {
 import { useAIVisibilitySSE } from '@/hooks/useAIVisibilitySSE';
 import { supabase } from '@/integrations/supabase/client';
 
-const PROVIDER_INFO: Record<string, { name: string; icon: string; color: string; configured: boolean }> = {
-  openai: { name: 'ChatGPT', icon: '', color: 'bg-green-500', configured: true },
-  anthropic: { name: 'Claude', icon: '', color: 'bg-orange-500', configured: true },
-  google: { name: 'Gemini', icon: '', color: 'bg-blue-500', configured: true },
-  perplexity: { name: 'Perplexity', icon: '', color: 'bg-purple-500', configured: false }, // Not configured in production
+// Whether an assistant was actually asked comes from each result's status, not from here:
+// the worker reports not_checked for any assistant it has no key for.
+const PROVIDER_INFO: Record<string, { name: string; icon: string; color: string }> = {
+  openai: { name: 'ChatGPT', icon: '', color: 'bg-green-500' },
+  anthropic: { name: 'Claude', icon: '', color: 'bg-orange-500' },
+  google: { name: 'Gemini', icon: '', color: 'bg-blue-500' },
+  perplexity: { name: 'Perplexity', icon: '', color: 'bg-purple-500' },
 };
 
 // Provider order for display
@@ -112,8 +114,9 @@ export function AIVisibilityCheckerPage() {
 
   const shareOnTwitter = () => {
     if (status !== 'completed') return;
-    const mentionedCount = providers.filter(p => p.mentioned).length;
-    const text = `My site ${brand} is visible in ${mentionedCount}/4 AI models! Check your AI visibility:`;
+    const asked = providers.filter(p => p.status === 'checked');
+    const mentionedCount = asked.filter(p => p.mentioned).length;
+    const text = `My site ${brand} is visible in ${mentionedCount}/${asked.length} AI models! Check your AI visibility:`;
     const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent('https://rankcli.dev/tools/ai-visibility')}`;
     window.open(shareUrl, '_blank');
   };
@@ -305,8 +308,8 @@ export function AIVisibilityCheckerPage() {
                   </div>
                   <p className="text-muted-foreground">
                     {brand} is mentioned by{' '}
-                    <strong>{providers.filter(p => p.mentioned).length}</strong> out of{' '}
-                    <strong>4</strong> AI models
+                    <strong>{providers.filter(p => p.status === 'checked' && p.mentioned).length}</strong> out of{' '}
+                    <strong>{providers.filter(p => p.status === 'checked').length}</strong> AI models asked
                   </p>
 
                   {/* Share Button */}
@@ -332,7 +335,7 @@ export function AIVisibilityCheckerPage() {
                       className={`p-6 rounded-xl border transition-all ${
                         isPending
                           ? 'bg-muted/20 animate-pulse'
-                          : isChecked && provider.mentioned
+                          : isChecked && provider.status === 'checked' && provider.mentioned
                           ? 'bg-green-500/5 border-green-500/20'
                           : 'bg-muted/30'
                       }`}
@@ -345,10 +348,12 @@ export function AIVisibilityCheckerPage() {
                           <div>
                             <h3 className="font-semibold">{info.name}</h3>
                             <p className="text-sm text-muted-foreground">
-                              {!info.configured ? (
-                                <span className="text-yellow-600">Not configured</span>
-                              ) : isPending ? (
+                              {isPending ? (
                                 <span className="text-muted-foreground">Checking...</span>
+                              ) : isChecked && provider.status === 'not_checked' ? (
+                                <span className="text-yellow-600">Not checked</span>
+                              ) : isChecked && provider.status === 'error' ? (
+                                <span className="text-orange-500">Could not check</span>
                               ) : isChecked && provider.mentioned ? (
                                 `Position #${provider.position || '?'}`
                               ) : isChecked ? (
@@ -361,12 +366,14 @@ export function AIVisibilityCheckerPage() {
                         </div>
                         {isPending ? (
                           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                        ) : isChecked ? (
+                        ) : isChecked && provider.status === 'checked' ? (
                           getProviderIcon(provider.mentioned)
+                        ) : isChecked ? (
+                          <AlertTriangle className="h-6 w-6 text-muted-foreground" />
                         ) : null}
                       </div>
 
-                      {isChecked && provider.mentioned && (
+                      {isChecked && provider.status === 'checked' && provider.mentioned && (
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <span className="text-sm text-muted-foreground">Sentiment:</span>
@@ -380,21 +387,21 @@ export function AIVisibilityCheckerPage() {
                         </div>
                       )}
 
-                      {!info.configured && (
+                      {isChecked && provider.status === 'not_checked' && (
                         <div className="flex items-center gap-2 text-sm text-yellow-600">
                           <AlertTriangle className="h-4 w-4" />
-                          <span>API not configured - check skipped</span>
+                          <span>Not asked in the free check - connect your own key to include it</span>
                         </div>
                       )}
 
-                      {info.configured && isChecked && !provider.mentioned && !provider.error && (
+                      {isChecked && provider.status === 'checked' && !provider.mentioned && (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <AlertTriangle className="h-4 w-4" />
                           <span>Not mentioned in recommendations</span>
                         </div>
                       )}
 
-                      {isChecked && provider.error && (
+                      {isChecked && provider.status === 'error' && (
                         <div className="flex items-center gap-2 text-sm text-orange-500">
                           <AlertTriangle className="h-4 w-4" />
                           <span>Could not check (API unavailable)</span>

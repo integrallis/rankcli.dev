@@ -14,12 +14,12 @@ import { premiumChecks } from '@rankcli/agent-runtime-premium';
 import { createAnalysisServer } from '@rankcli/mcp-server/server';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { EventEmitter } from 'events';
+import { callChatCompletion, type AIProviderConfig } from './ai-provider.js';
 import { randomUUID } from 'crypto';
 import {
   OPENAI_FAST,
   ANTHROPIC_FAST,
   GOOGLE_FAST,
-  GOOGLE_ENDPOINT,
   PERPLEXITY_SEARCH,
 } from './models.js';
 
@@ -27,7 +27,6 @@ import {
 const PORT = parseInt(process.env.PORT || '8080', 10);
 const SUPABASE_URL = process.env.SUPABASE_URL || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 // No fallback default - a guessable 'dev-secret' string is a real
 // vulnerability if this ever got deployed unset, not a dev convenience.
 const WORKER_SECRET = process.env.WORKER_SECRET;
@@ -93,6 +92,7 @@ interface SseEvent {
   // AI visibility specific
   provider?: string;
   provider_name?: string;
+  status?: 'checked' | 'not_checked' | 'error';
   mentioned?: boolean;
   position?: number | null;
   sentiment?: string | null;
@@ -119,6 +119,9 @@ interface AIVisibilityJob {
 interface AIProviderResult {
   provider: string;
   name: string;
+  // not_checked: the user has no key for this provider. error: the call failed. Neither
+  // is "not mentioned", and neither counts toward the score.
+  status: 'checked' | 'not_checked' | 'error';
   mentioned: boolean;
   position: number | null;
   sentiment: 'positive' | 'neutral' | 'negative' | null;
@@ -128,6 +131,25 @@ interface AIProviderResult {
 }
 
 const aiVisibilityJobs = new Map<string, AIVisibilityJob>();
+
+// One key per assistant. Held only in the closure of the job that uses it - never on the
+// job object, which GET /ai-visibility/jobs/:jobId returns.
+interface ProviderKey { apiKey: string; model?: string }
+interface ProviderKeys { openai?: ProviderKey; anthropic?: ProviderKey; gemini?: ProviderKey; perplexity?: ProviderKey }
+
+// The public, no-signup visibility tool (/tools/ai-visibility, /tools/chatgpt-checker) is the
+// one AI feature that runs on RankCLI's own keys - a deliberate marketing cost, kept small by
+// the fast-tier models and the per-IP limit below. Every signed-in feature runs on the
+// user's own keys. An assistant RankCLI has no key for is reported as not checked.
+function rankcliVisibilityKeys(): ProviderKeys {
+  const key = (apiKey?: string) => (apiKey ? { apiKey } : undefined);
+  return {
+    openai: key(process.env.OPENAI_API_KEY),
+    anthropic: key(process.env.ANTHROPIC_API_KEY),
+    gemini: key(process.env.GOOGLE_API_KEY),
+    perplexity: key(process.env.PERPLEXITY_API_KEY),
+  };
+}
 
 // Per-IP rate limiting for the public /ai-visibility endpoint. In-memory is
 // fine here (unlike a stateless edge function) - this is a long-running
@@ -305,6 +327,9 @@ app.post<{
     maxPages?: number;
     checksLimit?: number;
     enableAI?: boolean;
+    // The user's own AI key, resolved by the start-deep-audit edge function. AI analysis
+    // runs only with it - RankCLI's keys are never used.
+    aiConfig?: AIProviderConfig;
   };
 }>('/audit', async (request, reply) => {
   // Verify worker secret
@@ -313,7 +338,7 @@ app.post<{
     return reply.status(401).send({ error: 'Unauthorized' });
   }
 
-  const { auditId, projectId, url, maxPages = 10, checksLimit = 280, enableAI = true } = request.body;
+  const { auditId, projectId, url, maxPages = 10, checksLimit = 280, enableAI = true, aiConfig } = request.body;
 
   if (!auditId || !projectId || !url) {
     return reply.status(400).send({ error: 'Missing required fields: auditId, projectId, url' });
@@ -335,7 +360,7 @@ app.post<{
   jobs.set(jobId, job);
 
   // Start audit in background
-  runDeepAudit(job, { maxPages: Math.min(maxPages, MAX_PAGES), checksLimit, enableAI }).catch(err => {
+  runDeepAudit(job, { maxPages: Math.min(maxPages, MAX_PAGES), checksLimit, enableAI, aiConfig }).catch(err => {
     app.log.error({ err, jobId }, 'Audit failed');
   });
 
@@ -454,7 +479,7 @@ app.get<{ Params: { auditId: string } }>('/stream/:auditId', async (request, rep
 // Deep audit runner
 async function runDeepAudit(
   job: AuditJob,
-  options: { maxPages: number; checksLimit: number; enableAI: boolean }
+  options: { maxPages: number; checksLimit: number; enableAI: boolean; aiConfig?: AIProviderConfig }
 ): Promise<void> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
   const startTime = Date.now();
@@ -701,11 +726,11 @@ async function runDeepAudit(
 
     // Phase 3: AI Analysis (if enabled)
     let aiAnalysis = null;
-    if (options.enableAI && OPENAI_API_KEY && primaryReport.pages[0]) {
+    if (options.enableAI && options.aiConfig && primaryReport.pages[0]) {
       app.log.info({ jobId: job.id }, 'Phase 3: Running AI analysis...');
       job.progress = 85;
 
-      aiAnalysis = await runAIAnalysis(job.url, mergedIssues);
+      aiAnalysis = await runAIAnalysis(job.url, mergedIssues, options.aiConfig);
       job.progress = 95;
     }
 
@@ -899,9 +924,7 @@ function mergeIssues(issueArrays: DbAuditIssue[][]): DbAuditIssue[] {
 }
 
 // Helper: Run AI analysis
-async function runAIAnalysis(url: string, issues: DbAuditIssue[]): Promise<Record<string, unknown> | null> {
-  if (!OPENAI_API_KEY) return null;
-
+async function runAIAnalysis(url: string, issues: DbAuditIssue[], aiConfig: AIProviderConfig): Promise<Record<string, unknown> | null> {
   try {
     const prompt = `Analyze these SEO audit results and provide prioritized recommendations:
 
@@ -919,31 +942,16 @@ Return JSON with:
   ]
 }`;
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: OPENAI_FAST,
-        messages: [
-          { role: 'system', content: 'You are an SEO expert. Respond with valid JSON only.' },
-          { role: 'user', content: prompt },
-        ],
-        max_completion_tokens: 1500,
-        response_format: { type: 'json_object' },
-      }),
-    });
-
-    if (!response.ok) return null;
-
-    const data = await response.json() as { choices?: { message?: { content?: string } }[] };
-    const content = data.choices?.[0]?.message?.content;
-    if (!content) return null;
+    const content = await callChatCompletion(
+      aiConfig,
+      'You are an SEO expert. Respond with valid JSON only.',
+      prompt,
+      { jsonMode: true, maxTokens: 1500 },
+    );
 
     return JSON.parse(content);
-  } catch {
+  } catch (err) {
+    app.log.warn({ err, provider: aiConfig.provider }, 'AI analysis failed');
     return null;
   }
 }
@@ -955,6 +963,7 @@ app.post<{
     url: string;
     projectId?: string;
     tier: PlanTier;
+    openaiApiKey?: string;
     wizardResponses?: Array<{ id: string; answer: string }>;
     userContext?: {
       productDescription?: string;
@@ -976,6 +985,7 @@ app.post<{
     url,
     projectId,
     tier,
+    openaiApiKey,
     wizardResponses,
     userContext,
     enableEnhancedToolIdeas = true,
@@ -985,8 +995,10 @@ app.post<{
     return reply.status(400).send({ error: 'URL is required' });
   }
 
-  if (!OPENAI_API_KEY) {
-    return reply.status(500).send({ error: 'OpenAI API key not configured' });
+  // Keyword research runs on the caller's OpenAI key (ai-keywords passes the user's own);
+  // RankCLI's key is never a fallback.
+  if (!openaiApiKey) {
+    return reply.status(400).send({ error: 'openaiApiKey is required' });
   }
 
   app.log.info({ url, tier, projectId }, 'Starting keyword research');
@@ -995,7 +1007,7 @@ app.post<{
     const result = await runAIKeywordResearch({
       url,
       tier,
-      openaiApiKey: OPENAI_API_KEY,
+      openaiApiKey,
       userContext,
       wizardResponses,
       enableEnhancedToolIdeas,
@@ -1096,19 +1108,12 @@ app.post<{
     brand?: string;
   };
 }>('/ai-visibility', async (request, reply) => {
-  // This is a genuinely public, anonymous-accessible free tool
-  // (/tools/ai-visibility, /tools/chatgpt-checker call it directly from
-  // the browser via useAIVisibilitySSE - it can never carry WORKER_SECRET,
-  // that's server-only). It triggers up to 4 separate paid AI API calls
-  // per request on RankCLI's own keys, and had NO rate limiting at all -
-  // anyone could script unlimited calls against it for free. Same 5/hour
-  // per-IP limit as the equivalent saas edge functions use elsewhere.
-  // trustProxy above makes this the real client IP behind Fly's edge, not
-  // a Cloudflare one - this app isn't behind Cloudflare, unlike the saas
-  // edge functions this pattern was borrowed from.
+  // The public no-signup tool, called straight from the browser on RankCLI's keys (see
+  // rankcliVisibilityKeys). trustProxy above makes request.ip the real client IP behind
+  // Fly's edge.
   if (!checkAIVisibilityRateLimit(request.ip)) {
     return reply.status(429).send({
-      error: 'Rate limit exceeded. Try again in an hour, or sign up for unlimited checks.',
+      error: 'Rate limit exceeded. Try again in an hour, or sign up and connect your own AI keys for unlimited checks.',
     });
   }
 
@@ -1147,7 +1152,7 @@ app.post<{
   aiVisibilityJobs.set(jobId, job);
 
   // Start checking in background
-  runAIVisibilityCheck(job).catch(err => {
+  runAIVisibilityCheck(job, rankcliVisibilityKeys()).catch(err => {
     app.log.error({ err, jobId }, 'AI visibility check failed');
   });
 
@@ -1242,11 +1247,7 @@ app.get<{ Params: { jobId: string } }>('/ai-visibility/jobs/:jobId', async (requ
 });
 
 // AI Visibility check runner
-async function runAIVisibilityCheck(job: AIVisibilityJob): Promise<void> {
-  const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
-  const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || '';
-  const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY || '';
-
+async function runAIVisibilityCheck(job: AIVisibilityJob, keys: ProviderKeys): Promise<void> {
   try {
     job.status = 'running';
     job.startedAt = new Date();
@@ -1262,17 +1263,46 @@ async function runAIVisibilityCheck(job: AIVisibilityJob): Promise<void> {
 
     // Check each provider sequentially to stream results as they come in
     const providers = [
-      { id: 'openai', name: 'ChatGPT', check: () => checkOpenAI(job.brand, job.domain, query) },
-      { id: 'anthropic', name: 'Claude', check: () => checkAnthropic(job.brand, job.domain, query, ANTHROPIC_API_KEY) },
-      { id: 'google', name: 'Gemini', check: () => checkGoogle(job.brand, job.domain, query, GOOGLE_API_KEY) },
-      { id: 'perplexity', name: 'Perplexity', check: () => checkPerplexity(job.brand, job.domain, query, PERPLEXITY_API_KEY) },
+      { id: 'openai', name: 'ChatGPT', key: keys.openai, check: (k: ProviderKey) => checkOpenAI(job.brand, job.domain, query, k) },
+      { id: 'anthropic', name: 'Claude', key: keys.anthropic, check: (k: ProviderKey) => checkAnthropic(job.brand, job.domain, query, k) },
+      { id: 'google', name: 'Gemini', key: keys.gemini, check: (k: ProviderKey) => checkGoogle(job.brand, job.domain, query, k) },
+      { id: 'perplexity', name: 'Perplexity', key: keys.perplexity, check: (k: ProviderKey) => checkPerplexity(job.brand, job.domain, query, k) },
     ];
 
     for (const provider of providers) {
+      if (!provider.key) {
+        const notChecked: AIProviderResult = {
+          provider: provider.id,
+          name: provider.name,
+          status: 'not_checked',
+          mentioned: false,
+          position: null,
+          sentiment: null,
+          context: null,
+          score: 0,
+        };
+        job.results.push(notChecked);
+        job.providersCompleted++;
+        job.progress = Math.round((job.providersCompleted / job.providersTotal) * 100);
+        broadcastEvent(job.id, {
+          type: 'provider_result',
+          job_id: job.id,
+          provider: notChecked.provider,
+          provider_name: notChecked.name,
+          status: 'not_checked',
+          mentioned: false,
+          position: null,
+          sentiment: null,
+          context: null,
+          progress: job.progress,
+        });
+        continue;
+      }
+
       try {
         app.log.info({ jobId: job.id, provider: provider.id }, 'Checking provider');
 
-        const result = await provider.check();
+        const result = await provider.check(provider.key);
         job.results.push(result);
         job.providersCompleted++;
         job.progress = Math.round((job.providersCompleted / job.providersTotal) * 100);
@@ -1283,6 +1313,7 @@ async function runAIVisibilityCheck(job: AIVisibilityJob): Promise<void> {
           job_id: job.id,
           provider: result.provider,
           provider_name: result.name,
+          status: result.status,
           mentioned: result.mentioned,
           position: result.position,
           sentiment: result.sentiment,
@@ -1303,6 +1334,7 @@ async function runAIVisibilityCheck(job: AIVisibilityJob): Promise<void> {
         const errorResult: AIProviderResult = {
           provider: provider.id,
           name: provider.name,
+          status: 'error',
           mentioned: false,
           position: null,
           sentiment: null,
@@ -1319,6 +1351,7 @@ async function runAIVisibilityCheck(job: AIVisibilityJob): Promise<void> {
           job_id: job.id,
           provider: errorResult.provider,
           provider_name: errorResult.name,
+          status: 'error',
           mentioned: false,
           position: null,
           sentiment: null,
@@ -1329,15 +1362,17 @@ async function runAIVisibilityCheck(job: AIVisibilityJob): Promise<void> {
       }
     }
 
-    // Calculate overall score
-    const mentionedCount = job.results.filter(r => r.mentioned && !r.error).length;
-    const validResults = job.results.filter(r => !r.error);
-    job.overallScore = validResults.length > 0
-      ? Math.round((mentionedCount / validResults.length) * 100)
-      : 0;
+    // Score only the assistants actually asked - not_checked and error are neither.
+    const checked = job.results.filter(r => r.status === 'checked');
+    if (checked.length === 0) {
+      throw new Error('None of your connected AI providers answered. ' +
+        job.results.filter(r => r.status === 'error').map(r => `${r.name}: ${r.error}`).join('; '));
+    }
+    const mentionedCount = checked.filter(r => r.mentioned).length;
+    job.overallScore = Math.round((mentionedCount / checked.length) * 100);
 
     // Bonus for good positions
-    const topPositions = job.results.filter(r => r.mentioned && r.position !== null && r.position <= 3);
+    const topPositions = checked.filter(r => r.mentioned && r.position !== null && r.position <= 3);
     if (topPositions.length > 0) {
       job.overallScore = Math.min(100, job.overallScore + 10);
     }
@@ -1380,28 +1415,22 @@ async function runAIVisibilityCheck(job: AIVisibilityJob): Promise<void> {
   }
 }
 
-// LLM Provider check functions
-async function checkOpenAI(brand: string, domain: string, query: string): Promise<AIProviderResult> {
-  const baseResult: AIProviderResult = {
-    provider: 'openai',
-    name: 'ChatGPT',
-    mentioned: false,
-    position: null,
-    sentiment: null,
-    context: null,
-    score: 0,
-  };
+// LLM Provider check functions - each runs on the user's own key for that provider and
+// throws on an HTTP error, which the runner records as status 'error'.
+async function providerError(response: Response): Promise<Error> {
+  const text = await response.text().catch(() => '');
+  return new Error(`HTTP ${response.status}${text ? `: ${text.slice(0, 200)}` : ''}`);
+}
 
-  if (!OPENAI_API_KEY) return baseResult;
-
+async function checkOpenAI(brand: string, domain: string, query: string, key: ProviderKey): Promise<AIProviderResult> {
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
+      'Authorization': `Bearer ${key.apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: OPENAI_FAST,
+      model: key.model || OPENAI_FAST,
       messages: [
         { role: 'system', content: 'You are a helpful assistant that recommends tools and websites. List your top recommendations.' },
         { role: 'user', content: query },
@@ -1411,7 +1440,7 @@ async function checkOpenAI(brand: string, domain: string, query: string): Promis
     }),
   });
 
-  if (!response.ok) return baseResult;
+  if (!response.ok) throw await providerError(response);
 
   const data = await response.json() as { choices?: { message?: { content?: string } }[] };
   const content = data.choices?.[0]?.message?.content || '';
@@ -1419,34 +1448,22 @@ async function checkOpenAI(brand: string, domain: string, query: string): Promis
   return analyzeProviderResponse(content, brand, domain, 'openai', 'ChatGPT');
 }
 
-async function checkAnthropic(brand: string, domain: string, query: string, apiKey: string): Promise<AIProviderResult> {
-  const baseResult: AIProviderResult = {
-    provider: 'anthropic',
-    name: 'Claude',
-    mentioned: false,
-    position: null,
-    sentiment: null,
-    context: null,
-    score: 0,
-  };
-
-  if (!apiKey) return baseResult;
-
+async function checkAnthropic(brand: string, domain: string, query: string, key: ProviderKey): Promise<AIProviderResult> {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
-      'x-api-key': apiKey,
+      'x-api-key': key.apiKey,
       'anthropic-version': '2023-06-01',
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: ANTHROPIC_FAST,
+      model: key.model || ANTHROPIC_FAST,
       max_tokens: 500,
       messages: [{ role: 'user', content: query }],
     }),
   });
 
-  if (!response.ok) return baseResult;
+  if (!response.ok) throw await providerError(response);
 
   const data = await response.json() as { content?: { text?: string }[] };
   const content = data.content?.[0]?.text || '';
@@ -1454,20 +1471,10 @@ async function checkAnthropic(brand: string, domain: string, query: string, apiK
   return analyzeProviderResponse(content, brand, domain, 'anthropic', 'Claude');
 }
 
-async function checkGoogle(brand: string, domain: string, query: string, apiKey: string): Promise<AIProviderResult> {
-  const baseResult: AIProviderResult = {
-    provider: 'google',
-    name: 'Gemini',
-    mentioned: false,
-    position: null,
-    sentiment: null,
-    context: null,
-    score: 0,
-  };
-
-  if (!apiKey) return baseResult;
-
-  const response = await fetch(`${GOOGLE_ENDPOINT}?key=${apiKey}`, {
+async function checkGoogle(brand: string, domain: string, query: string, key: ProviderKey): Promise<AIProviderResult> {
+  // Gemini is named in the URL, not the body.
+  const model = key.model || GOOGLE_FAST;
+  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key.apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -1475,7 +1482,7 @@ async function checkGoogle(brand: string, domain: string, query: string, apiKey:
     }),
   });
 
-  if (!response.ok) return baseResult;
+  if (!response.ok) throw await providerError(response);
 
   const data = await response.json() as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
   const content = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
@@ -1483,33 +1490,21 @@ async function checkGoogle(brand: string, domain: string, query: string, apiKey:
   return analyzeProviderResponse(content, brand, domain, 'google', 'Gemini');
 }
 
-async function checkPerplexity(brand: string, domain: string, query: string, apiKey: string): Promise<AIProviderResult> {
-  const baseResult: AIProviderResult = {
-    provider: 'perplexity',
-    name: 'Perplexity',
-    mentioned: false,
-    position: null,
-    sentiment: null,
-    context: null,
-    score: 0,
-  };
-
-  if (!apiKey) return baseResult;
-
+async function checkPerplexity(brand: string, domain: string, query: string, key: ProviderKey): Promise<AIProviderResult> {
   const response = await fetch('https://api.perplexity.ai/chat/completions', {
     method: 'POST',
     headers: {
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${key.apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: PERPLEXITY_SEARCH,
+      model: key.model || PERPLEXITY_SEARCH,
       messages: [{ role: 'user', content: query }],
       max_tokens: 500,
     }),
   });
 
-  if (!response.ok) return baseResult;
+  if (!response.ok) throw await providerError(response);
 
   const data = await response.json() as { choices?: { message?: { content?: string } }[] };
   const content = data.choices?.[0]?.message?.content || '';
@@ -1566,6 +1561,7 @@ function analyzeProviderResponse(
   return {
     provider,
     name,
+    status: 'checked',
     mentioned,
     position,
     sentiment,

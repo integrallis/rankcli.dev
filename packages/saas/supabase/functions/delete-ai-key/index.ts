@@ -34,10 +34,16 @@ serve(async (req) => {
       });
     }
 
-    const { error: deleteError } = await supabase
+    // A user holds one key per provider. Delete the named one; with no provider in the
+    // body, delete them all (the settings UI before per-provider keys sent none).
+    const { provider } = await req.json().catch(() => ({} as { provider?: string }));
+
+    let query = supabase
       .from('user_ai_keys')
       .delete()
       .eq('user_id', user.id);
+    if (provider) query = query.eq('provider', provider);
+    const { error: deleteError } = await query;
 
     if (deleteError) throw deleteError;
 

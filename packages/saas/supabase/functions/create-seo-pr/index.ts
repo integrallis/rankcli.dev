@@ -15,11 +15,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Only the tiers whose pricing-tiers.json `features.github_auto_fix` is
-// literally `true` today fall back to RankCLI's own key as a paid
-// convenience - solo and the LTD starter/pro tiers were never sold that
-// feature, so they must bring a key too. Keep in sync with pricing-tiers.json.
-const RANKCLI_KEY_FALLBACK_TIERS = new Set(['pro', 'pro_founding', 'agency', 'ltd_agency']);
 
 interface AuditIssue {
   id: string;
@@ -512,7 +507,6 @@ serve(async (req) => {
     // Get credentials
     const githubAppId = Deno.env.get('GITHUB_APP_ID');
     const githubPrivateKey = Deno.env.get('GITHUB_PRIVATE_KEY');
-    const openaiKey = Deno.env.get('OPENAI_API_KEY');
 
     if (!githubAppId || !githubPrivateKey) {
       return new Response(JSON.stringify({ error: 'GitHub App not configured' }), {
@@ -551,9 +545,9 @@ serve(async (req) => {
       });
     }
 
-    const aiResolution = await resolveAIConfig(supabase, project.user_id, openaiKey, RANKCLI_KEY_FALLBACK_TIERS);
+    const aiResolution = await resolveAIConfig(supabase, project.user_id);
     if (!aiResolution.ok) {
-      return new Response(JSON.stringify({ error: aiConfigErrorMessage(aiResolution.reason, 'auto-fix PRs') }), {
+      return new Response(JSON.stringify({ error: aiConfigErrorMessage('auto-fix PRs') }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

@@ -16,6 +16,7 @@ import {
   TrendingUp,
   ExternalLink,
   ArrowLeft,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAIVisibilitySSE } from '@/hooks/useAIVisibilitySSE';
 
@@ -222,8 +223,20 @@ export function ChatGPTCheckerPage() {
             </div>
           )}
 
+          {/* ChatGPT couldn't be asked (no key configured, or the call failed) - never
+              report that as "not recommended". */}
+          {chatgptResult && chatgptResult.status !== 'checked' && (
+            <div className="p-8 rounded-xl border text-center bg-muted/30">
+              <AlertTriangle className="h-12 w-12 mx-auto mb-4 text-orange-500" />
+              <h2 className="text-xl font-semibold mb-2">We couldn't ask ChatGPT just now</h2>
+              <p className="text-muted-foreground">
+                This says nothing about your visibility. Try again in a few minutes.
+              </p>
+            </div>
+          )}
+
           {/* Results */}
-          {chatgptResult && (
+          {chatgptResult && chatgptResult.status === 'checked' && (
             <div className="space-y-6">
               {/* Main Result */}
               <div className={`p-8 rounded-xl border-2 text-center ${
@@ -314,7 +327,7 @@ export function ChatGPTCheckerPage() {
                     We also checked other AI models:
                   </p>
                   <div className="flex justify-center gap-4">
-                    {providers.filter(p => p.provider !== 'openai').map(p => (
+                    {providers.filter(p => p.provider !== 'openai' && p.status === 'checked').map(p => (
                       <div key={p.provider} className="flex items-center gap-2 text-sm">
                         {p.mentioned ? (
                           <CheckCircle className="h-4 w-4 text-green-500" />

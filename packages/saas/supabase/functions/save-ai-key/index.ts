@@ -17,7 +17,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const VALID_PROVIDERS: AIProvider[] = ['openai', 'anthropic', 'openrouter', 'groq', 'gemini', 'custom'];
+const VALID_PROVIDERS: AIProvider[] = ['openai', 'anthropic', 'openrouter', 'groq', 'gemini', 'perplexity', 'custom'];
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -91,7 +91,7 @@ serve(async (req) => {
         base_url: baseUrl || null,
         model: model || null,
         verified_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' });
+      }, { onConflict: 'user_id,provider' }); // one key per provider; saving replaces that provider's
 
     if (upsertError) {
       throw upsertError;

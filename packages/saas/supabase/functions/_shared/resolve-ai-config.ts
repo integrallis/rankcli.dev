@@ -1,69 +1,60 @@
-// Shared BYOK resolution for every AI-calling edge function. A connected
-// user_ai_keys row always wins, for every tier, no exceptions - we never
-// eat inference cost we don't have to. Absent one, only tiers actually
-// sold the calling feature (passed in per-caller as fallbackTiers, since
-// different features are gated to different tiers in pricing-tiers.json)
-// fall back to RankCLI's own key, and always at the cheapest capable
-// model (gpt-4o-mini) - a BYOK user's own config keeps whatever
-// model/provider they connected.
+// Shared BYOK resolution for every AI-calling edge function. AI features run on the
+// customer's own keys only - RankCLI's keys are never a fallback, for any tier. A user
+// holds at most one key per provider (user_ai_keys is unique on user_id + provider), so
+// the AI-visibility check can ask each assistant with its own key.
 import { decryptSecret } from './crypto.ts';
-import type { AIProviderConfig } from './ai-provider.ts';
+import type { AIProvider, AIProviderConfig } from './ai-provider.ts';
+
+export type UserAIKeys = Partial<Record<AIProvider, AIProviderConfig>>;
+
+// Which key a single-model feature (keyword research, auto-fix PRs, audit analysis, local
+// SEO) uses when a user has connected several. Perplexity is last: it's there for the
+// visibility check's fourth assistant, and a search-grounded model is a poor analyst.
+const PREFERENCE: AIProvider[] = ['openai', 'anthropic', 'gemini', 'openrouter', 'groq', 'custom', 'perplexity'];
+
+// deno-lint-ignore no-explicit-any
+export async function loadUserAIKeys(supabase: any, userId: string | null | undefined): Promise<UserAIKeys> {
+  if (!userId) return {};
+
+  const { data: rows } = await supabase
+    .from('user_ai_keys')
+    .select('provider, encrypted_key, base_url, model')
+    .eq('user_id', userId);
+  if (!rows?.length) return {};
+
+  const encryptionSecret = Deno.env.get('AI_KEY_ENCRYPTION_SECRET');
+  if (!encryptionSecret) throw new Error('AI key storage not configured');
+
+  const keys: UserAIKeys = {};
+  for (const row of rows) {
+    keys[row.provider as AIProvider] = {
+      provider: row.provider,
+      apiKey: await decryptSecret(row.encrypted_key, encryptionSecret),
+      baseUrl: row.base_url || undefined,
+      model: row.model || undefined,
+    };
+  }
+  return keys;
+}
+
+export function preferredAIConfig(keys: UserAIKeys): AIProviderConfig | null {
+  for (const provider of PREFERENCE) {
+    const config = keys[provider];
+    if (config) return config;
+  }
+  return null;
+}
 
 export type AIConfigResolution =
   | { ok: true; config: AIProviderConfig }
-  | { ok: false; reason: 'no_key_byok_required' | 'no_key_configured' };
+  | { ok: false; reason: 'no_key' };
 
-export async function resolveAIConfig(
-  // deno-lint-ignore no-explicit-any
-  supabase: any,
-  userId: string | null | undefined,
-  rankcliOpenAIKey: string | undefined,
-  fallbackTiers: Set<string>
-): Promise<AIConfigResolution> {
-  if (userId) {
-    const { data: byok } = await supabase
-      .from('user_ai_keys')
-      .select('provider, encrypted_key, base_url, model')
-      .eq('user_id', userId)
-      .single();
-
-    if (byok) {
-      const encryptionSecret = Deno.env.get('AI_KEY_ENCRYPTION_SECRET');
-      if (!encryptionSecret) throw new Error('AI key storage not configured');
-      const apiKey = await decryptSecret(byok.encrypted_key, encryptionSecret);
-      return {
-        ok: true,
-        config: { provider: byok.provider, apiKey, baseUrl: byok.base_url || undefined, model: byok.model || undefined },
-      };
-    }
-  }
-
-  // No userId (e.g. no projectId supplied to resolve one from) can never
-  // qualify for RankCLI's key either - there's no tier to check - so this
-  // falls through to the same "connect a key" response as an unqualified
-  // tier, rather than a separate code path.
-  let tier = 'free';
-  if (userId) {
-    const { data: subscription } = await supabase
-      .from('user_subscriptions')
-      .select('plan:subscription_plans (plan_id)')
-      .eq('user_id', userId)
-      .single();
-    const plan = subscription?.plan as { plan_id: string } | null;
-    tier = plan?.plan_id || 'free';
-  }
-
-  if (!fallbackTiers.has(tier)) {
-    return { ok: false, reason: 'no_key_byok_required' };
-  }
-  if (!rankcliOpenAIKey) {
-    return { ok: false, reason: 'no_key_configured' };
-  }
-  return { ok: true, config: { provider: 'openai', apiKey: rankcliOpenAIKey, model: 'gpt-4o-mini' } };
+// deno-lint-ignore no-explicit-any
+export async function resolveAIConfig(supabase: any, userId: string | null | undefined): Promise<AIConfigResolution> {
+  const config = preferredAIConfig(await loadUserAIKeys(supabase, userId));
+  return config ? { ok: true, config } : { ok: false, reason: 'no_key' };
 }
 
-export function aiConfigErrorMessage(reason: 'no_key_byok_required' | 'no_key_configured', feature = 'this feature'): string {
-  return reason === 'no_key_byok_required'
-    ? `Connect an AI provider key to enable ${feature} on your plan - any provider works, including free-tier keys from OpenRouter, Groq, or Google AI Studio. Add one at https://rankcli.dev/account?tab=ai-provider`
-    : 'No AI provider configured for this account';
+export function aiConfigErrorMessage(feature = 'this feature'): string {
+  return `Connect an AI provider key to use ${feature} - RankCLI runs AI features on your own key. Any provider works, including free-tier keys from OpenRouter, Groq, or Google AI Studio. Add one at https://rankcli.dev/account?tab=ai-provider`;
 }

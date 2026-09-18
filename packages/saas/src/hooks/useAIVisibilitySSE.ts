@@ -5,6 +5,9 @@ const WORKER_URL = import.meta.env.VITE_AUDIT_WORKER_URL || 'http://localhost:80
 interface ProviderResult {
   provider: string;
   name: string;
+  // not_checked: RankCLI has no key for this assistant. error: the call failed. Neither is
+  // "not mentioned", and neither counts toward the score.
+  status: 'checked' | 'not_checked' | 'error';
   mentioned: boolean;
   position: number | null;
   sentiment: 'positive' | 'neutral' | 'negative' | null;
@@ -18,6 +21,7 @@ interface SseEvent {
   job_id?: string;
   provider?: string;
   provider_name?: string;
+  status?: 'checked' | 'not_checked' | 'error';
   mentioned?: boolean;
   position?: number | null;
   sentiment?: string | null;
@@ -102,6 +106,7 @@ export function useAIVisibilitySSE(options: UseAIVisibilitySSEOptions = {}) {
               const result: ProviderResult = {
                 provider: data.provider,
                 name: data.provider_name,
+                status: data.status ?? (data.error ? 'error' : 'checked'),
                 mentioned: data.mentioned ?? false,
                 position: data.position ?? null,
                 sentiment: (data.sentiment as ProviderResult['sentiment']) ?? null,

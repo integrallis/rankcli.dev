@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { functionErrorMessage } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Project, Audit, AuditIssue, CreateProjectInput, UpdateProjectInput } from '@/integrations/supabase/types';
 
@@ -315,130 +316,19 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
     if (!user || !projectId) return null;
 
     try {
-      // Check if user is on a paid plan and get subscription details
-      const { data: subscription } = await supabase
-        .from('user_subscriptions')
-        .select('plan_id, current_period_start')
-        .eq('user_id', user.id)
-        .single();
+      // The start-deep-audit edge function creates the audit, works out the plan's audit
+      // depth, and hands the job to the worker with the secret held server-side (it used
+      // to be built into this bundle). The worker enforces the per-plan domain and
+      // schedule limits and streams progress to the SSE hook in the component.
+      const { data, error: fnError } = await supabase.functions.invoke('start-deep-audit', {
+        body: { projectId },
+      });
+      if (fnError) throw new Error(await functionErrorMessage(fnError, 'Failed to start audit'));
 
-      const isPaidUser = !!subscription?.plan_id;
-
-      // Get this project's domain
-      const { data: currentProject } = await supabase
-        .from('projects')
-        .select('domain')
-        .eq('id', projectId)
-        .single();
-
-      if (!currentProject?.domain) {
-        throw new Error('Project domain not found');
-      }
-
-      // Determine domain limit and billing cycle start
-      let domainsPerMonth: number | null = 2; // Free tier default
-      let billingCycleStart: string;
-
-      if (subscription?.plan_id) {
-        // Paid user - get limit from plan
-        const planLimits: Record<string, number | null> = {
-          'solo': 5,
-          'pro': 15,
-          'agency': null, // unlimited
-        };
-        domainsPerMonth = planLimits[subscription.plan_id] ?? 5;
-        billingCycleStart = subscription.current_period_start || new Date().toISOString();
-      } else {
-        // Free user - use rolling 30-day window
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        billingCycleStart = thirtyDaysAgo.toISOString();
-      }
-
-      // Check domain limit (null = unlimited)
-      if (domainsPerMonth !== null) {
-        // Get unique domains audited this billing cycle
-        const { data: auditedDomains } = await supabase
-          .from('audits')
-          .select('projects!inner(domain)')
-          .eq('projects.user_id', user.id)
-          .gte('created_at', billingCycleStart)
-          .eq('status', 'completed');
-
-        const uniqueDomains = new Set(
-          auditedDomains?.map((a: { projects: { domain: string }[] }) => a.projects[0]?.domain).filter(Boolean) || []
-        );
-
-        // Check if we're at limit and this is a new domain
-        if (uniqueDomains.size >= domainsPerMonth && !uniqueDomains.has(currentProject.domain)) {
-          throw new Error(
-            `Domain limit reached. You can audit up to ${domainsPerMonth} unique domains per ${isPaidUser ? 'billing cycle' : 'month'}. ` +
-            `Upgrade your plan to audit more domains.`
-          );
-        }
-      }
-
-      // Create pending audit record
-      const { data: audit, error: auditError } = await supabase
-        .from('audits')
-        .insert({
-          project_id: projectId,
-          triggered_by: 'manual',
-          triggered_by_user: user.id,
-          status: 'pending',
-        })
-        .select()
-        .single();
-
-      if (auditError) throw auditError;
+      const audit = data.audit as Audit;
 
       // Refresh to show pending state
       await fetchProject();
-
-      // Get project URL for paid user worker call
-      const { data: projectData } = await supabase
-        .from('projects')
-        .select('url')
-        .eq('id', projectId)
-        .single();
-
-      // Worker URL (local in dev, Fly.io in prod)
-      const workerUrl = import.meta.env.VITE_AUDIT_WORKER_URL || 'http://localhost:8080';
-      const workerSecret = import.meta.env.VITE_AUDIT_WORKER_SECRET || 'dev-secret';
-
-      // Tier-based audit parameters
-      const auditParams = isPaidUser
-        ? { maxPages: 10, checksLimit: 280, enableAI: true }
-        : { maxPages: 1, checksLimit: 50, enableAI: false };
-
-      console.log(`${isPaidUser ? 'Paid' : 'Free'} user - calling audit worker:`, workerUrl, auditParams);
-
-      if (projectData?.url) {
-        fetch(`${workerUrl}/audit`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${workerSecret}`,
-          },
-          body: JSON.stringify({
-            auditId: audit.id,
-            projectId,
-            url: projectData.url,
-            ...auditParams,
-          }),
-        }).then(async (res) => {
-          if (!res.ok) {
-            console.error('Audit worker failed:', await res.text());
-          }
-          // SSE hook in the component will handle real-time updates
-        }).catch((err) => {
-          console.error('Audit worker request failed:', err);
-          fetchProject();
-        });
-      } else {
-        console.error('No project URL found');
-        fetchProject();
-      }
 
       return audit;
     } catch (err) {

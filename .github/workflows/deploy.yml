@@ -182,7 +182,8 @@ jobs:
           VITE_SUPABASE_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           VITE_AUDIT_WORKER_URL: https://rankcli-audit-worker.fly.dev
-          VITE_AUDIT_WORKER_SECRET: ${{ secrets.AUDIT_WORKER_SECRET }}
+          # No VITE_AUDIT_WORKER_SECRET: every VITE_ variable ships in the public bundle.
+          # Deep audits start through the start-deep-audit edge function instead.
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
           VITE_GITHUB_APP_URL: https://github.com/apps/rankcli
         run: pnpm build
@@ -249,6 +250,19 @@ jobs:
           SECRETS_CMD="$SECRETS_CMD SUPABASE_SERVICE_ROLE_KEY=\"${{ secrets.SUPABASE_SERVICE_KEY }}\""
           SECRETS_CMD="$SECRETS_CMD OPENAI_API_KEY=\"${{ secrets.OPENAI_API_KEY }}\""
           SECRETS_CMD="$SECRETS_CMD WORKER_SECRET=\"${{ secrets.AUDIT_WORKER_SECRET }}\""
+
+          # The public no-signup AI-visibility tool asks each assistant on RankCLI's own key
+          # (every signed-in feature uses the user's). An assistant without a key here is
+          # shown as "not checked".
+          if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
+            SECRETS_CMD="$SECRETS_CMD ANTHROPIC_API_KEY=\"${{ secrets.ANTHROPIC_API_KEY }}\""
+          fi
+          if [ -n "${{ secrets.GOOGLE_API_KEY }}" ]; then
+            SECRETS_CMD="$SECRETS_CMD GOOGLE_API_KEY=\"${{ secrets.GOOGLE_API_KEY }}\""
+          fi
+          if [ -n "${{ secrets.PERPLEXITY_API_KEY }}" ]; then
+            SECRETS_CMD="$SECRETS_CMD PERPLEXITY_API_KEY=\"${{ secrets.PERPLEXITY_API_KEY }}\""
+          fi
 
           # Add optional competitive search API keys if configured
           if [ -n "${{ secrets.BRAVE_API_KEY }}" ]; then

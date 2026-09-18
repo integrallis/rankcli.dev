@@ -9,13 +9,19 @@ import {
   Loader2,
   TrendingUp,
   ExternalLink,
+  KeyRound,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { functionErrorMessage } from '@/lib/utils';
 
 interface ProviderStatus {
   provider: string;
   name: string;
+  // Checks run on the user's own key per provider: not_checked means no key for that
+  // assistant, error means the call failed. Rows saved before this have no status.
+  status?: 'checked' | 'not_checked' | 'error';
+  error?: string;
   mentioned: boolean;
   position: number | null;
   sentiment: 'positive' | 'neutral' | 'negative' | null;
@@ -106,15 +112,11 @@ export function AIVisibilityCard({
 
       setData({
         score: result.overallScore,
-        providers: result.providers.map((p: {
-          provider: string;
-          name: string;
-          mentioned: boolean;
-          position: number | null;
-          sentiment: 'positive' | 'neutral' | 'negative' | null;
-        }) => ({
+        providers: (result.providers as ProviderStatus[]).map((p) => ({
           provider: p.provider,
           name: p.name,
+          status: p.status,
+          error: p.error,
           mentioned: p.mentioned,
           position: p.position,
           sentiment: p.sentiment,
@@ -123,10 +125,7 @@ export function AIVisibilityCard({
       });
     } catch (err) {
       console.error('AI visibility check error:', err);
-      const errorMessage = err instanceof Error ? err.message : 
-        (typeof err === 'object' && err !== null && 'message' in err) ? String((err as {message: unknown}).message) :
-        'Failed to check AI visibility';
-      setError(errorMessage);
+      setError(await functionErrorMessage(err, 'Failed to check AI visibility'));
     } finally {
       setLoading(false);
     }
@@ -138,8 +137,12 @@ export function AIVisibilityCard({
     return 'text-red-500';
   };
 
-  const mentionedCount = data?.providers.filter((p) => p.mentioned).length || 0;
-  const totalProviders = data?.providers.length || 4;
+  // Only assistants actually asked count - not_checked and error are neither a mention nor a miss.
+  const askedProviders = data?.providers.filter((p) => !p.status || p.status === 'checked') || [];
+  const mentionedCount = askedProviders.filter((p) => p.mentioned).length;
+  const totalProviders = askedProviders.length;
+  const missingKeys = data?.providers.some((p) => p.status === 'not_checked') ?? false;
+  const needsKey = !!error && error.includes('Connect an AI provider key');
 
   return (
     <Card>
@@ -164,8 +167,19 @@ export function AIVisibilityCard({
         </div>
       </CardHeader>
       <CardContent>
-        {error && (
+        {error && !needsKey && (
           <div className="text-sm text-red-500 mb-4">{error}</div>
+        )}
+        {needsKey && (
+          <div className="text-sm mb-4 space-y-2">
+            <p className="text-muted-foreground">
+              AI visibility checks run on your own keys: OpenAI for ChatGPT, Anthropic for Claude,
+              Gemini for Gemini, Perplexity for Perplexity. Connect one or more.
+            </p>
+            <Link to="/account?tab=ai-provider">
+              <Button size="sm" variant="outline"><KeyRound className="h-4 w-4 mr-2" />Connect AI keys</Button>
+            </Link>
+          </div>
         )}
 
         {!data && !loading && !isLoadingInitial && (
@@ -184,7 +198,7 @@ export function AIVisibilityCard({
           <div className="text-center py-6">
             <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-primary" />
             <p className="text-sm text-muted-foreground">
-              {loading ? 'Checking 4 AI models...' : 'Loading...'}
+              {loading ? 'Asking AI assistants...' : 'Loading...'}
             </p>
           </div>
         )}
@@ -198,8 +212,13 @@ export function AIVisibilityCard({
                   {data.score}%
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Mentioned in {mentionedCount}/{totalProviders} AI models
+                  Mentioned in {mentionedCount}/{totalProviders} AI models asked
                 </p>
+                {missingKeys && (
+                  <Link to="/account?tab=ai-provider" className="text-xs text-primary hover:underline">
+                    Add keys to check the rest
+                  </Link>
+                )}
               </div>
               {mentionedCount > 0 && (
                 <TrendingUp className="h-6 w-6 text-green-500" />
@@ -224,15 +243,21 @@ export function AIVisibilityCard({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{provider.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {provider.mentioned
-                        ? provider.position
-                          ? `#${provider.position}`
-                          : 'Mentioned'
-                        : 'Not found'}
+                    <p className="text-xs text-muted-foreground truncate" title={provider.error}>
+                      {provider.status === 'not_checked'
+                        ? 'Not checked - no key'
+                        : provider.status === 'error'
+                          ? 'Error - see key'
+                          : provider.mentioned
+                            ? provider.position
+                              ? `#${provider.position}`
+                              : 'Mentioned'
+                            : 'Not found'}
                     </p>
                   </div>
-                  {provider.mentioned ? (
+                  {provider.status === 'not_checked' || provider.status === 'error' ? (
+                    <KeyRound className="h-4 w-4 text-muted-foreground shrink-0" />
+                  ) : provider.mentioned ? (
                     <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
                   ) : (
                     <XCircle className="h-4 w-4 text-muted-foreground shrink-0" />
