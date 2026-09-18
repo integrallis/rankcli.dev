@@ -121,7 +121,6 @@ export function useProjects(): UseProjectsReturn {
           name: input.name,
           url: url.toString(),
           domain,
-          github_repo_url: input.github_repo_url || null,
         })
         .select()
         .single();
@@ -132,6 +131,19 @@ export function useProjects(): UseProjectsReturn {
           throw new Error(`A project named "${input.name}" already exists. Please choose a different name.`);
         }
         throw error;
+      }
+
+      // The repo can't be written on the row directly: connect-github-repo
+      // links it after checking on GitHub that the user can write to it. The
+      // project exists either way; the repo can be connected again later.
+      if (input.github_repo_url) {
+        const { data: link, error: linkError } = await supabase.functions.invoke<{ linked: boolean; reason?: string }>(
+          'connect-github-repo',
+          { body: { projectId: data.id, repoUrl: input.github_repo_url } }
+        );
+        if (linkError || !link?.linked) {
+          console.warn('Project created, repository not connected:', linkError?.message || link?.reason);
+        }
       }
 
       // Refetch to get updated list with stats
