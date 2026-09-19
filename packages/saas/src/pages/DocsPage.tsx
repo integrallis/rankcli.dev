@@ -345,7 +345,7 @@ function GettingStartedSection() {
         </p>
         <CodeBlock code="rankcli audit --url https://yoursite.com --ai" />
         <p className="text-sm text-muted-foreground mt-2">
-          Requires an OpenAI API key set as <code className="bg-muted px-1 rounded">OPENAI_API_KEY</code> environment variable.
+          Runs on your own provider, never RankCLI&apos;s: Apple Intelligence on a Mac that has it, otherwise the first key it finds (<code className="bg-muted px-1 rounded">OPENROUTER_API_KEY</code>, <code className="bg-muted px-1 rounded">OPENAI_API_KEY</code>, ...) or a local Ollama. Choose one with <code className="bg-muted px-1 rounded">--ai-provider</code>.
         </p>
       </section>
     </div>
@@ -932,8 +932,9 @@ Options:
   -s, --seed <keywords>      Seed keywords (comma-separated)
   --auto                     Auto-extract seed keywords from your page
   --quick                    Quick mode - skip questions, use defaults
-  --ai                       Use GPT-4 for enhanced analysis
-  --local                    Force local processing (skip cloud worker)
+  --ai                       AI research on your own provider (as audit --ai)
+  --ai-provider <provider>   apple, openrouter, openai, ollama, ... (or RANKCLI_AI_PROVIDER)
+  --ai-key / --ai-model / --ai-base-url   as for audit
   --competitor               Competitor gap analysis mode
   -c, --competitors <urls>   Competitor domains (comma-separated)`}
         />
