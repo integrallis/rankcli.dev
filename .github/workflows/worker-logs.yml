@@ -1,0 +1,27 @@
+name: Worker Logs
+
+# Ops: recent audit-worker logs and machine state from Fly, for diagnosing jobs that die.
+on:
+  workflow_dispatch:
+    inputs:
+      grep:
+        description: 'Optional filter (grep -E pattern)'
+        required: false
+        default: ''
+
+jobs:
+  logs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Machines
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: flyctl machine list --app rankcli-audit-worker
+      - name: Recent logs
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FILTER: ${{ github.event.inputs.grep }}
+        run: |
+          flyctl logs --app rankcli-audit-worker --no-tail > logs.txt 2>&1 || true
+          if [ -n "$FILTER" ]; then grep -E "$FILTER" logs.txt | tail -200; else tail -300 logs.txt; fi
