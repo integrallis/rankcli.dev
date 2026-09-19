@@ -86,6 +86,7 @@ jobs:
               - 'packages/saas/package.json'
               - 'packages/saas/vite.config.ts'
               - 'packages/saas/tailwind.config.ts'
+              - 'packages/saas/scripts/**'
             functions:
               - 'packages/saas/supabase/functions/**'
             migrations:
@@ -96,6 +97,9 @@ jobs:
   # ============================================
   # Build & Deploy Frontend
   # ============================================
+  # Same build and deploy as deploy.yml's deploy-frontend (keep the two in step): this one runs
+  # on pushes that touch the frontend, so the site ships like migrations and functions do.
+  # It used to build without prerendering and then skip the deploy (an unset variable).
   deploy-frontend:
     name: Deploy Frontend
     runs-on: ubuntu-latest
@@ -103,51 +107,49 @@ jobs:
     if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # Full history: the sitemap dates each page by its last commit.
+          fetch-depth: 0
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
           version: 8
 
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
         working-directory: packages/saas
+        run: pnpm install --frozen-lockfile
+
+      # The build prerenders the public pages in headless Chromium (scripts/prerender.ts).
+      - name: Install Chromium for prerendering
+        working-directory: packages/saas
+        run: pnpm exec playwright install --with-deps --only-shell chromium
 
       - name: Build
-        run: pnpm build
         working-directory: packages/saas
         env:
+          # Fail the deploy rather than ship pages crawlers can't read.
+          PRERENDER: required
+          VITE_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
           VITE_SUPABASE_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          VITE_AUDIT_WORKER_URL: https://rankcli-audit-worker.fly.dev
           VITE_STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
           VITE_GITHUB_APP_URL: https://github.com/apps/rankcli
+        run: pnpm build
 
-      # Deploy to Cloudflare Pages (or Vercel, Netlify, etc.). Wrangler directly, as
-      # deploy.yml does: cloudflare/pages-action was removed from GitHub and now fails
-      # the job at "Set up job".
       - name: Deploy to Cloudflare Pages
-        if: vars.CLOUDFLARE_PROJECT_NAME != ''
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npx --yes wrangler pages deploy dist --project-name=${{ vars.CLOUDFLARE_PROJECT_NAME }} --branch=main --commit-dirty=true
+        run: npx --yes wrangler pages deploy dist --project-name=rankcli --branch=main --commit-dirty=true
         working-directory: packages/saas
-
-      # Alternative: Deploy to Vercel
-      - name: Deploy to Vercel
-        if: vars.VERCEL_PROJECT_ID != '' && vars.CLOUDFLARE_PROJECT_NAME == ''
-        uses: amondnet/vercel-action@v25
-        with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ vars.VERCEL_PROJECT_ID }}
-          working-directory: packages/saas
-          vercel-args: '--prod'
 
   # ============================================
   # Database Migrations & Edge Functions

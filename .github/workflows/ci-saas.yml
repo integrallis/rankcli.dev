@@ -40,10 +40,17 @@ jobs:
         run: pnpm exec tsc --noEmit
         working-directory: packages/saas
 
+      # The build prerenders the public pages in headless Chromium; PRERENDER=required fails
+      # the check (as it fails a deploy) when a page can't be prerendered.
+      - name: Install Chromium for prerendering
+        run: pnpm exec playwright install --with-deps --only-shell chromium
+        working-directory: packages/saas
+
       - name: Build
         run: pnpm build
         working-directory: packages/saas
         env:
+          PRERENDER: required
           VITE_SUPABASE_URL: https://placeholder.supabase.co
           VITE_SUPABASE_ANON_KEY: placeholder
 
