@@ -782,9 +782,16 @@ Options:
   -o, --output <format>     Output format (json, console) (default: console)
   --max-pages <n>           Max pages to crawl (default: 5)
   --check-links             Check for broken internal/external links (slower)
-  --ai                      Enable AI analysis
-  --ai-provider <provider>  AI provider: openai or anthropic
-  --ai-key <key>            API key (or set OPENAI_API_KEY/ANTHROPIC_API_KEY)`}
+  --fail-on <level>         CI gate: exit 1 on any issue at or above error, warning or notice
+  --min-score <n>           CI gate: exit 1 if the score is below n
+  --ai                      AI analysis on your own provider (Apple Intelligence on a
+                            Mac that has it; otherwise your key or a local model)
+  --ai-provider <provider>  apple, openrouter, openai, anthropic, groq, gemini, deepseek,
+                            mistral, cerebras, together, fireworks, ollama, lmstudio,
+                            llamacpp, vllm, custom (or set RANKCLI_AI_PROVIDER)
+  --ai-key <key>            Provider API key (or its env var, e.g. OPENROUTER_API_KEY)
+  --ai-model <model>        Override the provider's default model
+  --ai-base-url <url>       Any OpenAI-compatible server (implies --ai-provider custom)`}
         />
         <h4 className="font-medium mt-6 mb-2">Examples</h4>
         <CodeBlock code="# Basic audit" />

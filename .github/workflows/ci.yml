@@ -196,6 +196,47 @@ jobs:
         run: pnpm test
 
   # ---------------------------------------------------------------------------
+  # Apple Intelligence helper: the CLI compiles packages/cli/src/lib/apple-ai-source.ts with
+  # swiftc on users' Macs, so a Foundation Models API mistake would only show up there. This
+  # compiles it the same way. (CI VMs have no Apple Intelligence; on a macOS 26 runner the
+  # helper's --check still has to answer with valid JSON.)
+  # ---------------------------------------------------------------------------
+  apple-ai-helper:
+    name: Apple Intelligence helper (Swift)
+    runs-on: macos-15
+    needs: changes
+    if: needs.changes.outputs.cli == 'true' || github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22' # --experimental-strip-types, to read the .ts source
+
+      - name: Select Xcode 26 (macOS 26 SDK)
+        run: |
+          xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$xcode" ]; then echo "No Xcode 26 on this runner:"; ls -d /Applications/Xcode*.app; exit 1; fi
+          sudo xcode-select -s "$xcode"
+          xcrun --sdk macosx --show-sdk-version
+
+      - name: Compile the helper as the CLI does
+        run: |
+          node --experimental-strip-types --input-type=module -e "
+            const { APPLE_AI_SWIFT_SOURCE } = await import('./packages/cli/src/lib/apple-ai-source.ts');
+            (await import('node:fs')).writeFileSync('main.swift', APPLE_AI_SWIFT_SOURCE);"
+          xcrun swiftc -O -target arm64-apple-macos26.0 main.swift -o rankcli-apple-ai
+          file rankcli-apple-ai
+
+      - name: Run --check (macOS 26 runners only)
+        run: |
+          major=$(sw_vers -productVersion | cut -d. -f1)
+          if [ "$major" -lt 26 ]; then echo "macOS $major: can't run a macOS 26 binary here; compile check only"; exit 0; fi
+          out=$(./rankcli-apple-ai --check)
+          echo "$out"
+          echo "$out" | node -e "JSON.parse(require('fs').readFileSync(0, 'utf8'))"
+
+  # ---------------------------------------------------------------------------
   # Plugin Tests
   # ---------------------------------------------------------------------------
   plugin-tests:
