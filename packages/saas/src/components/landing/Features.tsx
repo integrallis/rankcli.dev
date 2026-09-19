@@ -8,6 +8,7 @@ import {
   Shield,
   Smartphone,
   Cpu,
+  Sparkles,
 } from 'lucide-react';
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ui/scroll-reveal';
 
@@ -20,17 +21,17 @@ const features = [
     highlight: true,
   },
   {
-    icon: Search,
-    title: 'Keyword Rank Tracking',
+    icon: Sparkles,
+    title: 'AI on Your Own Model',
     description:
-      'Track keyword positions over time with `rankcli track`. SERP monitoring, position history, sparkline trends, CSV export.',
+      'On a Mac with Apple Intelligence, `--ai` runs on-device: free, private, no key. Or use a local model (Ollama, LM Studio) or your own OpenRouter or OpenAI key. Nothing goes through our servers.',
     highlight: true,
   },
   {
     icon: Bot,
     title: 'GEO (AI Search Optimization)',
     description:
-      'First tool with Generative Engine Optimization. Check if GPTBot, ClaudeBot, and PerplexityBot can access your site. Track AI visibility.',
+      'Generative Engine Optimization built in: whether GPTBot, ClaudeBot and PerplexityBot can reach your site, and whether AI answers can quote it (answer structure, citations, llms.txt).',
     highlight: true,
   },
   {
@@ -78,9 +79,9 @@ const features = [
   },
   {
     icon: Globe,
-    title: 'CI/CD Integration',
+    title: 'Open-Source GitHub Action',
     description:
-      'GitHub Actions workflow, JSON output for pipelines, and pre-commit hooks. Integrates with your existing DevOps stack.',
+      '`uses: integrallis/rankcli-action@v1` audits every deploy, comments on the pull request, and fails the build when SEO regresses.',
   },
 ];
 
