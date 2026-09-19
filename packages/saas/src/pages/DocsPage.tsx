@@ -1789,7 +1789,7 @@ jobs:
           Alternatively, use our official GitHub Action:
         </p>
         <CodeBlock
-          code={`- uses: rankcli/audit-action@v1
+          code={`- uses: integrallis/rankcli-action@v1
   with:
     url: \${{ secrets.SITE_URL }}
     api-key: \${{ secrets.RANKCLI_API_KEY }}
