@@ -25,3 +25,24 @@ jobs:
         run: |
           flyctl logs --app rankcli-audit-worker --no-tail > logs.txt 2>&1 || true
           if [ -n "$FILTER" ]; then grep -E "$FILTER" logs.txt | tail -200; else tail -300 logs.txt; fi
+      # CPU per machine over the last 30 minutes, from Fly's Prometheus API. Shared CPUs run on
+      # a small baseline share plus a burst balance; "throttled" time means the balance ran out.
+      - name: CPU (last 30 min)
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          ORG=$(flyctl status --app rankcli-audit-worker --json | jq -r '.Organization.Slug // "personal"')
+          prom() {
+            curl -s -G "https://api.fly.io/prometheus/$ORG/api/v1/query" \
+              -H "Authorization: Bearer $FLY_API_TOKEN" --data-urlencode "query=$1" \
+              | jq -c '.data.result[]? | {instance: .metric.instance, mode: .metric.mode, value: .value[1]}' || true
+          }
+          echo "--- CPU metric names ---"
+          curl -s -G "https://api.fly.io/prometheus/$ORG/api/v1/label/__name__/values" \
+            -H "Authorization: Bearer $FLY_API_TOKEN" | jq -r '.data[]? | select(test("cpu"))' || true
+          echo "--- CPU seconds per second by mode, 30m average ---"
+          prom 'sum by (instance, mode) (rate(fly_instance_cpu{app="rankcli-audit-worker"}[30m]))'
+          echo "--- throttled seconds per second, 30m average ---"
+          prom 'sum by (instance) (rate(fly_instance_cpu_throttle{app="rankcli-audit-worker"}[30m]))'
+          echo "--- CPU balance now ---"
+          prom 'fly_instance_cpu_balance{app="rankcli-audit-worker"}'
