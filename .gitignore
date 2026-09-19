@@ -93,3 +93,6 @@ docs/*.pdf
 packages/saas/docs/results/
 env_prod.txt
 pat.txt
+
+# Local Cloudflare wrangler state
+.wrangler/

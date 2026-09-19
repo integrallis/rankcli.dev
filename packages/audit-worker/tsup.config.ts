@@ -1,7 +1,8 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/index.ts'],
+  // audit-thread runs the audit engine off the main event loop (see audit-pool.ts).
+  entry: ['src/index.ts', 'src/audit-thread.ts'],
   format: ['esm'],
   target: 'node20',
   // agent-runtime-premium has no build step (workspace-only, never

@@ -2,7 +2,6 @@ import Fastify, { type FastifyReply } from 'fastify';
 import cors from '@fastify/cors';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import {
-  runFullAudit,
   discoverPagesFromLinks,
   runAIKeywordResearch,
   searchCompetitors,
@@ -10,11 +9,11 @@ import {
   type AuditIssue,
   type PlanTier,
 } from '@rankcli/agent-runtime';
-import { premiumChecks } from '@rankcli/agent-runtime-premium';
 import { createAnalysisServer } from '@rankcli/mcp-server/server';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { EventEmitter } from 'events';
 import { callChatCompletion, type AIProviderConfig } from './ai-provider.js';
+import { runAuditOffThread, auditPoolStats } from './audit-pool.js';
 import { buildVisibilityQuestion } from './visibility-question.js';
 import { getEntitlement } from './tier.js';
 import { installOutboundGuard, assertPublicUrl, hostPort } from './url-guard.js';
@@ -324,6 +323,7 @@ app.get('/health', async () => {
     activeJobs: jobs.size,
     runningDeepAudits,
     queuedDeepAudits: deepAuditQueue.length,
+    auditThreads: auditPoolStats(),
   };
 });
 
@@ -503,11 +503,10 @@ app.post<{
 
   try {
     // Run single-page audit with timeout
-    const auditPromise = runFullAudit({
+    const auditPromise = runAuditOffThread({
       url,
       maxPages: Math.min(maxPages, 1), // Limit to 1 page for quick audits
       checksLimit,
-      premiumChecks,
     });
 
     const timeoutPromise = new Promise<never>((_, reject) =>
@@ -625,7 +624,8 @@ async function runDeepAudit(
           .eq('status', 'completed');
 
         const uniqueDomains = new Set<string>();
-        auditedDomains?.forEach((a: { projects: { domain: string } }) => {
+        // PostgREST returns this many-to-one embed as an object; supabase-js types it as an array.
+        (auditedDomains as unknown as Array<{ projects: { domain: string } | null }> | null)?.forEach((a) => {
           if (a.projects?.domain) uniqueDomains.add(a.projects.domain);
         });
 
@@ -776,13 +776,11 @@ async function runDeepAudit(
           app.log.info({ jobId: job.id, page: globalIndex + 1, url: pageUrl }, 'Auditing page');
 
           try {
-            const report = await runFullAudit({
+            const report = await runAuditOffThread({
               url: pageUrl,
               maxPages: 1,
               checkBrokenLinks: true,
-              tier: 'paid',
               checksLimit: options.checksLimit,
-              premiumChecks,
             });
 
             job.pagesCompleted++;
@@ -1165,9 +1163,10 @@ app.post<{
     }
 
     return reply.send({
-      success: true,
-      tier,
       ...result,
+      success: true,
+      // The engine's own tier wins when it reports one (as the old `{ tier, ...result }` did).
+      tier: (result as { tier?: string }).tier ?? tier,
     });
 
   } catch (error) {
@@ -1935,12 +1934,10 @@ async function handleMCPToolCall(name: string, args: Record<string, unknown>): P
 
       app.log.info({ url }, 'MCP: Running SEO audit');
       
-      const report = await runFullAudit({
+      const report = await runAuditOffThread({
         url,
         maxPages: 1,
-        tier: 'paid',
         checksLimit: 280,
-        premiumChecks,
       });
 
       const criticalIssues = report.issues.filter(i => i.severity === 'error');
@@ -1980,12 +1977,10 @@ ${warnings.slice(0, 5).map(i => `- **${i.code}:** ${i.title}`).join('\n') || 'No
         if (response.ok) robotsTxt = await response.text();
       } catch { /* ignore */ }
 
-      const report = await runFullAudit({
+      const report = await runAuditOffThread({
         url,
         maxPages: 1,
-        tier: 'paid',
         checksLimit: 280,
-        premiumChecks,
       });
 
       const geoIssues = report.issues.filter(i =>
@@ -2042,8 +2037,8 @@ ${analyzeRobotsTxtForAI(robotsTxt)}
       app.log.info({ url1, url2 }, 'MCP: Comparing URLs');
 
       const [report1, report2] = await Promise.all([
-        runFullAudit({ url: url1, maxPages: 1, tier: 'paid', checksLimit: 280, premiumChecks }),
-        runFullAudit({ url: url2, maxPages: 1, tier: 'paid', checksLimit: 280, premiumChecks }),
+        runAuditOffThread({ url: url1, maxPages: 1, checksLimit: 280 }),
+        runAuditOffThread({ url: url2, maxPages: 1, checksLimit: 280 }),
       ]);
 
       const score1 = report1.healthScore?.overall ?? 0;

@@ -48,7 +48,7 @@ Status: `open` · `in progress` · `closed` (with commit) · `needs founder` (bl
 9. ~~CLI release v0.0.30~~ — closed (see above).
 10. **Dead code**: root `supabase/` legacy schema, functions with no callers, the worker keyword path. — open
 11. **Deep audit via start-deep-audit** not yet exercised with a paid account. — open
-11b. **Worker type errors**: `tier` passed to AuditOptions (no such field), the domain-limit query's embed typing, missing mcp-server `.d.ts`. Harmless at runtime (tsup doesn't typecheck), but they hide real errors. — open
+11b. **Worker type errors**: `tier` passed to AuditOptions (no such field), the domain-limit query's embed typing. — closed with the worker-thread change (`tsc --noEmit` clean).
 11c. **create-checkout / create-portal 500 without auth** — closed `0419913`.
 12. **GitHub Action publishing** needs a public repo. — needs founder (after 3)
 12b. **GitHub repo linking for email/Google sign-ups**: linking now proves write access on GitHub. Users with no GitHub identity can link only after enabling "Request user authorization (OAuth) during installation" on the GitHub App and adding `GITHUB_APP_CLIENT_ID` / `GITHUB_APP_CLIENT_SECRET` as Supabase secrets - or by signing in with GitHub once. — needs founder
