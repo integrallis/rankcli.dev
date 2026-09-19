@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-18T22:34:40.792Z
+// Generated: 2026-09-19T07:27:19.876Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -10381,7 +10381,6 @@ async function httpGet(url, config = {}) {
       signal: controller.signal,
       redirect: maxRedirects > 0 ? "follow" : "manual"
     });
-    clearTimeout(timeoutId);
     const contentType = response.headers.get("content-type") || "";
     let data;
     if (contentType.includes("application/json")) {
@@ -10389,6 +10388,7 @@ async function httpGet(url, config = {}) {
     } else {
       data = await response.text();
     }
+    clearTimeout(timeoutId);
     if (!validateStatus(response.status)) {
       const error = new Error(`Request failed with status ${response.status}`);
       error.response = {
@@ -10480,7 +10480,6 @@ async function httpPost(url, data, config = {}) {
       body: data ? JSON.stringify(data) : void 0,
       signal: controller.signal
     });
-    clearTimeout(timeoutId);
     const contentType = response.headers.get("content-type") || "";
     let responseData;
     if (contentType.includes("application/json")) {
@@ -10488,6 +10487,7 @@ async function httpPost(url, data, config = {}) {
     } else {
       responseData = await response.text();
     }
+    clearTimeout(timeoutId);
     if (!validateStatus(response.status)) {
       const error = new Error(`Request failed with status ${response.status}`);
       error.response = {
@@ -11192,7 +11192,7 @@ async function checkRobotsTxt(baseUrl) {
 }
 async function checkSitemap(baseUrl, robotsData) {
   const issues = [];
-  const sitemapUrls = robotsData.sitemapUrls.length > 0 ? robotsData.sitemapUrls : [
+  const sitemapUrls = robotsData.sitemapUrls.length > 0 ? robotsData.sitemapUrls.slice(0, 3) : [
     new URL("/sitemap.xml", baseUrl).href,
     new URL("/sitemap_index.xml", baseUrl).href
   ];
@@ -20304,9 +20304,22 @@ async function runFullAudit(options) {
   console.error(`
 \u{1F50D} Running comprehensive SEO audit on ${url}...
 `);
+  const withTimeout = async (name, promise, timeoutMs) => {
+    let timer;
+    const timeoutPromise = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`${name} timed out`)), timeoutMs);
+    });
+    try {
+      return await Promise.race([promise, timeoutPromise]);
+    } finally {
+      clearTimeout(timer);
+    }
+  };
   console.error("\u{1F4CB} Phase 1: Crawlability checks + page fetch (parallel)...");
   const [crawlabilityResult, fetchResult] = await Promise.all([
-    runCrawlabilityChecks(url).catch((err) => {
+    // robots.txt, sitemaps and the redirect chain run one after another; a site that is slow
+    // on each could hold the page for minutes, so the whole group gets 45s.
+    withTimeout("Crawlability checks", runCrawlabilityChecks(url), 45e3).catch((err) => {
       console.error("Crawlability check failed:", err);
       return [];
     }),
@@ -20457,17 +20470,6 @@ async function runFullAudit(options) {
     }
   }
   console.error("\u{1F517} Phase 3: Running async checks (parallel)...");
-  const withTimeout = async (name, promise, timeoutMs) => {
-    let timer;
-    const timeoutPromise = new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error(`${name} timed out`)), timeoutMs);
-    });
-    try {
-      return await Promise.race([promise, timeoutPromise]);
-    } finally {
-      clearTimeout(timer);
-    }
-  };
   const safeAsync = async (name, fn, timeoutMs = 1e4) => {
     try {
       const result = await withTimeout(name, fn(), timeoutMs);
