@@ -1,0 +1,40 @@
+name: Cloudflare Web Analytics site
+
+# Ops: finds (or creates) the Cloudflare Web Analytics site for rankcli.dev and prints its
+# beacon token, which goes in the CF_BEACON_TOKEN repository variable (the frontend build
+# embeds it; it's public in the page anyway). Manual snippet, not automatic injection, so
+# page views aren't counted twice.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  site:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find or create the site
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          api="https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/rum/site_info"
+          auth=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json")
+          list=$(curl -sS "${auth[@]}" "$api/list?per_page=100")
+          if [ "$(echo "$list" | jq -r '.success')" != "true" ]; then
+            echo "Listing Web Analytics sites failed (the API token may lack the Account Analytics permission):"
+            echo "$list" | jq -c '.errors'
+            exit 1
+          fi
+          token=$(echo "$list" | jq -r '[.result[] | select(.ruleset.zone_name == "rankcli.dev" or .host == "rankcli.dev")][0].site_token // empty')
+          if [ -z "$token" ]; then
+            created=$(curl -sS -X POST "${auth[@]}" "$api" -d '{"host":"rankcli.dev","auto_install":false}')
+            if [ "$(echo "$created" | jq -r '.success')" != "true" ]; then
+              echo "Creating the site failed:"; echo "$created" | jq -c '.errors'; exit 1
+            fi
+            token=$(echo "$created" | jq -r '.result.site_token')
+            echo "Created the rankcli.dev Web Analytics site."
+          else
+            echo "Found the existing rankcli.dev Web Analytics site."
+          fi
+          echo "CF_BEACON_TOKEN=$token"
