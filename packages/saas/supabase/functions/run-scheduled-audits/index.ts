@@ -53,11 +53,17 @@ serve(async (req) => {
       ? Math.max(5, Number(params.get('stuck_after_minutes')) || 60) * 60 * 1000
       : STUCK_AFTER_MS;
 
-    const { data: projects, error } = await supabase
+    // Ops: ?project_id= audits that one project now, whatever its cadence or failure backoff
+    // (to check a fix against the site that failed).
+    const onlyProject = params.get('project_id');
+
+    let query = supabase
       .from('projects')
       .select('id, url, user_id')
       .eq('is_active', true)
       .not('url', 'is', null);
+    if (onlyProject) query = query.eq('id', onlyProject);
+    const { data: projects, error } = await query;
     if (error) throw error;
 
     const now = Date.now();
@@ -103,12 +109,12 @@ serve(async (req) => {
         continue;
       }
       const lastFailure = audits.find((a) => a.status === 'failed' && a.error_message !== INTERRUPTED);
-      if (lastFailure && now - at(lastFailure) < FAILURE_BACKOFF_MS) continue;
+      if (!onlyProject && lastFailure && now - at(lastFailure) < FAILURE_BACKOFF_MS) continue;
 
       // The cadence counts from the last audit that finished; interrupted ones don't count.
       const lastCompleted = audits.find((a) => a.status === 'completed');
       const lastAt = lastCompleted ? at(lastCompleted) : 0;
-      if (now - lastAt >= CADENCE_MS[tier]) due.push({ project, lastAt, tier });
+      if (onlyProject || now - lastAt >= CADENCE_MS[tier]) due.push({ project, lastAt, tier });
     }
 
     due.sort((a, b) => a.lastAt - b.lastAt);

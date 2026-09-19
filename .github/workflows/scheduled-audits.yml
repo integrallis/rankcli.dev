@@ -17,6 +17,10 @@ on:
         description: 'Treat unfinished audits older than this as dead (after a worker restart); default 60'
         required: false
         default: ''
+      project_id:
+        description: 'Audit only this project now, ignoring its cadence and failure backoff'
+        required: false
+        default: ''
 
 jobs:
   run:
@@ -28,10 +32,11 @@ jobs:
           SUPABASE_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           STUCK_AFTER: ${{ github.event.inputs.stuck_after_minutes || '' }}
+          PROJECT_ID: ${{ github.event.inputs.project_id || '' }}
         run: |
           set -euo pipefail
           test -n "$CRON_SECRET" || { echo "CRON_SECRET is not set"; exit 1; }
-          curl -sS --fail-with-body -X POST "$SUPABASE_URL/functions/v1/run-scheduled-audits?dry_run=$DRY_RUN&stuck_after_minutes=$STUCK_AFTER" \
+          curl -sS --fail-with-body -X POST "$SUPABASE_URL/functions/v1/run-scheduled-audits?dry_run=$DRY_RUN&stuck_after_minutes=$STUCK_AFTER&project_id=$PROJECT_ID" \
             -H "Authorization: Bearer $CRON_SECRET" \
             -H "Content-Type: application/json" \
             -d '{}'
