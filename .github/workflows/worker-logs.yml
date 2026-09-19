@@ -31,7 +31,8 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
-          ORG=$(flyctl status --app rankcli-audit-worker --json | jq -r '.Organization.Slug // "personal"')
+          ORG=$(flyctl status --app rankcli-audit-worker --json | jq -r '(.Organization // .organization // {}) | (.Slug // .slug // empty)')
+          [ -n "$ORG" ] || ORG=$(flyctl orgs list --json 2>/dev/null | jq -r 'if type == "object" then keys[0] else .[0].slug end' || true)
           echo "org: $ORG"
           # Macaroon tokens ("FlyV1 fm2_...") go in the header as they are; classic ones as Bearer.
           case "$FLY_API_TOKEN" in FlyV1*) AUTH="$FLY_API_TOKEN" ;; *) AUTH="Bearer $FLY_API_TOKEN" ;; esac
