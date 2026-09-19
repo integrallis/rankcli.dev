@@ -145,6 +145,11 @@ jobs:
           # Search Console integration (gsc-oauth, sync-gsc-metrics): tables, rows, and a users table if any.
           echo "--- edge function secret NAMES (never values) ---"
           curl -s "https://api.supabase.com/v1/projects/$PROJECT_REF/secrets" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" | jq -c '[.[].name] | sort'
+          echo "--- founder checklist status ---"
+          query "SELECT status, COUNT(*) AS n, MAX(created_at)::text AS latest FROM audits WHERE triggered_by = 'manual' AND created_at > NOW() - INTERVAL '7 days' GROUP BY status"
+          curl -s "https://api.supabase.com/v1/projects/$PROJECT_REF/secrets" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            | jq -c '[.[].name] as $n | {google_oauth: (($n | index("GOOGLE_CLIENT_ID")) != null and ($n | index("GOOGLE_CLIENT_SECRET")) != null), github_app_oauth: (($n | index("GITHUB_APP_CLIENT_ID")) != null and ($n | index("GITHUB_APP_CLIENT_SECRET")) != null)}'
+          query "SELECT (SELECT COUNT(*) FROM oauth_connections WHERE provider = 'google') AS gsc_connections, (SELECT COUNT(*) FROM seo_metrics WHERE source = 'gsc') AS gsc_metric_rows"
           echo "--- search console schema ---"
           query "SELECT table_name, string_agg(column_name || ':' || data_type, ', ' ORDER BY ordinal_position) AS columns FROM information_schema.columns WHERE table_schema = 'public' AND table_name IN ('oauth_connections', 'seo_metrics', 'sync_jobs', 'users') GROUP BY table_name"
           query "SELECT conrelid::regclass AS tbl, conname, pg_get_constraintdef(oid) AS def FROM pg_constraint WHERE conrelid::regclass::text IN ('oauth_connections', 'seo_metrics', 'keyword_rankings', 'sync_jobs') AND contype IN ('u', 'c')"
