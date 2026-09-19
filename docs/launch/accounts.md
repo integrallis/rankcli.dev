@@ -24,7 +24,8 @@ where.
 | SaaSHub | **Live** (confirmed 2026-09-13), approved well inside the 32-day window | saashub.com/rankcli |
 | Glama | **Live** (from earlier session) | glama.ai/mcp/servers/integrallis/rankcli-mcp-server |
 | mcp.so | **Live** (from earlier session), via merged GitHub issue | github.com/chatmcp/mcpso/issues/3963 |
-| `awesome-mcp-servers` (punkpeye, 94k★) | PR open | github.com/punkpeye/awesome-mcp-servers/pull/13779 |
+| `awesome-mcp-servers` (punkpeye, 94k★) | **Merged** 2026-09-15 | github.com/punkpeye/awesome-mcp-servers/pull/13779 |
+| GitHub Action `integrallis/rankcli-action` | **Public** 2026-09-19, v1.0.0; Marketplace listing pending (founder click) | github.com/integrallis/rankcli-action |
 | `awesome-seo-tools` (serpapi) | PR open | github.com/serpapi/awesome-seo-tools/pull/340 |
 | Google Search Console | **Live**, domain verified via DNS TXT, sitemap submitted (13 pages) | search.google.com/search-console?resource_id=sc-domain:rankcli.dev |
 | Bing Webmaster Tools | **Live**, imported from GSC, sitemap submitted | bing.com/webmasters/home?siteUrl=https://rankcli.dev/ |
