@@ -27,6 +27,10 @@ const WORKER_URL = Deno.env.get('AUDIT_WORKER_URL') || 'http://localhost:8080';
 // honest "WORKER_SECRET missing" failure.
 const WORKER_SECRET = Deno.env.get('WORKER_SECRET');
 const USE_WORKER_FOR_PAID = Deno.env.get('USE_WORKER_FOR_KEYWORDS') === 'true';
+// A worker run can spend ~15 Brave/Serper searches (competitive research per tool idea) from
+// RankCLI's shared monthly quotas, so each user gets this many a day; later runs that day take
+// the edge path, which makes no searches.
+const WORKER_RUNS_PER_DAY = 10;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -738,7 +742,16 @@ serve(async (req) => {
     // For paid tiers, route to worker if enabled (enhanced tool ideas with competitive search)
     // The worker's keyword research is OpenAI-only and runs on the key passed to it, so
     // it's only an option when the user's key is an OpenAI one.
-    if (USE_WORKER_FOR_PAID && aiConfig.provider === 'openai') {
+    let workerRunsToday = 0;
+    if (USE_WORKER_FOR_PAID && userId) {
+      const { count } = await supabase
+        .from('keyword_research_results')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+      workerRunsToday = count ?? 0;
+    }
+    if (USE_WORKER_FOR_PAID && aiConfig.provider === 'openai' && workerRunsToday < WORKER_RUNS_PER_DAY) {
       console.log('Routing to worker for enhanced keyword research...');
 
       try {
