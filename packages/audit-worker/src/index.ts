@@ -294,12 +294,36 @@ await app.register(cors, {
   credentials: true,
 });
 
+// Deep audits are CPU-heavy (every check on up to 10 pages, 5 at a time) and run on the same
+// event loop that answers health checks and progress streams. Started all at once - the first
+// scheduled run sent 5 to one machine - they saturated its one shared vCPU: Fly's health check
+// failed, streams stalled, and the audits ran for many minutes. Each machine now runs this
+// many at a time; the rest wait as 'pending', in arrival order.
+const MAX_CONCURRENT_DEEP_AUDITS = Math.max(1, Number(process.env.MAX_CONCURRENT_DEEP_AUDITS) || 1);
+let runningDeepAudits = 0;
+const deepAuditQueue: Array<() => void> = [];
+
+async function withDeepAuditSlot<T>(work: () => Promise<T>): Promise<T> {
+  if (runningDeepAudits >= MAX_CONCURRENT_DEEP_AUDITS) {
+    await new Promise<void>((resolve) => deepAuditQueue.push(resolve));
+  }
+  runningDeepAudits++;
+  try {
+    return await work();
+  } finally {
+    runningDeepAudits--;
+    deepAuditQueue.shift()?.();
+  }
+}
+
 // Health check
 app.get('/health', async () => {
   return {
     status: 'ok',
     timestamp: new Date().toISOString(),
     activeJobs: jobs.size,
+    runningDeepAudits,
+    queuedDeepAudits: deepAuditQueue.length,
   };
 });
 
@@ -424,8 +448,10 @@ app.post<{
 
   jobs.set(jobId, job);
 
-  // Start audit in background
-  runDeepAudit(job, { maxPages: Math.min(maxPages, MAX_PAGES), checksLimit, enableAI, aiConfig }).catch(err => {
+  // Start audit in background, once this machine has a free slot
+  withDeepAuditSlot(() =>
+    runDeepAudit(job, { maxPages: Math.min(maxPages, MAX_PAGES), checksLimit, enableAI, aiConfig })
+  ).catch(err => {
     app.log.error({ err, jobId }, 'Audit failed');
   });
 

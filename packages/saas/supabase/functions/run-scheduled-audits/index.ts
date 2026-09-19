@@ -24,12 +24,14 @@ export const CADENCE_MS: Record<BaseTier, number> = {
   pro: 24 * HOUR,
   agency: 24 * HOUR,
 };
-// The worker handles a handful of deep audits at once; a backlog drains over later runs.
-const MAX_PER_RUN = 20;
-// The worker times a deep audit out after 5 minutes, so one still pending or running after 30
-// died with its machine (a deploy, a crash). It's marked failed as interrupted, and doesn't
-// count against the cadence - the next run retries it.
-const STUCK_AFTER_MS = 30 * 60 * 1000;
+// Each worker machine runs one deep audit at a time and queues the rest (MAX_CONCURRENT_
+// DEEP_AUDITS), a couple of minutes each; 10 per run keeps every queue well under
+// STUCK_AFTER_MS. A backlog drains over later runs (hourly: 240 audits a day).
+const MAX_PER_RUN = 10;
+// A deep audit runs for minutes and may first wait in its machine's queue, so one still pending
+// or running after an hour died with its machine (a deploy, a crash). It's marked failed as
+// interrupted, and doesn't count against the cadence - the next run retries it.
+const STUCK_AFTER_MS = 60 * 60 * 1000;
 const INTERRUPTED = 'Audit interrupted before it finished (the worker restarted). It will be retried.';
 // A real failure (site down, blocked, ...) is retried after this, not every hour.
 const FAILURE_BACKOFF_MS = 6 * HOUR;
