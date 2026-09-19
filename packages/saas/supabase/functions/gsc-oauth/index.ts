@@ -1,42 +1,47 @@
-/**
- * Google Search Console OAuth Edge Function
- *
- * Handles OAuth 2.0 flow for connecting GSC accounts:
- * - /start: Initiates OAuth flow, returns redirect URL
- * - /callback: Handles OAuth callback, stores tokens
- * - /disconnect: Removes OAuth connection
- * - /sites: Lists verified sites for a connection
- */
+// Google Search Console connection for a project. POST /gsc-oauth/<action>:
+//   status       { project_id }             -> configured? plan allows it? connected? property?
+//   start        { project_id }             -> { auth_url } (Google consent)
+//   callback     (GET, from Google)         -> stores the tokens, back to the project page
+//   sites        { project_id }             -> the account's properties + the one matching the project
+//   select-site  { project_id, site_url }   -> saves the property (must be one the account has)
+//   disconnect   { project_id }             -> revokes the token at Google and forgets it
+// Everything but the callback needs the project owner's session. Tokens never leave the
+// server (oauth_connections is service-role only) and are stored encrypted (_shared/gsc.ts).
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { identifyCaller } from '../_shared/caller-auth.ts';
+import { getEntitlement } from '../_shared/tier.ts';
+import { decryptSecret } from '../_shared/crypto.ts';
+import {
+  GSC_SCOPES,
+  accessTokenFor,
+  googleConfig,
+  listProperties,
+  matchProperty,
+  sealToken,
+  type GoogleConfig,
+} from '../_shared/gsc.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const REDIRECT_URI = `${supabaseUrl}/functions/v1/gsc-oauth/callback`;
+const appUrl = Deno.env.get('APP_URL') || 'https://rankcli.dev';
 
-// Google OAuth configuration
-const GOOGLE_CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID')!;
-const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET')!;
-const OAUTH_REDIRECT_URI = Deno.env.get('OAUTH_REDIRECT_URI') ||
-  `${supabaseUrl}/functions/v1/gsc-oauth/callback`;
-
-// Required scopes for GSC
-const GSC_SCOPES = [
-  'https://www.googleapis.com/auth/webmasters.readonly', // Read GSC data
-  'https://www.googleapis.com/auth/userinfo.email', // Get user email
-].join(' ');
+// Plans with Search Console (pricing-tiers.json: features.gsc_integration).
+const GSC_TIERS = new Set(['solo', 'pro', 'agency']);
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const frontendUrl = Deno.env.get('FRONTEND_URL') || 'http://localhost:3005';
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+}
 
-// The OAuth state says which user (and project) the Google tokens get saved
-// under, and it round-trips through the browser. It is signed so the
-// callback can't be pointed at another user's account. The key is derived
-// from the service role key, which every function already has.
+// The OAuth state says which user and project the tokens belong to and round-trips through the
+// browser, so it's signed (and expires): the callback can't be pointed at someone else's project.
 const STATE_TTL_MS = 10 * 60 * 1000;
 
 async function stateKey(): Promise<CryptoKey> {
@@ -45,7 +50,7 @@ async function stateKey(): Promise<CryptoKey> {
     new TextEncoder().encode(`gsc-oauth-state:${supabaseServiceKey}`),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
-    ['sign', 'verify']
+    ['sign', 'verify'],
   );
 }
 
@@ -58,446 +63,212 @@ function fromBase64Url(text: string): Uint8Array<ArrayBuffer> {
   return Uint8Array.from(atob(base64 + '='.repeat((4 - (base64.length % 4)) % 4)), (c) => c.charCodeAt(0));
 }
 
-async function signState(data: { user_id: string; project_id: string | null; timestamp: number }): Promise<string> {
+interface State {
+  user_id: string;
+  project_id: string;
+  timestamp: number;
+}
+
+async function signState(data: State): Promise<string> {
   const payload = toBase64Url(new TextEncoder().encode(JSON.stringify(data)));
   const signature = new Uint8Array(await crypto.subtle.sign('HMAC', await stateKey(), new TextEncoder().encode(payload)));
   return `${payload}.${toBase64Url(signature)}`;
 }
 
-async function verifyState(state: string): Promise<{ user_id: string; project_id: string | null; timestamp: number } | null> {
+async function verifyState(state: string): Promise<State | null> {
   const [payload, signature, extra] = state.split('.');
   if (!payload || !signature || extra !== undefined) return null;
   try {
-    const valid = await crypto.subtle.verify(
-      'HMAC',
-      await stateKey(),
-      fromBase64Url(signature),
-      new TextEncoder().encode(payload)
-    );
+    const valid = await crypto.subtle.verify('HMAC', await stateKey(), fromBase64Url(signature), new TextEncoder().encode(payload));
     if (!valid) return null;
     const data = JSON.parse(new TextDecoder().decode(fromBase64Url(payload)));
-    if (typeof data?.user_id !== 'string' || typeof data?.timestamp !== 'number') return null;
-    return { user_id: data.user_id, project_id: typeof data.project_id === 'string' ? data.project_id : null, timestamp: data.timestamp };
+    if (typeof data?.user_id !== 'string' || typeof data?.project_id !== 'string' || typeof data?.timestamp !== 'number') return null;
+    return data;
   } catch {
     return null;
   }
 }
 
-serve(async (req: Request) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+// deno-lint-ignore no-explicit-any
+type Db = any;
 
-  const url = new URL(req.url);
-  const pathParts = url.pathname.split('/');
-  const action = pathParts[pathParts.length - 1];
+/** The caller's project, or an error response. */
+async function ownedProject(req: Request, db: Db, body: Record<string, unknown>) {
+  const caller = await identifyCaller(req, db, supabaseServiceKey);
+  if (caller?.kind !== 'user') return { error: json({ error: 'Unauthorized' }, 401) };
+  const projectId = typeof body.project_id === 'string' ? body.project_id : '';
+  const { data: project } = await db.from('projects').select('id, url, user_id').eq('id', projectId).eq('user_id', caller.userId).maybeSingle();
+  if (!project) return { error: json({ error: 'Project not found' }, 404) };
+  return { project: project as { id: string; url: string; user_id: string }, userId: caller.userId };
+}
+
+async function connectionFor(db: Db, projectId: string) {
+  const { data } = await db.from('oauth_connections').select('*').eq('project_id', projectId).eq('provider', 'google').maybeSingle();
+  return data;
+}
+
+serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+
+  const action = new URL(req.url).pathname.split('/').pop();
+  const db = createClient(supabaseUrl, supabaseServiceKey);
+  const config = googleConfig();
 
   try {
+    if (action === 'callback') return await handleCallback(req, db, config);
+
+    const body = await req.json().catch(() => ({})) as Record<string, unknown>;
+    const owned = await ownedProject(req, db, body);
+    if (owned.error) return owned.error;
+    const { project, userId } = owned;
+
+    const tier = (await getEntitlement(db, userId)).tier;
+    const allowed = GSC_TIERS.has(tier);
+
+    if (action === 'status') {
+      const connection = await connectionFor(db, project.id);
+      const { data: lastSync } = await db.from('sync_jobs')
+        .select('status, completed_at, error_message')
+        .eq('project_id', project.id).eq('job_type', 'gsc_sync')
+        .order('started_at', { ascending: false }).limit(1).maybeSingle();
+      return json({
+        configured: !!config,
+        allowed,
+        connected: !!connection,
+        email: connection?.provider_account_email ?? null,
+        siteUrl: connection?.site_url ?? null,
+        lastSync: lastSync ?? null,
+      });
+    }
+
+    if (!config) return json({ error: 'Search Console is not configured on this server' }, 503);
+    if (!allowed) return json({ error: 'Search Console is part of the Solo, Pro and Agency plans', code: 'plan_required' }, 402);
+
     switch (action) {
-      case 'start':
-        return handleStart(req);
-      case 'callback':
-        return handleCallback(req);
-      case 'disconnect':
-        return handleDisconnect(req);
-      case 'sites':
-        return handleListSites(req);
-      case 'refresh':
-        return handleRefreshToken(req);
-      default:
-        return new Response(JSON.stringify({ error: 'Unknown action' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      case 'start': {
+        const state = await signState({ user_id: userId, project_id: project.id, timestamp: Date.now() });
+        const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+        authUrl.searchParams.set('client_id', config.clientId);
+        authUrl.searchParams.set('redirect_uri', REDIRECT_URI);
+        authUrl.searchParams.set('response_type', 'code');
+        authUrl.searchParams.set('scope', GSC_SCOPES);
+        authUrl.searchParams.set('access_type', 'offline'); // a refresh token, for the daily sync
+        authUrl.searchParams.set('prompt', 'consent'); // Google only sends a refresh token on consent
+        authUrl.searchParams.set('include_granted_scopes', 'true');
+        authUrl.searchParams.set('state', state);
+        return json({ auth_url: authUrl.toString() });
+      }
+
+      case 'sites': {
+        const connection = await connectionFor(db, project.id);
+        if (!connection) return json({ error: 'Search Console is not connected' }, 404);
+        const properties = await listProperties(await accessTokenFor(db, connection, config));
+        return json({
+          sites: properties,
+          suggested: matchProperty(project.url, properties),
+          selected: connection.site_url ?? null,
         });
+      }
+
+      case 'select-site': {
+        const connection = await connectionFor(db, project.id);
+        if (!connection) return json({ error: 'Search Console is not connected' }, 404);
+        const siteUrl = typeof body.site_url === 'string' ? body.site_url : '';
+        // Only a property this Google account can read - never an arbitrary string.
+        const properties = await listProperties(await accessTokenFor(db, connection, config));
+        const property = properties.find((p) => p.siteUrl === siteUrl && p.permissionLevel !== 'siteUnverifiedUser');
+        if (!property) return json({ error: 'That property is not in this Google account' }, 400);
+        await db.from('oauth_connections').update({ site_url: siteUrl, updated_at: new Date().toISOString() }).eq('id', connection.id);
+        return json({ success: true, siteUrl });
+      }
+
+      case 'disconnect': {
+        const connection = await connectionFor(db, project.id);
+        if (connection) {
+          await revoke(connection, config);
+          await db.from('oauth_connections').delete().eq('id', connection.id);
+        }
+        return json({ success: true });
+      }
+
+      default:
+        return json({ error: 'Unknown action' }, 400);
     }
   } catch (error) {
-    console.error('OAuth error:', error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'OAuth failed' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    console.error('gsc-oauth error:', error);
+    return json({ error: error instanceof Error ? error.message : 'Search Console request failed' }, 502);
   }
 });
 
-/**
- * Start OAuth flow - returns authorization URL
- */
-async function handleStart(req: Request): Promise<Response> {
-  // Verify user is authenticated
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+async function revoke(connection: { refresh_token: string | null }, config: GoogleConfig) {
+  if (!connection.refresh_token) return;
+  try {
+    const token = await decryptSecret(connection.refresh_token, config.encryptionSecret);
+    await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token)}`, { method: 'POST' });
+  } catch (error) {
+    // Forgetting the token matters more than telling Google; the user can also remove access
+    // at myaccount.google.com.
+    console.warn('Google token revoke failed:', error);
   }
-
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-  if (authError || !user) {
-    return new Response(JSON.stringify({ error: 'Invalid token' }), {
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-
-  // Get project_id from body if provided - it must be the caller's project.
-  const body = await req.json().catch(() => ({}));
-  const projectId = typeof body.project_id === 'string' ? body.project_id : null;
-  if (projectId) {
-    const { data: project } = await supabase
-      .from('projects')
-      .select('id')
-      .eq('id', projectId)
-      .eq('user_id', user.id)
-      .maybeSingle();
-    if (!project) {
-      return new Response(JSON.stringify({ error: 'Project not found' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-  }
-
-  const state = await signState({
-    user_id: user.id,
-    project_id: projectId,
-    timestamp: Date.now(),
-  });
-
-  // Build authorization URL
-  const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
-  authUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID);
-  authUrl.searchParams.set('redirect_uri', OAUTH_REDIRECT_URI);
-  authUrl.searchParams.set('response_type', 'code');
-  authUrl.searchParams.set('scope', GSC_SCOPES);
-  authUrl.searchParams.set('access_type', 'offline'); // Get refresh token
-  authUrl.searchParams.set('prompt', 'consent'); // Always show consent screen
-  authUrl.searchParams.set('state', state);
-
-  return new Response(JSON.stringify({ auth_url: authUrl.toString() }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
 }
 
-/**
- * Handle OAuth callback - exchange code for tokens
- */
-async function handleCallback(req: Request): Promise<Response> {
+async function handleCallback(req: Request, db: Db, config: GoogleConfig | null): Promise<Response> {
   const url = new URL(req.url);
-  const code = url.searchParams.get('code');
   const state = url.searchParams.get('state');
-  const error = url.searchParams.get('error');
+  const stateData = state ? await verifyState(state) : null;
+  if (!stateData) return new Response('Invalid state', { status: 400 });
 
-  if (error) {
-    // Redirect to frontend with error
-    return Response.redirect(
-      `${frontendUrl}/settings/integrations?error=${encodeURIComponent(error)}`,
-      302
-    );
-  }
+  const back = (params: string) => Response.redirect(`${appUrl}/dashboard/projects/${stateData.project_id}?${params}`, 302);
 
-  if (!code || !state) {
-    return new Response('Missing code or state', { status: 400 });
-  }
+  if (url.searchParams.get('error')) return back(`gsc_error=${encodeURIComponent(url.searchParams.get('error')!)}`);
+  if (Date.now() - stateData.timestamp > STATE_TTL_MS) return back('gsc_error=expired');
+  const code = url.searchParams.get('code');
+  if (!code || !config) return back('gsc_error=unavailable');
 
-  const stateData = await verifyState(state);
-  if (!stateData) {
-    return new Response('Invalid state', { status: 400 });
-  }
+  // The project must still belong to the user who started the flow.
+  const { data: project } = await db.from('projects').select('id').eq('id', stateData.project_id).eq('user_id', stateData.user_id).maybeSingle();
+  if (!project) return back('gsc_error=project');
 
-  // Check state timestamp (10 minute expiry)
-  if (Date.now() - stateData.timestamp > STATE_TTL_MS) {
-    return Response.redirect(
-      `${frontendUrl}/settings/integrations?error=expired`,
-      302
-    );
-  }
-
-  // Exchange code for tokens
   const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       code,
-      client_id: GOOGLE_CLIENT_ID,
-      client_secret: GOOGLE_CLIENT_SECRET,
-      redirect_uri: OAUTH_REDIRECT_URI,
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      redirect_uri: REDIRECT_URI,
       grant_type: 'authorization_code',
     }),
   });
-
   if (!tokenResponse.ok) {
-    const errorText = await tokenResponse.text();
-    console.error('Token exchange failed:', errorText);
-    return Response.redirect(
-      `${frontendUrl}/settings/integrations?error=token_exchange_failed`,
-      302
-    );
+    console.error('Google token exchange failed:', tokenResponse.status, await tokenResponse.text());
+    return back('gsc_error=token_exchange_failed');
   }
+  const tokens = await tokenResponse.json() as { access_token: string; refresh_token?: string; expires_in: number; scope?: string };
+  if (!tokens.scope?.includes('webmasters')) return back('gsc_error=scope_not_granted');
 
-  const tokens = await tokenResponse.json();
-
-  // Get user info from Google
-  const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+  const userInfo = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
     headers: { Authorization: `Bearer ${tokens.access_token}` },
-  });
-  const userInfo = await userInfoResponse.json();
+  }).then((r) => r.json()).catch(() => ({})) as { id?: string; email?: string };
 
-  // Store in database
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-  const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
-
-  const { error: insertError } = await supabase.from('oauth_connections').upsert({
+  // Replace any earlier connection for this project.
+  await db.from('oauth_connections').delete().eq('project_id', stateData.project_id).eq('provider', 'google');
+  const { error } = await db.from('oauth_connections').insert({
     user_id: stateData.user_id,
-    project_id: stateData.project_id || null,
+    project_id: stateData.project_id,
     provider: 'google',
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
-    token_expires_at: expiresAt.toISOString(),
+    access_token: await sealToken(tokens.access_token, config),
+    refresh_token: tokens.refresh_token ? await sealToken(tokens.refresh_token, config) : null,
+    token_expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
     scopes: GSC_SCOPES.split(' '),
-    provider_account_id: userInfo.id,
+    provider_account_id: userInfo.id ?? null,
+    provider_account_email: userInfo.email ?? null,
     verification_status: 'verified',
     updated_at: new Date().toISOString(),
-  }, {
-    onConflict: 'user_id,provider,site_url',
   });
-
-  if (insertError) {
-    console.error('Failed to store tokens:', insertError);
-    return Response.redirect(
-      `${frontendUrl}/settings/integrations?error=storage_failed`,
-      302
-    );
+  if (error) {
+    console.error('Storing the Google connection failed:', error);
+    return back('gsc_error=storage_failed');
   }
-
-  // Redirect to frontend with success
-  return Response.redirect(
-    `${frontendUrl}/settings/integrations?gsc=connected`,
-    302
-  );
-}
-
-/**
- * Disconnect OAuth connection
- */
-async function handleDisconnect(req: Request): Promise<Response> {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-  if (authError || !user) {
-    return new Response(JSON.stringify({ error: 'Invalid token' }), {
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-
-  const body = await req.json().catch(() => ({}));
-  const connectionId = body.connection_id;
-
-  // Delete connection (RLS will ensure user owns it)
-  const { error: deleteError } = await supabase
-    .from('oauth_connections')
-    .delete()
-    .eq('id', connectionId)
-    .eq('user_id', user.id);
-
-  if (deleteError) {
-    return new Response(JSON.stringify({ error: 'Failed to disconnect' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-
-  return new Response(JSON.stringify({ success: true }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
-
-/**
- * List verified sites from GSC
- */
-async function handleListSites(req: Request): Promise<Response> {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-  if (authError || !user) {
-    return new Response(JSON.stringify({ error: 'Invalid token' }), {
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-
-  // Get user's Google OAuth connection
-  const { data: connection, error: connError } = await supabase
-    .from('oauth_connections')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('provider', 'google')
-    .single();
-
-  if (connError || !connection) {
-    return new Response(JSON.stringify({ error: 'No Google connection found' }), {
-      status: 404,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-
-  // Refresh token if expired
-  let accessToken = connection.access_token;
-  if (new Date(connection.token_expires_at) < new Date()) {
-    const refreshed = await refreshAccessToken(connection.refresh_token);
-    if (refreshed) {
-      accessToken = refreshed.access_token;
-      // Update in database
-      await supabase
-        .from('oauth_connections')
-        .update({
-          access_token: refreshed.access_token,
-          token_expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
-        })
-        .eq('id', connection.id);
-    }
-  }
-
-  // Fetch sites from GSC API
-  const sitesResponse = await fetch(
-    'https://www.googleapis.com/webmasters/v3/sites',
-    {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    }
-  );
-
-  if (!sitesResponse.ok) {
-    const errorText = await sitesResponse.text();
-    console.error('GSC API error:', errorText);
-    return new Response(JSON.stringify({ error: 'Failed to fetch sites' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-
-  const sitesData = await sitesResponse.json();
-
-  return new Response(JSON.stringify({
-    sites: sitesData.siteEntry || [],
-  }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
-
-/**
- * Manually refresh access token
- */
-async function handleRefreshToken(req: Request): Promise<Response> {
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-  if (authError || !user) {
-    return new Response(JSON.stringify({ error: 'Invalid token' }), {
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-
-  // Get connection
-  const { data: connection } = await supabase
-    .from('oauth_connections')
-    .select('*')
-    .eq('user_id', user.id)
-    .eq('provider', 'google')
-    .single();
-
-  if (!connection?.refresh_token) {
-    return new Response(JSON.stringify({ error: 'No refresh token available' }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-
-  const refreshed = await refreshAccessToken(connection.refresh_token);
-  if (!refreshed) {
-    return new Response(JSON.stringify({ error: 'Failed to refresh token' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-  }
-
-  // Update in database
-  await supabase
-    .from('oauth_connections')
-    .update({
-      access_token: refreshed.access_token,
-      token_expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
-    })
-    .eq('id', connection.id);
-
-  return new Response(JSON.stringify({ success: true }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
-}
-
-/**
- * Refresh access token using refresh token
- */
-async function refreshAccessToken(refreshToken: string): Promise<{
-  access_token: string;
-  expires_in: number;
-} | null> {
-  try {
-    const response = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: GOOGLE_CLIENT_ID,
-        client_secret: GOOGLE_CLIENT_SECRET,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('Token refresh failed:', await response.text());
-      return null;
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('Token refresh error:', error);
-    return null;
-  }
+  return back('gsc=connected');
 }

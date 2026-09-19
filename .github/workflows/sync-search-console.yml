@@ -1,0 +1,28 @@
+name: Sync Search Console
+
+# Pulls Google Search Console data for every project with a connected property (Solo, Pro and
+# Agency) - see packages/saas/supabase/functions/sync-gsc-metrics. Daily: Search Console itself
+# updates once a day, and the function skips projects synced in the last 20 hours.
+
+on:
+  schedule:
+    - cron: '40 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call sync-gsc-metrics
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SUPABASE_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co
+        run: |
+          set -euo pipefail
+          test -n "$CRON_SECRET" || { echo "CRON_SECRET is not set"; exit 1; }
+          # 503 means no Google OAuth client is configured yet: nothing to sync, not a failure.
+          status=$(curl -sS -o response.json -w '%{http_code}' -X POST "$SUPABASE_URL/functions/v1/sync-gsc-metrics" \
+            -H "Authorization: Bearer $CRON_SECRET" -H "Content-Type: application/json" -d '{}')
+          cat response.json; echo
+          if [ "$status" = "503" ]; then echo "Search Console is not configured yet - skipping"; exit 0; fi
+          test "$status" = "200"

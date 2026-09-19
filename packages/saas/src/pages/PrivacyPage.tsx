@@ -2,7 +2,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { SEO } from '@/components/SEO';
 
-const LAST_UPDATED = 'September 18, 2026';
+const LAST_UPDATED = 'September 19, 2026';
 
 export function PrivacyPage() {
   return (
@@ -63,6 +63,10 @@ export function PrivacyPage() {
               requested.
             </li>
             <li>
+              <strong>Google Search Console data (optional)</strong>: if you connect Search
+              Console to a project, see &ldquo;Google Search Console&rdquo; below.
+            </li>
+            <li>
               <strong>Usage data</strong>: basic request logs (timestamps, IP address,
               user agent) used for rate limiting, abuse prevention, and debugging.
             </li>
@@ -87,10 +91,37 @@ export function PrivacyPage() {
             <li><strong>Stripe</strong> - payment processing for paid subscriptions</li>
             <li><strong>Resend</strong> - transactional email delivery</li>
             <li><strong>GitHub</strong> - OAuth sign-in and the RankCLI GitHub App, if you connect a repository</li>
+            <li><strong>Google</strong> - sign-in with Google, and the Search Console API if you connect Search Console</li>
           </ul>
           <p>
             Each of these providers processes data only as needed to provide their part
             of the Service, under their own privacy and security practices.
+          </p>
+
+          <h2>Google Search Console</h2>
+          <p>
+            If you connect Google Search Console to a project, RankCLI asks Google for
+            read-only access to your Search Console data (the <code>webmasters.readonly</code>{' '}
+            scope) and your Google account&apos;s email address. We use it only to show
+            that project&apos;s search performance in your dashboard: the list of your
+            Search Console properties (so you can pick the right one), and for the chosen
+            property the last 28 days of clicks, impressions, click-through rate, average
+            position, top queries and top pages, refreshed daily.
+          </p>
+          <p>
+            Your Google tokens are encrypted (AES-256-GCM) at rest and used only
+            server-side; they are never sent to your browser. We don&apos;t read other
+            Google data, don&apos;t share Search Console data with anyone, and don&apos;t use
+            it for advertising or to train AI models. Disconnecting in the project page
+            revokes RankCLI&apos;s access at Google and deletes the tokens; you can also
+            remove access at any time at{' '}
+            <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">myaccount.google.com/permissions</a>.
+          </p>
+          <p>
+            RankCLI&apos;s use and transfer to any other app of information received from
+            Google APIs will adhere to the{' '}
+            <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Google API Services User Data Policy</a>,
+            including the Limited Use requirements.
           </p>
 
           <h2>GitHub App permissions</h2>

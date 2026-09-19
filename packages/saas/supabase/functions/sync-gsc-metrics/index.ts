@@ -1,473 +1,181 @@
-/**
- * GSC Metrics Sync Edge Function
- *
- * Syncs Google Search Console metrics for all connected projects.
- * Called by cron job with frequency based on tier:
- * - Solo: Weekly
- * - Pro: Daily
- * - Agency: Hourly
- *
- * Also supports manual sync via POST request.
- */
+// Pulls Google Search Console data into seo_metrics (source 'gsc') for projects that have a
+// connected property:
+//   - one 'daily' row per day for the last 28 days of data (clicks, impressions, CTR, position);
+//   - one 'monthly' row: the rolling 28-day summary with top queries and pages (only the latest
+//     is kept).
+// Called daily by .github/workflows/sync-search-console.yml with CRON_SECRET (every connected
+// project on a plan with Search Console, at most once a day each), or by a project's owner
+// ("Sync now", { project_id }).
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { identifyCaller } from '../_shared/caller-auth.ts';
+import { getEntitlement } from '../_shared/tier.ts';
+import {
+  WINDOW_DAYS,
+  accessTokenFor,
+  dateWindow,
+  googleConfig,
+  searchAnalytics,
+  totals,
+  type GoogleConfig,
+} from '../_shared/gsc.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const GOOGLE_CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID')!;
-const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET')!;
 
-// Tier-based sync configurations
-const SYNC_CONFIG = {
-  free: { enabled: false, intervalHours: 0 },
-  solo: { enabled: true, intervalHours: 168 }, // Weekly
-  pro: { enabled: true, intervalHours: 24 },   // Daily
-  agency: { enabled: true, intervalHours: 1 }, // Hourly
-};
+// Plans with Search Console (pricing-tiers.json: features.gsc_integration).
+const GSC_TIERS = new Set(['solo', 'pro', 'agency']);
+// Search Console updates once a day; a scheduled run skips projects synced more recently.
+const MIN_HOURS_BETWEEN_SYNCS = 20;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+}
 
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// deno-lint-ignore no-explicit-any
+type Db = any;
+
+serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+
+  const db = createClient(supabaseUrl, supabaseServiceKey);
+  const config = googleConfig();
+  if (!config) return json({ error: 'Search Console is not configured on this server' }, 503);
 
   try {
-    // Scheduled runs authenticate with the service key or CRON_SECRET. A
-    // signed-in user may sync only a project they own - the response carries
-    // that project's Search Console data.
-    const caller = await identifyCaller(req, supabase, supabaseServiceKey, { allowCron: true });
-    if (!caller) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Check if this is a manual sync for a specific project
-    const body = await req.json().catch(() => ({}));
-    const projectId = body.project_id;
-    const forceSync = body.force === true;
+    const caller = await identifyCaller(req, db, supabaseServiceKey, { allowCron: true });
+    if (!caller) return json({ error: 'Unauthorized' }, 401);
+    const body = await req.json().catch(() => ({})) as { project_id?: string };
 
     if (caller.kind === 'user') {
-      if (!projectId) {
-        return new Response(JSON.stringify({ error: 'project_id is required' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      const { data: project } = await db.from('projects').select('id').eq('id', body.project_id ?? '').eq('user_id', caller.userId).maybeSingle();
+      if (!project) return json({ error: 'Project not found' }, 404);
+      if (!GSC_TIERS.has((await getEntitlement(db, caller.userId)).tier)) {
+        return json({ error: 'Search Console is part of the Solo, Pro and Agency plans', code: 'plan_required' }, 402);
       }
-      const { data: owned } = await supabase
-        .from('projects')
-        .select('id')
-        .eq('id', projectId)
-        .eq('user_id', caller.userId)
-        .maybeSingle();
-      if (!owned) {
-        return new Response(JSON.stringify({ error: 'Project not found' }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+      const result = await syncProject(db, config, project.id);
+      return json(result, result.success ? 200 : 502);
     }
 
-    if (projectId) {
-      // Manual sync for specific project
-      const result = await syncProjectMetrics(supabase, projectId, forceSync);
-      return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Scheduled sync - find all projects due for sync
-    const results = await syncAllDueProjects(supabase);
-
-    return new Response(JSON.stringify({
-      synced: results.synced,
-      failed: results.failed,
-      skipped: results.skipped,
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
+    return json(await syncAllDue(db, config));
   } catch (error) {
-    console.error('Sync error:', error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Sync failed' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    console.error('sync-gsc-metrics error:', error);
+    return json({ error: error instanceof Error ? error.message : 'Unknown error' }, 500);
   }
 });
 
-/**
- * Sync all projects that are due for sync based on their tier
- */
-async function syncAllDueProjects(supabase: SupabaseClient): Promise<{
-  synced: number;
-  failed: number;
-  skipped: number;
-}> {
-  // Get all projects with GSC connected and their tier info
-  const { data: projects, error } = await supabase
-    .from('projects')
-    .select(`
-      id,
-      url,
-      user_id,
-      users!inner (
-        subscription_tier
-      ),
-      oauth_connections!inner (
-        id,
-        access_token,
-        refresh_token,
-        token_expires_at,
-        site_url
-      )
-    `)
-    .eq('oauth_connections.provider', 'google')
-    .not('oauth_connections.site_url', 'is', null);
+async function syncAllDue(db: Db, config: GoogleConfig) {
+  const { data: connections, error } = await db.from('oauth_connections')
+    .select('project_id, user_id')
+    .eq('provider', 'google')
+    .not('project_id', 'is', null)
+    .not('site_url', 'is', null);
+  if (error) throw error;
 
-  if (error) {
-    console.error('Failed to fetch projects:', error);
-    throw error;
-  }
-
-  let synced = 0;
-  let failed = 0;
+  const tiers = new Map<string, string>();
+  const results = [];
   let skipped = 0;
-
-  for (const project of projects || []) {
-    const tier = (project.users as any)?.subscription_tier || 'free';
-    const config = SYNC_CONFIG[tier as keyof typeof SYNC_CONFIG] || SYNC_CONFIG.free;
-
-    if (!config.enabled) {
+  for (const { project_id, user_id } of connections ?? []) {
+    if (!tiers.has(user_id)) tiers.set(user_id, (await getEntitlement(db, user_id)).tier);
+    if (!GSC_TIERS.has(tiers.get(user_id)!)) {
       skipped++;
       continue;
     }
-
-    // Check if sync is due
-    const { data: lastSync } = await supabase
-      .from('sync_jobs')
-      .select('completed_at')
-      .eq('project_id', project.id)
-      .eq('job_type', 'gsc_sync')
-      .eq('status', 'completed')
-      .order('completed_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (lastSync) {
-      const hoursSinceLastSync = (Date.now() - new Date(lastSync.completed_at).getTime()) / (1000 * 60 * 60);
-      if (hoursSinceLastSync < config.intervalHours) {
-        skipped++;
-        continue;
-      }
+    const { data: last } = await db.from('sync_jobs').select('started_at')
+      .eq('project_id', project_id).eq('job_type', 'gsc_sync').eq('status', 'completed')
+      .order('started_at', { ascending: false }).limit(1).maybeSingle();
+    if (last && Date.now() - new Date(last.started_at).getTime() < MIN_HOURS_BETWEEN_SYNCS * 3_600_000) {
+      skipped++;
+      continue;
     }
-
-    try {
-      await syncProjectMetrics(supabase, project.id, false);
-      synced++;
-    } catch (e) {
-      console.error(`Failed to sync project ${project.id}:`, e);
-      failed++;
-    }
+    const result = await syncProject(db, config, project_id);
+    results.push({ projectId: project_id, success: result.success, error: result.success ? undefined : result.error });
   }
-
-  return { synced, failed, skipped };
-}
-
-/**
- * Sync metrics for a specific project
- */
-async function syncProjectMetrics(
-  supabase: SupabaseClient,
-  projectId: string,
-  force: boolean
-): Promise<{ success: boolean; metrics?: any; error?: string }> {
-  // Get project with OAuth connection
-  const { data: project, error: projectError } = await supabase
-    .from('projects')
-    .select(`
-      id,
-      url,
-      user_id,
-      oauth_connections (
-        id,
-        access_token,
-        refresh_token,
-        token_expires_at,
-        site_url
-      )
-    `)
-    .eq('id', projectId)
-    .single();
-
-  if (projectError || !project) {
-    return { success: false, error: 'Project not found' };
-  }
-
-  const connection = (project.oauth_connections as any[])?.[0];
-  if (!connection?.site_url) {
-    return { success: false, error: 'No GSC connection found' };
-  }
-
-  // Create sync job
-  const { data: job, error: jobError } = await supabase
-    .from('sync_jobs')
-    .insert({
-      project_id: projectId,
-      job_type: 'gsc_sync',
-      status: 'running',
-      started_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
-
-  if (jobError) {
-    console.error('Failed to create sync job:', jobError);
-  }
-
-  try {
-    // Refresh token if needed
-    let accessToken = connection.access_token;
-    if (new Date(connection.token_expires_at) < new Date()) {
-      const refreshed = await refreshAccessToken(connection.refresh_token);
-      if (!refreshed) {
-        throw new Error('Failed to refresh access token');
-      }
-      accessToken = refreshed.access_token;
-
-      // Update token in database
-      await supabase
-        .from('oauth_connections')
-        .update({
-          access_token: refreshed.access_token,
-          token_expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
-        })
-        .eq('id', connection.id);
-    }
-
-    // Fetch metrics from GSC API
-    const metrics = await fetchGSCMetrics(accessToken, connection.site_url);
-
-    // Store metrics
-    const periodStart = new Date();
-    periodStart.setDate(periodStart.getDate() - 7); // Last 7 days
-    const periodEnd = new Date();
-    periodEnd.setDate(periodEnd.getDate() - 1); // Yesterday (GSC data has 2-day lag)
-
-    await supabase.from('seo_metrics').upsert({
-      project_id: projectId,
-      period_start: periodStart.toISOString().split('T')[0],
-      period_end: periodEnd.toISOString().split('T')[0],
-      period_type: 'weekly',
-      source: 'gsc',
-      impressions: metrics.totals.impressions,
-      clicks: metrics.totals.clicks,
-      ctr: metrics.totals.ctr,
-      avg_position: metrics.totals.position,
-      top_queries: metrics.topQueries,
-      top_pages: metrics.topPages,
-    }, {
-      onConflict: 'project_id,period_start,period_type,source',
-    });
-
-    // Store individual keyword rankings
-    for (const query of metrics.topQueries.slice(0, 100)) {
-      await supabase.from('keyword_rankings').upsert({
-        project_id: projectId,
-        keyword: query.query,
-        search_engine: 'google',
-        device: 'all',
-        location: 'global',
-        current_position: Math.round(query.position),
-        ranking_url: query.page,
-        last_checked_at: new Date().toISOString(),
-      }, {
-        onConflict: 'project_id,keyword,search_engine,device,location',
-      });
-    }
-
-    // Update sync job
-    if (job) {
-      await supabase
-        .from('sync_jobs')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-          metrics_synced: 1,
-          keywords_checked: metrics.topQueries.length,
-        })
-        .eq('id', job.id);
-    }
-
-    return { success: true, metrics };
-
-  } catch (error) {
-    console.error('Sync failed:', error);
-
-    // Update sync job with error
-    if (job) {
-      await supabase
-        .from('sync_jobs')
-        .update({
-          status: 'failed',
-          completed_at: new Date().toISOString(),
-          error_message: error instanceof Error ? error.message : 'Unknown error',
-        })
-        .eq('id', job.id);
-    }
-
-    return { success: false, error: error instanceof Error ? error.message : 'Sync failed' };
-  }
-}
-
-/**
- * Fetch metrics from GSC Search Analytics API
- */
-async function fetchGSCMetrics(accessToken: string, siteUrl: string): Promise<{
-  totals: { impressions: number; clicks: number; ctr: number; position: number };
-  topQueries: Array<{ query: string; impressions: number; clicks: number; ctr: number; position: number; page?: string }>;
-  topPages: Array<{ page: string; impressions: number; clicks: number; ctr: number; position: number }>;
-}> {
-  const endDate = new Date();
-  endDate.setDate(endDate.getDate() - 2); // GSC has 2-day data lag
-  const startDate = new Date(endDate);
-  startDate.setDate(startDate.getDate() - 7);
-
-  const formatDate = (d: Date) => d.toISOString().split('T')[0];
-
-  // Fetch query-level data
-  const queryResponse = await fetch(
-    `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        startDate: formatDate(startDate),
-        endDate: formatDate(endDate),
-        dimensions: ['query', 'page'],
-        rowLimit: 100,
-      }),
-    }
-  );
-
-  if (!queryResponse.ok) {
-    const errorText = await queryResponse.text();
-    console.error('GSC API error:', errorText);
-    throw new Error(`GSC API error: ${queryResponse.status}`);
-  }
-
-  const queryData = await queryResponse.json();
-
-  // Fetch page-level data
-  const pageResponse = await fetch(
-    `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        startDate: formatDate(startDate),
-        endDate: formatDate(endDate),
-        dimensions: ['page'],
-        rowLimit: 50,
-      }),
-    }
-  );
-
-  const pageData = await pageResponse.json();
-
-  // Calculate totals
-  let totalImpressions = 0;
-  let totalClicks = 0;
-  let totalPositionSum = 0;
-  let rowCount = 0;
-
-  const topQueries: Array<{ query: string; impressions: number; clicks: number; ctr: number; position: number; page?: string }> = [];
-
-  for (const row of queryData.rows || []) {
-    totalImpressions += row.impressions;
-    totalClicks += row.clicks;
-    totalPositionSum += row.position * row.impressions; // Weighted by impressions
-    rowCount++;
-
-    topQueries.push({
-      query: row.keys[0],
-      page: row.keys[1],
-      impressions: row.impressions,
-      clicks: row.clicks,
-      ctr: row.ctr,
-      position: row.position,
-    });
-  }
-
-  const topPages: Array<{ page: string; impressions: number; clicks: number; ctr: number; position: number }> = [];
-
-  for (const row of pageData.rows || []) {
-    topPages.push({
-      page: row.keys[0],
-      impressions: row.impressions,
-      clicks: row.clicks,
-      ctr: row.ctr,
-      position: row.position,
-    });
-  }
-
   return {
-    totals: {
-      impressions: totalImpressions,
-      clicks: totalClicks,
-      ctr: totalClicks / (totalImpressions || 1),
-      position: totalImpressions > 0 ? totalPositionSum / totalImpressions : 0,
-    },
-    topQueries,
-    topPages,
+    connected: connections?.length ?? 0,
+    synced: results.filter((r) => r.success).length,
+    failed: results.filter((r) => !r.success).length,
+    skipped,
+    results,
   };
 }
 
-/**
- * Refresh access token
- */
-async function refreshAccessToken(refreshToken: string): Promise<{
-  access_token: string;
-  expires_in: number;
-} | null> {
-  try {
-    const response = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: GOOGLE_CLIENT_ID,
-        client_secret: GOOGLE_CLIENT_SECRET,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-      }),
-    });
+async function syncProject(db: Db, config: GoogleConfig, projectId: string): Promise<{ success: true; clicks: number; impressions: number } | { success: false; error: string }> {
+  const { data: connection } = await db.from('oauth_connections').select('*')
+    .eq('project_id', projectId).eq('provider', 'google').maybeSingle();
+  if (!connection?.site_url) return { success: false, error: 'No Search Console property is selected for this project' };
 
-    if (!response.ok) {
-      console.error('Token refresh failed:', await response.text());
-      return null;
+  const { data: job } = await db.from('sync_jobs').insert({
+    project_id: projectId,
+    job_type: 'gsc_sync',
+    status: 'running',
+    started_at: new Date().toISOString(),
+  }).select('id').single();
+
+  try {
+    const token = await accessTokenFor(db, connection, config);
+    const window = dateWindow(WINDOW_DAYS);
+    const [byDate, byQuery, byPage] = await Promise.all([
+      searchAnalytics(token, connection.site_url, { ...window, dimensions: ['date'] }),
+      searchAnalytics(token, connection.site_url, { ...window, dimensions: ['query'], rowLimit: 50 }),
+      searchAnalytics(token, connection.site_url, { ...window, dimensions: ['page'], rowLimit: 25 }),
+    ]);
+
+    // One row per day (idempotent on project, date, period type, source).
+    if (byDate.length > 0) {
+      const { error } = await db.from('seo_metrics').upsert(byDate.map((row) => ({
+        project_id: projectId,
+        period_start: row.keys![0],
+        period_end: row.keys![0],
+        period_type: 'daily',
+        source: 'gsc',
+        clicks: row.clicks,
+        impressions: row.impressions,
+        ctr: row.ctr,
+        avg_position: row.position,
+      })), { onConflict: 'project_id,period_start,period_type,source' });
+      if (error) throw new Error(`Saving daily metrics failed: ${error.message}`);
     }
 
-    return await response.json();
+    // The rolling 28-day summary; only the latest one is kept.
+    const sum = totals(byDate);
+    await db.from('seo_metrics').delete().eq('project_id', projectId).eq('source', 'gsc').eq('period_type', 'monthly');
+    const { error: summaryError } = await db.from('seo_metrics').insert({
+      project_id: projectId,
+      period_start: window.startDate,
+      period_end: window.endDate,
+      period_type: 'monthly',
+      source: 'gsc',
+      clicks: sum.clicks,
+      impressions: sum.impressions,
+      ctr: sum.ctr,
+      avg_position: sum.position,
+      top_queries: byQuery.map((r) => ({ query: r.keys![0], clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position })),
+      top_pages: byPage.map((r) => ({ page: r.keys![0], clicks: r.clicks, impressions: r.impressions, ctr: r.ctr, position: r.position })),
+    });
+    if (summaryError) throw new Error(`Saving the summary failed: ${summaryError.message}`);
+
+    if (job) {
+      await db.from('sync_jobs').update({
+        status: 'completed',
+        completed_at: new Date().toISOString(),
+        metrics_synced: byDate.length,
+        keywords_checked: byQuery.length,
+      }).eq('id', job.id);
+    }
+    return { success: true, clicks: sum.clicks, impressions: sum.impressions };
   } catch (error) {
-    console.error('Token refresh error:', error);
-    return null;
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`Search Console sync failed for ${projectId}:`, message);
+    if (job) {
+      await db.from('sync_jobs').update({ status: 'failed', completed_at: new Date().toISOString(), error_message: message }).eq('id', job.id);
+    }
+    return { success: false, error: message };
   }
 }
