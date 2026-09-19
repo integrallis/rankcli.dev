@@ -129,6 +129,8 @@ jobs:
           query "SELECT status, COUNT(*) AS n, ROUND(AVG(score)) AS avg_score, MIN(error_message) AS sample_error FROM audits WHERE triggered_by = 'scheduled' AND created_at > NOW() - INTERVAL '6 hours' GROUP BY status"
           echo "--- scheduled audit history ---"
           query "SELECT to_char(created_at, 'HH24:MI:SS') AS created, status, left(coalesce(error_message, ''), 40) AS error FROM audits WHERE triggered_by = 'scheduled' ORDER BY created_at"
+          echo "--- recent audit errors (full text) ---"
+          query "SELECT to_char(created_at, 'HH24:MI:SS') AS created, error_message FROM audits WHERE status = 'failed' AND created_at > NOW() - INTERVAL '2 hours' AND error_message NOT LIKE 'Audit interrupted%' ORDER BY created_at"
           echo "--- db now ---"
           query "SELECT to_char(NOW(), 'HH24:MI:SS') AS now"
           echo "--- unfinished audits (age) ---"
