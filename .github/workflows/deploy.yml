@@ -355,6 +355,17 @@ jobs:
             echo "functions=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # Before anything deploys: a function that doesn't type-check stops the job.
+      - name: Setup Deno
+        if: steps.scope.outputs.functions == 'true'
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Type-check edge functions
+        if: steps.scope.outputs.functions == 'true'
+        run: packages/saas/scripts/check-functions.sh
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:

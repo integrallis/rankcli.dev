@@ -163,6 +163,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Before anything deploys: a function that doesn't type-check stops the job.
+      - name: Setup Deno
+        if: needs.changes.outputs.functions == 'true' || github.event.inputs.deploy_functions == 'true'
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Type-check edge functions
+        if: needs.changes.outputs.functions == 'true' || github.event.inputs.deploy_functions == 'true'
+        run: packages/saas/scripts/check-functions.sh
+
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:

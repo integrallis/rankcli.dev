@@ -1,8 +1,13 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { runFullAudit } from '../_shared/audit/index.ts';
-import type { AuditReport } from '../_shared/audit/index.ts';
 import { assertPublicUrl, installFetchGuard } from '../_shared/url-guard.ts';
+
+// The edge engine is a JS bundle with no type exports; this is the part of its report read here.
+interface AuditReport {
+  healthScore?: Record<string, number | undefined> & { overall?: number };
+  issues: { severity: string }[];
+}
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -148,7 +153,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error comparing URLs:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -173,7 +178,7 @@ function buildComparison(
   const competitorNotices = competitorAudit.issues.filter(i => i.severity === 'notice').length;
 
   // Build category comparisons
-  const categoryPairs: { name: string; yourKey: keyof typeof yourAudit.healthScore; }[] = [
+  const categoryPairs: { name: string; yourKey: string; }[] = [
     { name: 'Crawlability', yourKey: 'crawlability' },
     { name: 'On-Page SEO', yourKey: 'onPage' },
     { name: 'Content', yourKey: 'content' },

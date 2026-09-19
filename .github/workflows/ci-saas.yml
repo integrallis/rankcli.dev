@@ -50,6 +50,18 @@ jobs:
   # ============================================
   # Validate Pricing Configuration
   # ============================================
+  functions-typecheck:
+    name: Type-check edge functions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - run: packages/saas/scripts/check-functions.sh
+
   validate-pricing:
     name: Validate Pricing
     runs-on: ubuntu-latest

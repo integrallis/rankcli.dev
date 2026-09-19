@@ -44,7 +44,7 @@ Status: `open` · `in progress` · `closed` (with commit) · `needs founder` (bl
 6c. **CLI plan lookup** (`cli/src/commands/auth.ts:304`) reads the raw plan id — part of 3. **AccountPage sites meter** shows 1 for annual/LTD — part of 4.
 6. **Pricing shape** (approved) — in progress: richer Free, Solo gets auto-fix PRs + alerts, founding offer without the 90-day clock, lifetime deals pulled, annual = 2 months free, Agency +$2/site over 50. Only features that work get advertised. — open (after 2, 4, 5)
 7. **Rank-tracking cost cap**: Agency's "unlimited" keywords has no ceiling on Serper spend. — open
-8. **Edge functions are never type-checked** (no deno anywhere): add `deno check` to CI. — open
+8. **Edge functions are never type-checked** — closed: `packages/saas/scripts/check-functions.sh` runs `deno check` over all 40 functions and `_shared`; it gates the function deploys in deploy.yml and deploy-saas.yml and runs on SaaS PRs. The 69 existing errors are fixed, including one real bug: with AI fix prioritization, create-seo-pr put the non-fixable issues back into the PR.
 9. ~~CLI release v0.0.30~~ — closed (see above).
 10. **Dead code**: root `supabase/` legacy schema, functions with no callers, the worker keyword path. — open
 11. **Deep audit via start-deep-audit** not yet exercised with a paid account. — open

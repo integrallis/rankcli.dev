@@ -2,7 +2,7 @@
 // Handles: push, pull_request, workflow_run, create, issues, issue_comment, installation
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { createHmac } from 'https://deno.land/std@0.168.0/node/crypto.ts';
 
 const corsHeaders = {
@@ -260,14 +260,14 @@ serve(async (req: Request) => {
   } catch (error) {
     console.error('Webhook error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
 
 async function handleInstallation(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   payload: GitHubInstallationEvent
 ) {
   const { action, installation, sender } = payload;
@@ -343,7 +343,7 @@ async function handleInstallation(
 }
 
 async function handlePush(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   payload: GitHubPushEvent
 ) {
   const { repository, ref, installation, commits } = payload;
@@ -447,7 +447,7 @@ async function handlePush(
             console.log('PR creation skipped (GitHub App may not be configured)');
           }
         } catch (prError) {
-          console.log('PR creation skipped:', prError.message);
+          console.log('PR creation skipped:', (prError instanceof Error ? prError.message : String(prError)));
         }
       }
     }
@@ -457,7 +457,7 @@ async function handlePush(
 }
 
 async function handlePullRequest(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   payload: GitHubPullRequestEvent
 ) {
   const { action, pull_request, repository } = payload;
@@ -521,7 +521,7 @@ async function handlePullRequest(
 }
 
 async function handleWorkflowRun(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   payload: GitHubWorkflowRunEvent
 ) {
   const { action, workflow_run, repository } = payload;
@@ -620,7 +620,7 @@ async function handleWorkflowRun(
 }
 
 async function handleCreate(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   payload: GitHubCreateEvent
 ) {
   const { ref, ref_type, repository } = payload;
@@ -639,7 +639,7 @@ async function handleCreate(
 }
 
 async function handleIssueComment(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   payload: GitHubIssueCommentEvent
 ) {
   const { action, comment, issue, repository } = payload;
@@ -722,7 +722,7 @@ async function handleIssueComment(
 }
 
 async function handleIssues(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   payload: GitHubIssuesEvent
 ) {
   const { action, issue, repository } = payload;

@@ -57,7 +57,9 @@ serve(async (req) => {
       });
     }
 
-    const project = widgetToken.projects as {
+    // A many-to-one embed is one row at runtime; without generated types supabase-js
+    // infers an array.
+    const project = widgetToken.projects as unknown as {
       id: string;
       name: string;
       url: string;
@@ -119,7 +121,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Widget data error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

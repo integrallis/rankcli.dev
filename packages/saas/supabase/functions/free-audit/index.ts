@@ -118,7 +118,7 @@ serve(async (req) => {
         rateLimitCount = count || 0;
       }
     } catch (rateLimitErr) {
-      console.warn('Rate limit check exception (continuing anyway):', rateLimitErr.message);
+      console.warn('Rate limit check exception (continuing anyway):', (rateLimitErr instanceof Error ? rateLimitErr.message : String(rateLimitErr)));
     }
 
     if (rateLimitCount >= RATE_LIMIT) {
@@ -221,12 +221,12 @@ serve(async (req) => {
       console.log(`Audit complete: ${allIssues.length} issues found from ${totalChecksRun} checks`);
 
     } catch (err) {
-      console.error('Worker audit error:', err.message);
+      console.error('Worker audit error:', (err instanceof Error ? err.message : String(err)));
       // If audit fails, add a fetch error
       allIssues.push({
         code: 'FETCH_ERROR',
         severity: 'error',
-        title: `Failed to audit page: ${err.message}`,
+        title: `Failed to audit page: ${(err instanceof Error ? err.message : String(err))}`,
         category: 'Crawlability',
       });
     }
@@ -293,7 +293,7 @@ serve(async (req) => {
         auditRecordId = inserted.id;
       }
     } catch (saveErr) {
-      console.warn('Exception saving audit result (non-blocking):', saveErr.message);
+      console.warn('Exception saving audit result (non-blocking):', (saveErr instanceof Error ? saveErr.message : String(saveErr)));
     }
 
     // Determine upsell message based on results

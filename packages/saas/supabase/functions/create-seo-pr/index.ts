@@ -674,17 +674,20 @@ serve(async (req) => {
 
     // Apply AI prioritization if available
     let issues = fixableIssues;
-    if (aiFixPrioritization?.prioritizedIssues?.length > 0) {
+    const prioritized = aiFixPrioritization?.prioritizedIssues ?? [];
+    if (prioritized.length > 0) {
       console.log('Applying AI fix prioritization...');
 
       // Create a priority map
       const priorityMap = new Map<string, { impactScore: number; roiScore: number }>();
-      for (const p of aiFixPrioritization.prioritizedIssues) {
+      for (const p of prioritized) {
         priorityMap.set(p.issueCode, { impactScore: p.impactScore, roiScore: p.roiScore });
       }
 
       // Sort issues by AI-determined ROI (highest first)
-      issues = [...rawIssues].sort((a, b) => {
+      // Reorders the fixable issues only - sorting rawIssues here put the non-fixable codes
+      // back into the PR whenever an audit had AI prioritization.
+      issues = [...fixableIssues].sort((a, b) => {
         const aScore = priorityMap.get(a.code)?.roiScore || 50;
         const bScore = priorityMap.get(b.code)?.roiScore || 50;
         return bScore - aScore; // Higher ROI first
@@ -865,7 +868,7 @@ ${aiResult.files.map((f: FileChange) => `- \`${f.path}\``).join('\n')}
 
   } catch (error) {
     console.error('Error creating SEO PR:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: (error instanceof Error ? error.message : String(error)) }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

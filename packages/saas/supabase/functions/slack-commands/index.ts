@@ -22,7 +22,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createHmac } from 'https://deno.land/std@0.168.0/node/crypto.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -58,7 +58,7 @@ function slackResponse(text: string) {
   });
 }
 
-async function handleUsers(supabase: ReturnType<typeof createClient>): Promise<string> {
+async function handleUsers(supabase: SupabaseClient): Promise<string> {
   const { data, error } = await supabase.rpc('rankcli_admin_user_stats');
   if (error) {
     console.error('rankcli_admin_user_stats error:', error);
@@ -73,7 +73,7 @@ async function handleUsers(supabase: ReturnType<typeof createClient>): Promise<s
   ].join('\n');
 }
 
-async function handleActive(supabase: ReturnType<typeof createClient>): Promise<string> {
+async function handleActive(supabase: SupabaseClient): Promise<string> {
   const { data, error } = await supabase.rpc('rankcli_admin_user_stats');
   if (error) {
     console.error('rankcli_admin_user_stats error:', error);
@@ -87,7 +87,7 @@ async function handleActive(supabase: ReturnType<typeof createClient>): Promise<
   ].join('\n');
 }
 
-async function handleBilling(supabase: ReturnType<typeof createClient>): Promise<string> {
+async function handleBilling(supabase: SupabaseClient): Promise<string> {
   const { data: subs, error: subsError } = await supabase
     .from('user_subscriptions')
     .select('status, plan:subscription_plans(plan_id, name, price_cents, billing_period)')

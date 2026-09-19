@@ -738,7 +738,7 @@ serve(async (req) => {
     // For paid tiers, route to worker if enabled (enhanced tool ideas with competitive search)
     // The worker's keyword research is OpenAI-only and runs on the key passed to it, so
     // it's only an option when the user's key is an OpenAI one.
-    if (USE_WORKER_FOR_PAID && planTier !== 'free' && aiConfig.provider === 'openai') {
+    if (USE_WORKER_FOR_PAID && aiConfig.provider === 'openai') {
       console.log('Routing to worker for enhanced keyword research...');
 
       try {
