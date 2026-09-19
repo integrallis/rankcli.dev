@@ -32,14 +32,17 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
         run: |
           ORG=$(flyctl status --app rankcli-audit-worker --json | jq -r '.Organization.Slug // "personal"')
+          echo "org: $ORG"
+          # Macaroon tokens ("FlyV1 fm2_...") go in the header as they are; classic ones as Bearer.
+          case "$FLY_API_TOKEN" in FlyV1*) AUTH="$FLY_API_TOKEN" ;; *) AUTH="Bearer $FLY_API_TOKEN" ;; esac
           prom() {
-            curl -s -G "https://api.fly.io/prometheus/$ORG/api/v1/query" \
-              -H "Authorization: Bearer $FLY_API_TOKEN" --data-urlencode "query=$1" \
-              | jq -c '.data.result[]? | {instance: .metric.instance, mode: .metric.mode, value: .value[1]}' || true
+            out=$(curl -s -G "https://api.fly.io/prometheus/$ORG/api/v1/query" -H "Authorization: $AUTH" --data-urlencode "query=$1")
+            echo "$out" | jq -c '.data.result[]? | {instance: .metric.instance, mode: .metric.mode, value: .value[1]}' 2>/dev/null \
+              || echo "(not JSON: $(echo "$out" | head -c 200))"
           }
           echo "--- CPU metric names ---"
-          curl -s -G "https://api.fly.io/prometheus/$ORG/api/v1/label/__name__/values" \
-            -H "Authorization: Bearer $FLY_API_TOKEN" | jq -r '.data[]? | select(test("cpu"))' || true
+          out=$(curl -s -G "https://api.fly.io/prometheus/$ORG/api/v1/label/__name__/values" -H "Authorization: $AUTH")
+          echo "$out" | jq -r '.data[]? | select(test("cpu"))' 2>/dev/null || echo "(not JSON: $(echo "$out" | head -c 200))"
           echo "--- CPU seconds per second by mode, 30m average ---"
           prom 'sum by (instance, mode) (rate(fly_instance_cpu{app="rankcli-audit-worker"}[30m]))'
           echo "--- throttled seconds per second, 30m average ---"
