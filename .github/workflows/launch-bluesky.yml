@@ -1,0 +1,53 @@
+name: Launch thread (Bluesky)
+
+# Posts docs/launch/bluesky-launch-thread.json from @rankclidev.bsky.social once, on launch day
+# (Tuesday 2026-09-22, ~10:00 ET), with rankcli.dev's score from the public RankCLI Action run
+# here. A manual run is a dry run unless dry_run is false; the script also refuses to post the
+# same thread twice.
+
+on:
+  schedule:
+    - cron: '0 14 22 9 *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Print the thread instead of posting it'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  thread:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only on launch day
+        if: github.event_name == 'schedule'
+        run: |
+          if [ "$(date -u +%Y-%m-%d)" != "2026-09-22" ]; then echo "Not launch day - nothing to post"; exit 1; fi
+
+      - uses: actions/checkout@v4
+
+      - name: Today's score (the public Action, as customers run it)
+        id: audit
+        uses: integrallis/rankcli-action@v1
+        with:
+          url: https://rankcli.dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Post the thread
+        env:
+          BLUESKY_IDENTIFIER: ${{ secrets.BLUESKY_IDENTIFIER }}
+          BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
+          SCORE: ${{ steps.audit.outputs.score }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            node scripts/growth-ops/post-bluesky-thread.mjs docs/launch/bluesky-launch-thread.json --dry-run
+          else
+            node scripts/growth-ops/post-bluesky-thread.mjs docs/launch/bluesky-launch-thread.json
+          fi

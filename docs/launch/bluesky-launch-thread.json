@@ -1,0 +1,10 @@
+{
+  "_comment": "Posted once by .github/workflows/launch-bluesky.yml on launch day. {score} is replaced with rankcli.dev's score from the SEO gate run in that workflow. Each post must fit Bluesky's 300-grapheme limit (the script checks).",
+  "posts": [
+    "SEO breaks quietly. We built RankCLI so it fails your build instead: 280+ SEO and AI-search checks from the CLI or a GitHub Action.\n\nFree, no signup:\nnpx @rankcli/cli audit --url yoursite.com\n\nrankcli.dev/?ref=bsky 🧵",
+    "CI gate: --fail-on error or --min-score 80. A site that's down or answering 5xx exits non-zero, so it never \"passes\".\n\nOur own site gates itself with the public, open-source Action: {score}/100 today.\ngithub.com/integrallis/rankcli-action",
+    "AI analysis runs on your model, never ours. On a Mac with Apple Intelligence it's on-device and free. Otherwise a local Ollama or LM Studio, or your own OpenRouter/OpenAI key.",
+    "Using Claude Code or Cursor? npx @rankcli/mcp-server gives them 15 SEO + GEO tools, locally, no signup.",
+    "Hosted monitoring, history, alerts and auto-fix PRs have a free tier. Feedback on noisy checks very welcome.\n\nrankcli.dev/?ref=bsky"
+  ]
+}
