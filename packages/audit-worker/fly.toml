@@ -42,13 +42,10 @@ primary_region = "iad"
     grace_period = "60s"
     path = "/health"
 
+# Dedicated CPUs. Shared ones run at ~6% of a core once the burst balance is spent, and a
+# 10-page deep audit is ~100 CPU-seconds: on shared-cpu-1x, back-to-back audits drove a machine
+# to 93% steal and every audit on it - free ones included - crawled. /health reports cpu.stealPct.
 [[vm]]
-  memory = "1gb"
-  cpu_kind = "shared"
+  memory = "2gb"
+  cpu_kind = "performance"
   cpus = 1
-
-# For production, consider:
-# [[vm]]
-#   memory = "2gb"
-#   cpu_kind = "shared"
-#   cpus = 2

@@ -246,7 +246,7 @@ jobs:
           # fly.toml has auto_stop_machines off - Fly stopped machines that were
           # running background audits, because it only counts HTTP traffic - so
           # every machine here runs all the time. Two gives redundancy (a deploy
-          # or a crash doesn't take audits down) at the cost of two small VMs.
+          # or a crash doesn't take audits down); fly.toml sizes them (performance-1x).
           # Idempotent - a no-op if already at this count.
           flyctl scale count 2 --app rankcli-audit-worker --yes
 
