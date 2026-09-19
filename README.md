@@ -11,7 +11,7 @@ Enterprise SEO tools cost $100+/month and expect you to click through dashboards
 - **CLI-first**: Runs in your terminal, fits your workflow
 - **Agentic fixes**: Detects issues, generates fixes, commits & pushes
 - **AI-native**: GEO (Generative Engine Optimization) + a free, local MCP server for AI assistants
-- **Affordable**: Free tier + $9/mo for solo devs (founding members: $19/mo Pro, limited seats)
+- **Affordable**: a real Free tier + $9/mo for solo devs (founding members: $19/mo Pro, first 100 customers)
 
 ## Quick Start
 
@@ -129,12 +129,16 @@ jobs:
 
 ## Pricing
 
-| Plan | Price | Keyword tracking | Features |
-|------|-------|-------------------|----------|
-| Free | $0 | — | 100 checks, audit history |
-| Solo | $9/mo | 100 | 280+ checks, agentic fix, 3 sites |
-| Pro | $29/mo | 500 | + GitHub integration, 10 sites, API access |
-| Agency | $99/mo | Unlimited | + White-label, 50 sites |
+Every plan runs all 280+ checks, and local `rankcli fix` is free on every plan.
+
+| Plan | Price | Features |
+|------|-------|----------|
+| Free | $0 | 1 site audited weekly, audit history, weekly report email, README badge, 3 auto-fix PRs a month |
+| Solo | $9/mo | 3 sites audited weekly, 10 pages per audit, auto-fix PRs, Slack & Discord alerts, AI analysis on your own key |
+| Pro | $29/mo | 10 sites audited daily, audit on every push, keyword research on your own key |
+| Agency | $99/mo | 50 sites, white-label reports & widgets, client report links |
+
+Annual billing is 2 months free.
 
 Founding members get Pro for $19/mo (locked in for as long as you stay subscribed) — limited to the first 100 customers. See [rankcli.dev/pricing](https://rankcli.dev/pricing).
 
