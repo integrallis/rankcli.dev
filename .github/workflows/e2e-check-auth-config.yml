@@ -142,3 +142,10 @@ jobs:
           query "SELECT table_name, string_agg(column_name, ', ' ORDER BY ordinal_position) AS columns FROM information_schema.columns WHERE table_schema = 'public' AND table_name IN ('keywords', 'rankings', 'keyword_rankings', 'keyword_ranking_history') GROUP BY table_name"
           query "SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'projects' AND column_name IN ('domain', 'last_rank_check_at')"
           query "SELECT (SELECT COUNT(*) FROM keywords) AS keywords, (SELECT COUNT(*) FROM keyword_rankings) AS keyword_rankings"
+          # Search Console integration (gsc-oauth, sync-gsc-metrics): tables, rows, and a users table if any.
+          echo "--- edge function secret NAMES (never values) ---"
+          curl -s "https://api.supabase.com/v1/projects/$PROJECT_REF/secrets" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" | jq -c '[.[].name] | sort'
+          echo "--- search console schema ---"
+          query "SELECT table_name, string_agg(column_name || ':' || data_type, ', ' ORDER BY ordinal_position) AS columns FROM information_schema.columns WHERE table_schema = 'public' AND table_name IN ('oauth_connections', 'seo_metrics', 'sync_jobs', 'users') GROUP BY table_name"
+          query "SELECT conrelid::regclass AS tbl, conname, pg_get_constraintdef(oid) AS def FROM pg_constraint WHERE conrelid::regclass::text IN ('oauth_connections', 'seo_metrics', 'keyword_rankings', 'sync_jobs') AND contype IN ('u', 'c')"
+          query "SELECT (SELECT COUNT(*) FROM oauth_connections) AS oauth_connections, (SELECT COUNT(*) FROM seo_metrics) AS seo_metrics"
