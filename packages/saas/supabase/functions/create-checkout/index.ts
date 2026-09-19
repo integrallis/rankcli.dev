@@ -15,6 +15,16 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Stripe statuses in which the customer is still billed for a subscription.
+const LIVE_STATUSES = new Set(['active', 'trialing', 'past_due', 'unpaid']);
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
 serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -39,14 +49,14 @@ serve(async (req) => {
       });
     }
 
-    const { planId, successUrl, cancelUrl } = await req.json();
+    const { planId, successUrl, cancelUrl, switchPlan } = await req.json();
 
     // The price comes from our plan row, never from the client. The webhook grants
     // whatever metadata.plan_id says, so a client-chosen price would let the $9 Solo
     // price buy Agency.
     const { data: plan } = await supabase
       .from('subscription_plans')
-      .select('stripe_price_id')
+      .select('stripe_price_id, name')
       .eq('plan_id', planId)
       .eq('is_active', true)
       .maybeSingle();
@@ -88,7 +98,6 @@ serve(async (req) => {
     const finalSuccessUrl = successUrl || `${appUrl}/account/billing?success=true`;
     const finalCancelUrl = cancelUrl || `${appUrl}/pricing?canceled=true`;
 
-    // Check if user already has a Stripe customer ID
     const { data: subscription } = await supabase
       .from('user_subscriptions')
       .select('stripe_customer_id')
@@ -96,6 +105,43 @@ serve(async (req) => {
       .single();
 
     let customerId = subscription?.stripe_customer_id;
+
+    // One subscription per customer. A subscriber picking another plan switches the
+    // subscription they have - a second checkout would bill both. Stripe is the source of
+    // truth here, not user_subscriptions, which lags the webhook right after a checkout.
+    // The billing portal can't switch plans (its subscription_update is off), so this is
+    // the switch: the client confirms first (switchPlan), the prorated difference is
+    // invoiced now, and the webhook's plan-follows-price updates the row.
+    if (customerId) {
+      const { data: subscriptions } = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 20 });
+      const current = subscriptions.find((sub: Stripe.Subscription) => LIVE_STATUSES.has(sub.status));
+      if (current) {
+        const item = current.items.data[0];
+        if (item?.price.id === plan.stripe_price_id) {
+          return json({ code: 'already_on_plan', error: "You're already on this plan." }, 409);
+        }
+        if (!switchPlan) {
+          return json({
+            code: 'switch_required',
+            planName: plan.name,
+            error: 'You already have a subscription. Confirm the plan change to switch it.',
+          }, 409);
+        }
+        try {
+          await stripe.subscriptions.update(current.id, {
+            items: [{ id: item.id, price: plan.stripe_price_id }],
+            proration_behavior: 'always_invoice',
+            // A declined card leaves the subscription as it was instead of switching unpaid.
+            payment_behavior: 'error_if_incomplete',
+            cancel_at_period_end: false,
+            metadata: { ...current.metadata, supabase_user_id: user.id, plan_id: planId },
+          });
+        } catch (error) {
+          return json({ error: error instanceof Error ? error.message : 'The plan change was declined' }, 402);
+        }
+        return json({ switched: true, planName: plan.name });
+      }
+    }
 
     // Create Stripe customer if doesn't exist
     if (!customerId) {
@@ -143,7 +189,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Error creating checkout session:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

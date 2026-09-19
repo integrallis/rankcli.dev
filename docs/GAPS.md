@@ -40,7 +40,7 @@ Status: `open` · `in progress` · `closed` (with commit) · `needs founder` (bl
 4d. **ci-saas.yml / deploy-saas.yml builds skip prerendering** (no Chromium); harmless while deploy-saas doesn't deploy the frontend. — open
 5. ~~Slack / Discord alerts~~ — closed (see above).
 6a. **Decisions carried into pricing (6)**: the per-plan audit schedule cap has never run (ambiguous SQL overloads) and would limit Solo to one manual deep audit a week if enabled; create-seo-pr has no plan gate (free/Solo can open auto-fix PRs); free users have no domain limit window.
-6b. **create-checkout allows a second subscription** for a user who already has one. — open
+6b. **create-checkout allows a second subscription** — closed: a customer with a live Stripe subscription is never sent to a second checkout; picking another plan switches the one they have (confirm dialog, prorated invoice now, a declined card leaves it unchanged; the webhook's plan-follows-price updates the row). Paid users can now change plans at all - the Stripe portal has plan switching off, and the Account page only showed plans to Free users. Verified against Stripe test mode.
 6c. **CLI plan lookup** (`cli/src/commands/auth.ts:304`) reads the raw plan id — part of 3. **AccountPage sites meter** shows 1 for annual/LTD — part of 4.
 6. **Pricing shape** (approved) — in progress: richer Free, Solo gets auto-fix PRs + alerts, founding offer without the 90-day clock, lifetime deals pulled, annual = 2 months free, Agency +$2/site over 50. Only features that work get advertised. — open (after 2, 4, 5)
 7. **Rank-tracking cost cap**: Agency's "unlimited" keywords has no ceiling on Serper spend. — open

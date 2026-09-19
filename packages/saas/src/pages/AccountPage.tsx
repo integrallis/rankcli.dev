@@ -212,6 +212,8 @@ export function AccountPage() {
     '';
   const [displayName, setDisplayName] = useState(savedDisplayName);
   const [upgradingPlanId, setUpgradingPlanId] = useState<string | null>(null);
+  // A subscriber picking another plan: confirmed here, then switched in place server-side.
+  const [pendingSwitch, setPendingSwitch] = useState<{ planId: string; planName: string } | null>(null);
   const [highlightPlanId, setHighlightPlanId] = useState<string | null>(null);
   const [billingView, setBillingView] = useState<PricingView>('monthly');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -427,7 +429,7 @@ export function AccountPage() {
     }
   };
 
-  const handleUpgrade = async (planId: string) => {
+  const handleUpgrade = async (planId: string, switchPlan = false) => {
     setUpgradingPlanId(planId);
     try {
       const { data: plan, error: planError } = await supabase
@@ -458,12 +460,19 @@ export function AccountPage() {
           planId: planId,
           successUrl: `${window.location.origin}/account?success=true`,
           cancelUrl: `${window.location.origin}/account?canceled=true`,
+          switchPlan,
         }),
       });
 
       const data = await response.json();
 
-      if (data.url) {
+      if (data.code === 'switch_required') {
+        setPendingSwitch({ planId, planName: data.planName || planId });
+      } else if (data.switched) {
+        toast.success(`You're now on ${data.planName || 'the new plan'}`);
+        setShowSuccessMessage(true);
+        setTimeout(() => setShowSuccessMessage(false), 5000);
+      } else if (data.url) {
         window.location.href = data.url;
       } else {
         throw new Error(data.error || 'Failed to create checkout session');
@@ -833,13 +842,17 @@ export function AccountPage() {
                   </CardContent>
                 </Card>
 
-                {isFreeTier && !isLifetime && (
+                {!isLifetime && (
                   <Card>
                     <CardHeader>
                       <div className="flex items-center justify-between flex-wrap gap-4">
                         <div>
-                          <CardTitle>Upgrade Your Plan</CardTitle>
-                          <CardDescription>Get more sites, checks, and features</CardDescription>
+                          <CardTitle>{isFreeTier ? 'Upgrade Your Plan' : 'Change Plan'}</CardTitle>
+                          <CardDescription>
+                            {isFreeTier
+                              ? 'More sites, daily audits, auto-fix PRs and alerts'
+                              : 'Switching changes your current subscription; the difference is prorated.'}
+                          </CardDescription>
                         </div>
                         <BillingIntervalToggle view={billingView} onChange={setBillingView} />
                       </div>
@@ -855,12 +868,14 @@ export function AccountPage() {
                         highlightPlanId={highlightPlanId}
                         isProcessing={upgradingPlanId !== null}
                       />
-                      <p className="text-sm text-muted-foreground text-center">
-                        Looking for a one-time lifetime deal instead?{' '}
-                        <Link to="/pricing" className="text-foreground hover:text-primary transition-colors">
-                          See lifetime pricing
-                        </Link>
-                      </p>
+                      {isFreeTier && pricingTiers.lifetime_deals.enabled && (
+                        <p className="text-sm text-muted-foreground text-center">
+                          Looking for a one-time lifetime deal instead?{' '}
+                          <Link to="/pricing" className="text-foreground hover:text-primary transition-colors">
+                            See lifetime pricing
+                          </Link>
+                        </p>
+                      )}
                     </CardContent>
                   </Card>
                 )}
@@ -1116,6 +1131,31 @@ export function AccountPage() {
       </main>
 
       {/* Delete Account Confirmation */}
+      <AlertDialog open={pendingSwitch !== null} onOpenChange={(open) => !open && setPendingSwitch(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Switch to {pendingSwitch?.planName}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Your subscription changes to {pendingSwitch?.planName} now. Stripe charges the prorated
+              difference to your card on file today, or credits it to your next invoice if the new plan
+              costs less.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                const target = pendingSwitch;
+                setPendingSwitch(null);
+                if (target) handleUpgrade(target.planId, true);
+              }}
+            >
+              Switch plan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
