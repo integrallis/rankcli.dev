@@ -191,6 +191,13 @@ jobs:
         working-directory: packages/cli
         run: pnpm test:wasm
 
+      # The WASM embeds exactly the premium bundle built above, and the CLI runs those checks.
+      - name: Verify premium checks (dev key)
+        working-directory: packages/cli
+        run: |
+          node scripts/verify-wasm.js
+          node scripts/verify-premium-audit.js
+
       - name: Run unit tests
         working-directory: packages/cli
         run: pnpm test

@@ -121,9 +121,11 @@ jobs:
         env:
           RANKCLI_BUILD_KEY: ${{ secrets.RANKCLI_BUILD_KEY }}
         run: |
+          # build:wasm ends with scripts/verify-wasm.js: the WASM must decrypt with the key,
+          # contain the premium checks, and embed exactly the bundle built above.
           if [ -z "$RANKCLI_BUILD_KEY" ]; then
             echo "⚠️ RANKCLI_BUILD_KEY not set, using dev key"
-            pnpm build:wasm:dev
+            pnpm build:wasm:dev && node scripts/verify-wasm.js
           else
             echo "✓ Using production encryption key"
             pnpm build:wasm
@@ -141,31 +143,16 @@ jobs:
         working-directory: packages/cli
         run: pnpm test
 
-      # Step 4: Run WASM integration tests
-      # Note: Full tests only run for dev builds (no RANKCLI_BUILD_KEY)
-      # Production builds just verify WASM loads correctly
-      - name: Test WASM integration
+      # Step 4: The built CLI decrypts and runs the premium checks: an audit of a local page
+      # with the key must report premium checks that one without it can't. (This used to check
+      # only that init_engine existed, and a stale WASM from February shipped for months.)
+      - name: Verify premium checks run
         working-directory: packages/cli
         env:
           RANKCLI_BUILD_KEY: ${{ secrets.RANKCLI_BUILD_KEY }}
         run: |
-          if [ -z "$RANKCLI_BUILD_KEY" ]; then
-            echo "Running full test suite (dev build)..."
-            pnpm test:wasm
-          else
-            echo "Running production build verification..."
-            node -e "
-              const wasm = require('./wasm/rankcli_audit_engine.js');
-              console.log('✓ WASM module loaded');
-              console.log('✓ Exports:', Object.keys(wasm).join(', '));
-              if (typeof wasm.init_engine !== 'function') {
-                console.error('✗ init_engine not found');
-                process.exit(1);
-              }
-              console.log('✓ init_engine function available');
-              console.log('Production WASM verified successfully!');
-            "
-          fi
+          if [ -z "$RANKCLI_BUILD_KEY" ]; then pnpm test:wasm; fi
+          node scripts/verify-premium-audit.js
 
       # Step 5: Verify package contents
       - name: Verify package
