@@ -45,7 +45,13 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const caller = await identifyCaller(req, supabase, supabaseServiceKey, { allowCron: true });
     if (caller?.kind !== 'cron' && caller?.kind !== 'service') return json({ error: 'Unauthorized' }, 401);
-    const dryRun = new URL(req.url).searchParams.get('dry_run') === 'true';
+    const params = new URL(req.url).searchParams;
+    const dryRun = params.get('dry_run') === 'true';
+    // Ops override for right after a worker restart, when every unfinished audit is known dead
+    // (floor 5 minutes, so a live audit is never reclaimed).
+    const stuckAfterMs = params.get('stuck_after_minutes')
+      ? Math.max(5, Number(params.get('stuck_after_minutes')) || 60) * 60 * 1000
+      : STUCK_AFTER_MS;
 
     const { data: projects, error } = await supabase
       .from('projects')
@@ -61,7 +67,7 @@ serve(async (req) => {
         .from('audits')
         .update({ status: 'failed', error_message: INTERRUPTED, completed_at: new Date(now).toISOString() })
         .in('status', ['pending', 'running'])
-        .lt('created_at', new Date(now - STUCK_AFTER_MS).toISOString());
+        .lt('created_at', new Date(now - stuckAfterMs).toISOString());
     }
 
     const tiers = new Map<string, BaseTier>();
@@ -92,7 +98,7 @@ serve(async (req) => {
       const audits = recent || [];
       const at = (a: { created_at: string }) => new Date(a.created_at).getTime();
 
-      if (audits.some((a) => (a.status === 'pending' || a.status === 'running') && now - at(a) < STUCK_AFTER_MS)) {
+      if (audits.some((a) => (a.status === 'pending' || a.status === 'running') && now - at(a) < stuckAfterMs)) {
         busy++;
         continue;
       }
