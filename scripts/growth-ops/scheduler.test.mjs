@@ -65,6 +65,15 @@ test('disabled channel is never due', () => {
   assert.equal(s.disabled.reason, 'disabled in config');
 });
 
+test('pause_dates silences every channel on those days only', () => {
+  const config = { ...baseConfig, pause_dates: ['2026-09-14'] };
+  const paused = computeSchedule(config, '2026-09-14'); // a Monday: weekly would be due
+  assert.equal(paused.weekly.due, false);
+  assert.equal(paused.daily.due, false);
+  assert.match(paused.weekly.reason, /paused/);
+  assert.equal(computeSchedule(config, '2026-09-21').weekly.due, true);
+});
+
 test('channel is not due before campaign_start', () => {
   const beforeStart = computeSchedule(baseConfig, '2026-08-31'); // a Monday, before campaign_start
   assert.equal(beforeStart.weekly.due, false);

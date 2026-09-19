@@ -118,7 +118,15 @@ export function computeSchedule(config, todayStr) {
   const anchorWeekday = campaignStart.getUTCDay();
   const result = {};
 
+  // pause_dates: whole days with no automated posts - e.g. a launch day, when the real launch
+  // posts go out by hand and the weekly status post would just crowd them.
+  const paused = (config.pause_dates ?? []).includes(todayStr);
+
   for (const [name, channel] of Object.entries(config.channels)) {
+    if (paused) {
+      result[name] = { due: false, reason: `paused on ${todayStr} (pause_dates)` };
+      continue;
+    }
     if (channel.enabled === false) {
       result[name] = { due: false, reason: 'disabled in config' };
       continue;

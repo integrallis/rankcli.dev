@@ -1,6 +1,10 @@
 {
   "_comment": "Consumed by scripts/growth-ops/scheduler.mjs via .github/workflows/growth-ops.yml. Cadence numbers grounded in SaaS-launch-playbook research — see automation-setup.md for sourcing and what's solid data vs. rule-of-thumb. Edit campaign_start before your first real run; it drives every phase boundary below.",
   "campaign_start": "2026-09-08",
+  "pause_dates": [
+    "2026-09-22"
+  ],
+  "_pause_comment": "2026-09-22 is launch day (Show HN + the Bluesky launch thread); no templated status posts that day.",
   "channels": {
     "bluesky": {
       "phases": [
@@ -46,7 +50,9 @@
       ]
     },
     "devto": {
-      "posts_per_week": 1
+      "enabled": false,
+      "posts_per_week": 1,
+      "_comment": "Off (2026-09-19): it published a templated 'weekly dogfood report' article every week; Dev.to gets the hand-written launch article instead (docs/launch/launch-kit-2026-09.md). Remove \"enabled\": false to re-enable."
     },
     "discord": {
       "posts_per_week": 1
