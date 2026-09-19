@@ -137,3 +137,8 @@ jobs:
           query "SELECT status, triggered_by, NOW() - created_at AS age FROM audits WHERE status IN ('pending','running') ORDER BY created_at"
           echo "--- active projects whose URL is not a public host ---"
           query "SELECT COUNT(*) AS n, array_agg(DISTINCT split_part(split_part(url, '://', 2), '/', 1)) FILTER (WHERE url ~* '://(localhost|127\\.|0\\.0\\.0\\.0|10\\.|192\\.168\\.)') AS hosts FROM projects WHERE is_active AND url ~* '://(localhost|127\\.|0\\.0\\.0\\.0|10\\.|192\\.168\\.)'"
+          # Columns the CLI's rank tracking (rankcli track) reads and writes.
+          echo "--- rank tracking schema ---"
+          query "SELECT table_name, string_agg(column_name, ', ' ORDER BY ordinal_position) AS columns FROM information_schema.columns WHERE table_schema = 'public' AND table_name IN ('keywords', 'rankings', 'keyword_rankings', 'keyword_ranking_history') GROUP BY table_name"
+          query "SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'projects' AND column_name IN ('domain', 'last_rank_check_at')"
+          query "SELECT (SELECT COUNT(*) FROM keywords) AS keywords, (SELECT COUNT(*) FROM keyword_rankings) AS keyword_rankings"
