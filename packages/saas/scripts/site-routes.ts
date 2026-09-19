@@ -49,6 +49,7 @@ const staticRoutes: SiteRoute[] = [
   { path: '/changelog', changefreq: 'weekly', priority: 0.6, sources: ['src/pages/ChangelogPage.tsx'] },
   { path: '/about', changefreq: 'yearly', priority: 0.5, sources: ['src/pages/AboutPage.tsx'] },
   { path: '/contact', changefreq: 'yearly', priority: 0.4, sources: ['src/pages/ContactPage.tsx'] },
+  { path: '/bot', changefreq: 'yearly', priority: 0.2, sources: ['src/pages/BotPage.tsx'] },
   { path: '/privacy', changefreq: 'yearly', priority: 0.3, sources: ['src/pages/PrivacyPage.tsx'] },
   { path: '/terms', changefreq: 'yearly', priority: 0.3, sources: ['src/pages/TermsPage.tsx'] },
 ];

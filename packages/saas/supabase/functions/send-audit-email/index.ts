@@ -195,7 +195,7 @@ serve(async (req) => {
           category: e.category,
           description: e.description || '',
         })),
-        auditUrl: `https://rankcli.dev/projects/${project.id}`,
+        auditUrl: `https://rankcli.dev/dashboard/projects/${project.id}`,
       };
 
       const { html, text, subject } = criticalIssuesEmail(criticalData);
@@ -232,7 +232,7 @@ serve(async (req) => {
           category: i.category,
           severity: i.severity as 'error' | 'warning',
         })),
-        auditUrl: `https://rankcli.dev/projects/${project.id}`,
+        auditUrl: `https://rankcli.dev/dashboard/projects/${project.id}`,
       };
 
       const { html, text, subject } = auditCompleteEmail(auditData);
