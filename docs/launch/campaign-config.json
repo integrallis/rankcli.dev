@@ -1,24 +1,48 @@
 {
   "_comment": "Consumed by scripts/growth-ops/scheduler.mjs via .github/workflows/growth-ops.yml. Cadence numbers grounded in SaaS-launch-playbook research — see automation-setup.md for sourcing and what's solid data vs. rule-of-thumb. Edit campaign_start before your first real run; it drives every phase boundary below.",
   "campaign_start": "2026-09-08",
-
   "channels": {
     "bluesky": {
       "phases": [
-        { "start_week": 0, "end_week": 4, "posts_per_week": 3 },
-        { "start_week": 4, "end_week": null, "posts_per_week": 1 }
-      ]
+        {
+          "start_week": 0,
+          "end_week": 4,
+          "posts_per_week": 1
+        },
+        {
+          "start_week": 4,
+          "end_week": null,
+          "posts_per_week": 1
+        }
+      ],
+      "_comment": "1x/week: the status post is the weekly dogfood score, so posting it 3x/week repeated the same text (2026-09-19)."
     },
     "mastodon": {
       "phases": [
-        { "start_week": 0, "end_week": 4, "posts_per_week": 3 },
-        { "start_week": 4, "end_week": null, "posts_per_week": 1 }
+        {
+          "start_week": 0,
+          "end_week": 4,
+          "posts_per_week": 1
+        },
+        {
+          "start_week": 4,
+          "end_week": null,
+          "posts_per_week": 1
+        }
       ]
     },
     "linkedin": {
       "phases": [
-        { "start_week": 0, "end_week": 4, "posts_per_week": 2 },
-        { "start_week": 4, "end_week": null, "posts_per_week": 1 }
+        {
+          "start_week": 0,
+          "end_week": 4,
+          "posts_per_week": 1
+        },
+        {
+          "start_week": 4,
+          "end_week": null,
+          "posts_per_week": 1
+        }
       ]
     },
     "devto": {
@@ -30,8 +54,16 @@
     "twitter": {
       "_comment": "Off by default — no secret configured. Same phased cadence as Bluesky/Mastodon if you opt in; costs real money per post (see automation-setup.md).",
       "phases": [
-        { "start_week": 0, "end_week": 4, "posts_per_week": 3 },
-        { "start_week": 4, "end_week": null, "posts_per_week": 1 }
+        {
+          "start_week": 0,
+          "end_week": 4,
+          "posts_per_week": 1
+        },
+        {
+          "start_week": 4,
+          "end_week": null,
+          "posts_per_week": 1
+        }
       ]
     },
     "reddit": {
