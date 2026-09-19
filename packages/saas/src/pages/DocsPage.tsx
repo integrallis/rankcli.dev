@@ -1181,9 +1181,9 @@ function DashboardSection() {
             </p>
           </div>
           <div className="p-3 border rounded-lg">
-            <h5 className="font-medium text-sm">PDF Report</h5>
+            <h5 className="font-medium text-sm">Client report</h5>
             <p className="text-xs text-muted-foreground mt-1">
-              Generate a branded PDF report to share with clients or stakeholders.
+              Download a printable report to share with clients or stakeholders; print it or save it as a PDF from your browser. White-label on the Agency plan.
             </p>
           </div>
           <div className="p-3 border rounded-lg">

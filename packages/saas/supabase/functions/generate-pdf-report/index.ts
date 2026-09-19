@@ -1,5 +1,11 @@
-// PDF Report Generator - creates white-label SEO audit reports
+// Report generator - a printable HTML SEO audit report (white-label on the Agency plan)
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getEntitlement } from '../_shared/tier.ts'
+
+// Everything interpolated into the report is escaped: issue text and URLs come from crawled
+// pages, and the agency name and logo from the request.
+const esc = (value: unknown): string =>
+  String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -46,7 +52,12 @@ Deno.serve(async (req) => {
     }
 
     const options: ReportOptions = await req.json()
-    const { auditId, projectId, whiteLabel, agencyName, agencyLogo } = options
+    const { auditId, projectId, agencyName } = options
+    // White-label is an Agency feature: the request's flag only counts on that plan, checked
+    // with the service role (the entitlement tables aren't all readable under the user's RLS).
+    const admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+    const whiteLabel = options.whiteLabel === true && (await getEntitlement(admin, user.id)).tier === 'agency'
+    const agencyLogo = options.agencyLogo && /^https:\/\//i.test(options.agencyLogo) ? options.agencyLogo : undefined
 
     if (!auditId || !projectId) {
       return new Response(
@@ -95,9 +106,9 @@ Deno.serve(async (req) => {
     // Generate PDF HTML
     const brandName = whiteLabel && agencyName ? agencyName : 'RankCLI'
     const logoHtml = whiteLabel && agencyLogo 
-      ? `<img src="${agencyLogo}" alt="${brandName}" style="max-height: 40px; max-width: 200px;" />`
+      ? `<img src="${esc(agencyLogo)}" alt="${esc(brandName)}" style="max-height: 40px; max-width: 200px;" />`
       : whiteLabel 
-        ? `<span style="font-size: 24px; font-weight: bold;">${brandName}</span>`
+        ? `<span style="font-size: 24px; font-weight: bold;">${esc(brandName)}</span>`
         : `<span style="font-size: 24px; font-weight: bold; color: #6366f1;">RankCLI</span>`
 
     const healthScores = audit.health_scores || {}
@@ -161,7 +172,7 @@ Deno.serve(async (req) => {
     
     <div class="hero">
       <h1>SEO Audit Report</h1>
-      <p class="url">${project.url}</p>
+      <p class="url">${esc(project.url)}</p>
     </div>
     
     <div class="score-section">
@@ -206,12 +217,12 @@ Deno.serve(async (req) => {
     <div class="issues-section">
       <h2>Issues Found</h2>
       ${issues.slice(0, 30).map(issue => `
-        <div class="issue ${issue.severity}">
+        <div class="issue ${esc(issue.severity)}">
           <div class="issue-header">
-            <span class="issue-title">${issue.code || issue.title || 'Issue'}</span>
-            <span class="issue-page">${issue.page_url || ''}</span>
+            <span class="issue-title">${esc(issue.title || issue.code || 'Issue')}</span>
+            <span class="issue-page">${esc(Array.isArray(issue.page_url) ? issue.page_url.join(', ') : issue.page_url)}</span>
           </div>
-          <p class="issue-desc">${issue.message || issue.description || ''}</p>
+          <p class="issue-desc">${esc(issue.message || issue.description)}</p>
         </div>
       `).join('')}
       ${issues.length > 30 ? `<p style="text-align: center; color: #6b7280; margin-top: 20px;">... and ${issues.length - 30} more issues</p>` : ''}
@@ -220,7 +231,7 @@ Deno.serve(async (req) => {
     
     <div class="footer">
       ${whiteLabel 
-        ? `Report prepared by ${brandName}`
+        ? `Report prepared by ${esc(brandName)}`
         : `Powered by <a href="https://rankcli.dev" style="color: #6366f1;">RankCLI</a> - SEO Autopilot for Developers`
       }
     </div>
@@ -235,7 +246,7 @@ Deno.serve(async (req) => {
       headers: {
         ...corsHeaders,
         'Content-Type': 'text/html',
-        'Content-Disposition': `attachment; filename="${project.name.replace(/\s+/g, '-')}-seo-report.html"`,
+        'Content-Disposition': `attachment; filename="${project.name.replace(/[^\w.-]+/g, '-')}-seo-report.html"`,
       },
     })
   } catch (err) {

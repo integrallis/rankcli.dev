@@ -1,5 +1,6 @@
 // Client report endpoint - returns audit data for shareable client links
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getEntitlement } from '../_shared/tier.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -52,7 +53,7 @@ Deno.serve(async (req) => {
     // Get project data
     const { data: project, error: projectError } = await supabase
       .from('projects')
-      .select('id, name, url, last_audit_score')
+      .select('id, user_id, name, url, last_audit_score')
       .eq('id', clientLink.project_id)
       .single()
 
@@ -60,6 +61,15 @@ Deno.serve(async (req) => {
       return new Response(
         JSON.stringify({ error: 'Project not found' }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    // Client report links are an Agency feature. Links can be created on any plan (RLS only
+    // checks ownership), so the plan is checked where the report is served.
+    if ((await getEntitlement(supabase, project.user_id)).tier !== 'agency') {
+      return new Response(
+        JSON.stringify({ error: 'This report link is no longer active' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 

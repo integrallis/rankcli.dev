@@ -242,7 +242,7 @@
           "4 audits per month",
           "200+ SEO checks",
           "API access (50 req/day)",
-          "Export PDF reports",
+          "Export printable reports",
           "Lifetime updates"
         ],
         "comparison_to_sub": "Pays for itself in 9 months vs Solo"
@@ -325,7 +325,7 @@
   },
   "feature_descriptions": {
     "api_access": "REST API to integrate RankCLI into your own tools, dashboards, and workflows. Build custom integrations, automate bulk audits, and receive webhook notifications.",
-    "white_label": "Remove RankCLI branding from PDF reports and exports. Add your own logo and colors for client-facing deliverables.",
+    "white_label": "Remove RankCLI branding from client reports, widgets and exports. Add your own logo and colors for client-facing deliverables.",
     "local_auto_fix": "Apply SEO fixes directly to your local codebase via CLI. Creates commits and branches ready for you to push.",
     "github_auto_fix": "Automatically create fix PRs via GitHub App integration. No manual intervention required.",
     "gsc_integration": "Connect Google Search Console to track impressions, clicks, CTR, and average position. See which queries drive traffic and monitor keyword rankings.",

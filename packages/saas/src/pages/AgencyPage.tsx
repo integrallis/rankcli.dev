@@ -218,21 +218,21 @@ export function AgencyPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate PDF');
+        throw new Error('Failed to generate the report');
       }
 
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${project.name.replace(/\s+/g, '-')}-seo-report.pdf`;
+      a.download = `${project.name.replace(/[^\w.-]+/g, '-')}-seo-report.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Failed to generate PDF:', err);
-      alert('Failed to generate PDF report. Please try again.');
+      console.error('Failed to generate the report:', err);
+      alert('Failed to generate the report. Please try again.');
     } finally {
       setGeneratingPDF(false);
     }
@@ -331,7 +331,7 @@ export function AgencyPage() {
                 Agency tools are part of the Agency plan
               </CardTitle>
               <CardDescription>
-                White-label PDF reports, embeddable score widgets and shareable client report
+                White-label client reports, embeddable score widgets and shareable client report
                 links come with the Agency plan.
               </CardDescription>
             </CardHeader>
@@ -390,7 +390,7 @@ export function AgencyPage() {
             </TabsTrigger>
             <TabsTrigger value="reports" className="gap-2">
               <FileText className="h-4 w-4" />
-              PDF Reports
+              Reports
             </TabsTrigger>
             <TabsTrigger value="sharing" className="gap-2">
               <Link2 className="h-4 w-4" />
@@ -558,11 +558,12 @@ export function AgencyPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  PDF Report Generator
+                  Client Report
                 </CardTitle>
                 <CardDescription>
-                  Generate professional PDF reports to share with clients. Optionally
-                  add your agency branding for white-label delivery.
+                  Download a printable report to share with clients: open it in a browser
+                  and print or save it as a PDF. Optionally add your agency branding for
+                  white-label delivery.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -646,7 +647,7 @@ export function AgencyPage() {
                       ) : (
                         <>
                           <Download className="h-4 w-4" />
-                          Download PDF Report
+                          Download Report
                         </>
                       )}
                     </Button>

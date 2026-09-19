@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { getEntitlement } from '../_shared/tier.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -42,6 +43,7 @@ serve(async (req) => {
         project_id,
         projects (
           id,
+          user_id,
           name,
           url,
           last_audit_score
@@ -61,6 +63,7 @@ serve(async (req) => {
     // infers an array.
     const project = widgetToken.projects as unknown as {
       id: string;
+      user_id: string;
       name: string;
       url: string;
       last_audit_score: number | null;
@@ -105,7 +108,12 @@ serve(async (req) => {
       .update({ last_accessed_at: new Date().toISOString() })
       .eq('id', widgetToken.id);
 
+    // White-labelled widgets (no "Powered by RankCLI") are an Agency feature, decided here from
+    // the owner's plan - never by the embedding page.
+    const whiteLabel = (await getEntitlement(supabase, project.user_id)).tier === 'agency';
+
     return new Response(JSON.stringify({
+      whiteLabel,
       score: latestAudit?.score ?? project.last_audit_score ?? 0,
       errors,
       warnings,
