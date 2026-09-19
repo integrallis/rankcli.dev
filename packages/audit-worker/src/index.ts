@@ -14,6 +14,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { EventEmitter } from 'events';
 import { callChatCompletion, type AIProviderConfig } from './ai-provider.js';
 import { runAuditOffThread, auditPoolStats } from './audit-pool.js';
+import { cpuStats } from './cpu-stats.js';
 import { buildVisibilityQuestion } from './visibility-question.js';
 import { getEntitlement } from './tier.js';
 import { installOutboundGuard, assertPublicUrl, hostPort } from './url-guard.js';
@@ -324,6 +325,7 @@ app.get('/health', async () => {
     runningDeepAudits,
     queuedDeepAudits: deepAuditQueue.length,
     auditThreads: auditPoolStats(),
+    cpu: cpuStats(),
   };
 });
 
