@@ -10,7 +10,7 @@ Ready-to-post copy for the launch, written against the product as it is on 2026-
 
 - `npx @rankcli/cli audit --url <site>` runs the full engine locally, free, no account. On a test page it reported 86 issues, 28 of them from the premium AI-search checks (citation-worthiness, answer structure, E-E-A-T, entities).
 - CI gates: `--fail-on error|warning|notice`, `--min-score N`. Exit codes 0 pass / 1 gate failed / 2 bad invocation / 3 site unreachable or erroring, so a down site never passes.
-- `uses: integrallis/rankcli-action@v1` is public and open source. rankcli.dev gates itself with it: **84/100, 0 errors** on 2026-09-19 (`.github/workflows/seo-gate.yml`).
+- `uses: integrallis/rankcli-action@v1` is public and open source. rankcli.dev gates itself with it: 82-84/100, 0 errors on 2026-09-19 (`.github/workflows/seo-gate.yml`). **Before posting, replace "84/100" in the copy below with the latest SEO gate run's score** (Actions -> SEO gate).
 - AI analysis never goes through RankCLI. It picks Apple Intelligence on-device on a Mac that has it, else your key (OpenRouter first; OpenAI, Anthropic, Groq, Gemini, DeepSeek and more), else a local Ollama or LM Studio.
 - `npx @rankcli/mcp-server`: 15 tools, local, no signup. Listed on Smithery, Glama, mcp.so, cursor.directory and awesome-mcp-servers.
 - Hosted: sign-up to first completed audit took under a minute in the end-to-end test.
