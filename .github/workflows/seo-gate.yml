@@ -1,0 +1,39 @@
+name: SEO gate (rankcli.dev)
+
+# Dogfooding: the published RankCLI GitHub Action, used exactly as a customer would, audits
+# rankcli.dev after changes to the site and weekly. It proves the public action works on
+# GitHub's runners, and fails if the site regresses: any error-severity issue, or a score
+# under the threshold.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 8 * * 1'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/saas/src/**'
+      - 'packages/saas/public/**'
+      - 'packages/saas/index.html'
+
+permissions:
+  contents: read
+
+jobs:
+  seo:
+    runs-on: ubuntu-latest
+    steps:
+      # Give the frontend deploy (deploy-saas.yml) time to finish on pushes.
+      - name: Wait for the deploy
+        if: github.event_name == 'push'
+        run: sleep 240
+
+      - name: Audit rankcli.dev
+        id: audit
+        uses: integrallis/rankcli-action@v1
+        with:
+          url: https://rankcli.dev
+          score-threshold: 60
+
+      - name: Result
+        run: echo "Score ${{ steps.audit.outputs.score }}/100, ${{ steps.audit.outputs.errors-count }} errors, passed=${{ steps.audit.outputs.passed }}"
