@@ -280,11 +280,11 @@ async function syncAnnualPricing(tier: SubscriptionTier): Promise<void> {
   }
 
   // Targeted update, not upsert - the *_annual row (limits, features,
-  // sort_order) already exists from the annual-pricing migration. Only the
-  // Stripe linkage is missing here.
+  // sort_order) already exists from the annual-pricing migration. The price
+  // follows the config too, or the row would keep advertising the old one.
   const { error } = await supabase
     .from('subscription_plans')
-    .update({ stripe_price_id: priceId })
+    .update({ stripe_price_id: priceId, price_cents: tier.price_cents_annual })
     .eq('plan_id', annualPlanId);
 
   if (error) {

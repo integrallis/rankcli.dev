@@ -115,9 +115,11 @@ export function SubscriptionPricingCards({
 
       {/* Paid Tiers */}
       {tiers.map((plan) => {
-        const price = isAnnual && plan.price_cents_annual
-          ? Math.floor(plan.price_cents_annual / 12 / 100)
-          : Math.floor(plan.price_cents / 100);
+        // Annual shows the monthly equivalent exactly ($90/yr is $7.50, not $7).
+        const monthly = isAnnual && plan.price_cents_annual
+          ? plan.price_cents_annual / 12 / 100
+          : plan.price_cents / 100;
+        const price = Number.isInteger(monthly) ? String(monthly) : monthly.toFixed(2);
         const isFoundingPlan = showFounding && foundingOffer?.base_plan_id === plan.id;
         const foundingPrice = isFoundingPlan ? Math.floor(foundingOffer!.discounted_price_cents / 100) : null;
         const selectedPlanId = isAnnual ? `${plan.id}_annual` : isFoundingPlan ? foundingOffer!.plan_id : plan.id;
@@ -181,7 +183,9 @@ export function SubscriptionPricingCards({
                         ? foundingAvailability.isAlmostGone
                           ? `Only ${foundingAvailability.remaining} spots left`
                           : `${foundingAvailability.remaining} of ${foundingOffer!.total_seats} founding spots left`
-                        : `Limited to the first ${foundingOffer!.total_seats} customers or ${foundingOffer!.duration_days} days, whichever comes first`}
+                        : foundingOffer!.duration_days
+                          ? `Limited to the first ${foundingOffer!.total_seats} customers or ${foundingOffer!.duration_days} days, whichever comes first`
+                          : `Limited to the first ${foundingOffer!.total_seats} customers`}
                     </p>
                   )}
                 </CardHeader>

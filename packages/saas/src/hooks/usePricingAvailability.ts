@@ -24,7 +24,8 @@ export interface FoundingOfferConfig {
   original_price_cents: number;
   discount_percent: number;
   total_seats: number;
-  duration_days: number;
+  /** null: no deadline, the offer ends when the seats run out. */
+  duration_days: number | null;
   availability_endpoint: string;
 }
 

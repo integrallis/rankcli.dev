@@ -44,19 +44,20 @@ interface LTDAvailability {
 const subscriptionTiers = pricingConfig.subscriptions as SubscriptionTier[];
 
 // Free tier for display. Must agree with pricing-tiers.json's
-// free_registered and free_mcp entries (100 checks, no GitHub features).
+// free_registered and free_mcp entries.
 const freeTier = {
   id: 'free',
   name: 'Free',
   price_cents: 0,
   billing_period: 'forever',
-  tagline: 'Unlimited via MCP, no credit card',
+  tagline: 'The CLI, MCP server and GitHub Action - free forever',
   popular: false,
   highlights: [
-    'Unlimited audits via MCP/CLI (your own AI key)',
-    'No signup required for MCP',
-    `1 hosted site, ${pricingConfig.free_registered.checks_limit} checks, audit history`,
-    'GEO + AI-crawler-access checks included',
+    'Unlimited CLI / MCP / GitHub Action audits (your own AI key)',
+    `1 site audited weekly, all ${pricingConfig.free_registered.checks_limit}+ checks`,
+    `${pricingConfig.free_registered.auto_fix_prs_per_month} auto-fix PRs a month`,
+    'Local fixes with rankcli fix',
+    'README score badge & weekly email report',
   ],
 };
 
@@ -68,7 +69,7 @@ const tierLimits = (id: string) =>
 const featureComparison = [
   {
     name: 'SEO Checks',
-    free: String(pricingConfig.free_registered.checks_limit),
+    free: `${pricingConfig.free_registered.checks_limit}+`,
     solo: `${tierLimits('solo').checks}+`,
     pro: `${tierLimits('pro').checks}+`,
     agency: `${tierLimits('agency').checks}+`,
@@ -96,40 +97,41 @@ const featureComparison = [
   },
   {
     name: 'Local Auto-Fix (CLI)',
-    free: false,
+    free: true,
     solo: true,
     pro: true,
     agency: true,
     tooltip: 'Apply SEO fixes directly to your local codebase via CLI'
   },
   {
-    name: 'GitHub Integration',
-    free: false,
-    solo: false,
-    pro: true,
-    agency: true
+    name: 'Auto-Fix PRs',
+    free: `${pricingConfig.free_registered.auto_fix_prs_per_month}/month`,
+    solo: 'Unlimited',
+    pro: 'Unlimited',
+    agency: 'Unlimited',
+    tooltip: 'Fix PRs opened on your repo by the GitHub App, generated with your own AI key'
   },
   {
-    name: 'Auto-Fix PRs',
+    name: 'Automated Audits',
+    free: 'Weekly',
+    solo: 'Weekly',
+    pro: 'Daily + every push',
+    agency: 'Daily + every push'
+  },
+  {
+    name: 'Slack & Discord Alerts',
     free: false,
-    solo: false,
+    solo: true,
     pro: true,
     agency: true,
-    tooltip: 'Automatically create fix PRs via GitHub App'
+    tooltip: 'Audit failures, score drops, new fix PRs and the weekly report'
   },
   {
-    name: 'Scheduled Audits',
-    free: 'Manual',
-    solo: 'Weekly',
-    pro: 'Daily',
-    agency: 'On-demand'
-  },
-  {
-    name: 'Team Members',
-    free: '1',
-    solo: '1',
-    pro: '5',
-    agency: 'Unlimited'
+    name: 'README Score Badge',
+    free: true,
+    solo: true,
+    pro: true,
+    agency: true
   },
   {
     name: 'REST API Access',
@@ -206,16 +208,15 @@ export function Pricing({ headingLevel = 'h2' }: PricingProps) {
             Simple, transparent pricing
           </Heading>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Unlimited audits free via MCP. Upgrade for CI, auto-fix PRs, and hosted tracking. No credit card for Free.
+            The CLI, MCP server and GitHub Action are free forever. Upgrade for more sites, daily audits, alerts and unlimited auto-fix PRs. No credit card for Free.
           </p>
         </ScrollReveal>
 
-        {/* Pricing Toggle */}
-        {ltdConfig.enabled && anyLTDAvailable && (
-          <ScrollReveal delay={0.1} className="flex justify-center mb-10">
-            <BillingIntervalToggle view={view} onChange={setView} showLifetime />
-          </ScrollReveal>
-        )}
+        {/* Pricing Toggle - monthly/annual always; lifetime only while deals are on sale.
+            It used to render only with lifetime deals, so pulling them hid annual billing. */}
+        <ScrollReveal delay={0.1} className="flex justify-center mb-10">
+          <BillingIntervalToggle view={view} onChange={setView} showLifetime={ltdConfig.enabled && anyLTDAvailable} />
+        </ScrollReveal>
 
         {/* LTD Urgency Banner */}
         {view === 'lifetime' && ltdConfig.enabled && (

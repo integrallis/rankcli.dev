@@ -2,29 +2,32 @@
   "default_view": "monthly",
   "free_audit": {
     "enabled": true,
-    "checks_limit": 50,
+    "checks_limit": 280,
     "description": "One-time audit, no signup required",
     "tagline": "Analyze your site for free"
   },
   "free_registered": {
     "enabled": true,
-    "checks_limit": 100,
+    "checks_limit": 280,
     "sites_limit": 1,
     "domains_per_month": 2,
-    "description": "Create an account for more checks and history",
-    "tagline": "100 checks, audit history included",
+    "description": "Create an account: one site audited weekly, with history, alerts by email and a README badge",
+    "tagline": "All 280+ checks, audited weekly",
     "features": {
-      "full_audit": false,
+      "full_audit": true,
       "audit_history": true,
       "export_reports": false,
-      "local_auto_fix": false,
-      "github_connect": false,
-      "github_auto_fix": false,
+      "local_auto_fix": true,
+      "github_connect": true,
+      "github_auto_fix": true,
       "gsc_integration": false,
       "metrics_sync": false,
       "api_access": false,
-      "white_label": false
-    }
+      "white_label": false,
+      "weekly_schedule": true,
+      "readme_badge": true
+    },
+    "auto_fix_prs_per_month": 3
   },
   "free_mcp": {
     "enabled": true,
@@ -49,7 +52,7 @@
     "original_price_cents": 2900,
     "discount_percent": 34,
     "total_seats": 100,
-    "duration_days": 90,
+    "duration_days": null,
     "availability_endpoint": "launch-offer-availability",
     "stripe_price_id_env": "STRIPE_PRO_FOUNDING_PRICE_ID"
   },
@@ -58,7 +61,7 @@
       "id": "solo",
       "name": "Solo",
       "price_cents": 900,
-      "price_cents_annual": 7200,
+      "price_cents_annual": 9000,
       "billing_period": "month",
       "tagline": "For indie developers",
       "popular": false,
@@ -80,34 +83,34 @@
         "weekly_schedule": true,
         "export_reports": true,
         "local_auto_fix": true,
-        "github_connect": false,
-        "github_auto_fix": false,
-        "slack_alerts": false,
+        "github_connect": true,
+        "github_auto_fix": true,
+        "slack_alerts": true,
         "api_access": true,
         "competitor_tracking": 0,
         "ai_analysis": true,
         "keyword_research": true,
         "content_optimizer": true,
         "competitor_intel": false,
-        "local_seo": true,
+        "local_seo": false,
         "white_label": false,
         "gsc_integration": true,
         "metrics_sync": true
       },
       "highlights": [
-        "3 sites monitored",
-        "280+ SEO checks",
-        "Weekly automated audits",
-        "API access (100 req/day)",
-        "Local auto-fix via CLI",
-        "Local SEO analysis"
+        "3 sites, audited weekly",
+        "All 280+ checks, 10 pages per audit",
+        "Auto-fix PRs via the GitHub App",
+        "Slack & Discord alerts",
+        "AI analysis on your own key",
+        "API access (100 req/day)"
       ]
     },
     {
       "id": "pro",
       "name": "Pro",
       "price_cents": 2900,
-      "price_cents_annual": 23200,
+      "price_cents_annual": 29000,
       "billing_period": "month",
       "tagline": "For teams & startups",
       "popular": true,
@@ -139,25 +142,25 @@
         "keyword_research": true,
         "content_optimizer": true,
         "competitor_intel": true,
-        "local_seo": true,
+        "local_seo": false,
         "white_label": false,
         "gsc_integration": true,
         "metrics_sync": true
       },
       "highlights": [
-        "10 sites monitored",
-        "Daily automated audits",
-        "API access (1K req/day)",
-        "GitHub auto-fix PRs",
-        "Slack/Discord alerts",
-        "5 team members"
+        "10 sites, audited daily",
+        "Audit on every push (GitHub App)",
+        "Auto-fix PRs",
+        "Slack & Discord alerts",
+        "Keyword research on your own AI key",
+        "API access (1K req/day)"
       ]
     },
     {
       "id": "agency",
       "name": "Agency",
       "price_cents": 9900,
-      "price_cents_annual": 79200,
+      "price_cents_annual": 99000,
       "billing_period": "month",
       "tagline": "For agencies & enterprises",
       "popular": false,
@@ -172,12 +175,11 @@
         "keyword_research_per_month": null,
         "content_optimizations_per_month": null,
         "competitor_analyses_per_month": null,
-        "gsc_sync_interval_hours": 1,
+        "gsc_sync_interval_hours": 24,
         "keyword_tracking": null
       },
       "features": {
         "full_audit": true,
-        "hourly_schedule": true,
         "export_reports": true,
         "local_auto_fix": true,
         "github_connect": true,
@@ -191,22 +193,23 @@
         "keyword_research": true,
         "content_optimizer": true,
         "competitor_intel": true,
-        "local_seo": true,
+        "local_seo": false,
         "gsc_integration": true,
-        "metrics_sync": true
+        "metrics_sync": true,
+        "daily_schedule": true
       },
       "highlights": [
-        "50 sites monitored",
-        "Hourly GSC metrics sync",
-        "Unlimited team members",
+        "50 sites, audited daily",
+        "White-label reports & widgets",
+        "Client report links",
+        "Everything in Pro",
         "API access (10K req/day)",
-        "White-label reports",
         "Priority support"
       ]
     }
   ],
   "lifetime_deals": {
-    "enabled": true,
+    "enabled": false,
     "show_remaining": true,
     "urgency_threshold": 50,
     "tiers": [
@@ -334,7 +337,11 @@
     "metrics_tracking": {
       "name": "SEO Metrics Tracking",
       "description": "Google Search Console integration, keyword rankings, performance trends",
-      "tiers": ["solo", "pro", "agency"],
+      "tiers": [
+        "solo",
+        "pro",
+        "agency"
+      ],
       "sync_frequency": {
         "solo": "Weekly",
         "pro": "Daily",
@@ -344,27 +351,46 @@
     "ai_audit": {
       "name": "AI-Powered Audit",
       "description": "GPT-4o content analysis, meta optimization, fix prioritization",
-      "tiers": ["solo", "pro", "agency"]
+      "tiers": [
+        "solo",
+        "pro",
+        "agency"
+      ]
     },
     "keyword_research": {
       "name": "Keyword Research",
       "description": "KGR calculator, semantic clustering, content briefs",
-      "tiers": ["solo", "pro", "agency"]
+      "tiers": [
+        "solo",
+        "pro",
+        "agency"
+      ]
     },
     "content_optimizer": {
       "name": "Content Optimizer",
       "description": "SERP analysis, content gaps, AI optimization suggestions",
-      "tiers": ["solo", "pro", "agency"]
+      "tiers": [
+        "solo",
+        "pro",
+        "agency"
+      ]
     },
     "competitor_intel": {
       "name": "Competitor Intelligence",
       "description": "Deep competitor analysis, keyword gaps, strategic recommendations",
-      "tiers": ["pro", "agency"]
+      "tiers": [
+        "pro",
+        "agency"
+      ]
     },
     "local_seo": {
       "name": "Local SEO Analyzer",
       "description": "NAP consistency, LocalBusiness schema, address/phone detection, social profiles",
-      "tiers": ["solo", "pro", "agency"]
+      "tiers": [
+        "solo",
+        "pro",
+        "agency"
+      ]
     }
   }
 }

@@ -50,10 +50,11 @@ pnpm dev               # Start dev server on localhost:3005
 - **Developer focus**: "Engineering as Marketing"
 
 ## Pricing Tiers
-- **Free**: 1 site, 100 checks, manual audits
-- **Solo** ($9/mo): 3 sites, 50+ checks, weekly audits, GitHub connect
-- **Pro** ($29/mo): 10 sites, daily audits, auto-fix PRs, Slack alerts
-- **Agency** ($99/mo): 50 sites, on-demand audits, white-label, API access
+Source of truth: `packages/saas/src/config/pricing-tiers.json` (rationale: `docs/PRICING_ANALYSIS_2026-09.md`). Every plan runs all 280+ checks; the CLI, MCP server, GitHub Action and local `rankcli fix` are free forever; AI features run on the user's own key.
+- **Free**: 1 site audited weekly, README badge, weekly email report, 3 auto-fix PRs/month
+- **Solo** ($9/mo, $90/yr): 3 sites audited weekly, unlimited auto-fix PRs, Slack/Discord alerts, API 100/day
+- **Pro** ($29/mo, $290/yr; $19 founding for the first 100): 10 sites audited daily and on every push, API 1K/day
+- **Agency** ($99/mo, $990/yr): 50 sites, white-label reports and widgets, client report links, API 10K/day
 
 ## Key Files
 

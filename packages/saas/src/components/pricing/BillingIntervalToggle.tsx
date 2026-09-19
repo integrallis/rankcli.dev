@@ -14,10 +14,10 @@ interface BillingIntervalToggleProps {
 
 // The annual saving, from the prices in pricing-tiers.json (the smallest
 // across tiers, so the badge never overstates it). Today every tier's annual
-// price is 8x its monthly price: 33% off, or 4 months free.
+// price is 10x its monthly price: 17% off, or 2 months free.
 const annualDiscountPercent = Math.min(
   ...pricingConfig.subscriptions.map((tier) =>
-    Math.floor((1 - tier.price_cents_annual / (tier.price_cents * 12)) * 100)
+    Math.round((1 - tier.price_cents_annual / (tier.price_cents * 12)) * 100)
   )
 );
 const annualMonthsFree = Math.min(

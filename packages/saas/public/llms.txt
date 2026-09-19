@@ -25,12 +25,13 @@ RankCLI is a CLI-based SEO tool built for developers. It automates technical SEO
 
 ## Pricing
 
-- Free: $0 - 1 hosted site, 100 checks, audit history; unlimited local audits via the CLI/MCP server with your own AI key
-- Solo: $9/month - 3 sites, weekly audits, local auto-fix via the CLI
-- Pro: $29/month - 10 sites, daily audits, GitHub auto-fix PRs, Slack alerts
-- Agency: $99/month - 50 sites, unlimited team members, white-label reports
-- Annual billing: 33% off Solo, Pro and Agency (4 months free): $72, $232 and $792 a year
-- Lifetime deals: $79 / $149 / $299 one-time (limited availability)
+Every plan runs all 280+ checks. The CLI, MCP server and GitHub Action are free forever; AI features run on your own key (OpenRouter recommended, local models via the CLI).
+
+- Free: $0 - 1 site audited weekly, audit history, weekly email report, README score badge, 3 auto-fix PRs a month; unlimited CLI/MCP/GitHub Action audits
+- Solo: $9/month - 3 sites audited weekly (10 pages each), unlimited auto-fix PRs, Slack & Discord alerts, API 100 requests/day
+- Pro: $29/month ($19/month founding price for the first 100 customers) - 10 sites audited daily and on every push, keyword research, API 1,000 requests/day
+- Agency: $99/month - 50 sites audited daily, white-label reports and widgets, client report links, API 10,000 requests/day, priority support
+- Annual billing: 2 months free - $90, $290 and $990 a year
 
 The Free tier needs no credit card. There is no trial on paid plans.
 
