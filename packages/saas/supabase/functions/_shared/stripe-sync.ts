@@ -79,6 +79,36 @@ export async function planFor(db: SupabaseClient, sub: Stripe.Subscription): Pro
 }
 
 /**
+ * The account behind a Stripe customer, when the subscription doesn't say. Matches a
+ * user_subscriptions row carrying the customer id first (set by create-checkout before
+ * the customer ever paid), then the customer's email against auth.users - the same
+ * email match the lifetime-deal flow uses. Returns null rather than guessing.
+ */
+async function userForCustomer(
+  { db, stripe }: SyncDeps,
+  customerId: string | null
+): Promise<string | null> {
+  if (!customerId) return null;
+
+  const { data: byCustomer, error } = await db
+    .from("user_subscriptions")
+    .select("user_id")
+    .eq("stripe_customer_id", customerId)
+    .maybeSingle();
+  if (error) throw new Error(`customer lookup failed: ${error.message}`);
+  if (byCustomer?.user_id) return byCustomer.user_id;
+
+  // A deleted customer simply has no email field, so no narrowing dance is needed.
+  const customer = await stripe.customers.retrieve(customerId).catch(() => null);
+  const email = (customer as Stripe.Customer | null)?.email ?? null;
+  if (!email) return null;
+
+  const { data: byEmail, error: emailError } = await db.rpc("find_user_id_by_email", { p_email: email });
+  if (emailError) throw new Error(`user lookup by email failed: ${emailError.message}`);
+  return (byEmail as string | null) || null;
+}
+
+/**
  * Writes a Stripe subscription's current state to its user's user_subscriptions row.
  * The row is found by stripe_subscription_id; failing that, by the user in metadata.
  * `claim` (a just-completed checkout, or a subscription found on the caller's own
@@ -87,7 +117,7 @@ export async function planFor(db: SupabaseClient, sub: Stripe.Subscription): Pro
  * and a subscription that isn't live is never newly linked.
  */
 export async function syncSubscription(
-  { db }: SyncDeps,
+  { db, stripe }: SyncDeps,
   sub: Stripe.Subscription,
   opts: { userId?: string | null; claim?: boolean } = {}
 ): Promise<void> {
@@ -148,9 +178,18 @@ export async function syncSubscription(
     return;
   }
 
-  const userId = sub.metadata?.supabase_user_id || opts.userId;
+  // Whose subscription is this? create-checkout stamps the user on the subscription, but
+  // nothing else does: a Stripe payment link, a subscription started in the dashboard, or
+  // one recovered by Link carries no metadata at all. That used to end here - logged,
+  // answered 200, never retried - so the customer paid and stayed on Free with nothing
+  // left to notice. The customer is the fallback identity: first a row that already
+  // tracks it, then the email Stripe has for it.
+  const userId =
+    sub.metadata?.supabase_user_id ||
+    opts.userId ||
+    (await userForCustomer({ db, stripe }, customerId));
   if (!userId) {
-    console.error(`[SYNC] Subscription ${sub.id} has no supabase_user_id and no row tracks it; ignoring`);
+    console.error(`[SYNC] Subscription ${sub.id} has no supabase_user_id, no row tracks it and its customer matches no account; ignoring`);
     return;
   }
 

@@ -515,7 +515,13 @@ export function AccountPage() {
 
       const data = await response.json();
 
-      if (data.code === 'switch_required') {
+      if (data.code === 'already_on_plan') {
+        // Stripe says this plan is already paid for while this page says Free: the
+        // subscription never made it into our database. Telling the user "you're already
+        // on this plan" next to a Free badge is the worst of both, so reconcile instead -
+        // syncBillingFromStripe reports what it found either way.
+        await syncBillingFromStripe();
+      } else if (data.code === 'switch_required') {
         setPendingSwitch({ planId, planName: data.planName || planId });
       } else if (data.switched) {
         toast.success(`You're now on ${data.planName || 'the new plan'}`);
