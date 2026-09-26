@@ -19,6 +19,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getAppIdentity, getInstallationForRepo, getInstallationToken } from '../_shared/github-app.ts';
+import { userIdFromApiKey } from '../_shared/caller-auth.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -127,16 +128,28 @@ serve(async (req) => {
       return json({ error: 'GitHub App not configured' }, 500);
     }
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return json({ error: 'Missing authorization header' }, 401);
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Two ways in. A Supabase session is what the dashboard has; an API key is what the
+    // CLI, CI and the MCP server have - and without accepting one, `rankcli` could never
+    // offer to link the repository it is standing in. Either way we end up with the full
+    // user record, because the access check below reads its GitHub identity.
+    const apiKeyUserId = await userIdFromApiKey(req, supabase);
+    let user: { id: string; identities?: Array<{ provider: string; id?: string; identity_data?: Record<string, unknown> }> } | null = null;
+
+    if (apiKeyUserId) {
+      const { data } = await supabase.auth.admin.getUserById(apiKeyUserId);
+      user = data?.user ?? null;
+    } else {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return json({ error: 'Missing authorization header' }, 401);
+      }
+      const { data } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+      user = data?.user ?? null;
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
+    if (!user) {
       return json({ error: 'Unauthorized' }, 401);
     }
 

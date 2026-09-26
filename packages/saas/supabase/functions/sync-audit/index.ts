@@ -120,7 +120,10 @@ serve(async (req) => {
 
     const { data: existingProject } = await supabase
       .from('projects')
-      .select('id')
+      // github_repo_url so the CLI can tell whether this project already has a repository:
+      // standing in a git checkout, it offers to link the one it can see, and it needs to
+      // know not to ask when the answer is already recorded.
+      .select('id, github_repo_url')
       .eq('user_id', userId)
       .eq('domain', domain)
       .eq('is_active', true)
@@ -240,7 +243,12 @@ serve(async (req) => {
       })
       .eq('id', projectId);
 
-    return new Response(JSON.stringify({ projectId, auditId: audit.id }), {
+    return new Response(JSON.stringify({
+      projectId,
+      auditId: audit.id,
+      // false for a project just created by this call, which has no repository yet.
+      githubLinked: !!existingProject?.github_repo_url,
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {

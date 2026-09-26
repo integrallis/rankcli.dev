@@ -29,6 +29,33 @@ export function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+/** SHA-256 hex, the form api_keys.key_hash stores. */
+export async function hashApiKey(key: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(key));
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * The user behind an X-API-Key header, or null. API keys are how the CLI, CI and the MCP
+ * server authenticate - they never hold a Supabase session - so any function those surfaces
+ * need must accept one, not just a Bearer JWT.
+ */
+export async function userIdFromApiKey(
+  req: Request,
+  supabase: SupabaseClient
+): Promise<string | null> {
+  const key = req.headers.get('X-API-Key');
+  if (!key?.startsWith('rankcli_')) return null;
+
+  const { data } = await supabase
+    .from('api_keys')
+    .select('user_id')
+    .eq('key_hash', await hashApiKey(key))
+    .is('revoked_at', null)
+    .maybeSingle();
+  return data?.user_id ?? null;
+}
+
 export async function identifyCaller(
   req: Request,
   supabase: SupabaseClient,
