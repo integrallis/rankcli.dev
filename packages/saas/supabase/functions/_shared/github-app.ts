@@ -111,6 +111,34 @@ export async function getInstallationToken(installationId: number, privateKeyBas
 // call that must happen before you have an installation token). The
 // Installation object has no repo id on it - fetch that separately with
 // the resulting installation token if you need it.
+/**
+ * Which GitHub App this deployment authenticates as. `GET /repos/:owner/:repo/installation`
+ * answers 404 both when nobody installed the App and when this deployment holds a
+ * *different* App's credentials - a dev GITHUB_APP_ID/GITHUB_PRIVATE_KEY in production
+ * looks exactly like "you forgot to install it". Naming the App in the error tells the two
+ * apart at a glance. Best-effort: a diagnostic must never be the thing that fails.
+ */
+export async function getAppIdentity(
+  privateKeyBase64: string,
+  appId: string
+): Promise<{ slug: string; id: number } | null> {
+  try {
+    const jwt = await signAppJwt(privateKeyBase64, appId);
+    const response = await fetch('https://api.github.com/app', {
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        Accept: 'application/vnd.github+json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    });
+    if (!response.ok) return null;
+    const app = await response.json();
+    return { slug: app.slug as string, id: app.id as number };
+  } catch {
+    return null;
+  }
+}
+
 export async function getInstallationForRepo(
   owner: string,
   repo: string,

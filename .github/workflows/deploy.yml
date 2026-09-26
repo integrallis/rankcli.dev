@@ -481,6 +481,18 @@ jobs:
             eval "supabase secrets set $OPTIONAL_SECRETS"
           fi
 
+      # Same guard as deploy-saas.yml: the frontend's install link is github.com/apps/
+      # rankcli, so the backend has to be that App and not rankcli-dev. See
+      # packages/saas/scripts/verify-github-app.mjs for why the failure is invisible.
+      - name: Verify GitHub App credentials are production
+        if: steps.scope.outputs.functions == 'true'
+        working-directory: packages/saas
+        env:
+          GITHUB_APP_ID: ${{ secrets.RANKCLI_GITHUB_APP_ID }}
+          GITHUB_PRIVATE_KEY: ${{ secrets.RANKCLI_GITHUB_APP_PRIVATE_KEY }}
+          EXPECTED_APP_SLUG: rankcli
+        run: node scripts/verify-github-app.mjs
+
       - name: Deploy Edge Functions
         if: steps.scope.outputs.functions == 'true'
         working-directory: packages/saas

@@ -18,7 +18,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { getInstallationForRepo, getInstallationToken } from '../_shared/github-app.ts';
+import { getAppIdentity, getInstallationForRepo, getInstallationToken } from '../_shared/github-app.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -173,9 +173,19 @@ serve(async (req) => {
     const installationId = await getInstallationForRepo(owner, repoName, githubPrivateKey, githubAppId);
 
     if (!installationId) {
-      // Not an error: the App just isn't installed on this repo (yet).
-      // Nothing is saved until it is.
-      return json({ linked: false, reason: 'App not installed on this repository' });
+      // Not an error: the App just isn't installed on this repo (yet). Nothing is saved
+      // until it is. The App is named because GitHub answers 404 identically when this
+      // deployment is carrying the wrong App's credentials - a production install of
+      // "rankcli" is invisible to a deployment holding the "rankcli-dev" key, and the
+      // user, who did everything right, gets told to install what they just installed.
+      const app = await getAppIdentity(githubPrivateKey, githubAppId);
+      const named = app ? `The ${app.slug} GitHub App (id ${app.id})` : 'The RankCLI GitHub App';
+      return json({
+        linked: false,
+        code: 'app_not_installed',
+        app: app?.slug ?? null,
+        reason: `${named} is not installed on ${owner}/${repoName}. Install it on this repository, then connect again - and if that App name is not the one you installed, this deployment is configured with the wrong GITHUB_APP_ID / GITHUB_PRIVATE_KEY.`,
+      });
     }
 
     const installationToken = await getInstallationToken(installationId, githubPrivateKey, githubAppId);
