@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import {
   ChevronDown,
   Download,
@@ -60,6 +61,8 @@ interface IssuesListProps {
   hasGitHub?: boolean;
   /** Opens the connect-repository dialog, so the button is useful before a repo is linked. */
   onConnectGitHub?: () => void;
+  /** Auto-fix PRs are BYOK: no key, no PR. null while still unknown. */
+  hasAIKey?: boolean | null;
   /** PRs this report has opened / may open. create-seo-pr is what enforces the cap. */
   prsUsedForReport?: number;
   prsAllowedForReport?: number;
@@ -74,6 +77,7 @@ export function IssuesList({
   isCreatingPR = false,
   hasGitHub = false,
   onConnectGitHub,
+  hasAIKey,
   prsUsedForReport,
   prsAllowedForReport,
   onIssuesUpdated,
@@ -229,6 +233,17 @@ export function IssuesList({
       : null;
   const prsExhausted = prsRemaining === 0;
 
+  // Auto-fix PRs need a connected repo AND the user's own AI key. hasAIKey === null means
+  // we don't know yet, so nothing is claimed missing.
+  const needsAIKey = hasAIKey === false;
+  const prBlocker = !hasGitHub
+    ? 'Connect a GitHub repository to open fix PRs'
+    : needsAIKey
+      ? 'Auto-fix PRs run on your own AI provider key - add one to enable them'
+      : prsExhausted
+        ? `This report has opened its ${prsAllowedForReport} PRs. Run a new audit to open more.`
+        : null;
+
   const showCheckboxes = issues.length > 0;
   const hasSelection = selectedIds.size > 0;
 
@@ -253,21 +268,22 @@ export function IssuesList({
                 variant="outline"
                 size="sm"
                 className="gap-2"
-                onClick={hasGitHub ? onCreateFixPR : onConnectGitHub}
-                disabled={isCreatingPR || (hasGitHub && prsExhausted)}
-                title={
-                  !hasGitHub
-                    ? 'Connect a GitHub repository to open fix PRs'
-                    : prsExhausted
-                      ? `This report has opened its ${prsAllowedForReport} PRs. Run a new audit to open more.`
-                      : 'Open a PR that fixes the issues in this report'
-                }
+                onClick={!hasGitHub ? onConnectGitHub : needsAIKey ? undefined : onCreateFixPR}
+                asChild={needsAIKey && hasGitHub}
+                disabled={isCreatingPR || (hasGitHub && !needsAIKey && prsExhausted)}
+                title={prBlocker ?? 'Open a PR that fixes the issues in this report'}
               >
                 {isCreatingPR ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Creating PR...
                   </>
+                ) : needsAIKey && hasGitHub ? (
+                  // The only prerequisite that lives on another page.
+                  <Link to="/account?tab=ai-provider">
+                    <GitPullRequest className="h-4 w-4" />
+                    Add an AI key to fix
+                  </Link>
                 ) : (
                   <>
                     <GitPullRequest className="h-4 w-4" />

@@ -81,6 +81,8 @@ export function ProjectPage() {
   // PRs the latest report has already opened, and its allowance, so the button can say
   // "2 of 3 left" before the user clicks rather than after.
   const [reportPrs, setReportPrs] = useState<{ used: number; allowed: number } | null>(null);
+  // null until known, so the button doesn't flash the wrong prerequisite.
+  const [hasAIKey, setHasAIKey] = useState<boolean | null>(null);
 
   // Track pending audit for SSE connection
   const [pendingAuditId, setPendingAuditId] = useState<string | null>(null);
@@ -201,6 +203,22 @@ export function ProjectPage() {
   };
 
   const latestAudit = audits.find((a) => a.status === 'completed');
+
+  // Auto-fix PRs run on the user's own AI key - resolve-ai-config has no RankCLI-key
+  // fallback for any tier - so a missing key is a hard prerequisite, not a runtime
+  // surprise after the spinner. RLS scopes this to the caller's own rows.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const { count, error } = await supabase
+        .from('user_ai_keys')
+        .select('provider', { count: 'exact', head: true });
+      if (active && !error) setHasAIKey((count ?? 0) > 0);
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // How many PRs the report on screen has already opened. create-seo-pr caps it per
   // report (PRS_PER_REPORT); knowing the count up front means the button can show what
@@ -718,6 +736,7 @@ export function ProjectPage() {
             isCreatingPR={isCreatingPR}
             hasGitHub={!!(project.github_repo_url && project.github_installation_id)}
             onConnectGitHub={() => setShowGitHubModal(true)}
+            hasAIKey={hasAIKey}
             prsUsedForReport={reportPrs?.used}
             prsAllowedForReport={reportPrs?.allowed}
           />
