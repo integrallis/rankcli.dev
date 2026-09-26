@@ -24,24 +24,30 @@ Comprehensive manual testing script covering all user personas and features.
 | Persona | Access Level | Primary Interface | Key Features |
 |---------|--------------|-------------------|--------------|
 | **Free (No Login)** | Anonymous | Web | Free tools only, 280 checks (limited results shown) |
-| **Free Registered** | Account | Web + CLI (limited) | 100 checks, 1 site, 2 domains/month, audit history |
+| **Free Registered** | Account | Web + CLI | 280 checks, 1 site audited weekly, 2 domains/month, audit history, 3 auto-fix PRs/month |
 | **Solo ($9/mo)** | Paid | Web + CLI | 3 sites, 280 checks, weekly audits, 5 domains/cycle |
 | **Pro ($29/mo)** | Paid | Web + CLI | 10 sites, daily audits, GitHub PRs, Slack alerts, 15 domains/cycle |
 | **Agency ($99/mo)** | Paid | Web + CLI | 50 sites, hourly audits, white-label, unlimited domains |
 
 ### Feature Matrix by Tier
 
+Source of truth: `packages/saas/src/config/pricing-tiers.json`. The rows below were wrong
+about three features and were corrected against it (and against what the code enforces):
+free registered users **do** get GitHub connect and auto-fix PRs (3 a month, capped in
+`create-seo-pr`), and they **do not** get API access (`validate-api-key` answers 403 with
+"API access requires a paid subscription").
+
 | Feature | Free | Free Registered | Solo | Pro | Agency |
 |---------|------|-----------------|------|-----|--------|
-| SEO Checks | 280 (10 shown) | 100 | 280 | 280 | 280 |
+| SEO Checks | 280 (10 shown) | 280 | 280 | 280 | 280 |
 | Sites/Projects | 0 | 1 | 3 | 10 | 50 |
 | Domains/Cycle | N/A | 2/month | 5 | 15 | Unlimited |
-| Audit Schedule | Manual only | Manual only | Weekly | Daily | Hourly |
-| GitHub Connect | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Auto-Fix PRs | ❌ | ❌ | ❌ | ✅ | ✅ |
-| Slack/Discord Alerts | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Audit Schedule | Manual only | Weekly | Weekly | Daily | Hourly |
+| GitHub Connect | ❌ | ✅ | ✅ | ✅ | ✅ |
+| Auto-Fix PRs | ❌ | 3/month | Unlimited | Unlimited | Unlimited |
+| Slack/Discord Alerts | ❌ | ❌ | ✅ | ✅ | ✅ |
 | White-Label Reports | ❌ | ❌ | ❌ | ❌ | ✅ |
-| API Access | ❌ | ✅ | ✅ | ✅ | ✅ |
+| API Access | ❌ | ❌ | ✅ (100/day) | ✅ (1K/day) | ✅ (10K/day) |
 | AI Analysis | ❌ | ❌ | ✅ | ✅ | ✅ |
 | Keyword Research | ❌ | ❌ | ✅ | ✅ | ✅ |
 | Competitor Tracking | ❌ | ❌ | ❌ | 3 competitors | 10 competitors |
@@ -367,7 +373,7 @@ SELECT cleanup_stuck_audits();
 | 3A.4.5 | Repo shows connected | View project | Shows connected repo badge | ☐ MANUAL |
 | 3A.4.6 | Disconnect repo | Disconnect repository | Repo unlinked from project | ☐ MANUAL |
 
-### 3A.5 Auto-Fix PRs (Pro & Agency ONLY)
+### 3A.5 Auto-Fix PRs (every plan; Free is capped at 3 a month, paid plans unlimited)
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|

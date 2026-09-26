@@ -14,9 +14,10 @@ Website: https://rankcli.dev
 
 **Status**: MVP development - SaaS platform with CLI (see `packages/` for the monorepo layout)
 
-## Test Repo: animerm.ai
+## Test Site: animerm.ai
 
-There's a real SaaS at `test_repos/animerm.ai` to test against:
+A real SaaS to audit against (the site is live; its source is **not** in this repo -
+`test_repos/animerm.ai` does not exist here, so audit the URL rather than looking for files):
 
 **Product**: animerm.ai - Animate your Mermaid diagrams with Keynote-style controls
 **URL**: https://animerm.ai
@@ -41,6 +42,18 @@ pnpm dev               # Start dev server on localhost:3005
 
 # Development deployment
 ./scripts/dev-deploy.sh   # Full dev setup (migrations, functions, server)
+```
+
+### Running the CLI from this repo
+
+A monorepo build has no injected production config (`inject-config` runs at publish), so
+cloud sync fails until you pass it:
+
+```bash
+cd packages/agent-runtime && pnpm build      # cli bundles this; dist/ is gitignored and
+                                             # goes stale, which makes CLI tests fail oddly
+cd ../cli && pnpm build:js
+RANKCLI_SUPABASE_URL=... RANKCLI_SUPABASE_ANON_KEY=... node dist/index.js audit -u <url>
 ```
 
 ## Taglines
