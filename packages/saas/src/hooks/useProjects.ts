@@ -242,6 +242,15 @@ interface CreatePRResult {
   filesChanged?: number;
   issuesFixed?: number;
   error?: string;
+  /** The report needed no PR (already covered, or the repo already matches). Not a failure. */
+  noop?: boolean;
+  message?: string;
+  code?: string;
+  /** PRs this report has already opened, and how many it may. */
+  prsForReport?: number;
+  prsAllowedForReport?: number;
+  prUrls?: string[];
+  unchangedFiles?: string[];
 }
 
 // Hook for single project with full details
@@ -380,8 +389,14 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
 
       const result = await response.json();
 
+      const allowance = {
+        prsForReport: result.prsForReport,
+        prsAllowedForReport: result.prsAllowedForReport,
+        prUrls: result.prUrls,
+      };
+
       if (!response.ok) {
-        return { success: false, error: result.error || 'Failed to create PR' };
+        return { success: false, error: result.error || 'Failed to create PR', code: result.code, ...allowance };
       }
 
       if (result.prCreated) {
@@ -393,10 +408,19 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
           prNumber: result.prNumber,
           filesChanged: result.filesChanged,
           issuesFixed: result.issuesFixed,
+          unchangedFiles: result.unchangedFiles,
+          ...allowance,
         };
-      } else {
-        return { success: false, error: result.message || 'PR not created' };
       }
+
+      // No PR, no failure: the repo already matches the report, or every fixable issue
+      // is in a PR already. Reported as a no-op so the UI doesn't cry wolf.
+      return {
+        success: true,
+        noop: true,
+        message: result.message || 'Nothing to change',
+        ...allowance,
+      };
     } catch (err) {
       console.error('Error creating fix PR:', err);
       return { success: false, error: err instanceof Error ? err.message : 'Failed to create PR' };

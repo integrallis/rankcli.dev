@@ -28,6 +28,7 @@ import { useAuditSSE } from '@/hooks/useAuditSSE';
 import { cn } from '@/lib/utils';
 import { formatLocalDate, formatCountdown, parseNextAllowedAt, getTimeRemaining } from '@/lib/date-utils';
 import type { Project } from '@/integrations/supabase/types';
+import { supabase } from '@/integrations/supabase/client';
 import { ConnectGitHubModal } from '@/components/project/ConnectGitHubModal';
 import { ProjectSettingsModal } from '@/components/project/ProjectSettingsModal';
 import { IssuesList } from '@/components/project/IssuesList';
@@ -42,6 +43,10 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
+// Kept in step with PRS_PER_REPORT in supabase/functions/create-seo-pr, which is what
+// actually enforces it. Only used to label the button before the first attempt; every
+// response carries the server's own numbers, which win.
+const PRS_PER_REPORT = 3;
 
 export function ProjectPage() {
   const { id: projectId } = useParams();
@@ -69,10 +74,13 @@ export function ProjectPage() {
   const [isDeletingOldAudits, setIsDeletingOldAudits] = useState(false);
   const [isCreatingPR, setIsCreatingPR] = useState(false);
   const [notification, setNotification] = useState<{
-    type: 'success' | 'error';
+    type: 'success' | 'error' | 'info';
     message: string;
     prUrl?: string;
   } | null>(null);
+  // PRs the latest report has already opened, and its allowance, so the button can say
+  // "2 of 3 left" before the user clicks rather than after.
+  const [reportPrs, setReportPrs] = useState<{ used: number; allowed: number } | null>(null);
 
   // Track pending audit for SSE connection
   const [pendingAuditId, setPendingAuditId] = useState<string | null>(null);
@@ -193,6 +201,29 @@ export function ProjectPage() {
   };
 
   const latestAudit = audits.find((a) => a.status === 'completed');
+
+  // How many PRs the report on screen has already opened. create-seo-pr caps it per
+  // report (PRS_PER_REPORT); knowing the count up front means the button can show what
+  // is left instead of only telling the user once they hit the wall.
+  useEffect(() => {
+    const auditId = latestAudit?.id;
+    if (!auditId) {
+      setReportPrs(null);
+      return;
+    }
+    let active = true;
+    (async () => {
+      const { count, error } = await supabase
+        .from('github_prs')
+        .select('id', { count: 'exact', head: true })
+        .eq('audit_id', auditId);
+      if (active && !error) setReportPrs({ used: count ?? 0, allowed: PRS_PER_REPORT });
+    })();
+    return () => {
+      active = false;
+    };
+  }, [latestAudit?.id]);
+
   const pendingAudit = audits.find((a) => a.status === 'pending' || a.status === 'running');
 
   // Get check counts from the audit
@@ -256,11 +287,25 @@ export function ProjectPage() {
     try {
       const result = await createFixPR(latestAudit.id);
 
+      if (result.prsForReport !== undefined && result.prsAllowedForReport !== undefined) {
+        setReportPrs({ used: result.prsForReport, allowed: result.prsAllowedForReport });
+      }
+
       if (result.success && result.prUrl) {
+        const skipped = result.unchangedFiles?.length
+          ? ` (${result.unchangedFiles.length} file${result.unchangedFiles.length === 1 ? '' : 's'} already up to date)`
+          : '';
         setNotification({
           type: 'success',
-          message: `PR #${result.prNumber} created with ${result.filesChanged} files changed, fixing ${result.issuesFixed} issues`,
+          message: `PR #${result.prNumber} created with ${result.filesChanged} files changed, fixing ${result.issuesFixed} issues${skipped}`,
           prUrl: result.prUrl,
+        });
+      } else if (result.noop) {
+        // Nothing needed doing. Say that plainly instead of dressing it up as a failure.
+        setNotification({
+          type: 'info',
+          message: result.message || 'Nothing to change',
+          prUrl: result.prUrls?.[0],
         });
       } else {
         setNotification({
@@ -337,14 +382,16 @@ export function ProjectPage() {
               'mb-6 p-4 rounded-lg flex items-center justify-between',
               notification.type === 'success'
                 ? 'bg-green-500/10 border border-green-500/30 text-green-600'
-                : 'bg-red-500/10 border border-red-500/30 text-red-600'
+                : notification.type === 'info'
+                  ? 'bg-muted border text-muted-foreground'
+                  : 'bg-red-500/10 border border-red-500/30 text-red-600'
             )}
           >
             <div className="flex items-center gap-3">
-              {notification.type === 'success' ? (
-                <GitPullRequest className="h-5 w-5" />
-              ) : (
+              {notification.type === 'error' ? (
                 <XCircle className="h-5 w-5" />
+              ) : (
+                <GitPullRequest className="h-5 w-5" />
               )}
               <span>{notification.message}</span>
               {notification.prUrl && (
@@ -670,6 +717,9 @@ export function ProjectPage() {
             onCreateFixPR={handleCreateFixPR}
             isCreatingPR={isCreatingPR}
             hasGitHub={!!(project.github_repo_url && project.github_installation_id)}
+            onConnectGitHub={() => setShowGitHubModal(true)}
+            prsUsedForReport={reportPrs?.used}
+            prsAllowedForReport={reportPrs?.allowed}
           />
         )}
 

@@ -12,6 +12,27 @@ import { getEntitlement } from '../_shared/tier.ts';
 // (Solo's are naturally bounded by its 3 sites).
 const FREE_PRS_PER_MONTH = 3;
 
+// How many PRs one audit report may open, on every plan. A report is a snapshot of one
+// moment: the first PR takes the fixable issues, and a follow-up is only useful for what
+// it left behind - issues from a PR that was closed unmerged, or ones the AI skipped.
+// Capping it there means a double-click, a retry, or a loop can't bury a repo in
+// near-identical PRs off a single audit. Run a new audit to get a new allowance.
+const PRS_PER_REPORT = 3;
+
+// Same file, same bytes. Compared ignoring line endings and a trailing newline, so a PR
+// is never opened over a difference that no reviewer would call a change.
+function sameContent(a: string, b: string): boolean {
+  return a.replace(/\r\n/g, '\n').trimEnd() === b.replace(/\r\n/g, '\n').trimEnd();
+}
+
+// A "nothing to do" answer. 200, not an error: the caller asked for the repo to match the
+// report and it already does. `noop` is what the UI keys on to say so calmly.
+function noop(message: string, extra: Record<string, unknown> = {}): Response {
+  return new Response(JSON.stringify({ success: true, prCreated: false, noop: true, message, ...extra }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -640,6 +661,34 @@ serve(async (req) => {
       });
     }
 
+    // What this report has already opened. Ordered oldest first so the message names
+    // them in the order they happened.
+    const { data: reportPrRows, error: reportPrError } = await supabase
+      .from('github_prs')
+      .select('pr_number, pr_url, pr_state, issue_ids')
+      .eq('audit_id', targetAuditId)
+      .order('created_at', { ascending: true });
+    if (reportPrError) {
+      return new Response(JSON.stringify({ error: `Could not read this report's PRs: ${reportPrError.message}` }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const reportPrs = reportPrRows ?? [];
+
+    if (reportPrs.length >= PRS_PER_REPORT) {
+      return new Response(JSON.stringify({
+        error: `This report has already opened its ${PRS_PER_REPORT} PRs (${reportPrs.map((p) => `#${p.pr_number}`).join(', ')}). Run a new audit to open more.`,
+        code: 'report_pr_limit_reached',
+        prsForReport: reportPrs.length,
+        prsAllowedForReport: PRS_PER_REPORT,
+        prUrls: reportPrs.map((p) => p.pr_url),
+      }), {
+        status: 409,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Issues that CANNOT be auto-fixed (require manual intervention or architectural changes)
     const NON_FIXABLE_CODES = [
       // These require SSR/architectural changes
@@ -652,23 +701,38 @@ serve(async (req) => {
       'CANONICAL_WWW_DUPLICATE',
     ];
 
-    // Get ALL issues except those that can't be auto-fixed
+    // Issues this report still needs a PR for. 'fixing' is included because that is what
+    // opening a PR sets them to: without it, a PR that was closed unmerged would leave its
+    // issues permanently unfixable.
     const { data: rawIssues } = await supabase
       .from('audit_issues')
       .select('id, code, severity, category, title, description, how_to_fix, details')
       .eq('audit_id', targetAuditId)
-      .eq('status', 'open');
+      .in('status', ['open', 'fixing']);
 
-    // Filter out non-fixable issues
-    const fixableIssues = rawIssues?.filter(i => !NON_FIXABLE_CODES.includes(i.code)) || [];
+    // An issue carried by a PR that is still open, or merged, is spoken for. Closing a PR
+    // unmerged hands its issues back, so a follow-up PR can try them again.
+    const claimedIssueIds = new Set(
+      reportPrs.filter((p) => p.pr_state !== 'closed').flatMap((p) => p.issue_ids ?? [])
+    );
 
-    if (!fixableIssues || fixableIssues.length === 0) {
-      return new Response(JSON.stringify({
-        success: true,
-        message: 'No auto-fixable issues found',
-        prCreated: false,
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    const fixableIssues = (rawIssues ?? []).filter(
+      (i) => !NON_FIXABLE_CODES.includes(i.code) && !claimedIssueIds.has(i.id)
+    );
+
+    if (fixableIssues.length === 0) {
+      // Nothing to do, and the reason matters: a report whose issues are all already in a
+      // PR is a no-op, not an empty report.
+      if (claimedIssueIds.size > 0) {
+        const open = reportPrs.filter((p) => p.pr_state === 'open');
+        return noop(
+          `Every auto-fixable issue on this report is already in ${open.length === 1 ? 'a PR' : 'a PR'} (${reportPrs.map((p) => `#${p.pr_number}`).join(', ')}). Nothing new to open.`,
+          { prUrls: reportPrs.map((p) => p.pr_url), prsForReport: reportPrs.length, prsAllowedForReport: PRS_PER_REPORT }
+        );
+      }
+      return noop('No auto-fixable issues on this report.', {
+        prsForReport: reportPrs.length,
+        prsAllowedForReport: PRS_PER_REPORT,
       });
     }
 
@@ -751,16 +815,42 @@ serve(async (req) => {
     );
 
     if (!aiResult.files || aiResult.files.length === 0) {
-      return new Response(JSON.stringify({
-        success: true,
-        message: 'AI could not generate fixes for these issues',
-        prCreated: false,
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      return noop('The AI could not generate fixes for these issues.', {
+        prsForReport: reportPrs.length,
+        prsAllowedForReport: PRS_PER_REPORT,
       });
     }
 
     console.log(`AI generated ${aiResult.files.length} file changes`);
+
+    // Keep only files that would actually change the repo. Re-running a report over a
+    // codebase that already carries the fixes used to open a PR containing nothing:
+    // a branch, a commit per file, and no diff for the reviewer to look at.
+    const changedFiles: FileChange[] = [];
+    const unchangedPaths: string[] = [];
+    for (const file of aiResult.files) {
+      const existing = await fetchFileContent(token, owner, repoName, file.path);
+      if (existing !== null && sameContent(existing, file.content)) {
+        unchangedPaths.push(file.path);
+      } else {
+        changedFiles.push(file);
+      }
+    }
+
+    if (changedFiles.length === 0) {
+      console.log('All generated files match the repository; no PR opened');
+      return noop(
+        `Your repository already matches the ${unchangedPaths.length} file${unchangedPaths.length === 1 ? '' : 's'} we would have changed. No PR opened.`,
+        {
+          unchangedFiles: unchangedPaths,
+          prsForReport: reportPrs.length,
+          prsAllowedForReport: PRS_PER_REPORT,
+        }
+      );
+    }
+    if (unchangedPaths.length > 0) {
+      console.log(`Skipping ${unchangedPaths.length} unchanged file(s): ${unchangedPaths.join(', ')}`);
+    }
 
     // Create branch and commit files
     const { sha: baseSha, branch: defaultBranch } = await getDefaultBranchSha(token, owner, repoName);
@@ -769,7 +859,7 @@ serve(async (req) => {
     console.log(`Creating branch ${branchName}...`);
     await createBranch(token, owner, repoName, branchName, baseSha);
 
-    for (const file of aiResult.files) {
+    for (const file of changedFiles) {
       console.log(`Creating/updating ${file.path}...`);
       await createOrUpdateFile(token, owner, repoName, branchName, file.path, file.content, file.message);
     }
@@ -792,7 +882,8 @@ ${aiResult.summary}
 
 ### Files Modified
 
-${aiResult.files.map((f: FileChange) => `- \`${f.path}\``).join('\n')}
+${changedFiles.map((f: FileChange) => `- \`${f.path}\``).join('\n')}
+${unchangedPaths.length > 0 ? `\n_Already up to date, left alone: ${unchangedPaths.map((p) => `\`${p}\``).join(', ')}._` : ''}
 
 ### How This Works
 
@@ -828,7 +919,7 @@ ${aiResult.files.map((f: FileChange) => `- \`${f.path}\``).join('\n')}
       pr_title: prTitle,
       pr_state: 'open',
       branch_name: branchName,
-      files_changed: aiResult.files.length,
+      files_changed: changedFiles.length,
       issue_ids: issueIds,
     });
     if (prInsertError) {
@@ -858,8 +949,12 @@ ${aiResult.files.map((f: FileChange) => `- \`${f.path}\``).join('\n')}
       prCreated: true,
       prUrl: pr.url,
       prNumber: pr.number,
-      filesChanged: aiResult.files.length,
+      filesChanged: changedFiles.length,
+      unchangedFiles: unchangedPaths,
       issuesFixed: issues.length,
+      // One more PR has been opened against this report than the caller last saw.
+      prsForReport: reportPrs.length + 1,
+      prsAllowedForReport: PRS_PER_REPORT,
       framework,
       summary: aiResult.summary,
     }), {

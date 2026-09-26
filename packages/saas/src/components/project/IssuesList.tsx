@@ -58,6 +58,11 @@ interface IssuesListProps {
   onCreateFixPR?: () => void;
   isCreatingPR?: boolean;
   hasGitHub?: boolean;
+  /** Opens the connect-repository dialog, so the button is useful before a repo is linked. */
+  onConnectGitHub?: () => void;
+  /** PRs this report has opened / may open. create-seo-pr is what enforces the cap. */
+  prsUsedForReport?: number;
+  prsAllowedForReport?: number;
   onIssuesUpdated?: () => void;
 }
 
@@ -68,6 +73,9 @@ export function IssuesList({
   onCreateFixPR,
   isCreatingPR = false,
   hasGitHub = false,
+  onConnectGitHub,
+  prsUsedForReport,
+  prsAllowedForReport,
   onIssuesUpdated,
 }: IssuesListProps) {
   const [groupBy, setGroupBy] = useState<GroupBy>('severity');
@@ -214,6 +222,13 @@ export function IssuesList({
   const errorCount = issues.filter((i) => i.severity === 'error').length;
   const warningCount = issues.filter((i) => i.severity === 'warning').length;
 
+  // The report's remaining PR allowance, once we know it.
+  const prsRemaining =
+    prsAllowedForReport !== undefined && prsUsedForReport !== undefined
+      ? Math.max(0, prsAllowedForReport - prsUsedForReport)
+      : null;
+  const prsExhausted = prsRemaining === 0;
+
   const showCheckboxes = issues.length > 0;
   const hasSelection = selectedIds.size > 0;
 
@@ -230,14 +245,23 @@ export function IssuesList({
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Create Fix PR Button */}
-            {hasGitHub && onCreateFixPR && (
+            {/* Fix this report in a PR. Shown even without a repo connected - it is the
+                whole point of the product, and hiding it made it undiscoverable; with no
+                repo it opens the connect dialog instead. */}
+            {(onCreateFixPR || onConnectGitHub) && (
               <Button
                 variant="outline"
                 size="sm"
                 className="gap-2"
-                onClick={onCreateFixPR}
-                disabled={isCreatingPR}
+                onClick={hasGitHub ? onCreateFixPR : onConnectGitHub}
+                disabled={isCreatingPR || (hasGitHub && prsExhausted)}
+                title={
+                  !hasGitHub
+                    ? 'Connect a GitHub repository to open fix PRs'
+                    : prsExhausted
+                      ? `This report has opened its ${prsAllowedForReport} PRs. Run a new audit to open more.`
+                      : 'Open a PR that fixes the issues in this report'
+                }
               >
                 {isCreatingPR ? (
                   <>
@@ -247,7 +271,12 @@ export function IssuesList({
                 ) : (
                   <>
                     <GitPullRequest className="h-4 w-4" />
-                    Create Fix PR
+                    {hasGitHub ? 'Fix in a PR' : 'Connect repo to fix'}
+                    {hasGitHub && prsRemaining !== null && (
+                      <span className="text-xs text-muted-foreground">
+                        {prsRemaining} left
+                      </span>
+                    )}
                   </>
                 )}
               </Button>
