@@ -27,7 +27,17 @@ import {
   createPullRequest,
 } from '../_shared/github-repo.ts';
 import { getEntitlement } from '../_shared/tier.ts';
-import { generateWorkflow, generateSecretsDoc, type WorkflowConfig } from '../_shared/audit/index.ts';
+// The Deno bundle is emitted JS re-exported by a .ts wrapper, so its runtime values cross
+// over but its types do not - importing WorkflowConfig from it fails type-check. Mirrored
+// here instead; agent-runtime's tracking/github-action-template.ts holds the original.
+import { generateWorkflow, generateSecretsDoc } from '../_shared/audit/index.ts';
+
+interface WorkflowConfig {
+  schedule: 'daily' | 'weekly' | 'monthly' | 'manual';
+  siteUrl: string;
+  features: { audit: boolean; autoFix: boolean; createIssues: boolean; createPRs: boolean };
+  syncToDashboard?: boolean;
+}
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
