@@ -35,6 +35,8 @@ vi.mock('@/integrations/supabase/client', () => ({
       single: vi.fn().mockResolvedValue({ data: null, error: null }),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
+      gte: vi.fn().mockResolvedValue({ count: 0, error: null }),
+      is: vi.fn().mockReturnThis(),
     })),
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: { access_token: 'token' } } }),

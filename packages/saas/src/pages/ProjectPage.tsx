@@ -242,10 +242,14 @@ export function ProjectPage() {
   useEffect(() => {
     let active = true;
     (async () => {
-      const { count, error } = await supabase
-        .from('user_ai_keys')
-        .select('provider', { count: 'exact', head: true });
-      if (active && !error) setHasAIKey((count ?? 0) > 0);
+      try {
+        const { count, error } = await supabase
+          .from('user_ai_keys')
+          .select('provider', { count: 'exact', head: true });
+        if (active && !error) setHasAIKey((count ?? 0) > 0);
+      } catch {
+        // Leave it unknown rather than claiming a missing key.
+      }
     })();
     return () => {
       active = false;
@@ -257,15 +261,19 @@ export function ProjectPage() {
   useEffect(() => {
     let active = true;
     (async () => {
-      const monthStart = new Date();
-      monthStart.setUTCDate(1);
-      monthStart.setUTCHours(0, 0, 0, 0);
-      const { count, error } = await supabase
-        .from('github_prs')
-        .select('id', { count: 'exact', head: true })
-        .eq('kind', 'auto_fix')
-        .gte('created_at', monthStart.toISOString());
-      if (active && !error) setPrsThisMonth(count ?? 0);
+      try {
+        const monthStart = new Date();
+        monthStart.setUTCDate(1);
+        monthStart.setUTCHours(0, 0, 0, 0);
+        const { count, error } = await supabase
+          .from('github_prs')
+          .select('id', { count: 'exact', head: true })
+          .eq('kind', 'auto_fix')
+          .gte('created_at', monthStart.toISOString());
+        if (active && !error) setPrsThisMonth(count ?? 0);
+      } catch {
+        // No number is better than a wrong one; the server enforces the cap regardless.
+      }
     })();
     return () => {
       active = false;
@@ -283,11 +291,15 @@ export function ProjectPage() {
     }
     let active = true;
     (async () => {
-      const { count, error } = await supabase
-        .from('github_prs')
-        .select('id', { count: 'exact', head: true })
-        .eq('audit_id', auditId);
-      if (active && !error) setReportPrs({ used: count ?? 0, allowed: PRS_PER_REPORT });
+      try {
+        const { count, error } = await supabase
+          .from('github_prs')
+          .select('id', { count: 'exact', head: true })
+          .eq('audit_id', auditId);
+        if (active && !error) setReportPrs({ used: count ?? 0, allowed: PRS_PER_REPORT });
+      } catch {
+        // As above - the cap is enforced server-side.
+      }
     })();
     return () => {
       active = false;
