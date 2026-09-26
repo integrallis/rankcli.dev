@@ -8,9 +8,17 @@ import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provide
 import { resolveAIConfig, aiConfigErrorMessage } from '../_shared/resolve-ai-config.ts';
 import { getEntitlement } from '../_shared/tier.ts';
 
-// pricing-tiers.json: Free includes 3 auto-fix PRs a calendar month; paid plans are unlimited
-// (Solo's are naturally bounded by its 3 sites).
-const FREE_PRS_PER_MONTH = 3;
+// The monthly auto-fix PR allowance comes from _shared/tier.ts (limits.autoFixPrsPerMonth,
+// null = unlimited) - one definition, shared with validate-api-key and the dashboard.
+
+// At most this many RankCLI auto-fix PRs may be open on a project at once. Neither the
+// monthly nor the per-report cap bounds the automated path: every push produces a new
+// audit, so a new report, so a fresh per-report allowance - and paid plans have no monthly
+// cap at all. An active repo on Pro ("audited daily and on every push") could therefore
+// accumulate PRs without limit. One open PR at a time is self-regulating: merge or close
+// it and the next audit picks up whatever is left, which is how Dependabot behaves. An
+// already-open PR is a skip, not a failure, so the push-triggered path stays quiet.
+const MAX_OPEN_AUTO_FIX_PRS = 1;
 
 // How many PRs one audit report may open, on every plan. A report is a snapshot of one
 // moment: the first PR takes the fixable issues, and a follow-up is only useful for what
@@ -571,8 +579,14 @@ serve(async (req) => {
       });
     }
 
-    const { tier } = await getEntitlement(supabase, project.user_id);
-    if (tier === 'free') {
+    const { tier, planName, limits } = await getEntitlement(supabase, project.user_id);
+
+    // Monthly allowance. null = unlimited. Only auto-fix PRs count: a CI-setup PR is a
+    // one-off template commit and charging quota for the thing that gets SEO into CI
+    // would be taxing the on-ramp.
+    const monthlyAllowance = limits.autoFixPrsPerMonth;
+    let prsThisMonth = 0;
+    if (monthlyAllowance !== null) {
       const monthStart = new Date();
       monthStart.setUTCDate(1);
       monthStart.setUTCHours(0, 0, 0, 0);
@@ -580,16 +594,44 @@ serve(async (req) => {
         .from('github_prs')
         .select('id, projects!inner(user_id)', { count: 'exact', head: true })
         .eq('projects.user_id', project.user_id)
+        .eq('kind', 'auto_fix')
         .gte('created_at', monthStart.toISOString());
-      if ((count ?? 0) >= FREE_PRS_PER_MONTH) {
+      prsThisMonth = count ?? 0;
+      if (prsThisMonth >= monthlyAllowance) {
         return new Response(JSON.stringify({
-          error: `The Free plan includes ${FREE_PRS_PER_MONTH} auto-fix PRs a month, and this month's are used. Upgrade to Solo for unlimited auto-fix PRs: https://rankcli.dev/pricing`,
+          error: `The ${planName} plan includes ${monthlyAllowance} auto-fix PRs a month, and this month's are used. Upgrade for unlimited auto-fix PRs: https://rankcli.dev/pricing`,
           code: 'pr_limit_reached',
+          prsThisMonth,
+          prsAllowedThisMonth: monthlyAllowance,
+          tier,
         }), {
           status: 402,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+    }
+
+    // One open auto-fix PR at a time (see MAX_OPEN_AUTO_FIX_PRS). A skip, not an error -
+    // the push-triggered path hits this constantly by design and must stay quiet.
+    const { data: openPrs, error: openPrsError } = await supabase
+      .from('github_prs')
+      .select('pr_number, pr_url')
+      .eq('project_id', project.id)
+      .eq('kind', 'auto_fix')
+      .eq('pr_state', 'open')
+      .order('created_at', { ascending: false });
+    if (openPrsError) {
+      return new Response(JSON.stringify({ error: `Could not read open PRs: ${openPrsError.message}` }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    if ((openPrs?.length ?? 0) >= MAX_OPEN_AUTO_FIX_PRS) {
+      const open = openPrs![0];
+      return noop(
+        `PR #${open.pr_number} is still open for this project. Merge or close it and the next audit picks up whatever it didn't fix.`,
+        { code: 'open_pr_exists', prUrls: openPrs!.map((p) => p.pr_url), prsThisMonth, prsAllowedThisMonth: monthlyAllowance }
+      );
     }
 
     const aiResolution = await resolveAIConfig(supabase, project.user_id);
@@ -682,6 +724,8 @@ serve(async (req) => {
         code: 'report_pr_limit_reached',
         prsForReport: reportPrs.length,
         prsAllowedForReport: PRS_PER_REPORT,
+        prsThisMonth,
+        prsAllowedThisMonth: monthlyAllowance,
         prUrls: reportPrs.map((p) => p.pr_url),
       }), {
         status: 409,
@@ -727,12 +771,14 @@ serve(async (req) => {
         const open = reportPrs.filter((p) => p.pr_state === 'open');
         return noop(
           `Every auto-fixable issue on this report is already in ${open.length === 1 ? 'a PR' : 'a PR'} (${reportPrs.map((p) => `#${p.pr_number}`).join(', ')}). Nothing new to open.`,
-          { prUrls: reportPrs.map((p) => p.pr_url), prsForReport: reportPrs.length, prsAllowedForReport: PRS_PER_REPORT }
+          { prUrls: reportPrs.map((p) => p.pr_url), prsForReport: reportPrs.length, prsAllowedForReport: PRS_PER_REPORT, prsThisMonth, prsAllowedThisMonth: monthlyAllowance }
         );
       }
       return noop('No auto-fixable issues on this report.', {
         prsForReport: reportPrs.length,
         prsAllowedForReport: PRS_PER_REPORT,
+        prsThisMonth,
+        prsAllowedThisMonth: monthlyAllowance,
       });
     }
 
@@ -818,6 +864,8 @@ serve(async (req) => {
       return noop('The AI could not generate fixes for these issues.', {
         prsForReport: reportPrs.length,
         prsAllowedForReport: PRS_PER_REPORT,
+        prsThisMonth,
+        prsAllowedThisMonth: monthlyAllowance,
       });
     }
 
@@ -845,6 +893,8 @@ serve(async (req) => {
           unchangedFiles: unchangedPaths,
           prsForReport: reportPrs.length,
           prsAllowedForReport: PRS_PER_REPORT,
+          prsThisMonth,
+          prsAllowedThisMonth: monthlyAllowance,
         }
       );
     }
@@ -913,6 +963,7 @@ ${unchangedPaths.length > 0 ? `\n_Already up to date, left alone: ${unchangedPat
     const issueIds = issues.map((i: AuditIssue) => i.id);
     const { error: prInsertError } = await supabase.from('github_prs').insert({
       project_id: project.id,
+      kind: 'auto_fix',
       audit_id: targetAuditId,
       pr_number: pr.number,
       pr_url: pr.url,
@@ -955,6 +1006,8 @@ ${unchangedPaths.length > 0 ? `\n_Already up to date, left alone: ${unchangedPat
       // One more PR has been opened against this report than the caller last saw.
       prsForReport: reportPrs.length + 1,
       prsAllowedForReport: PRS_PER_REPORT,
+      prsThisMonth: prsThisMonth + 1,
+      prsAllowedThisMonth: monthlyAllowance,
       framework,
       summary: aiResult.summary,
     }), {

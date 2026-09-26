@@ -2,6 +2,13 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.23.0';
 import { getEntitlement } from '../_shared/tier.ts';
 
+// Callers whose requests spend the plan's metered API quota (limits.apiRequestsPerDay).
+// The CLI, the GitHub Action and the MCP server are free on every plan - they identify
+// themselves here so their audits sync and their entitlement resolves, and metering them
+// would be charging for the free tier. Add a REST API surface's endpoint name here when
+// one exists; until then nothing is metered and the daily counters are observability.
+const METERED_ENDPOINTS = new Set<string>([]);
+
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -86,17 +93,18 @@ serve(async (req) => {
     // as free; a canceled or expired subscription still kept its limit.
     const entitlement = await getEntitlement(supabase, keyData.user_id);
 
-    // Check if plan has API access
+    // This endpoint answers two different questions, and it used to answer both with one
+    // verdict: "whose key is this?" and "may this key spend metered API quota?". Because
+    // free has no metered quota, a valid Free key came back 403 "API access requires a
+    // paid subscription" - to the CLI, which then warned "API key rejected - auditing on
+    // the Free tier", and to the GitHub Action, which reported the key as invalid. Both
+    // are free on every plan, so the gate was denying the two surfaces we give away.
+    //
+    // Identity now always resolves for a valid key. The daily limit applies only to
+    // callers that actually spend metered quota; the first-party surfaces don't.
     const rateLimit = entitlement.limits.apiRequestsPerDay;
-    if (rateLimit === 0) {
-      return new Response(JSON.stringify({
-        error: 'API access requires a paid subscription (Solo, Pro, or Agency)',
-        upgrade_url: 'https://rankcli.dev/pricing'
-      }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    const endpoint = req.headers.get('X-Endpoint') || 'validate';
+    const metered = METERED_ENDPOINTS.has(endpoint);
 
     // Check rate limit - count requests today
     const today = new Date();
@@ -110,8 +118,10 @@ serve(async (req) => {
 
     const currentCount = requestCount || 0;
     const remaining = Math.max(0, rateLimit - currentCount);
+    // Clamped: an unmetered plan has a limit of 0, and "remaining: -1" is not an answer.
+    const remainingAfter = Math.max(0, remaining - 1);
 
-    if (currentCount >= rateLimit) {
+    if (metered && currentCount >= rateLimit) {
       return new Response(JSON.stringify({
         error: 'Rate limit exceeded',
         limit: rateLimit,
@@ -136,7 +146,7 @@ serve(async (req) => {
       .insert({
         api_key_id: keyData.id,
         user_id: keyData.user_id,
-        endpoint: req.headers.get('X-Endpoint') || 'validate',
+        endpoint,
         ip_address: req.headers.get('X-Forwarded-For') || req.headers.get('CF-Connecting-IP'),
       });
 
@@ -154,6 +164,10 @@ serve(async (req) => {
         sitesLimit: entitlement.limits.sites,
         status: entitlement.source === 'lifetime' ? 'lifetime' : 'active',
         source: entitlement.source,
+        /** Metered REST API quota. false on Free - the CLI/Action/MCP work regardless. */
+        apiAccess: rateLimit > 0,
+        /** null = unlimited. tier.ts is the one place this is defined. */
+        autoFixPrsPerMonth: entitlement.limits.autoFixPrsPerMonth,
       },
       key: {
         id: keyData.id,
@@ -161,7 +175,7 @@ serve(async (req) => {
       },
       rateLimit: {
         limit: rateLimit,
-        remaining: remaining - 1, // Account for this request
+        remaining: remainingAfter, // Account for this request
         resetsAt: new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString(),
       },
     }), {
@@ -169,7 +183,7 @@ serve(async (req) => {
         ...corsHeaders,
         'Content-Type': 'application/json',
         'X-RateLimit-Limit': rateLimit.toString(),
-        'X-RateLimit-Remaining': (remaining - 1).toString(),
+        'X-RateLimit-Remaining': remainingAfter.toString(),
         'X-RateLimit-Reset': new Date(today.getTime() + 24 * 60 * 60 * 1000).toISOString(),
       },
     });

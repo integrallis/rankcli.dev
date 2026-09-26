@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import {
   ChevronDown,
   Download,
@@ -63,6 +64,8 @@ interface IssuesListProps {
   onConnectGitHub?: () => void;
   /** Auto-fix PRs are BYOK: no key, no PR. null while still unknown. */
   hasAIKey?: boolean | null;
+  /** Arrived from the audit email's fix link - ring the button so it's findable. */
+  highlightFixPR?: boolean;
   /** PRs this report has opened / may open. create-seo-pr is what enforces the cap. */
   prsUsedForReport?: number;
   prsAllowedForReport?: number;
@@ -78,6 +81,7 @@ export function IssuesList({
   hasGitHub = false,
   onConnectGitHub,
   hasAIKey,
+  highlightFixPR = false,
   prsUsedForReport,
   prsAllowedForReport,
   onIssuesUpdated,
@@ -267,7 +271,7 @@ export function IssuesList({
               <Button
                 variant="outline"
                 size="sm"
-                className="gap-2"
+                className={cn('gap-2', highlightFixPR && 'ring-2 ring-primary ring-offset-2')}
                 onClick={!hasGitHub ? onConnectGitHub : needsAIKey ? undefined : onCreateFixPR}
                 asChild={needsAIKey && hasGitHub}
                 disabled={isCreatingPR || (hasGitHub && !needsAIKey && prsExhausted)}

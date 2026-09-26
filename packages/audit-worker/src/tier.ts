@@ -15,6 +15,11 @@ export type LtdTier = 'ltd_starter' | 'ltd_pro' | 'ltd_agency';
 
 export interface TierLimits {
   sites: number;
+  /**
+   * Auto-fix PRs a calendar month; null = unlimited. Kept in step with the Deno copy in
+   * supabase/functions/_shared/tier.ts (src/test/tier.test.ts asserts they are identical).
+   */
+  autoFixPrsPerMonth: number | null;
   /** 0 = no API access. */
   apiRequestsPerDay: number;
   /** Distinct domains deep-audited per month; null = unlimited. */
@@ -33,19 +38,19 @@ export interface Entitlement {
 
 // pricing-tiers.json: free_registered and subscriptions[].limits.
 export const TIER_LIMITS: Record<BaseTier, TierLimits> = {
-  free: { sites: 1, apiRequestsPerDay: 0, domainsPerMonth: 2 },
-  solo: { sites: 3, apiRequestsPerDay: 100, domainsPerMonth: 5 },
-  pro: { sites: 10, apiRequestsPerDay: 1000, domainsPerMonth: 15 },
-  agency: { sites: 50, apiRequestsPerDay: 10000, domainsPerMonth: null },
+  free: { sites: 1, apiRequestsPerDay: 0, domainsPerMonth: 2, autoFixPrsPerMonth: 3 },
+  solo: { sites: 3, apiRequestsPerDay: 100, domainsPerMonth: 5, autoFixPrsPerMonth: null },
+  pro: { sites: 10, apiRequestsPerDay: 1000, domainsPerMonth: 15, autoFixPrsPerMonth: null },
+  agency: { sites: 50, apiRequestsPerDay: 10000, domainsPerMonth: null, autoFixPrsPerMonth: null },
 };
 
 // Lifetime deals were sold against a subscription tier ("pays for itself vs Solo/Pro/Agency")
 // with their own site and API caps (pricing-tiers.json lifetime_deals.tiers). They list no
 // domains-per-month cap, so they take their tier's.
 export const LTD_TIERS: Record<LtdTier, { tier: BaseTier; name: string; limits: TierLimits }> = {
-  ltd_starter: { tier: 'solo', name: 'LTD Starter', limits: { sites: 1, apiRequestsPerDay: 50, domainsPerMonth: 5 } },
-  ltd_pro: { tier: 'pro', name: 'LTD Pro', limits: { sites: 3, apiRequestsPerDay: 200, domainsPerMonth: 15 } },
-  ltd_agency: { tier: 'agency', name: 'LTD Agency', limits: { sites: 10, apiRequestsPerDay: 500, domainsPerMonth: null } },
+  ltd_starter: { tier: 'solo', name: 'LTD Starter', limits: { sites: 1, apiRequestsPerDay: 50, domainsPerMonth: 5, autoFixPrsPerMonth: null } },
+  ltd_pro: { tier: 'pro', name: 'LTD Pro', limits: { sites: 3, apiRequestsPerDay: 200, domainsPerMonth: 15, autoFixPrsPerMonth: null } },
+  ltd_agency: { tier: 'agency', name: 'LTD Agency', limits: { sites: 10, apiRequestsPerDay: 500, domainsPerMonth: null, autoFixPrsPerMonth: null } },
 };
 
 const TIER_RANK: Record<BaseTier, number> = { free: 0, solo: 1, pro: 2, agency: 3 };

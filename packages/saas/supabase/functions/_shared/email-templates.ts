@@ -246,7 +246,7 @@ export function auditCompleteEmail(data: AuditCompleteData): { html: string; tex
       ? `<span style="color: ${COLORS.success}">↑ ${scoreChange}</span>`
       : scoreChange < 0
         ? `<span style="color: ${COLORS.error}">↓ ${Math.abs(scoreChange)}</span>`
-        : '<span style="color: ${COLORS.textMuted}">→ 0</span>'
+        : `<span style="color: ${COLORS.textMuted}">no change</span>`
     : '';
 
   const issuesHtml = data.topIssues.slice(0, 5).map(issue => `
@@ -288,6 +288,9 @@ export function auditCompleteEmail(data: AuditCompleteData): { html: string; tex
       <div style="text-align: center; margin-top: 32px;">
         <a href="${data.auditUrl}" class="button">View Full Report</a>
       </div>
+      <p style="text-align: center; margin-top: 12px; font-size: 14px;">
+        <a href="${data.auditUrl}?fix=1" style="color: ${COLORS.primary};">Open a PR that fixes these →</a>
+      </p>
     </div>
   `, `Your SEO score: ${data.score}/100 - ${data.errors} errors, ${data.warnings} warnings`);
 
@@ -295,13 +298,14 @@ export function auditCompleteEmail(data: AuditCompleteData): { html: string; tex
 Audit Complete for ${data.siteName}
 ${data.siteUrl}
 
-Score: ${data.score}/100 ${scoreChange !== null ? (scoreChange > 0 ? `(+${scoreChange})` : `(${scoreChange})`) : ''}
+Score: ${data.score}/100 ${scoreChange !== null ? (scoreChange > 0 ? `(+${scoreChange})` : scoreChange < 0 ? `(${scoreChange})` : '(no change)') : ''}
 Errors: ${data.errors}
 Warnings: ${data.warnings}
 
 ${data.topIssues.length > 0 ? `Top Issues:\n${data.topIssues.map(i => `- [${i.severity.toUpperCase()}] ${i.title}`).join('\n')}` : 'No critical issues found!'}
 
 View full report: ${data.auditUrl}
+Open a PR that fixes these: ${data.auditUrl}?fix=1
 
 ---
 RankCLI - https://rankcli.dev

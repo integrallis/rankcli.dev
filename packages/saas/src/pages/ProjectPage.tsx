@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   Play,
@@ -51,6 +51,7 @@ const PRS_PER_REPORT = 3;
 export function ProjectPage() {
   const { id: projectId } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const {
     project,
     audits,
@@ -83,6 +84,9 @@ export function ProjectPage() {
   const [reportPrs, setReportPrs] = useState<{ used: number; allowed: number } | null>(null);
   // null until known, so the button doesn't flash the wrong prerequisite.
   const [hasAIKey, setHasAIKey] = useState<boolean | null>(null);
+  // Arriving from the audit email's "Open a PR that fixes these" link.
+  const [highlightFixPR, setHighlightFixPR] = useState(false);
+  const issuesRef = useRef<HTMLDivElement>(null);
 
   // Track pending audit for SSE connection
   const [pendingAuditId, setPendingAuditId] = useState<string | null>(null);
@@ -159,6 +163,28 @@ export function ProjectPage() {
       }
     }
   }, [audits]);
+
+  // The audit email links to ?fix=1. Scroll the report's issues into view and mark the PR
+  // button, rather than landing the reader at the top of the page to hunt for it. The PR
+  // is never opened automatically - it costs the user's AI tokens, so it stays a click.
+  useEffect(() => {
+    if (searchParams.get('fix') !== '1') return;
+    setHighlightFixPR(true);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete('fix');
+        return next;
+      },
+      { replace: true }
+    );
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (highlightFixPR && issues.length > 0) {
+      issuesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [highlightFixPR, issues.length]);
 
   // Auto-dismiss notification after 10 seconds
   useEffect(() => {
@@ -728,6 +754,7 @@ export function ProjectPage() {
 
         {/* Issues */}
         {latestAudit && issues.length > 0 && (
+          <div ref={issuesRef}>
           <IssuesList
             issues={issues}
             projectName={project.name}
@@ -739,7 +766,9 @@ export function ProjectPage() {
             hasAIKey={hasAIKey}
             prsUsedForReport={reportPrs?.used}
             prsAllowedForReport={reportPrs?.allowed}
+            highlightFixPR={highlightFixPR}
           />
+          </div>
         )}
 
         {/* No Issues State */}
