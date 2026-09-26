@@ -29,6 +29,8 @@ import { cn } from '@/lib/utils';
 import { formatLocalDate, formatCountdown, parseNextAllowedAt, getTimeRemaining } from '@/lib/date-utils';
 import type { Project } from '@/integrations/supabase/types';
 import { supabase } from '@/integrations/supabase/client';
+import pricingTiers from '@/config/pricing-tiers.json';
+import { useEntitlement } from '@/hooks/useEntitlement';
 import { ConnectGitHubModal } from '@/components/project/ConnectGitHubModal';
 import { ProjectSettingsModal } from '@/components/project/ProjectSettingsModal';
 import { IssuesList } from '@/components/project/IssuesList';
@@ -52,6 +54,7 @@ export function ProjectPage() {
   const { id: projectId } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { data: entitlement } = useEntitlement();
   const {
     project,
     audits,
@@ -74,6 +77,7 @@ export function ProjectPage() {
   const [deletingAuditId, setDeletingAuditId] = useState<string | null>(null);
   const [isDeletingOldAudits, setIsDeletingOldAudits] = useState(false);
   const [isCreatingPR, setIsCreatingPR] = useState(false);
+  const [isAddingCI, setIsAddingCI] = useState(false);
   const [notification, setNotification] = useState<{
     type: 'success' | 'error' | 'info';
     message: string;
@@ -84,6 +88,8 @@ export function ProjectPage() {
   const [reportPrs, setReportPrs] = useState<{ used: number; allowed: number } | null>(null);
   // null until known, so the button doesn't flash the wrong prerequisite.
   const [hasAIKey, setHasAIKey] = useState<boolean | null>(null);
+  // This month's auto-fix PRs, so the button can show the limit that actually bites.
+  const [prsThisMonth, setPrsThisMonth] = useState<number | null>(null);
   // Arriving from the audit email's "Open a PR that fixes these" link.
   const [highlightFixPR, setHighlightFixPR] = useState(false);
   const issuesRef = useRef<HTMLDivElement>(null);
@@ -246,6 +252,26 @@ export function ProjectPage() {
     };
   }, []);
 
+  // Monthly usage. Only auto-fix PRs count - a CI-setup PR is not quota'd. RLS scopes the
+  // count to the caller's own projects.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const monthStart = new Date();
+      monthStart.setUTCDate(1);
+      monthStart.setUTCHours(0, 0, 0, 0);
+      const { count, error } = await supabase
+        .from('github_prs')
+        .select('id', { count: 'exact', head: true })
+        .eq('kind', 'auto_fix')
+        .gte('created_at', monthStart.toISOString());
+      if (active && !error) setPrsThisMonth(count ?? 0);
+    })();
+    return () => {
+      active = false;
+    };
+  }, [project?.id]);
+
   // How many PRs the report on screen has already opened. create-seo-pr caps it per
   // report (PRS_PER_REPORT); knowing the count up front means the button can show what
   // is left instead of only telling the user once they hit the wall.
@@ -320,6 +346,53 @@ export function ProjectPage() {
 
   const handleDisconnectGitHub = async (): Promise<boolean> => {
     return await disconnectGitHub();
+  };
+
+  // Opens the PR that adds .github/workflows/seo.yml. Separate from the auto-fix PR
+  // because it needs neither an AI key nor a plan, and it doesn't spend PR quota.
+  // null = unlimited. Free is the only plan with a monthly PR cap; tier.ts enforces the
+  // same number server-side and src/test/tier.test.ts holds the two together.
+  const monthlyPrAllowance =
+    entitlement && entitlement.tier !== 'free'
+      ? null
+      : pricingTiers.free_registered.auto_fix_prs_per_month;
+
+  const handleAddToCI = async () => {
+    if (!project || isAddingCI) return;
+    setIsAddingCI(true);
+    setNotification(null);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const token = session?.session?.access_token;
+      if (!token) throw new Error('Not authenticated');
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-ci-pr`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ projectId: project.id }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        setNotification({ type: 'error', message: result.error || 'Could not add RankCLI to CI' });
+      } else if (result.prCreated) {
+        setNotification({
+          type: 'success',
+          message: `PR #${result.prNumber} adds a ${result.schedule} SEO audit to your CI`,
+          prUrl: result.prUrl,
+        });
+      } else {
+        // Already in CI, or a setup PR is already open - neither is a failure.
+        setNotification({ type: 'info', message: result.message, prUrl: result.prUrl });
+      }
+    } catch (err) {
+      setNotification({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Could not add RankCLI to CI',
+      });
+    } finally {
+      setIsAddingCI(false);
+    }
   };
 
   const handleCreateFixPR = async () => {
@@ -503,12 +576,19 @@ export function ProjectPage() {
               </Link>
             </Button>
             {project.github_repo_url ? (
-              <Button variant="outline" className="gap-2" asChild>
-                <a href={project.github_repo_url} target="_blank" rel="noopener noreferrer">
-                  <Github className="h-4 w-4" />
-                  View Repo
-                </a>
-              </Button>
+              <>
+                <Button variant="outline" className="gap-2" asChild>
+                  <a href={project.github_repo_url} target="_blank" rel="noopener noreferrer">
+                    <Github className="h-4 w-4" />
+                    View Repo
+                  </a>
+                </Button>
+                {/* The on-ramp: a template PR, no AI key and no plan involved. */}
+                <Button variant="outline" className="gap-2" onClick={handleAddToCI} disabled={isAddingCI}>
+                  {isAddingCI ? <Loader2 className="h-4 w-4 animate-spin" /> : <GitPullRequest className="h-4 w-4" />}
+                  Add SEO to CI
+                </Button>
+              </>
             ) : (
               <Button
                 variant="outline"
@@ -766,6 +846,9 @@ export function ProjectPage() {
             hasAIKey={hasAIKey}
             prsUsedForReport={reportPrs?.used}
             prsAllowedForReport={reportPrs?.allowed}
+            prsUsedThisMonth={prsThisMonth ?? undefined}
+            prsAllowedThisMonth={monthlyPrAllowance}
+            planName={entitlement?.tier}
             highlightFixPR={highlightFixPR}
           />
           </div>

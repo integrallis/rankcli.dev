@@ -69,6 +69,10 @@ interface IssuesListProps {
   /** PRs this report has opened / may open. create-seo-pr is what enforces the cap. */
   prsUsedForReport?: number;
   prsAllowedForReport?: number;
+  /** The plan's monthly allowance and usage. allowance null/undefined = unlimited. */
+  prsUsedThisMonth?: number;
+  prsAllowedThisMonth?: number | null;
+  planName?: string;
   onIssuesUpdated?: () => void;
 }
 
@@ -84,6 +88,9 @@ export function IssuesList({
   highlightFixPR = false,
   prsUsedForReport,
   prsAllowedForReport,
+  prsUsedThisMonth,
+  prsAllowedThisMonth,
+  planName,
   onIssuesUpdated,
 }: IssuesListProps) {
   const [groupBy, setGroupBy] = useState<GroupBy>('severity');
@@ -230,12 +237,25 @@ export function IssuesList({
   const errorCount = issues.filter((i) => i.severity === 'error').length;
   const warningCount = issues.filter((i) => i.severity === 'warning').length;
 
-  // The report's remaining PR allowance, once we know it.
-  const prsRemaining =
+  // Two limits apply: this report's allowance and the plan's month. Show whichever bites
+  // first - a "2 left" that ignores an exhausted monthly quota is a lie the user only finds
+  // out about after clicking.
+  const reportRemaining =
     prsAllowedForReport !== undefined && prsUsedForReport !== undefined
       ? Math.max(0, prsAllowedForReport - prsUsedForReport)
       : null;
+  const monthRemaining =
+    prsAllowedThisMonth != null && prsUsedThisMonth !== undefined
+      ? Math.max(0, prsAllowedThisMonth - prsUsedThisMonth)
+      : null;
+  const prsRemaining =
+    reportRemaining === null
+      ? monthRemaining
+      : monthRemaining === null
+        ? reportRemaining
+        : Math.min(reportRemaining, monthRemaining);
   const prsExhausted = prsRemaining === 0;
+  const monthIsTheLimit = monthRemaining !== null && monthRemaining <= (reportRemaining ?? Infinity);
 
   // Auto-fix PRs need a connected repo AND the user's own AI key. hasAIKey === null means
   // we don't know yet, so nothing is claimed missing.
@@ -245,8 +265,12 @@ export function IssuesList({
     : needsAIKey
       ? 'Auto-fix PRs run on your own AI provider key - add one to enable them'
       : prsExhausted
-        ? `This report has opened its ${prsAllowedForReport} PRs. Run a new audit to open more.`
-        : null;
+        ? monthIsTheLimit
+          ? `Your ${planName ?? 'current'} plan includes ${prsAllowedThisMonth} auto-fix PRs a month, and this month's are used. Upgrade for unlimited.`
+          : `This report has opened its ${prsAllowedForReport} PRs. Run a new audit to open more.`
+        : monthIsTheLimit && monthRemaining !== null
+          ? `${monthRemaining} of ${prsAllowedThisMonth} auto-fix PRs left this month on ${planName ?? 'your plan'}`
+          : null;
 
   const showCheckboxes = issues.length > 0;
   const hasSelection = selectedIds.size > 0;

@@ -28,3 +28,7 @@ verify_jwt = false
 # functions above.
 [functions.sync-subscription]
 verify_jwt = false
+
+# Authenticates the caller itself, like the functions above.
+[functions.create-ci-pr]
+verify_jwt = false

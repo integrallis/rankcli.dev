@@ -4,6 +4,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getInstallationToken } from '../_shared/github-app.ts';
+import { fetchFileContent, getDefaultBranchSha, createBranch, createOrUpdateFile, createPullRequest } from '../_shared/github-repo.ts';
 import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
 import { resolveAIConfig, aiConfigErrorMessage } from '../_shared/resolve-ai-config.ts';
 import { getEntitlement } from '../_shared/tier.ts';
@@ -74,30 +75,6 @@ interface RepoContext {
   appRoot: string; // Root path of the app (e.g., 'ui/', 'web/', or '')
 }
 
-// Fetch file content from GitHub
-async function fetchFileContent(token: string, owner: string, repo: string, path: string): Promise<string | null> {
-  try {
-    const response = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/vnd.github+json',
-        },
-      }
-    );
-
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    if (data.content) {
-      return atob(data.content.replace(/\n/g, ''));
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
 
 // Get repository file tree (returns ALL files for accurate detection)
 async function getRepoTree(token: string, owner: string, repo: string): Promise<string[]> {
@@ -357,153 +334,6 @@ You should output the COMPLETE file with additions in <head>, keeping body uncha
 
   const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, { jsonMode: true });
   return JSON.parse(content);
-}
-
-// Get default branch info
-async function getDefaultBranchSha(token: string, owner: string, repo: string): Promise<{ sha: string; branch: string }> {
-  const repoResponse = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github+json',
-      },
-    }
-  );
-
-  if (!repoResponse.ok) throw new Error('Failed to get repository info');
-
-  const repoData = await repoResponse.json();
-  const defaultBranch = repoData.default_branch;
-
-  const refResponse = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${defaultBranch}`,
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github+json',
-      },
-    }
-  );
-
-  if (!refResponse.ok) throw new Error('Failed to get branch ref');
-
-  const refData = await refResponse.json();
-  return { sha: refData.object.sha, branch: defaultBranch };
-}
-
-// Create a branch
-async function createBranch(token: string, owner: string, repo: string, branchName: string, baseSha: string): Promise<void> {
-  const response = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/git/refs`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-      body: JSON.stringify({
-        ref: `refs/heads/${branchName}`,
-        sha: baseSha,
-      }),
-    }
-  );
-
-  if (!response.ok && response.status !== 422) {
-    const error = await response.text();
-    throw new Error(`Failed to create branch: ${error}`);
-  }
-}
-
-// Create or update file
-async function createOrUpdateFile(
-  token: string,
-  owner: string,
-  repo: string,
-  branch: string,
-  path: string,
-  content: string,
-  message: string
-): Promise<void> {
-  let existingSha: string | undefined;
-  try {
-    const getResponse = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${branch}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/vnd.github+json',
-        },
-      }
-    );
-    if (getResponse.ok) {
-      const fileData = await getResponse.json();
-      existingSha = fileData.sha;
-    }
-  } catch {
-    // File doesn't exist
-  }
-
-  const body: Record<string, string> = {
-    message,
-    content: btoa(unescape(encodeURIComponent(content))), // Handle Unicode
-    branch,
-  };
-
-  if (existingSha) {
-    body.sha = existingSha;
-  }
-
-  const response = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/contents/${path}`,
-    {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-      body: JSON.stringify(body),
-    }
-  );
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to create file ${path}: ${error}`);
-  }
-}
-
-// Create pull request
-async function createPullRequest(
-  token: string,
-  owner: string,
-  repo: string,
-  title: string,
-  body: string,
-  head: string,
-  base: string
-): Promise<{ url: string; number: number }> {
-  const response = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/pulls`,
-    {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-      body: JSON.stringify({ title, body, head, base }),
-    }
-  );
-
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Failed to create PR: ${error}`);
-  }
-
-  const prData = await response.json();
-  return { url: prData.html_url, number: prData.number };
 }
 
 serve(async (req) => {
