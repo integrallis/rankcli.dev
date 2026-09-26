@@ -23,3 +23,8 @@ verify_jwt = false
 
 [functions.notify-slack]
 verify_jwt = false
+
+# Authenticates the caller itself (Bearer token -> auth.getUser), like the other
+# functions above.
+[functions.sync-subscription]
+verify_jwt = false

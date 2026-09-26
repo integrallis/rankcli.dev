@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useNavigate, useSearchParams, useLocation, Link } from 'react-router-dom';
-import { User, CreditCard, Key, Bell, Bot, Loader2, AlertTriangle, Trash2, ArrowUpRight, CheckCircle, Copy, Check, Plus, X } from 'lucide-react';
+import { User, CreditCard, Key, Bell, Bot, Loader2, AlertTriangle, Trash2, ArrowUpRight, CheckCircle, Copy, Check, Plus, X, RefreshCw } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -199,6 +200,7 @@ export function AccountPage() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, logout } = useAuth();
+  const queryClient = useQueryClient();
   const { consumePendingPlan } = usePendingPlan();
   const [activeTab, setActiveTab] = useState('profile');
   const [isLoading, setIsLoading] = useState(false);
@@ -240,6 +242,7 @@ export function AccountPage() {
     email_weekly_report: false,
     email_product_updates: true,
   });
+  const [isSyncingBilling, setIsSyncingBilling] = useState(false);
   const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
   const [isSavingNotifications, setIsSavingNotifications] = useState(false);
 
@@ -374,13 +377,59 @@ export function AccountPage() {
     fetchNotifications();
   }, [user]);
 
-  // Refetch subscription when returning from Stripe
+  // Asks sync-subscription to reconcile the plan with Stripe, then shows the result.
+  // The webhook usually gets there first; this is what makes a missed webhook a
+  // non-event instead of a paying customer stuck on Free.
+  const syncBillingFromStripe = async ({ silent = false } = {}) => {
+    if (!user) return;
+    setIsSyncingBilling(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const token = session?.session?.access_token;
+      if (!token) throw new Error('Not authenticated');
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-subscription`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not reach Stripe');
+
+      await fetchSubscription();
+      // useEntitlement caches for a minute, and it decides the site limit shown here.
+      await queryClient.invalidateQueries({ queryKey: ['my-entitlement', user.id] });
+
+      if (!silent) {
+        const tier = result.entitlement?.plan_id;
+        if (result.synced && tier && tier !== 'free') {
+          toast.success(`Synced with Stripe: you're on ${tier}`);
+        } else {
+          toast.info('Stripe has no active subscription for this account', {
+            description: 'If you just paid, check that the payment went through in your receipt email.',
+          });
+        }
+      }
+    } catch (err) {
+      if (!silent) {
+        toast.error('Could not sync with Stripe', {
+          description: err instanceof Error ? err.message : 'Please try again in a moment.',
+        });
+      }
+    } finally {
+      setIsSyncingBilling(false);
+    }
+  };
+
+  // Returning from Stripe: reconcile once immediately (the redirect can beat the
+  // webhook), then keep refetching for a few seconds in case the webhook lands after.
   useEffect(() => {
     if (showSuccessMessage) {
+      syncBillingFromStripe({ silent: true });
       const pollInterval = setInterval(fetchSubscription, 2000);
       setTimeout(() => clearInterval(pollInterval), 10000);
       return () => clearInterval(pollInterval);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showSuccessMessage]);
 
   // LTD status
@@ -470,6 +519,7 @@ export function AccountPage() {
         setPendingSwitch({ planId, planName: data.planName || planId });
       } else if (data.switched) {
         toast.success(`You're now on ${data.planName || 'the new plan'}`);
+        await syncBillingFromStripe({ silent: true });
         setShowSuccessMessage(true);
         setTimeout(() => setShowSuccessMessage(false), 5000);
       } else if (data.url) {
@@ -810,12 +860,27 @@ export function AccountPage() {
                           Manage Billing
                         </Button>
                       ) : (
-                        <Link to="/pricing">
-                          <Button className="gap-2">
-                            Upgrade
-                            <ArrowUpRight className="h-4 w-4" />
+                        <div className="flex items-center gap-2">
+                          {/* "I paid and it still says Free" - reconcile with Stripe
+                              instead of waiting on a webhook that may never come. */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => syncBillingFromStripe()}
+                            disabled={isSyncingBilling}
+                            title="Already paid? Check Stripe for your subscription"
+                          >
+                            <RefreshCw className={cn('h-4 w-4', isSyncingBilling && 'animate-spin')} />
+                            Already paid?
                           </Button>
-                        </Link>
+                          <Link to="/pricing">
+                            <Button className="gap-2">
+                              Upgrade
+                              <ArrowUpRight className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </div>
                       )}
                     </div>
 
