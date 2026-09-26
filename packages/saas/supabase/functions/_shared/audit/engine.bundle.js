@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-26T18:27:03.982Z
+// Generated: 2026-09-26T19:06:39.182Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -10562,28 +10562,28 @@ var HTML_SIGNATURES = [
   {
     framework: "remix",
     language: "typescript",
-    patterns: [/__remix/, /remix-/, /data-remix/],
+    patterns: [/__remix/, /data-remix/],
     confidence: "high"
   },
   // Solid.js
   {
     framework: "solidjs",
     language: "typescript",
-    patterns: [/solid-/, /data-solid/, /_solid/],
+    patterns: [/data-solid/, /_solid/],
     confidence: "high"
   },
   // Qwik
   {
     framework: "qwik",
     language: "typescript",
-    patterns: [/q:/, /qwik/, /q-/],
+    patterns: [/q:container/, /q:base/, /q:version/, /q:id=/, /qwik/],
     confidence: "high"
   },
   // Fresh (Deno)
   {
     framework: "fresh",
     language: "typescript",
-    patterns: [/fresh-/, /_frsh\//, /data-fresh/],
+    patterns: [/_frsh\//, /data-fresh/],
     confidence: "high"
   },
   // React (generic - lower priority)
@@ -10622,7 +10622,7 @@ var HTML_SIGNATURES = [
   {
     framework: "hotwire",
     language: "ruby",
-    patterns: [/turbo-frame/, /turbo-stream/, /data-turbo/, /stimulus/],
+    patterns: [/turbo-frame/, /turbo-stream/, /data-turbo/],
     confidence: "high"
   },
   // ============ PHP Frameworks ============
@@ -10689,7 +10689,10 @@ var HTML_SIGNATURES = [
   {
     framework: "spring",
     language: "java",
-    patterns: [/spring/, /thymeleaf/, /th:/, /_csrf/],
+    // /th:/ matched "width:" and "height:" in inline CSS, which made almost every styled
+    // page on the web a Spring Boot app - rankcli.dev included, once WordPress stopped
+    // matching first. Thymeleaf attributes are what th: actually means.
+    patterns: [/\sth:[a-z-]+=/, /thymeleaf/, /_csrf/],
     confidence: "medium"
   },
   // ============ C# Frameworks ============
@@ -10697,7 +10700,7 @@ var HTML_SIGNATURES = [
   {
     framework: "aspnet",
     language: "csharp",
-    patterns: [/aspnetcore/, /__RequestVerificationToken/, /blazor/, /_framework\/blazor/],
+    patterns: [/aspnetcore/, /__RequestVerificationToken/, /_framework\/blazor/],
     confidence: "medium"
   },
   // ============ Elixir Frameworks ============
@@ -10705,7 +10708,7 @@ var HTML_SIGNATURES = [
   {
     framework: "phoenix",
     language: "elixir",
-    patterns: [/phx-/, /phoenix/, /live-socket/, /data-phx/],
+    patterns: [/phx-/, /live-socket/, /data-phx/],
     confidence: "high"
   },
   // ============ Static Site Generators ============
@@ -10713,14 +10716,14 @@ var HTML_SIGNATURES = [
   {
     framework: "hugo",
     language: "go",
-    patterns: [/hugo/, /generator.*hugo/i],
+    patterns: [/name=["']generator["'][^>]*content=["']Hugo/i],
     confidence: "medium"
   },
   // Jekyll
   {
     framework: "jekyll",
     language: "ruby",
-    patterns: [/jekyll/, /generator.*jekyll/i],
+    patterns: [/name=["']generator["'][^>]*content=["']Jekyll/i],
     confidence: "medium"
   },
   // Eleventy
