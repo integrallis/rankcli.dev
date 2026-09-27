@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-27T07:47:10.040Z
+// Generated: 2026-09-27T08:16:22.382Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -17756,7 +17756,7 @@ async function analyzeLlmsTxt(url) {
       timeout: 1e4,
       validateStatus: () => true
     });
-    if (response.status === 200) {
+    if (response.status === 200 && !looksLikeHtmlFallback(response.data, response.headers?.["content-type"])) {
       exists = true;
       content = response.data;
       contentLength = content.length;
@@ -17766,7 +17766,7 @@ async function analyzeLlmsTxt(url) {
       timeout: 1e4,
       validateStatus: () => true
     });
-    if (fullResponse.status === 200) {
+    if (fullResponse.status === 200 && !looksLikeHtmlFallback(fullResponse.data, fullResponse.headers?.["content-type"])) {
       fullVersionExists = true;
     }
   } catch {
