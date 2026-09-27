@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-27T12:33:57.977Z
+// Generated: 2026-09-27T15:07:19.609Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -6271,6 +6271,7 @@ var RECIPES = {
   jekyll: null,
   eleventy: null,
   pelican: null,
+  sphinx: null,
   // Unknown
   unknown: null
 };
@@ -10521,234 +10522,158 @@ async function httpPost(url, data, config = {}) {
   }
 }
 
-// src/frameworks/detector.ts
-var HTML_SIGNATURES = [
-  // ============ JavaScript/TypeScript Frameworks ============
-  // Next.js
-  {
-    framework: "nextjs",
-    language: "typescript",
-    patterns: [/__next/, /_next\//, /data-nscript/, /__NEXT_DATA__/, /next\/script/],
-    confidence: "high"
-  },
-  // Nuxt
-  {
-    framework: "nuxt",
-    language: "typescript",
-    patterns: [/__nuxt/, /_nuxt\//, /data-n-head/, /nuxt-link/, /__NUXT__/],
-    confidence: "high"
-  },
-  // Gatsby
-  {
-    framework: "gatsby",
-    language: "javascript",
-    patterns: [/___gatsby/, /gatsby-/, /gatsby-image/, /data-gatsby/],
-    confidence: "high"
-  },
-  // Astro
-  {
-    framework: "astro",
-    language: "typescript",
-    patterns: [/astro-/, /data-astro/, /_astro\//],
-    confidence: "high"
-  },
-  // SvelteKit
-  {
-    framework: "sveltekit",
-    language: "typescript",
-    patterns: [/__sveltekit/, /_app\/immutable/, /svelte-kit/],
-    confidence: "high"
-  },
-  // Svelte (standalone)
-  {
-    framework: "svelte",
-    language: "javascript",
-    patterns: [/svelte-\w+/, /__svelte/],
-    confidence: "medium"
-  },
-  // Remix
-  {
-    framework: "remix",
-    language: "typescript",
-    patterns: [/__remix/, /data-remix/],
-    confidence: "high"
-  },
-  // Solid.js
-  {
-    framework: "solidjs",
-    language: "typescript",
-    patterns: [/data-solid/, /_solid/],
-    confidence: "high"
-  },
-  // Qwik
-  {
-    framework: "qwik",
-    language: "typescript",
-    patterns: [/q:container/, /q:base/, /q:version/, /q:id=/, /qwik/],
-    confidence: "high"
-  },
-  // Fresh (Deno)
-  {
-    framework: "fresh",
-    language: "typescript",
-    patterns: [/_frsh\//, /data-fresh/],
-    confidence: "high"
-  },
-  // React (generic - lower priority)
+// src/frameworks/signals.ts
+var WEIGHT = { DECISIVE: 100, STRONG: 45, WEAK: 15 };
+var SCORE_FLOOR = 45;
+var SIGNALS = [
+  // ---- Meta-frameworks: JavaScript ------------------------------------------------
+  { framework: "nextjs", language: "typescript", weight: WEIGHT.DECISIVE, name: "next-build-dir", html: /\/_next\/(static|image|data)\// },
+  { framework: "nextjs", language: "typescript", weight: WEIGHT.DECISIVE, name: "next-data", html: /__NEXT_DATA__|self\.__next_f/ },
+  { framework: "nextjs", language: "typescript", weight: WEIGHT.DECISIVE, name: "next-mount", html: /<div id=["']__next["']/ },
+  { framework: "nextjs", language: "typescript", weight: WEIGHT.DECISIVE, name: "next-powered-by", header: /^x-powered-by: next\.js/ },
+  { framework: "nuxt", language: "typescript", weight: WEIGHT.DECISIVE, name: "nuxt-build-dir", html: /\/_nuxt\// },
+  { framework: "nuxt", language: "typescript", weight: WEIGHT.DECISIVE, name: "nuxt-payload", html: /__NUXT__|__NUXT_DATA__|<div id="__nuxt"/ },
+  { framework: "nuxt", language: "typescript", weight: WEIGHT.DECISIVE, name: "nuxt-powered-by", header: /^x-powered-by: nuxt/ },
+  { framework: "astro", language: "typescript", weight: WEIGHT.DECISIVE, name: "astro-build-dir", html: /\/_astro\// },
+  { framework: "astro", language: "typescript", weight: WEIGHT.DECISIVE, name: "astro-island", html: /<astro-island|astro-slot|data-astro-(cid|source-file|transition)/ },
+  { framework: "astro", language: "typescript", weight: WEIGHT.STRONG, name: "astro-generator", html: /name=["']?generator["']?[^>]*content=["']?Astro/i },
+  { framework: "sveltekit", language: "typescript", weight: WEIGHT.DECISIVE, name: "sveltekit-immutable", html: /\/_app\/immutable\// },
+  { framework: "sveltekit", language: "typescript", weight: WEIGHT.DECISIVE, name: "sveltekit-runtime", html: /__sveltekit|kit\.start\(/ },
+  { framework: "remix", language: "typescript", weight: WEIGHT.DECISIVE, name: "remix-context", html: /__remixContext|__remixManifest|__remixRouteModules/ },
+  { framework: "remix", language: "typescript", weight: WEIGHT.STRONG, name: "remix-build-dir", html: /\/build\/_shared\/|\/build\/entry\.client-/ },
+  { framework: "gatsby", language: "javascript", weight: WEIGHT.DECISIVE, name: "gatsby-runtime", html: /___gatsby|window\.___chunkMapping/ },
+  { framework: "gatsby", language: "javascript", weight: WEIGHT.STRONG, name: "gatsby-page-data", html: /\/page-data\/(app-data\.json|sq\/)/ },
+  { framework: "qwik", language: "typescript", weight: WEIGHT.DECISIVE, name: "qwik-container", html: /q:container|q:base|q:version|qwikloader/ },
+  { framework: "fresh", language: "typescript", weight: WEIGHT.DECISIVE, name: "fresh-build-dir", html: /\/_frsh\// },
+  { framework: "solidjs", language: "typescript", weight: WEIGHT.STRONG, name: "solid-hydration", html: /_\$HY\b|data-hk=["']/ },
+  // ---- Base UI libraries: weaker by nature, and that is the point -----------------
+  { framework: "angular", language: "typescript", weight: WEIGHT.DECISIVE, name: "angular-version", html: /ng-version=["']/ },
+  { framework: "angular", language: "typescript", weight: WEIGHT.DECISIVE, name: "angular-content-attr", html: /_ngcontent-|_nghost-/ },
+  { framework: "react", language: "javascript", weight: WEIGHT.STRONG, name: "react-root-marker", html: /data-reactroot|__reactContainer\$|__REACT_DEVTOOLS/ },
+  // A Vite-built SPA: an empty mount point plus Vite's hashed entry bundle. Two weak facts
+  // that together mean something; either one alone does not.
+  { framework: "react", language: "javascript", weight: WEIGHT.WEAK, name: "react-empty-root", html: /<div id="root"><\/div>/ },
+  { framework: "react", language: "javascript", weight: WEIGHT.WEAK, name: "react-refresh", html: /RefreshRuntime|react-refresh/ },
   {
     framework: "react",
     language: "javascript",
-    // data-reactroot/data-react-helmet are React <=15 hydration markers -
-    // React 18's createRoot() never adds them, so every modern CRA/Vite
-    // React app (an empty <div id="root">) went undetected from HTML alone.
-    patterns: [/data-reactroot/, /data-react-helmet/, /_react/, /react-app/, /<div id="root"><\/div>/],
-    confidence: "medium"
+    weight: WEIGHT.STRONG,
+    name: "react-vite-spa",
+    // Vite's entry chunk plus React's conventional mount point. Medium confidence by
+    // construction: #app instead of #root stays unknown, because Vue, Solid and others use it.
+    // Not `<div id="root"></div>`: a prerendered SPA has content inside its mount point, which
+    // is what RankCLI's own site does and what the first version of this signal missed.
+    allHtml: [/<script[^>]+src=["'][^"']+\.js["']/, /<div id="root"[\s>]/]
   },
-  // Vue (generic - lower priority)
-  {
-    framework: "vue",
-    language: "javascript",
-    patterns: [/data-v-[a-f0-9]+/, /v-cloak/, /__vue/],
-    confidence: "medium"
-  },
-  // Angular
-  {
-    framework: "angular",
-    language: "typescript",
-    patterns: [/ng-version/, /_ngcontent/, /ng-\w+=/, /\[ng/],
-    confidence: "high"
-  },
-  // ============ Hypermedia Frameworks ============
-  // HTMX
-  {
-    framework: "htmx",
-    language: "unknown",
-    patterns: [/hx-get/, /hx-post/, /hx-trigger/, /hx-swap/, /htmx\.org/],
-    confidence: "high"
-  },
-  // Hotwire/Turbo
-  {
-    framework: "hotwire",
-    language: "ruby",
-    patterns: [/turbo-frame/, /turbo-stream/, /data-turbo/],
-    confidence: "high"
-  },
-  // ============ PHP Frameworks ============
-  // WordPress
-  {
-    framework: "wordpress",
-    language: "php",
-    // Technical signatures only. These patterns run over the whole page, so the old
-    // /wordpress/i matched the word anywhere in the copy: rankcli.dev's own "detects
-    // Rails, Django, Laravel, and WordPress" line was enough to detect its React SPA as
-    // WordPress and then tell it to install an SEO plugin. A generator meta tag is the
-    // one place the page says it about itself.
-    patterns: [/wp-content/, /wp-includes/, /wp-json/, /name=["']generator["'][^>]*content=["']WordPress/i],
-    confidence: "high"
-  },
-  // Laravel
-  {
-    framework: "laravel",
-    language: "php",
-    // /laravel/i had the same problem as WordPress above - it matched the word in prose.
-    patterns: [/laravel_session/, /XSRF-TOKEN/, /@csrf/],
-    confidence: "medium"
-  },
-  // Symfony
-  {
-    framework: "symfony",
-    language: "php",
-    // Likewise /symfony/, which matched any lowercase mention.
-    patterns: [/sf2/, /_sf_/, /profiler\.css/],
-    confidence: "medium"
-  },
-  // ============ Ruby Frameworks ============
-  // Rails
-  {
-    framework: "rails",
-    language: "ruby",
-    patterns: [/csrf-token/, /turbolinks/, /data-turbo/, /rails-ujs/, /action-cable/],
-    confidence: "medium"
-  },
-  // ============ Python Frameworks ============
-  // Django
-  {
-    framework: "django",
-    language: "python",
-    patterns: [/csrfmiddlewaretoken/, /django/, /__debug__\//],
-    confidence: "medium"
-  },
-  // Flask
-  {
-    framework: "flask",
-    language: "python",
-    patterns: [/flask/, /werkzeug/i],
-    confidence: "low"
-  },
-  // FastAPI
-  {
-    framework: "fastapi",
-    language: "python",
-    patterns: [/fastapi/, /openapi\.json/],
-    confidence: "low"
-  },
-  // ============ Java Frameworks ============
-  // Spring Boot
-  {
-    framework: "spring",
-    language: "java",
-    // /th:/ matched "width:" and "height:" in inline CSS, which made almost every styled
-    // page on the web a Spring Boot app - rankcli.dev included, once WordPress stopped
-    // matching first. Thymeleaf attributes are what th: actually means.
-    patterns: [/\sth:[a-z-]+=/, /thymeleaf/, /_csrf/],
-    confidence: "medium"
-  },
-  // ============ C# Frameworks ============
-  // ASP.NET Core
-  {
-    framework: "aspnet",
-    language: "csharp",
-    patterns: [/aspnetcore/, /__RequestVerificationToken/, /_framework\/blazor/],
-    confidence: "medium"
-  },
-  // ============ Elixir Frameworks ============
-  // Phoenix
-  {
-    framework: "phoenix",
-    language: "elixir",
-    patterns: [/phx-/, /live-socket/, /data-phx/],
-    confidence: "high"
-  },
-  // ============ Static Site Generators ============
-  // Hugo
-  {
-    framework: "hugo",
-    language: "go",
-    patterns: [/name=["']generator["'][^>]*content=["']Hugo/i],
-    confidence: "medium"
-  },
-  // Jekyll
-  {
-    framework: "jekyll",
-    language: "ruby",
-    patterns: [/name=["']generator["'][^>]*content=["']Jekyll/i],
-    confidence: "medium"
-  },
-  // Eleventy
-  {
-    framework: "eleventy",
-    language: "javascript",
-    patterns: [/11ty/, /eleventy/, /generator.*eleventy/i],
-    confidence: "medium"
-  },
-  // Pelican
-  {
-    framework: "pelican",
-    language: "python",
-    patterns: [/pelican/, /generator.*pelican/i],
-    confidence: "medium"
-  }
+  { framework: "vue", language: "javascript", weight: WEIGHT.DECISIVE, name: "vitepress-runtime", html: /__VP_HASH_MAP__|__VP_SITE_DATA__/ },
+  { framework: "vue", language: "javascript", weight: WEIGHT.DECISIVE, name: "vue-scoped-style", html: /data-v-[0-9a-f]{6,10}\b/ },
+  { framework: "vue", language: "javascript", weight: WEIGHT.WEAK, name: "vue-cloak", html: /v-cloak|<div id="app"><\/div>/ },
+  { framework: "svelte", language: "javascript", weight: WEIGHT.WEAK, name: "svelte-class", html: /class=["'][^"']*svelte-[0-9a-z]{6}/ },
+  // ---- Ruby -----------------------------------------------------------------------
+  // csrf-token alone is emitted by Rails, Laravel, Phoenix and Django. csrf-param is Rails.
+  { framework: "rails", language: "ruby", weight: WEIGHT.DECISIVE, name: "rails-csrf-param", html: /name=["']csrf-param["']/ },
+  { framework: "rails", language: "ruby", weight: WEIGHT.STRONG, name: "rails-ujs", html: /rails-ujs|turbolinks|data-remote=["']true["']|action_cable|actioncable/ },
+  { framework: "rails", language: "ruby", weight: WEIGHT.STRONG, name: "rails-session-cookie", header: /^set-cookie: [^;]*_session=/ },
+  { framework: "rails", language: "ruby", weight: WEIGHT.STRONG, name: "rails-app-server", header: /^(server|x-powered-by): (puma|passenger|unicorn|phusion)/ },
+  { framework: "hotwire", language: "ruby", weight: WEIGHT.STRONG, name: "turbo-elements", html: /<turbo-frame|<turbo-stream|data-turbo-track/ },
+  // ---- Python ---------------------------------------------------------------------
+  { framework: "django", language: "python", weight: WEIGHT.DECISIVE, name: "django-csrf-input", html: /name=["']csrfmiddlewaretoken["']/ },
+  { framework: "django", language: "python", weight: WEIGHT.DECISIVE, name: "django-csrf-cookie", header: /^set-cookie: csrftoken=/ },
+  { framework: "django", language: "python", weight: WEIGHT.STRONG, name: "django-admin-static", html: /\/static\/admin\/(css|js)\// },
+  { framework: "django", language: "python", weight: WEIGHT.WEAK, name: "django-wsgi-server", header: /^(server|x-powered-by): (gunicorn|uvicorn|daphne)/ },
+  { framework: "flask", language: "python", weight: WEIGHT.STRONG, name: "flask-server", header: /^server: werkzeug/ },
+  { framework: "fastapi", language: "python", weight: WEIGHT.STRONG, name: "fastapi-docs", html: /swagger-ui-bundle\.js[\s\S]{0,200}openapi\.json/ },
+  // ---- PHP ------------------------------------------------------------------------
+  { framework: "wordpress", language: "php", weight: WEIGHT.DECISIVE, name: "wp-paths", html: /\/wp-content\/|\/wp-includes\/|\/wp-json\// },
+  { framework: "wordpress", language: "php", weight: WEIGHT.DECISIVE, name: "wp-generator", html: /name=["']?generator["']?[^>]*content=["']?WordPress/i },
+  { framework: "wordpress", language: "php", weight: WEIGHT.STRONG, name: "wp-powered-by", header: /^x-powered-by: wordpress/ },
+  { framework: "laravel", language: "php", weight: WEIGHT.DECISIVE, name: "laravel-session-cookie", header: /^set-cookie: laravel_session=/ },
+  { framework: "laravel", language: "php", weight: WEIGHT.STRONG, name: "laravel-xsrf-cookie", header: /^set-cookie: XSRF-TOKEN=/i },
+  { framework: "laravel", language: "php", weight: WEIGHT.STRONG, name: "laravel-livewire", html: /livewire|wire:(click|model|submit)/i },
+  { framework: "laravel", language: "php", weight: WEIGHT.WEAK, name: "laravel-vite-build", html: /\/build\/assets\/app-[A-Za-z0-9_-]{8}\.js/ },
+  { framework: "symfony", language: "php", weight: WEIGHT.DECISIVE, name: "symfony-profiler", html: /\/_profiler\/|sf-toolbar|sf-dump/ },
+  { framework: "symfony", language: "php", weight: WEIGHT.STRONG, name: "symfony-cookie", header: /^set-cookie: (sfsession|symfony)/i },
+  // ---- Elixir ---------------------------------------------------------------------
+  { framework: "phoenix", language: "elixir", weight: WEIGHT.DECISIVE, name: "phoenix-liveview", html: /phx-(click|submit|change|value|hook|socket|main|track-static)/ },
+  { framework: "phoenix", language: "elixir", weight: WEIGHT.STRONG, name: "phoenix-cowboy", header: /^server: cowboy/ },
+  // ---- Java / C# / Go -------------------------------------------------------------
+  { framework: "spring", language: "java", weight: WEIGHT.STRONG, name: "thymeleaf-attr", html: /\sth:[a-z-]+=/ },
+  { framework: "spring", language: "java", weight: WEIGHT.STRONG, name: "spring-server", header: /^server: (apache-coyote|tomcat|jetty)/ },
+  { framework: "aspnet", language: "csharp", weight: WEIGHT.DECISIVE, name: "aspnet-verification-token", html: /__RequestVerificationToken|__VIEWSTATE/ },
+  { framework: "aspnet", language: "csharp", weight: WEIGHT.STRONG, name: "aspnet-server", header: /^(server: kestrel|x-powered-by: asp\.net|x-aspnet-version:)/ },
+  // "gin" used to be tested as a substring of the Server header, which matches nginx - the
+  // single most common web server there is. Anchored to the whole value now.
+  { framework: "go", language: "go", weight: WEIGHT.STRONG, name: "go-server", header: /^server: (gin|echo|fiber|gorilla)(\/|$| )/ },
+  // ---- Hypermedia -----------------------------------------------------------------
+  { framework: "htmx", language: "unknown", weight: WEIGHT.STRONG, name: "htmx-attrs", html: /\shx-(get|post|put|delete|trigger|swap|target)=/ },
+  { framework: "htmx", language: "unknown", weight: WEIGHT.DECISIVE, name: "htmx-script", html: /htmx(\.min)?\.js|unpkg\.com\/htmx/ },
+  // ---- Static site generators: they announce themselves -----------------------------
+  { framework: "hugo", language: "go", weight: WEIGHT.DECISIVE, name: "hugo-generator", html: /name=["']?generator["']?[^>]*content=["']?Hugo/i },
+  { framework: "hugo", language: "go", weight: WEIGHT.STRONG, name: "hugo-generator-header", header: /^x-generator: hugo/ },
+  { framework: "jekyll", language: "ruby", weight: WEIGHT.DECISIVE, name: "jekyll-generator", html: /name=["']?generator["']?[^>]*content=["']?Jekyll/i },
+  { framework: "eleventy", language: "javascript", weight: WEIGHT.DECISIVE, name: "eleventy-generator", html: /name=["']?generator["']?[^>]*content=["']?Eleventy/i },
+  { framework: "pelican", language: "python", weight: WEIGHT.DECISIVE, name: "pelican-generator", html: /name=["']?generator["']?[^>]*content=["']?Pelican/i },
+  // Sphinx: what nearly every Python project's documentation is built with, and the shape
+  // flask.palletsprojects.com turned out to be. Structural markers only - not the word
+  // "sphinx", which appears in plenty of prose.
+  { framework: "sphinx", language: "python", weight: WEIGHT.DECISIVE, name: "sphinx-doc-options", html: /_static\/documentation_options\.js/ },
+  { framework: "sphinx", language: "python", weight: WEIGHT.STRONG, name: "sphinx-theme-markup", html: /class=["'][^"']*sphinxsidebar|sphinx-highlight|_static\/searchtools\.js/ },
+  { framework: "sphinx", language: "python", weight: WEIGHT.STRONG, name: "docutils-generator", html: /name=["']?generator["']?[^>]*content=["']?Docutils/i }
 ];
+function headerLines(headers) {
+  if (!headers)
+    return "";
+  return Object.entries(headers).map(([k, v]) => `${k.toLowerCase()}: ${String(v).toLowerCase()}`).join("\n");
+}
+function detectFromEvidence(input) {
+  const html = input.html ?? "";
+  const headers = headerLines(input.headers);
+  const byFramework = /* @__PURE__ */ new Map();
+  for (const signal of SIGNALS) {
+    const headerHit = signal.header && headers && new RegExp(
+      signal.header.source,
+      signal.header.flags.includes("m") ? signal.header.flags : `${signal.header.flags}m`
+    ).test(headers);
+    const allHit = signal.allHtml && html && signal.allHtml.every((re) => re.test(html));
+    const hit = signal.html && html && signal.html.test(html) || headerHit || allHit;
+    if (!hit)
+      continue;
+    const existing = byFramework.get(signal.framework);
+    if (existing) {
+      existing.score += signal.weight;
+      existing.matched.push(signal.name);
+    } else {
+      byFramework.set(signal.framework, {
+        framework: signal.framework,
+        language: signal.language,
+        score: signal.weight,
+        matched: [signal.name]
+      });
+    }
+  }
+  const ranked = [...byFramework.values()].sort((a, b) => b.score - a.score || a.framework.localeCompare(b.framework));
+  const best = ranked[0];
+  if (!best || best.score < SCORE_FLOOR) {
+    return {
+      framework: "unknown",
+      language: "unknown",
+      confidence: "low",
+      score: best?.score ?? 0,
+      matched: best?.matched ?? [],
+      alternatives: ranked
+    };
+  }
+  return {
+    framework: best.framework,
+    language: best.language,
+    confidence: best.score >= WEIGHT.DECISIVE ? "high" : "medium",
+    score: best.score,
+    matched: best.matched,
+    alternatives: ranked.slice(1)
+  };
+}
+
+// src/frameworks/detector.ts
 var PACKAGE_DEPENDENCIES = [
   // Meta-frameworks (check first - more specific)
   { framework: "nextjs", language: "typescript", packages: ["next"], meta_framework: "react" },
@@ -10797,21 +10722,6 @@ var GO_DEPENDENCIES = [
 var ELIXIR_DEPENDENCIES = [
   { framework: "phoenix", language: "elixir", packages: [":phoenix", "phoenix"] }
 ];
-function detectFromHtml(html) {
-  for (const signature of HTML_SIGNATURES) {
-    for (const pattern of signature.patterns) {
-      if (pattern.test(html)) {
-        return {
-          framework: signature.framework,
-          language: signature.language,
-          confidence: signature.confidence,
-          detected_from: "html"
-        };
-      }
-    }
-  }
-  return null;
-}
 function detectFromPackageJson(packageJson) {
   const allDeps = {
     ...packageJson.dependencies,
@@ -10951,54 +10861,6 @@ function detectFromMixExs(mixContent) {
   }
   return null;
 }
-function detectFromHeaders(headers) {
-  const poweredBy = headers["x-powered-by"]?.toLowerCase() || "";
-  const server = headers["server"]?.toLowerCase() || "";
-  const generator = headers["x-generator"]?.toLowerCase() || "";
-  if (poweredBy.includes("next.js") || poweredBy.includes("next")) {
-    return { framework: "nextjs", language: "typescript", confidence: "high", detected_from: "headers" };
-  }
-  if (poweredBy.includes("nuxt")) {
-    return { framework: "nuxt", language: "typescript", confidence: "high", detected_from: "headers" };
-  }
-  if (poweredBy.includes("remix")) {
-    return { framework: "remix", language: "typescript", confidence: "high", detected_from: "headers" };
-  }
-  if (poweredBy.includes("phusion") || poweredBy.includes("passenger") || poweredBy.includes("puma") || poweredBy.includes("unicorn")) {
-    return { framework: "rails", language: "ruby", confidence: "medium", detected_from: "headers" };
-  }
-  if (poweredBy.includes("gunicorn") || poweredBy.includes("uvicorn") || poweredBy.includes("daphne")) {
-    return null;
-  }
-  if (poweredBy.includes("php")) {
-    return null;
-  }
-  if (server.includes("tomcat") || server.includes("jetty") || poweredBy.includes("spring")) {
-    return { framework: "spring", language: "java", confidence: "medium", detected_from: "headers" };
-  }
-  if (poweredBy.includes("asp.net") || server.includes("kestrel")) {
-    return { framework: "aspnet", language: "csharp", confidence: "high", detected_from: "headers" };
-  }
-  if (poweredBy.includes("phoenix") || poweredBy.includes("cowboy")) {
-    return { framework: "phoenix", language: "elixir", confidence: "medium", detected_from: "headers" };
-  }
-  if (server.includes("gin") || server.includes("echo") || server.includes("fiber")) {
-    return { framework: "go", language: "go", confidence: "medium", detected_from: "headers" };
-  }
-  if (generator.includes("hugo")) {
-    return { framework: "hugo", language: "go", confidence: "high", detected_from: "headers" };
-  }
-  if (generator.includes("jekyll")) {
-    return { framework: "jekyll", language: "ruby", confidence: "high", detected_from: "headers" };
-  }
-  if (generator.includes("eleventy") || generator.includes("11ty")) {
-    return { framework: "eleventy", language: "javascript", confidence: "high", detected_from: "headers" };
-  }
-  if (generator.includes("pelican")) {
-    return { framework: "pelican", language: "python", confidence: "high", detected_from: "headers" };
-  }
-  return null;
-}
 function detectFramework(options) {
   if (options.packageJson) {
     const result = detectFromPackageJson(options.packageJson);
@@ -11040,15 +10902,16 @@ function detectFramework(options) {
     if (result)
       return result;
   }
-  if (options.headers) {
-    const result = detectFromHeaders(options.headers);
-    if (result)
-      return result;
-  }
-  if (options.html) {
-    const result = detectFromHtml(options.html);
-    if (result)
-      return result;
+  if (options.html || options.headers) {
+    const result = detectFromEvidence({ html: options.html, headers: options.headers });
+    if (result.framework !== "unknown") {
+      return {
+        framework: result.framework,
+        language: result.language,
+        confidence: result.confidence,
+        detected_from: options.html ? "html" : "headers"
+      };
+    }
   }
   if (options.files) {
     if (options.files.some((f) => f.includes("next.config"))) {
