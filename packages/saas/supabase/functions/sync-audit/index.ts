@@ -59,6 +59,8 @@ interface SyncAuditBody {
     aiReadiness: number;
   };
   aiAnalysis?: Record<string, unknown> | null;
+  /** What the audit detected, e.g. 'Next.js'. Absent or 'unknown' leaves the project's as it was. */
+  framework?: string;
 }
 
 serve(async (req) => {
@@ -240,6 +242,11 @@ serve(async (req) => {
         last_audit_score: body.healthScores.overall,
         last_scheduled_audit_at: now,
         scheduled_audit_source: 'cli',
+        // projects.framework has existed since the first migration and the project page has
+        // always had a badge for it, but nothing ever wrote it - so the badge never appeared
+        // and the dashboard never told anyone what the audit detected, while the CLI printed
+        // it on every run. Only overwritten when this audit actually identified something.
+        ...(body.framework && body.framework !== 'unknown' ? { framework: body.framework } : {}),
       })
       .eq('id', projectId);
 

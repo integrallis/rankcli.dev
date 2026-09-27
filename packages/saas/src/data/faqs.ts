@@ -1,3 +1,9 @@
+import frameworks from '@/config/frameworks.json';
+
+// Generated from the recipe files; src/test/frameworks.test.ts holds the two together.
+const RECIPE_COUNT = `${frameworks.with_recipes.length} frameworks`;
+const FRAMEWORK_LIST = frameworks.with_recipes.map((f) => f.name).join(', ');
+
 // The landing page FAQ. The FAQPage structured data is generated from this
 // same list, so it can't drift from what visitors actually see.
 export const faqs = [
@@ -19,7 +25,11 @@ export const faqs = [
   {
     question: 'What frameworks do you support?',
     answer:
-      'We support 11 frameworks: Next.js, React, Vue, Nuxt, Astro, SvelteKit, Angular, Rails, Django, Laravel, and WordPress. The CLI auto-detects your framework and generates appropriate fixes.',
+      `RankCLI has framework-specific fix recipes for ${RECIPE_COUNT}: ${FRAMEWORK_LIST}. ` +
+      'Every audit detects your framework and says which one it found, and these are the ones ' +
+      'whose fixes follow that framework\'s own conventions. Detection recognises many more - ' +
+      'Spring, Phoenix, Hugo, Jekyll, Flask, FastAPI, Symfony, htmx and others - and reports ' +
+      'them, but their fixes are generic rather than framework-specific.',
   },
   {
     question: 'Is there a free tier?',

@@ -28,7 +28,7 @@ const highlights = [
   {
     title: '11 Framework Recipes',
     description:
-      'Auto-generated, framework-specific fixes for Next.js, Nuxt, Vue, Astro, SvelteKit, Angular, Rails, Django, Laravel, WordPress, and React.',
+      'Auto-generated, framework-specific fixes for 11 frameworks, from the recipes shipped in @rankcli/agent-runtime.',
   },
 ];
 

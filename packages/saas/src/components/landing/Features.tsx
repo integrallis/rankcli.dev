@@ -10,6 +10,18 @@ import {
   Cpu,
   Sparkles,
 } from 'lucide-react';
+import frameworks from '@/config/frameworks.json';
+
+// The list comes from src/config/frameworks.json, which is generated from the recipe files and
+// asserted against them by src/test/frameworks.test.ts. Three places used to hardcode it and
+// they had already drifted apart.
+const FRAMEWORK_NAMES = frameworks.with_recipes.map((f) => f.name);
+
+function listFrameworks(): string {
+  return FRAMEWORK_NAMES.length > 1
+    ? `${FRAMEWORK_NAMES.slice(0, -1).join(', ')} and ${FRAMEWORK_NAMES[FRAMEWORK_NAMES.length - 1]}`
+    : FRAMEWORK_NAMES[0];
+}
 import { ScrollReveal, StaggerContainer, StaggerItem } from '@/components/ui/scroll-reveal';
 
 const features = [
@@ -49,9 +61,8 @@ const features = [
   },
   {
     icon: GitPullRequest,
-    title: '11 Framework Recipes',
-    description:
-      'Auto-generate SEO fixes for Next.js, Nuxt, Vue, Astro, SvelteKit, Angular, Rails, Django, Laravel, WordPress, and React. Copy-paste ready.',
+    title: `${FRAMEWORK_NAMES.length} Framework Recipes`,
+    description: `Auto-generate SEO fixes for ${listFrameworks()}. Copy-paste ready.`,
   },
   {
     icon: Terminal,

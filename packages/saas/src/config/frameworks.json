@@ -1,0 +1,49 @@
+{
+  "_comment": "Generated from packages/agent-runtime/src/frameworks/recipes/*.yaml - the recipes are the source of truth, because a recipe is what makes a framework more than 'detected'. src/test/frameworks.test.ts fails if this list and that directory disagree, which is what stops the marketing copy from drifting away from what the product does.",
+  "with_recipes": [
+    {
+      "id": "angular",
+      "name": "Angular"
+    },
+    {
+      "id": "astro",
+      "name": "Astro"
+    },
+    {
+      "id": "django",
+      "name": "Django"
+    },
+    {
+      "id": "laravel",
+      "name": "Laravel"
+    },
+    {
+      "id": "nextjs",
+      "name": "Next.js"
+    },
+    {
+      "id": "nuxt",
+      "name": "Nuxt"
+    },
+    {
+      "id": "rails",
+      "name": "Ruby on Rails"
+    },
+    {
+      "id": "react",
+      "name": "React"
+    },
+    {
+      "id": "sveltekit",
+      "name": "SvelteKit"
+    },
+    {
+      "id": "vue",
+      "name": "Vue.js"
+    },
+    {
+      "id": "wordpress",
+      "name": "WordPress"
+    }
+  ]
+}
