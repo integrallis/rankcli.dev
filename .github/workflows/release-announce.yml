@@ -1,0 +1,213 @@
+# Announce a release on the channels we already have credentials for.
+#
+# growth-ops posts the weekly dogfood score on a schedule and nothing else, so shipping a
+# release was silent: v0.0.44 rebuilt framework detection and went out to npm, Homebrew and
+# Scoop with no announcement anywhere. This is the missing path.
+#
+# It is deliberately NOT triggered by `release: published`. What a release means is a judgment
+# call, and the summary below is a sentence a human writes - automating the posting is worth
+# it, automating the wording is how you end up announcing a patch bump as though it were a
+# feature. Same reason growth-ops never generates free-form copy.
+#
+# A manual run is a DRY RUN unless you set dry_run to false. Channels are individually gated on
+# their secrets, so this is safe to run with only some of them configured.
+
+name: Announce release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to announce, e.g. v0.0.44'
+        required: true
+        type: string
+      summary:
+        description: 'One sentence on what shipped. This is the whole post on Bluesky.'
+        required: true
+        type: string
+      highlights:
+        description: 'Optional bullet points, one per line (LinkedIn, Dev.to and Discord only)'
+        required: false
+        default: ''
+        type: string
+      dry_run:
+        description: 'Print the posts instead of publishing them'
+        type: boolean
+        default: true
+      channels:
+        description: 'Comma-separated channels to post to'
+        required: false
+        default: 'bluesky,linkedin,discord'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check the release exists and read its title
+        id: release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          # Announce from the public mirror: it is the page readers can actually open, and if
+          # the mirror is missing then the binaries are missing too and there is nothing to
+          # announce yet.
+          if ! gh release view "$TAG" --repo integrallis/rankcli-cli >/dev/null 2>&1; then
+            echo "::error::No public release $TAG on integrallis/rankcli-cli - has CLI native release finished?"
+            exit 1
+          fi
+          TITLE=$(gh release view "$TAG" --repo integrallis/rankcli-cli --json name --jq '.name')
+          echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+
+      - name: Build the posts
+        id: posts
+        env:
+          TAG: ${{ inputs.tag }}
+          TITLE: ${{ steps.release.outputs.title }}
+          SUMMARY: ${{ inputs.summary }}
+          HIGHLIGHTS: ${{ inputs.highlights }}
+        run: |
+          node scripts/growth-ops/release-post.mjs > posts.json
+          echo "::group::The posts"
+          cat posts.json
+          echo "::endgroup::"
+
+      - name: Is a channel selected?
+        id: pick
+        env:
+          CHANNELS: ${{ inputs.channels }}
+        run: |
+          for ch in bluesky linkedin discord devto; do
+            if echo ",$CHANNELS," | tr -d ' ' | grep -q ",$ch,"; then
+              echo "${ch}=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "${ch}=false" >> "$GITHUB_OUTPUT"
+            fi
+          done
+
+      - name: Dry run summary
+        if: ${{ inputs.dry_run }}
+        run: |
+          {
+            echo "### Dry run — nothing was posted"
+            echo
+            echo "Selected channels: \`${{ inputs.channels }}\`"
+            echo
+            for ch in bluesky linkedin discord; do
+              echo "#### $ch"
+              echo '```'
+              jq -r --arg c "$ch" '.[$c]' posts.json
+              echo '```'
+            done
+            echo "#### dev.to"
+            echo '```'
+            jq -r '.devto.title + "\n\n" + .devto.body' posts.json
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post to Bluesky
+        if: ${{ !inputs.dry_run && steps.pick.outputs.bluesky == 'true' }}
+        env:
+          BLUESKY_IDENTIFIER: ${{ secrets.BLUESKY_IDENTIFIER }}
+          BLUESKY_APP_PASSWORD: ${{ secrets.BLUESKY_APP_PASSWORD }}
+        run: |
+          if [ -z "$BLUESKY_IDENTIFIER" ] || [ -z "$BLUESKY_APP_PASSWORD" ]; then
+            echo "::notice::Skipping Bluesky — BLUESKY_IDENTIFIER/BLUESKY_APP_PASSWORD not set"
+            exit 0
+          fi
+          BODY=$(jq -r '.bluesky' posts.json)
+
+          SESSION=$(curl -sS -f -X POST https://bsky.social/xrpc/com.atproto.server.createSession \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg i "$BLUESKY_IDENTIFIER" --arg p "$BLUESKY_APP_PASSWORD" \
+                  '{identifier: $i, password: $p}')")
+          ACCESS_JWT=$(echo "$SESSION" | jq -r '.accessJwt')
+          DID=$(echo "$SESSION" | jq -r '.did')
+          NOW=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
+
+          # facets: without them the URL is plain text on Bluesky, not a link. byteStart/byteEnd
+          # are UTF-8 byte offsets, which is why this is measured in Buffer lengths, not indexes.
+          FACETS=$(BODY="$BODY" node -e '
+            const text = process.env.BODY;
+            const match = text.match(/https?:\/\/\S+/);
+            if (!match) { console.log("[]"); process.exit(0); }
+            const start = Buffer.byteLength(text.slice(0, match.index));
+            console.log(JSON.stringify([{
+              index: { byteStart: start, byteEnd: start + Buffer.byteLength(match[0]) },
+              features: [{ $type: "app.bsky.richtext.facet#link", uri: match[0] }],
+            }]));
+          ')
+
+          curl -sS -f -X POST https://bsky.social/xrpc/com.atproto.repo.createRecord \
+            -H "Authorization: Bearer $ACCESS_JWT" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg repo "$DID" --arg text "$BODY" --arg now "$NOW" --argjson facets "$FACETS" \
+                  '{repo: $repo, collection: "app.bsky.feed.post",
+                    record: {text: $text, createdAt: $now, facets: $facets}}')"
+          echo "::notice::Posted to Bluesky"
+
+      - name: Post to LinkedIn
+        if: ${{ !inputs.dry_run && steps.pick.outputs.linkedin == 'true' }}
+        env:
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          LINKEDIN_MEMBER_URN: ${{ secrets.LINKEDIN_MEMBER_URN }}
+        run: |
+          if [ -z "$LINKEDIN_ACCESS_TOKEN" ] || [ -z "$LINKEDIN_MEMBER_URN" ]; then
+            echo "::notice::Skipping LinkedIn — LINKEDIN_ACCESS_TOKEN/LINKEDIN_MEMBER_URN not set"
+            exit 0
+          fi
+          PAYLOAD=$(jq -n --arg author "$LINKEDIN_MEMBER_URN" --arg text "$(jq -r '.linkedin' posts.json)" '{
+            author: $author, lifecycleState: "PUBLISHED",
+            specificContent: { "com.linkedin.ugc.ShareContent": { shareCommentary: { text: $text }, shareMediaCategory: "NONE" } },
+            visibility: { "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC" }
+          }')
+          curl -sS -f -X POST https://api.linkedin.com/v2/ugcPosts \
+            -H "Authorization: Bearer $LINKEDIN_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "X-Restli-Protocol-Version: 2.0.0" \
+            -d "$PAYLOAD"
+          echo "::notice::Posted to LinkedIn"
+
+      - name: Post to Discord
+        if: ${{ !inputs.dry_run && steps.pick.outputs.discord == 'true' }}
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "::notice::Skipping Discord — DISCORD_WEBHOOK_URL not set"
+            exit 0
+          fi
+          curl -sS -f -X POST "$DISCORD_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg content "$(jq -r '.discord' posts.json)" '{content: $content}')"
+          echo "::notice::Posted to Discord"
+
+      - name: Post to Dev.to
+        if: ${{ !inputs.dry_run && steps.pick.outputs.devto == 'true' }}
+        env:
+          DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+        run: |
+          if [ -z "$DEVTO_API_KEY" ]; then
+            echo "::notice::Skipping Dev.to — DEVTO_API_KEY not set"
+            exit 0
+          fi
+          PAYLOAD=$(jq -n \
+            --arg title "$(jq -r '.devto.title' posts.json)" \
+            --arg body "$(jq -r '.devto.body' posts.json)" \
+            '{article: {title: $title, body_markdown: $body, published: true,
+                        canonical_url: "https://rankcli.dev", tags: ["seo", "webdev", "cli"]}}')
+          curl -sS -f -X POST https://dev.to/api/articles \
+            -H "api-key: $DEVTO_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"
+          echo "::notice::Posted to Dev.to"
