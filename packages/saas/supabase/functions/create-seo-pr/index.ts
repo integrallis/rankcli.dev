@@ -66,6 +66,41 @@ function isTemplateOwned(path: string): boolean {
   return TEMPLATE_OWNED_FILES.includes(name);
 }
 
+/**
+ * The JSON a model meant to send, out of whatever it actually sent.
+ *
+ * `JSON.parse(content)` threw "Unexpected end of JSON input" on a real request and returned a
+ * 500 - and because the gift is claimed before the call, that user's one free PR was spent on
+ * our parsing. Models wrap JSON in ```json fences, prefix it with a sentence, or stop mid-object
+ * when they run out of output budget. The first two are recoverable and worth recovering; the
+ * third is not, and has to fail as a "could not generate" rather than as a crash.
+ */
+function parseModelJson(content: string): { files?: unknown; summary?: string } {
+  const text = (content ?? '').trim();
+  if (!text) throw new Error('the model returned nothing');
+
+  const candidates = [text];
+
+  // ```json ... ``` or ``` ... ```
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (fenced?.[1]) candidates.push(fenced[1].trim());
+
+  // Prose before or after the object.
+  const firstBrace = text.indexOf('{');
+  const lastBrace = text.lastIndexOf('}');
+  if (firstBrace >= 0 && lastBrace > firstBrace) candidates.push(text.slice(firstBrace, lastBrace + 1));
+
+  for (const candidate of candidates) {
+    try {
+      const parsed = JSON.parse(candidate);
+      if (parsed && typeof parsed === 'object') return parsed as { files?: unknown; summary?: string };
+    } catch {
+      // try the next shape
+    }
+  }
+  throw new Error(`the model's reply was not JSON (${text.length} chars, starts "${text.slice(0, 60)}")`);
+}
+
 /** The <head> alone, when a page is too big to send whole. */
 function headOnly(html: string): string {
   const match = html.match(/<head[\s\S]*?<\/head>/i);
@@ -415,7 +450,7 @@ You should output the COMPLETE file with additions in <head>, keeping body uncha
 
   const usage: { promptTokens?: number; completionTokens?: number } = {};
   const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, { jsonMode: true, usage });
-  return { ...JSON.parse(content), usage };
+  return { ...parseModelJson(content), usage };
 }
 
 serve(async (req) => {
@@ -871,13 +906,27 @@ serve(async (req) => {
           console.log(`[GIFT] settled for ${project.user_id}: ${promptTokens}/${completionTokens} tokens`);
         }
       } catch (error) {
-        // The grant is already spent at this point. Mark it failed rather than leaving a
-        // 'claimed' row that looks like an account which used its gift and got nothing:
-        // a failed row is the signal to investigate, and it can be cleared to re-gift.
+        // Mark the grant failed rather than leaving a 'claimed' row that looks like an account
+        // which used its gift and got nothing. claim_ai_gift lets a failed grant be claimed
+        // again, so our failure does not cost the user their one free PR.
         if (gifted) {
           await supabase.rpc('settle_ai_gift', { p_user_id: project.user_id, p_status: 'failed', p_model: giftModel() });
         }
-        throw error;
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[AI] generation failed: ${message}`);
+        // A model that answers with something unusable is a failed generation, not a server
+        // error: the caller gets the same "could not generate" it would get for empty output.
+        return noop(
+          `The AI could not produce a usable set of changes (${message}). Nothing was committed.` +
+            (gifted ? ' Your free PR has not been used up.' : ''),
+          {
+            generatedBy,
+            prsForReport: reportPrs.length,
+            prsAllowedForReport: PRS_PER_REPORT,
+            prsThisMonth,
+            prsAllowedThisMonth: monthlyAllowance,
+          }
+        );
       }
     } else {
       console.log('No AI key - generating template fixes...');
