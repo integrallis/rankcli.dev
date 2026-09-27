@@ -272,7 +272,10 @@ async function generateAIFixes(
   aiSuggestions?: { titles?: string[]; descriptions?: string[] },
   /** From the framework's own recipe - see buildFrameworkGuidance. */
   recipeGuidance?: string
-): Promise<{ files: FileChange[]; summary: string; usage?: { promptTokens?: number; completionTokens?: number } }> {
+// Returns whatever the model said, not a FileChange[]: it is parsed JSON from a remote service,
+// and validateGeneratedFiles is what turns it into something committable. Typing it as already
+// valid was how an unchecked `files` array reached the GitHub API in the first place.
+): Promise<{ files?: unknown; summary?: string; usage?: { promptTokens?: number; completionTokens?: number } }> {
   const appRoot = repoContext.appRoot || '';
   const servedDir = repoContext.servedDir;
   const isReactVite = repoContext.framework === 'react-vite' || repoContext.framework === 'react';
