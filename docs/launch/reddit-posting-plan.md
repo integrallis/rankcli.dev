@@ -6,7 +6,7 @@ slot by elapsed time rather than by posts sent, so three of the four are already
 `growth-ops`, and posting by hand is faster than fixing that.
 
 **Numbers below are verified against a live run on 2026-09-27** (`@rankcli/cli@0.0.45`):
-homepage **71/100**, 5-page crawl **68/100**, **AI Readiness 1%**, **0 errors**. Re-check before
+homepage **75/100**, **AI Readiness 67**, **0 errors** (v0.0.46). Re-check before
 posting if it's been more than a few days — a stale number is the fastest way to lose a thread.
 
 ## Order and spacing
@@ -71,35 +71,40 @@ The question at the end is the point. It gives people something to answer that i
 **Title**
 
 ```
-Built an SEO tool that audits your site the way CI audits your code — dogfooding it publicly (71/100, and our AI Readiness is 1%)
+Built an SEO tool that audits sites the way CI audits code — spent this week finding three bugs in it by running it on ourselves
 ```
 
 **Body**
 
 ```
-Spent the last few months building RankCLI: SEO and GEO (AI-search-citation) checks that run in
-CI and open a pull request when something's fixable, instead of another dashboard alert nobody
-reads.
+RankCLI is SEO and GEO (AI-search-citation) checks that run in CI and open a pull request when
+something's fixable, instead of another dashboard alert nobody reads.
 
-We eat our own dog food in public. rankcli.dev currently scores 71/100 on its own audit, and
-our AI Readiness sub-score is 1%. Those numbers go out weekly whether they went up or not.
+We publish our own audit score weekly whether it went up or not. It's 75/100 today. Getting
+there this week meant finding three bugs by pointing the tool at ourselves, and all three were
+reporting *errors* — the severity people actually act on:
 
-Two bugs I found this week by running it on ourselves, both of which were reporting *critical*
-errors that were just wrong:
+- Our noindex /login was flagged "your content is likely invisible to Google". It's noindex on
+  purpose. Every SaaS has a /login, so this fired for everybody.
+- Any dark-themed page failed colour contrast. The checker read only an element's own inline
+  style and assumed white when it found no background — our text is 9:1 and it reported 2.56:1.
+- The one that stung: our AI Readiness score was 1%. I assumed our content was bad. Then I ran
+  the same check against stripe.com (13), vercel.com (7), cloudflare.com (0) and
+  docs.astro.build (0). A documentation site — the ideal AI-citation target — scored zero. The
+  metric was saturated and meaningless. The category had 3-4x more checks than any other and
+  was using the same per-check penalty, so every real page blew past 100 points of deduction
+  before the interesting checks counted. Those five now spread 52-71.
 
-- A noindex /login page was being flagged "your content is likely invisible to Google". It's
-  noindex on purpose. Every SaaS has one, so this fired for everybody.
-- Any dark-themed page failed colour contrast, because the checker assumed a white background
-  when an element didn't declare one. Our own text was 9:1 and reported as 2.56:1.
+The lesson I keep relearning: a confident wrong "critical" is worse than a missing check,
+because it teaches people the red ones are noise.
 
 Free tier runs entirely local via MCP (`npx @rankcli/mcp-server`), no signup. Happy to answer
-anything about the build, or take feedback on the free tier.
+anything about the build.
 ```
 
 Leading with your own bugs is the move here. r/SideProject rewards candour and is immediately
-suspicious of a flawless launch post.
-
----
+suspicious of a flawless launch post — and the AI-readiness story is genuinely the best thing
+you have, because it is a measurement failure anyone who has built a scoring system recognises.
 
 ## Day 5 — r/programming
 
