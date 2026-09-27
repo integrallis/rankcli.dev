@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-27T18:08:40.667Z
+// Generated: 2026-09-27T19:14:15.645Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -20603,7 +20603,7 @@ function calculateHealthScore(issues) {
   const links = Math.max(0, 100 - categoryDeductions.links * 3);
   const performance = Math.max(0, 100 - categoryDeductions.performance * 4);
   const security = Math.max(0, 100 - categoryDeductions.security * 5);
-  const aiReadiness = Math.max(0, 100 - categoryDeductions["ai-readiness"] * 3);
+  const aiReadiness = Math.max(0, 100 - categoryDeductions["ai-readiness"] * 1);
   const social = Math.max(0, 100 - categoryDeductions.social * 2);
   const localSeo = Math.max(0, 100 - categoryDeductions["local-seo"] * 2);
   const accessibility = Math.max(0, 100 - categoryDeductions.accessibility * 4);
