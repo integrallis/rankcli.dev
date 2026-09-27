@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-27T16:26:44.710Z
+// Generated: 2026-09-27T17:52:10.360Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -6309,13 +6309,14 @@ async function loadRecipe(framework) {
   }
   return null;
 }
-async function getFrameworkIssues(frameworkInfo, html, url) {
+async function getFrameworkIssues(frameworkInfo, html, url, options = {}) {
   const recipe = await loadRecipe(frameworkInfo.framework);
   if (!recipe)
     return [];
   const issues = [];
+  const indexable = options.indexable ?? true;
   for (const check of recipe.checks) {
-    const matched = evaluateCheck(check, html, frameworkInfo);
+    const matched = evaluateCheck(check, html, frameworkInfo, indexable);
     if (matched) {
       issues.push({
         code: check.code,
@@ -6336,7 +6337,10 @@ async function getFrameworkIssues(frameworkInfo, html, url) {
   }
   return issues;
 }
-function evaluateCheck(check, html, frameworkInfo) {
+function evaluateCheck(check, html, frameworkInfo, indexable = true) {
+  if (check.indexable_only && !indexable) {
+    return false;
+  }
   if (check.app_router_only && html.includes("__next")) {
     return false;
   }
@@ -6399,6 +6403,7 @@ seo_challenges:
 
 checks:
   - code: ANGULAR_NO_UNIVERSAL
+    indexable_only: true
     severity: error
     title: "Angular app without Universal (SSR)"
     description: "Client-side Angular apps send empty HTML to crawlers."
@@ -6417,6 +6422,7 @@ checks:
       missing_content: true
 
   - code: ANGULAR_NO_TITLE_SERVICE
+    indexable_only: true
     severity: error
     title: "Not using Title/Meta services"
     description: "Angular has built-in services for managing title and meta tags."
@@ -6465,6 +6471,7 @@ checks:
       \`\`\`
 
   - code: ANGULAR_PRERENDER_MISSING
+    indexable_only: true
     severity: warning
     title: "Static routes not prerendered"
     description: "Static pages should be prerendered at build time."
@@ -6823,6 +6830,7 @@ checks:
       \`\`\`
 
   - code: DJANGO_NO_META_FRAMEWORK
+    indexable_only: true
     severity: warning
     title: "No SEO meta framework detected"
     description: "Use django-meta for consistent meta tag management."
@@ -6970,6 +6978,7 @@ seo_strengths:
 
 checks:
   - code: LARAVEL_NO_META_PACKAGE
+    indexable_only: true
     severity: warning
     title: "No SEO package detected"
     description: "Laravel benefits from an SEO package like artesaos/seotools."
@@ -7021,6 +7030,7 @@ checks:
       \`\`\`
 
   - code: LARAVEL_INERTIA_NO_SSR
+    indexable_only: true
     severity: error
     title: "Inertia.js without SSR"
     description: "Inertia apps are client-rendered by default, losing SEO benefits."
@@ -7115,6 +7125,7 @@ seo_strengths:
 checks:
   # App Router specific
   - code: NEXTJS_NO_METADATA_API
+    indexable_only: true
     severity: warning
     title: "Not using Next.js Metadata API"
     description: "Next.js 13+ has a built-in Metadata API that's better than react-helmet."
@@ -7387,6 +7398,7 @@ seo_strengths:
 
 checks:
   - code: NUXT_NO_USESEOMETA
+    indexable_only: true
     severity: warning
     title: "Not using useSeoMeta composable"
     description: "Nuxt 3 has built-in SEO meta composables that are cleaner than useHead."
@@ -7496,6 +7508,7 @@ checks:
       \`\`\`
 
   - code: NUXT_SPA_MODE
+    indexable_only: true
     severity: error
     title: "Nuxt running in SPA mode"
     description: "SPA mode disables SSR, losing SEO benefits."
@@ -7521,6 +7534,7 @@ checks:
       missing_content: true
 
   - code: NUXT_NO_PRERENDER
+    indexable_only: true
     severity: notice
     title: "Static pages not pre-rendered"
     description: "Static pages could be pre-rendered for better performance."
@@ -7564,6 +7578,7 @@ seo_strengths:
 
 checks:
   - code: RAILS_NO_META_TAGS_GEM
+    indexable_only: true
     severity: warning
     title: "Not using meta-tags gem"
     description: "The meta-tags gem provides a clean API for SEO tags."
@@ -7636,6 +7651,7 @@ checks:
       \`\`\`
 
   - code: RAILS_TURBO_BREAKS_CRAWLERS
+    indexable_only: true
     severity: notice
     title: "Turbo may affect JavaScript-dependent crawlers"
     description: "Turbo Drive updates pages via JavaScript, which some crawlers may miss."
@@ -7758,6 +7774,7 @@ seo_challenges:
 checks:
   # Critical - these will severely hurt SEO
   - code: REACT_CSR_DETECTED
+    indexable_only: true
     severity: error
     title: "Client-side rendered React app detected"
     description: "React apps without SSR send empty HTML to crawlers. Search engines may not index your content."
@@ -7773,6 +7790,7 @@ checks:
       missing_content: true  # Body has minimal text content
 
   - code: REACT_NO_SSR_META
+    indexable_only: true
     severity: error
     title: "Meta tags not server-rendered"
     description: "Title and meta description are set client-side and won't be seen by crawlers."
@@ -7839,6 +7857,7 @@ checks:
       \`\`\`
 
   - code: REACT_ROUTER_NO_SSR
+    indexable_only: true
     severity: warning
     title: "React Router without server-side support"
     description: "Client-side routing breaks when crawlers access URLs directly."
@@ -7857,6 +7876,7 @@ checks:
       \`\`\`
 
   - code: REACT_NO_PRERENDER
+    indexable_only: true
     severity: warning
     title: "No prerendering configured"
     description: "Static pages could be prerendered for better SEO and performance."
@@ -8013,6 +8033,7 @@ checks:
         - 'name="description"'
 
   - code: SVELTEKIT_NO_PRERENDER
+    indexable_only: true
     severity: notice
     title: "Static pages not prerendered"
     description: "Static pages should be prerendered for best performance."
@@ -8118,6 +8139,7 @@ seo_challenges:
 
 checks:
   - code: VUE_CSR_DETECTED
+    indexable_only: true
     severity: error
     title: "Client-side rendered Vue app detected"
     description: "Vue apps without SSR send empty HTML to crawlers."
@@ -8134,6 +8156,7 @@ checks:
       missing_content: true
 
   - code: VUE_NO_META_MANAGEMENT
+    indexable_only: true
     severity: error
     title: "No meta tag management library"
     description: "Title and meta description are not dynamically managed."
@@ -11226,6 +11249,23 @@ function metaHasNoindex(content) {
     return false;
   return content.toLowerCase().split(",").some((d) => ["noindex", "none"].includes(d.trim()));
 }
+function readRobotsDirectives(html, headers) {
+  const $ = cheerio.load(html);
+  const metaValues = [];
+  $("meta[name]").each((_, el) => {
+    const name = ($(el).attr("name") || "").toLowerCase();
+    if (name === "robots" || name === "googlebot") {
+      metaValues.push($(el).attr("content") || "");
+    }
+  });
+  const metaNoindex = metaValues.some(metaHasNoindex);
+  const xRobotsTag = headers ? Object.entries(headers).find(([k]) => k.toLowerCase() === "x-robots-tag")?.[1] : void 0;
+  const headerNoindex = xRobotsTagHasNoindex(xRobotsTag);
+  return { metaValues, metaNoindex, xRobotsTag, headerNoindex, hasNoindex: metaNoindex || headerNoindex };
+}
+function pageHasNoindex(html, headers) {
+  return readRobotsDirectives(html, headers).hasNoindex;
+}
 function isSiteRoot(url) {
   try {
     const u = new URL(url);
@@ -11241,17 +11281,7 @@ function analyzeOnPage(html, url, headers, options = {}) {
   const description = $('meta[name="description"]').attr("content")?.trim();
   const canonical = $('link[rel="canonical"]').attr("href");
   const metaRobots = $('meta[name="robots"]').attr("content");
-  const robotsMetaValues = [];
-  $("meta[name]").each((_, el) => {
-    const name = ($(el).attr("name") || "").toLowerCase();
-    if (name === "robots" || name === "googlebot") {
-      robotsMetaValues.push($(el).attr("content") || "");
-    }
-  });
-  const metaNoindex = robotsMetaValues.some(metaHasNoindex);
-  const headerLookup = headers ? Object.entries(headers).find(([k]) => k.toLowerCase() === "x-robots-tag")?.[1] : void 0;
-  const headerNoindex = xRobotsTagHasNoindex(headerLookup);
-  const hasNoindex = metaNoindex || headerNoindex;
+  const { metaValues: robotsMetaValues, metaNoindex, xRobotsTag: headerLookup, headerNoindex, hasNoindex } = readRobotsDirectives(html, headers);
   const h1s = [];
   $("h1").each((_, el) => {
     h1s.push($(el).text().trim());
@@ -20413,7 +20443,9 @@ async function runFullAudit(options) {
     const frameworkInfo = detectFramework({ html, headers });
     if (frameworkInfo.framework === "unknown")
       return [];
-    return getFrameworkIssues(frameworkInfo, html, url);
+    return getFrameworkIssues(frameworkInfo, html, url, {
+      indexable: !pageHasNoindex(html, headers)
+    });
   }));
   if (runExtendedChecks) {
     asyncChecks.push(safeAsync("Hreflang", () => analyzeHreflang(html, url, { validateUrls: checkHreflangUrls })));
