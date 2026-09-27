@@ -303,7 +303,10 @@ export function IssuesList({
                 className={cn('gap-2', highlightFixPR && 'ring-2 ring-primary ring-offset-2')}
                 onClick={!hasGitHub ? onConnectGitHub : onCreateFixPR}
                 disabled={isCreatingPR || (hasGitHub && prsExhausted)}
-                title={prBlocker ?? 'Open a PR that fixes the issues in this report'}
+                title={
+                  prBlocker ??
+                  'Opens a pull request that fixes the issues in this report. Nothing is merged for you - review the diff first.'
+                }
               >
                 {isCreatingPR ? (
                   <>

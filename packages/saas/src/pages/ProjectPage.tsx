@@ -448,7 +448,12 @@ export function ProjectPage() {
           : '';
         setNotification({
           type: 'success',
-          message: `PR #${result.prNumber} created with ${result.filesChanged} files changed, fixing ${result.issuesFixed} issues${skipped}${onUs}`,
+          message:
+            `PR #${result.prNumber} created with ${result.filesChanged} files changed, fixing ` +
+            `${result.issuesFixed} issues${skipped}${onUs}. ` +
+            (result.generatedBy === 'templates'
+              ? 'Generated from templates - review the diff before merging.'
+              : 'A model wrote it and nobody has reviewed it - read the diff before merging.'),
           prUrl: result.prUrl,
         });
       } else if (result.noop) {
