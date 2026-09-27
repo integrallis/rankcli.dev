@@ -251,20 +251,41 @@ if (AUTHED) {
 
   group('PR limits');
   await check('the per-report cap is enforced on a report that has spent it', async () => {
+    const key = JSON.parse(readFileSync(`${process.env.HOME}/Library/Preferences/rankcli-nodejs/config.json`, 'utf8')).apiKey;
+
+    // The cap scales with the plan (free 3 / solo 3 / pro 5 / agency 10), so this cannot assume
+    // a number. It asked for 409 after three PRs, which stopped being true for this Agency
+    // account the moment the cap stopped being flat.
+    const who = await (await fetch(`${SUPABASE}/functions/v1/validate-api-key`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': key, 'X-Endpoint': 'e2e' },
+    })).json();
+    const planId = who.subscription?.planId;
+    assert(planId, 'could not resolve the key to a plan');
+
+    const pricing = JSON.parse(readFileSync(join(ROOT, 'packages/saas/src/config/pricing-tiers.json'), 'utf8'));
+    const cap =
+      planId === 'free'
+        ? pricing.free_registered.auto_fix_prs_per_report
+        : pricing.subscriptions.find((t) => t.id === planId)?.limits.auto_fix_prs_per_report;
+    assert(typeof cap === 'number', `no per-report cap configured for plan ${planId}`);
+
     const prs = await rest('github_prs?select=audit_id&kind=eq.auto_fix');
     const counts = prs.reduce((acc, p) => ({ ...acc, [p.audit_id]: (acc[p.audit_id] ?? 0) + 1 }), {});
-    const spent = Object.entries(counts).find(([, n]) => n >= 3)?.[0];
-    if (!spent) return 'no report has spent its allowance yet (nothing to assert)';
+    const spent = Object.entries(counts).find(([, n]) => n >= cap)?.[0];
+    if (!spent) return `no report has spent its ${planId} allowance of ${cap} yet (nothing to assert)`;
 
-    const key = JSON.parse(readFileSync(`${process.env.HOME}/Library/Preferences/rankcli-nodejs/config.json`, 'utf8')).apiKey;
     const res = await fetch(`${SUPABASE}/functions/v1/create-seo-pr`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-API-Key': key },
       body: JSON.stringify({ auditId: spent }),
     });
     const body = await res.json();
-    assert(res.status === 409 && body.code === 'report_pr_limit_reached', `expected 409 report_pr_limit_reached, got ${res.status} ${body.code ?? ''}`);
-    return body.code;
+    assert(
+      res.status === 409 && body.code === 'report_pr_limit_reached',
+      `expected 409 report_pr_limit_reached at the ${planId} cap of ${cap}, got ${res.status} ${body.code ?? ''}`
+    );
+    return `${body.code} (${planId} cap ${cap})`;
   });
 
   await check('a repo already running RankCLI in CI is not given a second workflow', async () => {
