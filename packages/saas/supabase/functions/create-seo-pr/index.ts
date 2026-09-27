@@ -8,7 +8,14 @@ import { fetchFileContent, getDefaultBranchSha, createBranch, createOrUpdateFile
 import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
 import { resolveAIConfig, giftModel, giftCostUsd } from '../_shared/resolve-ai-config.ts';
 import { userIdFromApiKey } from '../_shared/caller-auth.ts';
-import { buildDeterministicFixes, findAppRoot, assessReplacement, describeConcerns } from '../_shared/audit/index.ts';
+import {
+  buildDeterministicFixes,
+  findAppRoot,
+  assessReplacement,
+  describeConcerns,
+  buildFrameworkGuidance,
+  loadRecipe,
+} from '../_shared/audit/index.ts';
 import { getEntitlement } from '../_shared/tier.ts';
 
 // The monthly auto-fix PR allowance comes from _shared/tier.ts (limits.autoFixPrsPerMonth,
@@ -227,7 +234,9 @@ async function generateAIFixes(
   repoContext: RepoContext,
   siteUrl: string,
   projectName: string,
-  aiSuggestions?: { titles?: string[]; descriptions?: string[] }
+  aiSuggestions?: { titles?: string[]; descriptions?: string[] },
+  /** From the framework's own recipe - see buildFrameworkGuidance. */
+  recipeGuidance?: string
 ): Promise<{ files: FileChange[]; summary: string; usage?: { promptTokens?: number; completionTokens?: number } }> {
   const appRoot = repoContext.appRoot || '';
   const servedDir = repoContext.servedDir;
@@ -255,12 +264,19 @@ STATIC SITE RULES:
 - Static files go in ${servedDir || "the app root, beside index.html"}
 `;
 
+  // The repo's own framework recipe, appended to the hand-written path rules above. The rules
+  // know this repository (where the app is, which file not to recreate); the recipe knows the
+  // framework (how it wants metadata done, and the code to do it with). Both, in that order.
+  const frameworkSection = recipeGuidance
+    ? `${frameworkInstructions}\n${recipeGuidance}\n`
+    : frameworkInstructions;
+
   const systemPrompt = `You are an expert SEO engineer. Your task is to generate code changes to fix SEO issues.
 
 You are working with a ${repoContext.framework} project.
 ${repoContext.appRoot ? `The app is located in the "${repoContext.appRoot}" subdirectory (monorepo structure).` : ''}
 
-${frameworkInstructions}
+${frameworkSection}
 
 GENERAL RULES:
 1. Generate ONE file change per issue where possible - each fix should be a separate commit
@@ -797,13 +813,23 @@ serve(async (req) => {
       console.log(`Generating AI-powered fixes${gifted ? ` (gifted, ${giftModel()})` : ''}...`);
       generatedBy = gifted ? 'gift' : 'ai';
       try {
+        // The recipe for the framework we detected, trimmed to the issues this report
+        // actually raised. Eleven of these ship with agent-runtime and the prompt had been
+        // ignoring all of them.
+        const recipe = await loadRecipe(framework).catch(() => null);
+        const recipeGuidance = buildFrameworkGuidance(recipe, {
+          issueCodes: issues.map((i: AuditIssue) => i.code),
+        });
+        if (recipeGuidance) console.log(`Framework guidance: ${recipeGuidance.length} chars from the ${framework} recipe`);
+
         const raw = await generateAIFixes(
           aiConfig,
           issues as AuditIssue[],
           repoContext,
           project.url,
           project.name,
-          aiSuggestions
+          aiSuggestions,
+          recipeGuidance
         );
         // The model's answer is parsed JSON from a remote service, not a trusted value.
         aiResult = { files: validateGeneratedFiles(raw?.files, appRoot), summary: raw?.summary ?? '' };

@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-27T12:08:59.806Z
+// Generated: 2026-09-27T12:33:57.977Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -24168,6 +24168,50 @@ function describeConcerns(concerns) {
   return concerns.map((c) => `${c.code} (${c.detail})`).join("; ");
 }
 
+// src/fixer/framework-guidance.ts
+var DEFAULT_MAX_CHARS = 4e3;
+function checkBlock(check) {
+  const fix = check.howToFix?.trim();
+  return [
+    `### ${check.title}${check.code ? ` (${check.code})` : ""}`,
+    check.description?.trim(),
+    fix ? `How this framework wants it fixed:
+${fix}` : null
+  ].filter(Boolean).join("\n");
+}
+function buildFrameworkGuidance(recipe, options = {}) {
+  if (!recipe)
+    return "";
+  const budget = options.maxChars ?? DEFAULT_MAX_CHARS;
+  const reported = new Set(options.issueCodes ?? []);
+  const header = [
+    `## ${recipe.display_name} conventions`,
+    `Renders on the server by default: ${recipe.ssr_default ? "yes" : "no"}.`,
+    recipe.seo_challenges?.length ? `Known traps in this framework:
+${recipe.seo_challenges.map((c) => `- ${c}`).join("\n")}` : null
+  ].filter(Boolean).join("\n");
+  const checks = recipe.checks ?? [];
+  const relevant = checks.filter((c) => c.code && reported.has(c.code));
+  const rest = checks.filter((c) => !relevant.includes(c));
+  let out = header;
+  let included = 0;
+  for (const check of [...relevant, ...rest]) {
+    const block = checkBlock(check);
+    if (out.length + block.length + 2 > budget)
+      break;
+    out += `
+
+${block}`;
+    included++;
+  }
+  if (included < checks.length) {
+    out += `
+
+_(${checks.length - included} more ${recipe.display_name} checks omitted.)_`;
+  }
+  return out;
+}
+
 // src/tracking/github-action-template.ts
 function generateWorkflow(config) {
   const cronSchedule = getCronSchedule(config.schedule);
@@ -24779,6 +24823,7 @@ export {
   analyzeUrlSafety,
   assessReplacement,
   buildDeterministicFixes,
+  buildFrameworkGuidance,
   checkAIBotBlocking,
   checkCertificate,
   checkLlmsTxt,
@@ -24796,6 +24841,7 @@ export {
   formatReport,
   generateSecretsDoc,
   generateWorkflow,
+  loadRecipe,
   mergePages,
   parseSitemap,
   routesToUrls,
