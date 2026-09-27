@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-27T17:52:10.360Z
+// Generated: 2026-09-27T18:08:40.667Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -18704,6 +18704,20 @@ var NAMED_COLORS = {
   transparent: [255, 255, 255]
   // Treat as white for calculation
 };
+function inheritedBackground($el) {
+  for (const ancestor of $el.parents().toArray()) {
+    const style = ancestor.attribs?.style;
+    if (!style)
+      continue;
+    const match = style.match(/(?:^|;)\s*background(?:-color)?\s*:\s*([^;]+)/i);
+    if (!match)
+      continue;
+    const value = match[1].trim();
+    if (!/^(transparent|none)$/i.test(value))
+      return value;
+  }
+  return null;
+}
 function analyzeColorContrast(html, url) {
   const issues = [];
   const $ = cheerio32.load(html);
@@ -18724,12 +18738,16 @@ function analyzeColorContrast(html, url) {
     const colorMatch = style.match(/(?:^|;)\s*color\s*:\s*([^;]+)/i);
     const bgMatch = style.match(/(?:^|;)\s*background(?:-color)?\s*:\s*([^;]+)/i);
     const foreground = colorMatch ? colorMatch[1].trim() : null;
-    const background = bgMatch ? bgMatch[1].trim() : null;
+    const background = bgMatch ? bgMatch[1].trim() : inheritedBackground($el);
     if (!foreground) {
       cannotDetermine++;
       return;
     }
-    const bgColor = background || "white";
+    if (!background) {
+      cannotDetermine++;
+      return;
+    }
+    const bgColor = background;
     const fgRgb = parseColor(foreground);
     const bgRgb = parseColor(bgColor);
     if (!fgRgb || !bgRgb) {
