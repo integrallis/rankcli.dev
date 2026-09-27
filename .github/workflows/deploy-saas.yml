@@ -253,8 +253,8 @@ jobs:
           # RankCLI's own OpenRouter key, used only for each account's one gifted auto-fix
           # PR (see _shared/resolve-ai-config.ts). Unset means no gifts are offered and
           # keyless accounts get the template fixes - the feature is off, not broken.
-          if [ -n "${{ secrets.RANKCLI_OPENROUTER_GIFT_KEY }}" ]; then
-            supabase secrets set OPENROUTER_GIFT_KEY="${{ secrets.RANKCLI_OPENROUTER_GIFT_KEY }}"
+          if [ -n "${{ secrets.OPEN_ROUTER_API_KEY }}" ]; then
+            supabase secrets set OPENROUTER_GIFT_KEY="${{ secrets.OPEN_ROUTER_API_KEY }}"
           fi
           if [ -n "${{ vars.OPENROUTER_GIFT_MODEL }}" ]; then
             supabase secrets set OPENROUTER_GIFT_MODEL="${{ vars.OPENROUTER_GIFT_MODEL }}"
