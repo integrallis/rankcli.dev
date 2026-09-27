@@ -1,5 +1,7 @@
 # Launch announcement (blog post / rankcli.dev/blog)
 
+> Numbers in this file come from [VERIFIED-NUMBERS.md](./VERIFIED-NUMBERS.md). Re-check before posting.
+
 Draft — not published. Intended for `rankcli.dev/blog` and to link from the
 Product Hunt post, MCP directory listings, and social posts.
 
@@ -59,7 +61,7 @@ as long as they stay subscribed. After that, full price. [See pricing →]
 
 ### We're dogfooding this in public
 
-rankcli.dev currently scores 60/100 in its own audit, with 70 open issues.
+rankcli.dev currently scores 75/100 in its own audit, with 0 errors and 64 open issues (2026-09-27 - see VERIFIED-NUMBERS.md).
 We're not hiding that — it's the same tool, the same checks, the same
 weekly CI run that would fire against your site.
 

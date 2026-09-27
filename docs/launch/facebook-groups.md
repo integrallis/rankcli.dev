@@ -207,8 +207,8 @@ Each one is useful with no signup, which is what makes it postable in value-only
    such as vibe-coded showcase apps or dev-tool landing pages. Publish the aggregate table as a
    gist or blog post and screenshot it for Facebook. Report percentages, and don't single out
    individual sites.
-6. **The dogfooding numbers**: `docs/launch/accounts.md` records rankcli.dev at 88/100 on
-   2026-09-13, and the older launch copy says 60/100. Re-run the audit right before posting and
+6. **The dogfooding numbers**: older drafts recorded 88/100 and 60/100 at various points; it is 75/100 as of
+   2026-09-27 (VERIFIED-NUMBERS.md). Re-run the audit right before posting and
    use the current number.
 
 ### 2.3 Sequencing plan

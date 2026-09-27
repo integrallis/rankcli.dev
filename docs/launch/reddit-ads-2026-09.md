@@ -1,5 +1,7 @@
 # Reddit Ads — the paid plan
 
+> Numbers in this file come from [VERIFIED-NUMBERS.md](./VERIFIED-NUMBERS.md). Re-check before posting.
+
 Reddit Ads is a better fit for RankCLI than Meta, for one structural reason: **community
 targeting**. You can buy impressions inside r/webdev and r/devops specifically. On Meta you buy
 "people who like software development" and hope. For a developer tool that difference is the
@@ -91,16 +93,19 @@ the dark terminal reads as native on Reddit. The Meta angles in
 
 ### Ad 2 — AI readiness (Tier 1 + 2)
 
-Our own AI Readiness score is 1%. Leading with our own bad number is the most Reddit-native
-move available, and it is true.
+An earlier draft of this ad led with "our own AI Readiness is 1%". Do not run that: the 1% was
+a bug in our own scoring, fixed in v0.0.46 - the metric was saturated and read near zero for
+stripe.com, vercel.com and cloudflare.com too. Advertising a broken measurement as a candid
+admission is the worst of both worlds. rankcli.dev is 75/100 overall with AI Readiness 67.
 
 > Can ChatGPT actually read your site?
 >
-> We checked ours. AI Readiness: 1%. That's rankcli.dev, the site of the tool that runs the
-> check — we publish the score weekly whether it went up or not.
+> Most sites have never been checked. GPTBot, ClaudeBot and PerplexityBot either reach your
+> pages or they don't, and since Cloudflare's Sept 15 default changed who gets through, a lot
+> of sites quietly stopped being readable.
 >
-> Free check, no signup: GPTBot, ClaudeBot, PerplexityBot, and whether Googlebot still reaches
-> you after Cloudflare's Sept 15 default.
+> Free check, no signup, runs in your terminal: which AI crawlers reach you, whether your
+> content is shaped so an AI answer can quote it, and whether Googlebot still gets through.
 
 **Headline:** Can AI assistants read your site? · **→ rankcli.dev/free-audit**
 

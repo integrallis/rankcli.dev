@@ -1,5 +1,10 @@
 # Launch social copy
 
+> **Superseded.** Use [launch-kit-2026-09.md](./launch-kit-2026-09.md) and
+> [reddit-posting-plan.md](./reddit-posting-plan.md) instead. The copy below quotes a
+> 60/100 score, 13 MCP tools and the old pricing - all three are wrong now. Kept only
+> for the phrasing.
+
 Drafts — not posted. Post from the real account(s) after the launch
 sequence in LAUNCH_CHECKLIST.md.
 

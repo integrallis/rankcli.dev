@@ -39,7 +39,7 @@ unpublished for Brian to review/edit before going live — see
 
 | Platform | What's staged | Blocked on |
 |---|---|---|
-| Hacker News | Show HN title + URL + body redrafted 2026-09-13 (with current 88/100 dogfood score, not the earlier stale 60/100) — text only, in chat, not stored anywhere. HN has no draft-save or posting API at all, so this can't be staged server-side; the previous session's staged submit-form content was lost when that browser tab closed. | Brian to paste into news.ycombinator.com/submit himself + timing call |
+| Hacker News | Show HN title + URL + body redrafted 2026-09-13 (with the then-current dogfood score; it is 75/100 as of 2026-09-27 - check VERIFIED-NUMBERS.md before posting) — text only, in chat, not stored anywhere. HN has no draft-save or posting API at all, so this can't be staged server-side; the previous session's staged submit-form content was lost when that browser tab closed. | Brian to paste into news.ycombinator.com/submit himself + timing call |
 | Dev.to article ("Is Your Site Even Visible to ChatGPT?") | Rewritten 2026-09-13 (original was also lost the same way) and **saved as a real draft** on the account this time — dev.to has actual server-side drafts, unlike HN, so this survives. | Brian's review, then Publish from the dashboard |
 | Reddit r/SideProject | Title + body drafted (see `docs/launch/social.md`) | Superseded — was filled into `integrallis-software`'s form; needs re-entry once `u/rankcli` exists and is verified |
 | dev.to | Full article ("Is Your Site Even Visible to ChatGPT?"), title + 3 tags + body | Brian's review before publishing |

@@ -236,3 +236,45 @@ test('channel with a gap between phases is not due during the gap', () => {
   assert.match(week1.social.reason, /no active phase/);
   assert.equal(week3.social.due, true);
 });
+
+// A pause used to delete a slot rather than defer it. Every channel is anchored to
+// campaign_start's weekday, so one paused day silenced all of them for a whole week: the real
+// campaign went 2026-09-19 to 2026-09-29 without posting, ten days, from a 1x/week config.
+test('a slot landing on a pause rolls forward to the next clear day', () => {
+  const config = {
+    campaign_start: '2026-09-07', // Monday
+    pause_dates: ['2026-09-14'],  // the following Monday, a scheduled day
+    channels: { weekly: { posts_per_week: 1 } },
+  };
+  assert.equal(computeSchedule(config, '2026-09-14').weekly.due, false, 'paused day itself');
+  const next = computeSchedule(config, '2026-09-15');
+  assert.equal(next.weekly.due, true, 'deferred to the next day');
+  assert.match(next.weekly.reason, /deferred from 2026-09-14/);
+});
+
+test('a pause spanning several days defers to the first clear one', () => {
+  const config = {
+    campaign_start: '2026-09-07',
+    pause_dates: ['2026-09-14', '2026-09-15', '2026-09-16'],
+    channels: { weekly: { posts_per_week: 1 } },
+  };
+  assert.equal(computeSchedule(config, '2026-09-15').weekly.due, false);
+  assert.equal(computeSchedule(config, '2026-09-16').weekly.due, false);
+  assert.equal(computeSchedule(config, '2026-09-17').weekly.due, true);
+});
+
+test('a deferred slot is spent once it lands, and does not repeat', () => {
+  const config = {
+    campaign_start: '2026-09-07',
+    pause_dates: ['2026-09-14'],
+    channels: { weekly: { posts_per_week: 1 } },
+  };
+  assert.equal(computeSchedule(config, '2026-09-16').weekly.due, false, 'day after it landed');
+  assert.equal(computeSchedule(config, '2026-09-17').weekly.due, false);
+});
+
+test('with no pauses, behaviour is unchanged', () => {
+  const config = { campaign_start: '2026-09-07', channels: { weekly: { posts_per_week: 1 } } };
+  assert.equal(computeSchedule(config, '2026-09-14').weekly.due, true);
+  assert.equal(computeSchedule(config, '2026-09-15').weekly.due, false);
+});

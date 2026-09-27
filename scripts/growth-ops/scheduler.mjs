@@ -112,6 +112,52 @@ function slotIndexBefore(phases, campaignStart, today, anchorWeekday) {
  * @param {string} todayStr - ISO date to evaluate, e.g. "2026-09-08"
  * @returns {object} { [channelName]: { due: boolean, reason: string, contentItem?: object } }
  */
+/**
+ * A pause defers a slot; it does not delete one.
+ *
+ * pause_dates originally suppressed the day outright. Because every channel is anchored to
+ * campaign_start's weekday, a single pause silenced every channel for a whole week at once:
+ * 2026-09-22 was a paused launch day, so nothing went out between 2026-09-19 and 2026-09-29,
+ * ten days, from a config that says "once a week".
+ *
+ * So a scheduled day that falls on a pause rolls forward to the first day that is not paused.
+ * Today is due if it is either its own scheduled day, or the landing place of a recent one.
+ *
+ * @returns {string|null} the date the slot originally fell on, or null if today is not due
+ */
+function dueSlotDate(config, channel, todayStr, campaignStart, anchorWeekday) {
+  const pauses = new Set(config.pause_dates ?? []);
+  const phases = normalizePhases(channel);
+
+  const isScheduled = (date) => {
+    const week = campaignWeek(campaignStart, date);
+    const phase = phaseForWeek(phases, week);
+    return Boolean(phase) && weekdaysFor(phase.posts_per_week, anchorWeekday).includes(date.getUTCDay());
+  };
+  const iso = (d) => d.toISOString().slice(0, 10);
+
+  // Look back far enough to catch a deferred slot, but not so far that an old one resurfaces:
+  // a week covers the longest gap any cadence here can produce.
+  for (let back = 0; back <= 7; back++) {
+    const candidate = parseUTCDate(todayStr);
+    candidate.setUTCDate(candidate.getUTCDate() - back);
+    if (candidate < campaignStart) break;
+    if (!isScheduled(candidate)) continue;
+
+    // Where does this slot actually land, after rolling past any paused days?
+    const landing = parseUTCDate(iso(candidate));
+    let guard = 0;
+    while (pauses.has(iso(landing)) && guard++ < 14) {
+      landing.setUTCDate(landing.getUTCDate() + 1);
+    }
+    if (iso(landing) === todayStr) return iso(candidate);
+
+    // A slot that landed before today is spent; anything earlier is too.
+    if (iso(landing) < todayStr) break;
+  }
+  return null;
+}
+
 export function computeSchedule(config, todayStr) {
   const campaignStart = parseUTCDate(config.campaign_start);
   const today = parseUTCDate(todayStr);
@@ -119,7 +165,8 @@ export function computeSchedule(config, todayStr) {
   const result = {};
 
   // pause_dates: whole days with no automated posts - e.g. a launch day, when the real launch
-  // posts go out by hand and the weekly status post would just crowd them.
+  // posts go out by hand and the weekly status post would just crowd them. A slot landing on
+  // one is deferred to the next clear day, not dropped; see dueSlotDate.
   const paused = (config.pause_dates ?? []).includes(todayStr);
 
   for (const [name, channel] of Object.entries(config.channels)) {
@@ -145,10 +192,12 @@ export function computeSchedule(config, todayStr) {
       continue;
     }
 
-    if (!weekdaysFor(phase.posts_per_week, anchorWeekday).includes(today.getUTCDay())) {
+    const slotDate = dueSlotDate(config, channel, todayStr, campaignStart, anchorWeekday);
+    if (!slotDate) {
       result[name] = { due: false, reason: `not a scheduled day (week ${week + 1}, ${phase.posts_per_week}x/week phase)` };
       continue;
     }
+    const deferred = slotDate !== todayStr ? ` (deferred from ${slotDate}, which was paused)` : '';
 
     if (channel.content_calendar) {
       const slot = slotIndexBefore(phases, campaignStart, today, anchorWeekday);
@@ -157,11 +206,11 @@ export function computeSchedule(config, todayStr) {
         result[name] = { due: false, reason: `content_calendar exhausted (slot ${slot}, only ${channel.content_calendar.length} items curated) — add more items or this channel stays silent` };
         continue;
       }
-      result[name] = { due: true, reason: `week ${week + 1}, content_calendar[${slot}]`, contentItem: item };
+      result[name] = { due: true, reason: `week ${week + 1}, content_calendar[${slot}]${deferred}`, contentItem: item };
       continue;
     }
 
-    result[name] = { due: true, reason: `week ${week + 1}, ${phase.posts_per_week}x/week phase, generated status content` };
+    result[name] = { due: true, reason: `week ${week + 1}, ${phase.posts_per_week}x/week phase, generated status content${deferred}` };
   }
 
   return result;

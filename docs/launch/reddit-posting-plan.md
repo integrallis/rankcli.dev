@@ -1,5 +1,7 @@
 # Reddit posting plan — paste-ready, in order
 
+> Numbers in this file come from [VERIFIED-NUMBERS.md](./VERIFIED-NUMBERS.md). Re-check before posting.
+
 The account under `bsbodden@integrallis.com` is aged and active, which removes the only real
 blocker. Post these by hand from that account. Do not automate them: the scheduler advances its
 slot by elapsed time rather than by posts sent, so three of the four are already unreachable by

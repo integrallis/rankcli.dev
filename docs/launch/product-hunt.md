@@ -1,5 +1,7 @@
 # Product Hunt launch post
 
+> Numbers in this file come from [VERIFIED-NUMBERS.md](./VERIFIED-NUMBERS.md). Re-check before posting.
+
 Draft — review and post yourself. Nothing here has been submitted.
 
 ## Tagline (60 char limit)
@@ -35,7 +37,7 @@ to AI search and not know it. RankCLI checks for exactly this.
   against HTML you already have.
 - CLI + GitHub Action for CI-native scheduled audits and auto-fix PRs.
 - We dogfood it against our own site every week — rankcli.dev currently
-  scores 60/100 with 70 open issues, audited by the exact tool you'd run.
+  scores 75/100 with 0 errors, audited by the exact tool you'd run.
   ⚠️ Only claim this publicly if the repo/issue is visible — see the repo
   visibility note in `mcp-directories.md`. If the repo stays private, drop
   "tracked in our own GitHub issues" below and keep only the score claim.
@@ -57,7 +59,7 @@ long as you stay subscribed.
 > crawler you're accidentally blocking — open a PR instead of an email
 > nobody reads.
 >
-> We're dogfooding this against rankcli.dev itself — currently a 60/100
+> We're dogfooding this against rankcli.dev itself — currently a 75/100
 > with 70 open issues, fixed the same way we're asking you to fix yours.
 > No cherry-picked demo site.
 >
