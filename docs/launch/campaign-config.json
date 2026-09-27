@@ -73,14 +73,14 @@
       ]
     },
     "reddit": {
-      "_comment": "1x/week is the one cadence number multiple sources agree on for avoiding spam-flag risk, and only across DIFFERENT subreddits — never the same one repeatedly. Bounded to 4 curated weeks (month 1); after that this channel goes silent rather than looping the same posts. Each content_calendar item below is genuinely distinct copy tailored to that subreddit's norms, not an identical cross-post — see automation-setup.md for why that matters.",
+      "_comment": "1x/week is the one cadence number multiple sources agree on for avoiding spam-flag risk, and only across DIFFERENT subreddits — never the same one repeatedly. Bounded to 4 curated weeks (month 1); after that this channel goes silent rather than looping the same posts. Each content_calendar item below is genuinely distinct copy tailored to that subreddit's norms, not an identical cross-post — see automation-setup.md for why that matters. Posts are drafts until the day they go out: check any live number (the weekly score) and any news claim before posting, because a stale figure in a Reddit post gets found in the comments.",
       "posts_per_week": 1,
       "active_weeks": 4,
       "content_calendar": [
         {
           "subreddit": "SideProject",
-          "title": "Built a tool that audits your site the same way your CI audits your code — dogfooding it on our own site right now (60/100, ouch)",
-          "body": "Spent the last few months building RankCLI — SEO + GEO (AI-search-citation) checks that run in CI and open a PR when something's fixable, instead of another dashboard alert. Free tier runs entirely local via MCP, no signup. We're eating our own dog food publicly: rankcli.dev currently scores 60/100 on its own audit. Happy to answer anything about the build or take feedback on the free tier."
+          "title": "Built a tool that audits your site the same way your CI audits your code — dogfooding it on our own site right now (71/100, and our AI Readiness is 1%)",
+          "body": "Spent the last few months building RankCLI — SEO + GEO (AI-search-citation) checks that run in CI and open a PR when something's fixable, instead of another dashboard alert.\n\nWe eat our own dog food in public: rankcli.dev currently scores 71/100 on its own audit, and our AI Readiness sub-score is 1%. Those numbers go out weekly whether they went up or not.\n\nFree tier runs entirely local via MCP (`npx @rankcli/mcp-server`), no signup. Happy to answer anything about the build, or take feedback on the free tier."
         },
         {
           "subreddit": "SaaS",
@@ -89,8 +89,8 @@
         },
         {
           "subreddit": "webdev",
-          "title": "Cloudflare started blocking 'mixed-use' AI crawlers by default on ad-hosting zones (Sep 15, 2026) — here's a free check for whether that silently hit your site",
-          "body": "If you're on Cloudflare and haven't explicitly configured robots.txt rules for GPTBot/ClaudeBot/PerplexityBot, your AI-crawler access now depends on an account-level default you may not have looked at. Built a free check for this into RankCLI (`npx @rankcli/mcp-server`, no signup, runs locally in Claude Code/Cursor/etc.) alongside the usual technical SEO stuff — Core Web Vitals, structured data, security headers. Curious if others have hit this."
+          "title": "Cloudflare's Sep 15 default can block Googlebot on ad-supported pages, because Googlebot is a 'mixed-use' crawler — free check for whether it hit you",
+          "body": "Since 2026-09-15 Cloudflare blocks AI Training and Agent crawlers by default on ad-supported pages. It applies to new domains, new sites on existing accounts, and free-tier accounts that haven't changed the setting — existing paid customers were notified and can opt out in zone security settings.\n\nThe part worth knowing: Googlebot is *mixed-use*. It crawls for Search and for AI training in one bot, and mixed-use crawlers are treated under whichever rule is most restrictive. So a site blocking Training crawlers — including via the legacy \"Block AI Bots\" toggle — can also be blocking Googlebot on its ad-supported pages unless it explicitly opts out.\n\nI built a free check for this into RankCLI (`npx @rankcli/mcp-server`, no signup, runs locally in Claude Code/Cursor/whatever) alongside the usual technical SEO — Core Web Vitals, structured data, security headers. It reports which of GPTBot/ClaudeBot/PerplexityBot/Googlebot can actually reach you.\n\nCurious whether anyone here has actually seen impressions drop since the 15th."
         },
         {
           "subreddit": "programming",
