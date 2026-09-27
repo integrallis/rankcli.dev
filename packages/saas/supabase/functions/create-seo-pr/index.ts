@@ -216,7 +216,7 @@ async function generateAIFixes(
   siteUrl: string,
   projectName: string,
   aiSuggestions?: { titles?: string[]; descriptions?: string[] }
-): Promise<{ files: FileChange[]; summary: string }> {
+): Promise<{ files: FileChange[]; summary: string; usage?: { promptTokens?: number; completionTokens?: number } }> {
   const appRoot = repoContext.appRoot || '';
   const isReactVite = repoContext.framework === 'react-vite' || repoContext.framework === 'react';
   const isNextjs = repoContext.framework === 'nextjs';
