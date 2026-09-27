@@ -7,6 +7,7 @@ import { getInstallationToken } from '../_shared/github-app.ts';
 import { fetchFileContent, getDefaultBranchSha, createBranch, createOrUpdateFile, createPullRequest } from '../_shared/github-repo.ts';
 import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
 import { resolveAIConfig, giftModel, giftCostUsd } from '../_shared/resolve-ai-config.ts';
+import { userIdFromApiKey } from '../_shared/caller-auth.ts';
 import { buildDeterministicFixes, findAppRoot } from '../_shared/audit/index.ts';
 import { getEntitlement } from '../_shared/tier.ts';
 
@@ -397,19 +398,28 @@ serve(async (req) => {
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Functions deploy with --no-verify-jwt, so the caller is checked here: either
-    // github-webhook with the service key, or a signed-in user who owns the project.
+    // Functions deploy with --no-verify-jwt, so the caller is checked here. Three ways in:
+    // github-webhook with the service key, the dashboard with a Supabase session, or an
+    // API key - which is all the CLI and CI ever have, so without it `rankcli` could ask for
+    // an audit but never for the PR that fixes it. Ownership is enforced the same way for
+    // all three: callerId must match the project's owner (the service key is trusted and
+    // sets no callerId, because the webhook acts for whichever project the push came from).
     const bearer = (req.headers.get('Authorization') || '').replace('Bearer ', '');
     let callerId: string | null = null;
     if (bearer !== supabaseServiceKey) {
-      const { data: { user } } = await supabase.auth.getUser(bearer);
-      if (!user) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      const apiKeyUserId = await userIdFromApiKey(req, supabase);
+      if (apiKeyUserId) {
+        callerId = apiKeyUserId;
+      } else {
+        const { data: { user } } = await supabase.auth.getUser(bearer);
+        if (!user) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        callerId = user.id;
       }
-      callerId = user.id;
     }
 
     const { projectId, auditId } = await req.json();
