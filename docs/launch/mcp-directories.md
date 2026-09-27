@@ -15,7 +15,7 @@ own terms (several competing SEO-MCP listings are explicitly free/OSS).
 **Name:** RankCLI
 
 **One-line description:**
-Free SEO + GEO (AI-search-citation) analysis — 13 tools, no signup, no API
+Free SEO + GEO (AI-search-citation) analysis — 15 tools, no signup, no API
 key, runs entirely local against HTML you provide.
 
 **Install:**

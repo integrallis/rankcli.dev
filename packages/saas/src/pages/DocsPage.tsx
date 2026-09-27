@@ -20,9 +20,11 @@ import {
   Layers,
   Bot,
   Search,
+  Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { SEO } from '@/components/SEO';
+import mcpTools from '@/config/mcp-tools.json';
 
 const sections = [
   {
@@ -614,6 +616,36 @@ function MCPServerSection() {
         </div>
       </section>
 
+      {/* One-click install - the config block below is the same thing by hand */}
+      <section id="one-click-install">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Zap className="h-5 w-5" />
+          One-click install
+        </h3>
+        <p className="text-muted-foreground mb-4">
+          Nothing to configure and no account. The editor writes the config for you.
+        </p>
+
+        <div className="flex flex-wrap gap-3 mb-6">
+          <a
+            href="cursor://anysphere.cursor-deeplink/mcp/install?name=rankcli&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkByYW5rY2xpL21jcC1zZXJ2ZXIiXX0="
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-muted/40 hover:bg-muted transition-colors text-sm font-medium"
+          >
+            Add to Cursor
+          </a>
+          <a
+            href="vscode:mcp/install?%7B%22name%22%3A%22rankcli%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40rankcli%2Fmcp-server%22%5D%7D"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-muted/40 hover:bg-muted transition-colors text-sm font-medium"
+          >
+            Add to VS Code
+          </a>
+        </div>
+
+        <h4 className="font-medium mt-4 mb-2">Claude Code</h4>
+        <p className="text-sm text-muted-foreground mb-2">One line, no config file:</p>
+        <CodeBlock code={`claude mcp add rankcli -- npx -y @rankcli/mcp-server`} />
+      </section>
+
       {/* Claude Desktop Setup */}
       <section id="claude-desktop">
         <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
@@ -694,16 +726,11 @@ function MCPServerSection() {
           Available Tools
         </h3>
         <p className="text-muted-foreground mb-4">
-          The MCP server provides 4 SEO tools:
+          The MCP server provides {mcpTools.tools.length} tools:
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {[
-            { name: 'seo_audit', desc: 'Run comprehensive SEO audit on any URL (280+ checks)' },
-            { name: 'seo_geo_check', desc: 'Check AI search visibility (GEO) for ChatGPT, Perplexity, Claude' },
-            { name: 'seo_robots_check', desc: 'Analyze robots.txt for AI crawler permissions' },
-            { name: 'seo_compare', desc: 'Compare SEO metrics between two URLs' },
-          ].map((tool) => (
+          {mcpTools.tools.map((tool) => (
             <div key={tool.name} className="p-3 border rounded-lg">
               <h5 className="font-medium text-sm font-mono">{tool.name}</h5>
               <p className="text-xs text-muted-foreground">{tool.desc}</p>

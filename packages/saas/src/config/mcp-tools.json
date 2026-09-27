@@ -1,0 +1,65 @@
+{
+  "_comment": "Generated from packages/mcp-server/src/{server,index}.ts - the tool definitions are the source of truth. src/test/mcp-tools.test.ts fails if this list and that source disagree. The docs page used to hardcode four tools, three of whose names did not exist.",
+  "tools": [
+    {
+      "name": "seo_analyze",
+      "desc": "Full SEO audit of a page — 280+ checks, scores and issues"
+    },
+    {
+      "name": "seo_geo_check",
+      "desc": "AI-search readiness (GEO): can ChatGPT, Claude and Perplexity use this page"
+    },
+    {
+      "name": "seo_robots_ai",
+      "desc": "Which AI crawlers your robots.txt allows or blocks"
+    },
+    {
+      "name": "seo_generate_robots",
+      "desc": "Generate an AI-friendly robots.txt"
+    },
+    {
+      "name": "seo_core_web_vitals",
+      "desc": "Core Web Vitals and page-speed signals"
+    },
+    {
+      "name": "seo_structured_data",
+      "desc": "Validate JSON-LD and schema.org markup"
+    },
+    {
+      "name": "seo_generate_schema",
+      "desc": "Generate structured data for a page type"
+    },
+    {
+      "name": "seo_security_headers",
+      "desc": "Audit HTTPS and security headers"
+    },
+    {
+      "name": "seo_generate_security_headers",
+      "desc": "Generate the security headers you are missing"
+    },
+    {
+      "name": "seo_images",
+      "desc": "Image optimisation: alt text, dimensions, formats"
+    },
+    {
+      "name": "seo_internal_links",
+      "desc": "Internal linking structure and orphan risk"
+    },
+    {
+      "name": "seo_mobile",
+      "desc": "Mobile SEO and viewport checks"
+    },
+    {
+      "name": "seo_ai_crawlers",
+      "desc": "Live check of GPTBot, ClaudeBot and PerplexityBot access"
+    },
+    {
+      "name": "rankcli_connect",
+      "desc": "Optional: link a RankCLI account for history and auto-fix PRs"
+    },
+    {
+      "name": "rankcli_disconnect",
+      "desc": "Unlink the RankCLI account"
+    }
+  ]
+}
