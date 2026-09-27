@@ -61,8 +61,10 @@ interface IssuesListProps {
   hasGitHub?: boolean;
   /** Opens the connect-repository dialog, so the button is useful before a repo is linked. */
   onConnectGitHub?: () => void;
-  /** Auto-fix PRs are BYOK: no key, no PR. null while still unknown. */
+  /** Auto-fix PRs prefer the user's own key. null while still unknown. */
   hasAIKey?: boolean | null;
+  /** This account's one gifted AI PR is still unspent. null while unknown. */
+  giftAvailable?: boolean | null;
   /** Arrived from the audit email's fix link - ring the button so it's findable. */
   highlightFixPR?: boolean;
   /** PRs this report has opened / may open. create-seo-pr is what enforces the cap. */
@@ -84,6 +86,7 @@ export function IssuesList({
   hasGitHub = false,
   onConnectGitHub,
   hasAIKey,
+  giftAvailable,
   highlightFixPR = false,
   prsUsedForReport,
   prsAllowedForReport,
@@ -269,7 +272,9 @@ export function IssuesList({
       : monthIsTheLimit && monthRemaining !== null
         ? `${monthRemaining} of ${prsAllowedThisMonth} auto-fix PRs left this month on ${planName ?? 'your plan'}`
         : noAIKey
-          ? "Opens a PR with RankCLI's template fixes. Add an AI provider key for content rewrites too."
+          ? giftAvailable
+            ? "Your first AI fix PR is on us - no key needed. After that, connect an AI provider key."
+            : "Opens a PR with RankCLI's template fixes. Add an AI provider key for content rewrites too."
           : null;
 
   const showCheckboxes = issues.length > 0;

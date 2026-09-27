@@ -81,7 +81,16 @@ export async function callChatCompletion(
   config: AIProviderConfig,
   systemPrompt: string,
   userPrompt: string,
-  options: { jsonMode?: boolean; maxTokens?: number; temperature?: number } = {}
+  // `usage` is an out-parameter rather than a change to the return type, so that every
+  // existing caller keeps compiling and only the one that needs to cost a call - the gifted
+  // auto-fix PR - has to ask. Populated from the provider's own usage block when it sends
+  // one; left untouched when it doesn't.
+  options: {
+    jsonMode?: boolean;
+    maxTokens?: number;
+    temperature?: number;
+    usage?: { promptTokens?: number; completionTokens?: number };
+  } = {}
 ): Promise<string> {
   const { baseUrl, model } = resolveProviderSettings(config);
   // A base URL the user supplied is untrusted; the built-in provider URLs
@@ -163,6 +172,10 @@ export async function callChatCompletion(
   }
 
   const result = await response.json();
+  if (options.usage && result.usage) {
+    options.usage.promptTokens = result.usage.prompt_tokens ?? result.usage.promptTokens;
+    options.usage.completionTokens = result.usage.completion_tokens ?? result.usage.completionTokens;
+  }
   const content = result.choices?.[0]?.message?.content;
   if (!content) throw new Error(`No response content from ${config.provider}`);
   return content;

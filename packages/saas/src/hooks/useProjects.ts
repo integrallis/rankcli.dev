@@ -246,6 +246,8 @@ interface CreatePRResult {
   noop?: boolean;
   message?: string;
   code?: string;
+  /** 'ai' with the user's key, 'gift' on RankCLI's, 'templates' with no model at all. */
+  generatedBy?: 'ai' | 'gift' | 'templates';
   /** PRs this report has already opened, and how many it may. */
   prsForReport?: number;
   prsAllowedForReport?: number;
@@ -409,6 +411,7 @@ export function useProject(projectId: string | undefined): UseProjectReturn {
           filesChanged: result.filesChanged,
           issuesFixed: result.issuesFixed,
           unchangedFiles: result.unchangedFiles,
+          generatedBy: result.generatedBy,
           ...allowance,
         };
       }

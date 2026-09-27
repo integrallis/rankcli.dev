@@ -6,7 +6,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getInstallationToken } from '../_shared/github-app.ts';
 import { fetchFileContent, getDefaultBranchSha, createBranch, createOrUpdateFile, createPullRequest } from '../_shared/github-repo.ts';
 import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
-import { resolveAIConfig } from '../_shared/resolve-ai-config.ts';
+import { resolveAIConfig, giftModel, giftCostUsd } from '../_shared/resolve-ai-config.ts';
 import { buildDeterministicFixes, findAppRoot } from '../_shared/audit/index.ts';
 import { getEntitlement } from '../_shared/tier.ts';
 
@@ -33,6 +33,20 @@ const PRS_PER_REPORT = 3;
 // it is commit it to someone's default branch. Before this, `JSON.parse(content)` was the
 // only check: a path of "../../etc" or a truncated index.html went straight into the PR.
 const MAX_GENERATED_FILES = 20;
+// A model call's cost tracks the size of the page we send, not the number of issues: the two
+// sites measured needed ~9K input and 2-4K output, and output rose with index.html (5KB ->
+// 12KB) while the issue count halved. A 200KB page would therefore cost many times a normal
+// PR on our key. Above this, the page's <head> goes in instead of the whole file - which is
+// the part SEO fixes touch anyway - so a huge page costs about what a small one does. A
+// whole-file rewrite generated from a head-only view would be far shorter than the original
+// and the truncation guard drops it, so this cannot quietly shrink someone's page.
+const MAX_HTML_CHARS_FOR_AI = 30_000;
+
+/** The <head> alone, when a page is too big to send whole. */
+function headOnly(html: string): string {
+  const match = html.match(/<head[\s\S]*?<\/head>/i);
+  return match ? `${match[0]}\n<!-- body omitted: page over ${MAX_HTML_CHARS_FOR_AI} characters -->` : html.slice(0, MAX_HTML_CHARS_FOR_AI);
+}
 const MAX_FILE_BYTES = 256 * 1024;
 // A fix touches site content and config. Anything else - CI, lockfiles, source code we were
 // never asked to rewrite - is not what an SEO fix PR is for.
@@ -370,8 +384,9 @@ You should output the COMPLETE file with additions in <head>, keeping body uncha
 </html>
 \`\`\``;
 
-  const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, { jsonMode: true });
-  return JSON.parse(content);
+  const usage: { promptTokens?: number; completionTokens?: number } = {};
+  const content = await callChatCompletion(aiConfig, systemPrompt, userPrompt, { jsonMode: true, usage });
+  return { ...JSON.parse(content), usage };
 }
 
 serve(async (req) => {
@@ -502,11 +517,9 @@ serve(async (req) => {
       );
     }
 
-    // No AI key is no longer the end of the road: the template fixes below need no model,
-    // so an account without one still gets a pull request. The key buys the content
-    // rewrites a template can't do.
-    const aiResolution = await resolveAIConfig(supabase, project.user_id);
-    const aiConfig = aiResolution.ok ? aiResolution.config : null;
+    // The AI config is resolved further down, immediately before the model call - claiming
+    // the one-time gift here would spend it on a request that still might fail for a missing
+    // repository, an exhausted PR allowance, or a report with nothing fixable on it.
 
     if (!project.github_repo_url) {
       return new Response(JSON.stringify({ error: 'No GitHub repository connected' }), {
@@ -715,9 +728,14 @@ serve(async (req) => {
     const framework = detectFramework(packageJson, files, appRoot);
     console.log(`Detected framework: ${framework}`);
 
+    const oversizedHtml = !!indexHtml && indexHtml.length > MAX_HTML_CHARS_FOR_AI;
+    if (oversizedHtml) {
+      console.log(`index.html is ${indexHtml!.length} chars; sending <head> only`);
+    }
+
     const repoContext: RepoContext = {
       packageJson,
-      indexHtml,
+      indexHtml: oversizedHtml ? headOnly(indexHtml!) : indexHtml,
       framework,
       files,
       appRoot,
@@ -734,24 +752,62 @@ serve(async (req) => {
       }
     }
 
-    // With a key, the model writes the fixes. Without one, the templates do - robots.txt,
-    // sitemap.xml, llms.txt and a JSON-LD block, all derived from the site's URL and name.
+    // The user's own key, else their one gifted call on RankCLI's OpenRouter key, else the
+    // templates. The gift is claimed inside resolveAIConfig, atomically, and only here.
+    const aiResolution = await resolveAIConfig(supabase, project.user_id, {
+      enabled: true,
+      projectId: project.id,
+      auditId: targetAuditId,
+    });
+    const aiConfig = aiResolution.ok ? aiResolution.config : null;
+    const gifted = aiResolution.ok && aiResolution.source === 'gift';
+
     let aiResult: { files: FileChange[]; summary: string };
-    let generatedBy: 'ai' | 'templates';
+    let generatedBy: 'ai' | 'gift' | 'templates';
+    const byModel = () => generatedBy === 'ai' || generatedBy === 'gift';
 
     if (aiConfig) {
-      console.log('Generating AI-powered fixes...');
-      generatedBy = 'ai';
-      const raw = await generateAIFixes(
-        aiConfig,
-        issues as AuditIssue[],
-        repoContext,
-        project.url,
-        project.name,
-        aiSuggestions
-      );
-      // The model's answer is parsed JSON from a remote service, not a trusted value.
-      aiResult = { files: validateGeneratedFiles(raw?.files, appRoot), summary: raw?.summary ?? '' };
+      console.log(`Generating AI-powered fixes${gifted ? ` (gifted, ${giftModel()})` : ''}...`);
+      generatedBy = gifted ? 'gift' : 'ai';
+      try {
+        const raw = await generateAIFixes(
+          aiConfig,
+          issues as AuditIssue[],
+          repoContext,
+          project.url,
+          project.name,
+          aiSuggestions
+        );
+        // The model's answer is parsed JSON from a remote service, not a trusted value.
+        aiResult = { files: validateGeneratedFiles(raw?.files, appRoot), summary: raw?.summary ?? '' };
+
+        if (gifted) {
+          // What it actually cost, recorded against the grant, so the unit economics are
+          // visible from the first one instead of reconstructed from a dashboard later.
+          const promptTokens = raw?.usage?.promptTokens ?? null;
+          const completionTokens = raw?.usage?.completionTokens ?? null;
+          await supabase.rpc('settle_ai_gift', {
+            p_user_id: project.user_id,
+            p_status: 'settled',
+            p_model: giftModel(),
+            p_prompt_tokens: promptTokens,
+            p_completion_tokens: completionTokens,
+            p_cost_usd:
+              promptTokens !== null && completionTokens !== null
+                ? giftCostUsd(promptTokens, completionTokens)
+                : null,
+          });
+          console.log(`[GIFT] settled for ${project.user_id}: ${promptTokens}/${completionTokens} tokens`);
+        }
+      } catch (error) {
+        // The grant is already spent at this point. Mark it failed rather than leaving a
+        // 'claimed' row that looks like an account which used its gift and got nothing:
+        // a failed row is the signal to investigate, and it can be cleared to re-gift.
+        if (gifted) {
+          await supabase.rpc('settle_ai_gift', { p_user_id: project.user_id, p_status: 'failed', p_model: giftModel() });
+        }
+        throw error;
+      }
     } else {
       console.log('No AI key - generating template fixes...');
       generatedBy = 'templates';
@@ -793,7 +849,7 @@ serve(async (req) => {
 
     if (!aiResult.files || aiResult.files.length === 0) {
       return noop(
-        generatedBy === 'ai'
+        byModel()
           ? 'The AI could not generate fixes for these issues.'
           : "None of this report's issues can be fixed from a template. Connect an AI provider key to fix the rest - RankCLI runs AI features on your own key: https://rankcli.dev/account?tab=ai-provider",
         {
@@ -865,9 +921,11 @@ serve(async (req) => {
 
     // Create PR
     const prTitle = `fix(seo): ${issues.length} SEO improvements for ${project.name}`;
-    const prBody = `## ${generatedBy === 'ai' ? '🚀 AI-Generated SEO Fixes' : '🚀 SEO Fixes'}
+    const prBody = `## ${byModel() ? '🚀 AI-Generated SEO Fixes' : '🚀 SEO Fixes'}
 
-${generatedBy === 'ai'
+${generatedBy === 'gift'
+  ? `This PR was generated by [RankCLI](https://rankcli.dev) using AI analysis of your codebase - **on us**. You don't have an AI provider key connected, so this one ran on RankCLI's own key (\`${giftModel()}\`). Every account gets one.\n\nFor the next one, [connect your own key](https://rankcli.dev/account?tab=ai-provider) - AI features run on your key, you pick the model, and there's no limit.`
+  : generatedBy === 'ai'
   ? 'This PR was automatically generated by [RankCLI](https://rankcli.dev) using AI analysis of your codebase.'
   : `This PR was generated by [RankCLI](https://rankcli.dev) from its templates - no AI involved, nothing invented, built from this site's URL and name. Connect an AI provider key to also get the content rewrites a template can't do (titles, meta descriptions, framework-specific edits): https://rankcli.dev/account?tab=ai-provider`}
 
@@ -889,8 +947,8 @@ ${unchangedPaths.length > 0 ? `\n_Already up to date, left alone: ${unchangedPat
 ### How This Works
 
 1. RankCLI ran an SEO audit on ${project.url}
-2. ${generatedBy === 'ai' ? `AI analyzed your codebase (detected: **${framework}**)` : `Detected the framework (**${framework}**) and selected the template fixes for what the audit reported`}
-3. ${generatedBy === 'ai' ? 'Generated framework-specific fixes that match your code style' : 'Generated the files deterministically - the same report always produces the same PR'}
+2. ${byModel() ? `AI analyzed your codebase (detected: **${framework}**)` : `Detected the framework (**${framework}**) and selected the template fixes for what the audit reported`}
+3. ${byModel() ? 'Generated framework-specific fixes that match your code style' : 'Generated the files deterministically - the same report always produces the same PR'}
 4. Created this PR with the changes${rejectedPaths.length > 0 ? `\n\n> ${rejectedPaths.length} generated file(s) were rejected before committing as likely truncated: ${rejectedPaths.map((p) => `\`${p}\``).join(', ')}.` : ''}
 
 ### Test Plan

@@ -90,6 +90,8 @@ export function ProjectPage() {
   const [hasAIKey, setHasAIKey] = useState<boolean | null>(null);
   // This month's auto-fix PRs, so the button can show the limit that actually bites.
   const [prsThisMonth, setPrsThisMonth] = useState<number | null>(null);
+  // Whether this account still has its one gifted AI PR. null while unknown.
+  const [giftAvailable, setGiftAvailable] = useState<boolean | null>(null);
   // Arriving from the audit email's "Open a PR that fixes these" link.
   const [highlightFixPR, setHighlightFixPR] = useState(false);
   const issuesRef = useRef<HTMLDivElement>(null);
@@ -256,6 +258,25 @@ export function ProjectPage() {
     };
   }, []);
 
+  // Each account gets one AI fix PR on RankCLI's own key. RLS scopes this to the caller's
+  // own row, so "no row" means unspent.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const { count, error } = await supabase
+          .from('ai_gift_grants')
+          .select('user_id', { count: 'exact', head: true });
+        if (active && !error) setGiftAvailable((count ?? 0) === 0);
+      } catch {
+        // Unknown is fine - the button then promises nothing.
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [project?.id]);
+
   // Monthly usage. Only auto-fix PRs count - a CI-setup PR is not quota'd. RLS scopes the
   // count to the caller's own projects.
   useEffect(() => {
@@ -421,12 +442,13 @@ export function ProjectPage() {
       }
 
       if (result.success && result.prUrl) {
+        const onUs = result.generatedBy === 'gift' ? ' — that one was on us' : '';
         const skipped = result.unchangedFiles?.length
           ? ` (${result.unchangedFiles.length} file${result.unchangedFiles.length === 1 ? '' : 's'} already up to date)`
           : '';
         setNotification({
           type: 'success',
-          message: `PR #${result.prNumber} created with ${result.filesChanged} files changed, fixing ${result.issuesFixed} issues${skipped}`,
+          message: `PR #${result.prNumber} created with ${result.filesChanged} files changed, fixing ${result.issuesFixed} issues${skipped}${onUs}`,
           prUrl: result.prUrl,
         });
       } else if (result.noop) {
@@ -856,6 +878,7 @@ export function ProjectPage() {
             hasGitHub={!!(project.github_repo_url && project.github_installation_id)}
             onConnectGitHub={() => setShowGitHubModal(true)}
             hasAIKey={hasAIKey}
+            giftAvailable={giftAvailable}
             prsUsedForReport={reportPrs?.used}
             prsAllowedForReport={reportPrs?.allowed}
             prsUsedThisMonth={prsThisMonth ?? undefined}

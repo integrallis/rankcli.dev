@@ -242,6 +242,15 @@ jobs:
           if [ -n "${{ secrets.RANKCLI_GITHUB_APP_WEBHOOK_SECRET }}" ]; then
             supabase secrets set GITHUB_WEBHOOK_SECRET="${{ secrets.RANKCLI_GITHUB_APP_WEBHOOK_SECRET }}"
           fi
+          # RankCLI's own OpenRouter key, used only for each account's one gifted auto-fix
+          # PR (see _shared/resolve-ai-config.ts). Unset means no gifts are offered and
+          # keyless accounts get the template fixes - the feature is off, not broken.
+          if [ -n "${{ secrets.RANKCLI_OPENROUTER_GIFT_KEY }}" ]; then
+            supabase secrets set OPENROUTER_GIFT_KEY="${{ secrets.RANKCLI_OPENROUTER_GIFT_KEY }}"
+          fi
+          if [ -n "${{ vars.OPENROUTER_GIFT_MODEL }}" ]; then
+            supabase secrets set OPENROUTER_GIFT_MODEL="${{ vars.OPENROUTER_GIFT_MODEL }}"
+          fi
           if [ -n "${{ secrets.AI_KEY_ENCRYPTION_SECRET }}" ]; then
             supabase secrets set AI_KEY_ENCRYPTION_SECRET="${{ secrets.AI_KEY_ENCRYPTION_SECRET }}"
           fi

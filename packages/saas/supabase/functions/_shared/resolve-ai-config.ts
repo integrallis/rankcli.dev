@@ -51,13 +51,82 @@ export function preferredAIConfig(keys: UserAIKeys): AIProviderConfig | null {
 }
 
 export type AIConfigResolution =
-  | { ok: true; config: AIProviderConfig }
+  | { ok: true; config: AIProviderConfig; source: 'user' }
+  /** RankCLI's own OpenRouter key, claimed from the account's one-time gift. */
+  | { ok: true; config: AIProviderConfig; source: 'gift' }
   | { ok: false; reason: 'no_key' };
 
+/**
+ * The model a gifted call runs on, and what it costs us.
+ *
+ * Measured envelope for an auto-fix PR: ~9K input, ~3K output. At gemini-2.5-flash-lite's
+ * $0.10/M input and $0.40/M output that is about $0.002 - so the gift is bounded by fraud,
+ * not by spend, which is why the one-shot lives in a primary key and not in a budget.
+ *
+ * Deliberately not one of OpenRouter's :free variants: their prompts are generally
+ * trainable-on and the payload here is the customer's source code, they share rate limits
+ * across everyone using them, and a small model doing strict-JSON multi-file generation is
+ * exactly where truncated output comes from. Two thousandths of a dollar is not worth any
+ * of that.
+ */
+const GIFT_MODEL = Deno.env.get('OPENROUTER_GIFT_MODEL') || 'google/gemini-2.5-flash-lite';
+const GIFT_PRICE_PER_M = { input: 0.10, output: 0.40 };
+
+export function giftModel(): string {
+  return GIFT_MODEL;
+}
+
+/** USD for a gifted call, from the usage the API reports back. */
+export function giftCostUsd(promptTokens: number, completionTokens: number): number {
+  return (
+    (promptTokens / 1_000_000) * GIFT_PRICE_PER_M.input +
+    (completionTokens / 1_000_000) * GIFT_PRICE_PER_M.output
+  );
+}
+
+/**
+ * The AI config for a feature, preferring the user's own key.
+ *
+ * `gift` opts into the one-time gifted call when the user has no key of their own: it claims
+ * the grant (atomically - see claim_ai_gift) and returns RankCLI's OpenRouter key. A caller
+ * that doesn't pass it keeps the old behaviour exactly, which is why every other AI feature
+ * is unchanged: the gift is for the auto-fix PR, the thing a new account actually wants to
+ * see work.
+ *
+ * Returns no_key when there is no user key and no gift to claim - already spent, the day's
+ * ceiling is reached, or OPENROUTER_GIFT_KEY isn't configured. Callers fall back to the
+ * template fixes, which need no model at all.
+ */
 // deno-lint-ignore no-explicit-any
-export async function resolveAIConfig(supabase: any, userId: string | null | undefined): Promise<AIConfigResolution> {
+export async function resolveAIConfig(
+  supabase: any,
+  userId: string | null | undefined,
+  gift?: { enabled: boolean; projectId?: string | null; auditId?: string | null }
+): Promise<AIConfigResolution> {
   const config = preferredAIConfig(await loadUserAIKeys(supabase, userId));
-  return config ? { ok: true, config } : { ok: false, reason: 'no_key' };
+  if (config) return { ok: true, config, source: 'user' };
+
+  const giftKey = Deno.env.get('OPENROUTER_GIFT_KEY');
+  if (!gift?.enabled || !userId || !giftKey) return { ok: false, reason: 'no_key' };
+
+  const { data: claimed, error } = await supabase.rpc('claim_ai_gift', {
+    p_user_id: userId,
+    p_project_id: gift.projectId ?? null,
+    p_audit_id: gift.auditId ?? null,
+  });
+  if (error) {
+    // A gift is a nicety; never fail the request over one.
+    console.error('[GIFT] claim_ai_gift failed:', error.message);
+    return { ok: false, reason: 'no_key' };
+  }
+  if (!claimed) return { ok: false, reason: 'no_key' };
+
+  console.log(`[GIFT] granted to ${userId} on ${GIFT_MODEL}`);
+  return {
+    ok: true,
+    source: 'gift',
+    config: { provider: 'openrouter', apiKey: giftKey, model: GIFT_MODEL },
+  };
 }
 
 export function aiConfigErrorMessage(feature = 'this feature'): string {
