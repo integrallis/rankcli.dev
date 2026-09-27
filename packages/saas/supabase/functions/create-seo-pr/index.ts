@@ -796,6 +796,25 @@ serve(async (req) => {
       console.log('AI-prioritized issues:', issues.map(i => `${i.code} (ROI: ${priorityMap.get(i.code)?.roiScore || 'N/A'})`).join(', '));
     }
 
+    // How many issues one PR may carry.
+    //
+    // Output is what a model runs out of, and output is driven by how much we ask it to write.
+    // rankcli.dev's report had 65 fixable issues; the reply came back truncated at ~17K
+    // characters of half-written JSON, so nothing could be committed at all. integrallis.com's
+    // 47 fit. Somewhere between the two is a cliff, and being on the wrong side of it costs the
+    // whole PR rather than the last few fixes.
+    //
+    // A 65-issue pull request is also not reviewable, which is the better argument: the cap is
+    // what makes the diff readable, and the per-report allowance of 3 PRs is how the rest
+    // arrives. Issues are already sorted by the audit's AI prioritisation when it exists, so the
+    // ones that get in are the ones worth doing first.
+    const MAX_ISSUES_PER_PR = 25;
+    const deferredIssues = Math.max(0, issues.length - MAX_ISSUES_PER_PR);
+    if (deferredIssues > 0) {
+      console.log(`Capping this PR at ${MAX_ISSUES_PER_PR} of ${issues.length} issues; ${deferredIssues} left for a follow-up`);
+      issues = issues.slice(0, MAX_ISSUES_PER_PR);
+    }
+
     console.log(`Found ${issues.length} auto-fixable issues, generating AI fixes...`);
 
     // Get GitHub token
@@ -1073,6 +1092,7 @@ ${rejectedPaths.length > 0
 ${changedFiles.map((f: FileChange) => `- \`${f.path}\``).join('\n')}
 ${unchangedPaths.length > 0 ? `\n_Already up to date, left alone: ${unchangedPaths.map((p) => `\`${p}\``).join(', ')}._` : ''}
 
+${deferredIssues > 0 ? `> This PR addresses ${issues.length} of the ${issues.length + deferredIssues} fixable issues on the report - enough to stay reviewable. Open another from the same report for the rest (${reportPrs.length + 1} of ${PRS_PER_REPORT} used).\n` : ''}
 ### How This Works
 
 1. RankCLI ran an SEO audit on ${project.url}
@@ -1165,6 +1185,7 @@ instead. RankCLI will not invent those for you.
       prUrl: pr.url,
       prNumber: pr.number,
       filesChanged: changedFiles.length,
+      deferredIssues,
       unchangedFiles: unchangedPaths,
       rejectedFiles: rejectedPaths,
       generatedBy,
