@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-27T15:07:19.609Z
+// Generated: 2026-09-27T16:01:38.943Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -6272,6 +6272,7 @@ var RECIPES = {
   eleventy: null,
   pelican: null,
   sphinx: null,
+  docusaurus: null,
   // Unknown
   unknown: null
 };
@@ -10616,6 +10617,11 @@ var SIGNALS = [
   // Sphinx: what nearly every Python project's documentation is built with, and the shape
   // flask.palletsprojects.com turned out to be. Structural markers only - not the word
   // "sphinx", which appears in plenty of prose.
+  // Validated against docusaurus.io, jestjs.io and redux.js.org - all three carry the mount
+  // point and the skip-to-content id. Deliberately not the word "docusaurus", which appears on
+  // deno.com purely as a link in a logo list; that near-miss is why this needed a real marker.
+  { framework: "docusaurus", language: "typescript", weight: WEIGHT.DECISIVE, name: "docusaurus-root", html: /id=["']__docusaurus/ },
+  { framework: "docusaurus", language: "typescript", weight: WEIGHT.STRONG, name: "docusaurus-skip-link", html: /__docusaurus_skipToContent/ },
   { framework: "sphinx", language: "python", weight: WEIGHT.DECISIVE, name: "sphinx-doc-options", html: /_static\/documentation_options\.js/ },
   { framework: "sphinx", language: "python", weight: WEIGHT.STRONG, name: "sphinx-theme-markup", html: /class=["'][^"']*sphinxsidebar|sphinx-highlight|_static\/searchtools\.js/ },
   { framework: "sphinx", language: "python", weight: WEIGHT.STRONG, name: "docutils-generator", html: /name=["']?generator["']?[^>]*content=["']?Docutils/i }
@@ -23898,6 +23904,50 @@ function findAppRoot(files) {
   return `${nonRoot[0]}/`;
 }
 
+// src/fixer/served-dir.ts
+var SERVED_DIR = {
+  // Bundlers and meta-frameworks that copy a public/ directory verbatim.
+  react: "public/",
+  vue: "public/",
+  svelte: "public/",
+  angular: "public/",
+  solidjs: "public/",
+  qwik: "public/",
+  nextjs: "public/",
+  nuxt: "public/",
+  astro: "public/",
+  sveltekit: "static/",
+  // SvelteKit's is static/, not public/
+  remix: "public/",
+  fresh: "static/",
+  // Gatsby, Hugo, Eleventy and Docusaurus all name theirs static/.
+  gatsby: "static/",
+  hugo: "static/",
+  eleventy: "public/",
+  docusaurus: "static/",
+  // Server frameworks with a public document root.
+  rails: "public/",
+  laravel: "public/",
+  symfony: "public/",
+  phoenix: "priv/static/",
+  spring: "src/main/resources/static/",
+  aspnet: "wwwroot/",
+  // Jekyll and Pelican copy their source tree, so the app root is the served root.
+  jekyll: "",
+  pelican: ""
+  // Python web frameworks have no single convention; the tree decides below.
+};
+function servedDir(framework, files, appRoot = "") {
+  const known = framework ? SERVED_DIR[framework] : void 0;
+  if (known !== void 0)
+    return known;
+  for (const candidate of ["public/", "static/", "assets/"]) {
+    if (files.some((f) => f.startsWith(`${appRoot}${candidate}`)))
+      return candidate;
+  }
+  return "";
+}
+
 // src/fixer/safety.ts
 var HTML_EXT = /\.html?$/i;
 var SOURCE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|vue|svelte|astro)$/i;
@@ -24711,6 +24761,7 @@ export {
   runAIReadinessChecks,
   runCrawlabilityChecks,
   runFullAudit,
+  servedDir,
   suggestSchemaTypes,
   urlSafetyDatabase
 };

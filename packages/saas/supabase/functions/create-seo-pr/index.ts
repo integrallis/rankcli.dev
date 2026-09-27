@@ -11,6 +11,7 @@ import { userIdFromApiKey } from '../_shared/caller-auth.ts';
 import {
   buildDeterministicFixes,
   findAppRoot,
+  servedDir as servedDirFor,
   assessReplacement,
   describeConcerns,
   buildFrameworkGuidance,
@@ -768,11 +769,7 @@ serve(async (req) => {
     // First get file tree to detect monorepo structure
     const files = await getRepoTree(token, owner, repoName);
     const appRoot = findAppRoot(files);
-    // Vite and friends serve public/; a site served as-is (GitHub Pages from docs/) has no
-    // public/ and never would. One answer, used by the prompt and by the templates.
-    const publicDir = files.some((f) => f.startsWith(`${appRoot}public/`)) ? 'public/' : '';
-    const servedRoot = `${appRoot}${publicDir}`;
-    console.log(`Detected app root: ${appRoot || '(root)'}, served from: ${servedRoot || '(root)'}`);
+    console.log(`Detected app root: ${appRoot || '(root)'}`);
 
     // Fetch package.json and index.html from the correct location
     const [packageJson, indexHtml] = await Promise.all([
@@ -783,6 +780,13 @@ serve(async (req) => {
 
     const framework = detectFramework(packageJson, files, appRoot);
     console.log(`Detected framework: ${framework}`);
+
+    // Where a file has to live to be served at the site root. The framework's convention holds
+    // even when the directory does not exist yet - checking the tree alone put a fresh Next.js
+    // app's robots.txt at the repository root, where nothing serves it.
+    const publicDir = servedDirFor(framework as Parameters<typeof servedDirFor>[0], files, appRoot);
+    const servedRoot = `${appRoot}${publicDir}`;
+    console.log(`Serving static files from: ${servedRoot || '(app root)'}`);
 
     const oversizedHtml = !!indexHtml && indexHtml.length > MAX_HTML_CHARS_FOR_AI;
     if (oversizedHtml) {
