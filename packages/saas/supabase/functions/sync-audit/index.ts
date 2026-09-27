@@ -120,21 +120,40 @@ serve(async (req) => {
     const parsedUrl = new URL(body.url);
     const domain = parsedUrl.port ? `${parsedUrl.hostname}:${parsedUrl.port}` : parsedUrl.hostname;
 
+    // Any project for this domain, active or not. Matching only active ones meant auditing a
+    // domain whose project had been deleted created a second project for it rather than
+    // reviving the first - a duplicate that eats a site slot and splits the audit history in
+    // two. Deleting is a soft delete (is_active = false), so the row is still there to reuse.
     const { data: existingProject } = await supabase
       .from('projects')
       // github_repo_url so the CLI can tell whether this project already has a repository:
       // standing in a git checkout, it offers to link the one it can see, and it needs to
       // know not to ask when the answer is already recorded.
-      .select('id, github_repo_url')
+      .select('id, github_repo_url, is_active')
       .eq('user_id', userId)
       .eq('domain', domain)
-      .eq('is_active', true)
-      .single();
+      .order('is_active', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     let projectId: string;
 
     if (existingProject) {
       projectId = existingProject.id;
+      // Auditing a deleted project's domain is how someone asks for it back. The site-limit
+      // trigger runs on this update, so a revival past the plan's limit is refused there.
+      if (existingProject.is_active === false) {
+        const { error: reviveError } = await supabase
+          .from('projects')
+          .update({ is_active: true })
+          .eq('id', projectId);
+        if (reviveError) {
+          return new Response(JSON.stringify({ error: reviveError.message.includes('limit') ? 'project_limit_reached' : reviveError.message }), {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
     } else {
       const { count } = await supabase
         .from('projects')

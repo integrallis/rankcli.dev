@@ -228,6 +228,19 @@ if (AUTHED) {
     return projects.map((p) => `${p.name}=${p.last_audit_score}${p.framework ? `/${p.framework}` : ''}`).join(' ');
   });
 
+  await check('no account has two active projects for the same domain', async () => {
+    const projects = await rest('projects?select=user_id,domain&is_active=eq.true');
+    const seen = new Map();
+    const dupes = [];
+    for (const p of projects) {
+      const key = `${p.user_id}|${p.domain}`;
+      if (seen.has(key)) dupes.push(p.domain);
+      seen.set(key, true);
+    }
+    assert(dupes.length === 0, `duplicate active projects: ${[...new Set(dupes)].join(', ')}`);
+    return `${projects.length} active projects, no duplicates`;
+  });
+
   await check('github_prs rows are typed, so quotas cannot count the CI on-ramp', async () => {
     const prs = await rest('github_prs?select=kind,pr_state');
     for (const pr of prs) {
@@ -238,7 +251,6 @@ if (AUTHED) {
 
   group('PR limits');
   await check('the per-report cap is enforced on a report that has spent it', async () => {
-    const audits = await rest('audits?select=id,project_id&status=eq.completed&order=created_at.desc&limit=25');
     const prs = await rest('github_prs?select=audit_id&kind=eq.auto_fix');
     const counts = prs.reduce((acc, p) => ({ ...acc, [p.audit_id]: (acc[p.audit_id] ?? 0) + 1 }), {});
     const spent = Object.entries(counts).find(([, n]) => n >= 3)?.[0];
@@ -256,9 +268,16 @@ if (AUTHED) {
   });
 
   await check('a repo already running RankCLI in CI is not given a second workflow', async () => {
-    const projects = await rest('projects?select=id,name,github_repo_url&is_active=eq.true&github_repo_url=not.is.null');
-    if (!projects.length) return 'no linked repositories (nothing to assert)';
     const key = JSON.parse(readFileSync(`${process.env.HOME}/Library/Preferences/rankcli-nodejs/config.json`, 'utf8')).apiKey;
+    const who = await (await fetch(`${SUPABASE}/functions/v1/validate-api-key`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': key, 'X-Endpoint': 'e2e' },
+    })).json();
+    assert(who.user?.id, 'could not resolve the API key to a user');
+    const projects = await rest(
+      `projects?select=id,name,github_repo_url&is_active=eq.true&github_repo_url=not.is.null&user_id=eq.${who.user.id}`
+    );
+    if (!projects.length) return 'the key\'s account has no linked repositories (nothing to assert)';
     const res = await fetch(`${SUPABASE}/functions/v1/create-ci-pr`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-API-Key': key },
