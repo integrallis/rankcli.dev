@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-27T00:34:51.797Z
+// Generated: 2026-09-27T07:47:10.040Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -10353,6 +10353,14 @@ function headersToObject(headers) {
   });
   return obj;
 }
+function looksLikeHtmlFallback(body, contentType) {
+  if (contentType && /text\/html/i.test(contentType))
+    return true;
+  if (typeof body !== "string")
+    return false;
+  const head = body.trimStart().slice(0, 200).toLowerCase();
+  return head.startsWith("<!doctype html") || head.startsWith("<html");
+}
 async function httpGet(url, config = {}) {
   const {
     headers = {},
@@ -11152,6 +11160,17 @@ async function checkRobotsTxt(baseUrl) {
       };
     }
     const content = response.data;
+    if (looksLikeHtmlFallback(content, response.headers?.["content-type"])) {
+      issues.push({
+        ...ISSUE_DEFINITIONS.ROBOTS_TXT_MISSING,
+        affectedUrls: [url],
+        details: { servedHtml: true }
+      });
+      return {
+        issues,
+        data: { exists: false, blocksAll: false, hasSitemap: false, sitemapUrls: [] }
+      };
+    }
     const lines = content.toLowerCase().split("\n");
     let blocksAll = false;
     let currentUserAgent = "";
@@ -13270,6 +13289,13 @@ async function checkLlmsTxt(baseUrl) {
       };
     }
     const content = response.data;
+    if (looksLikeHtmlFallback(content, response.headers?.["content-type"])) {
+      issues.push({
+        ...ISSUE_DEFINITIONS.LLMS_TXT_MISSING,
+        affectedUrls: [url]
+      });
+      return { issues, data: { exists: false, valid: false, errors: ["File not found (the site served HTML)"] } };
+    }
     const lines = content.split("\n").filter((line) => line.trim());
     const errors = [];
     let valid = true;
@@ -23870,7 +23896,8 @@ ${entries}
 }
 function llmsTxt(siteName, siteUrl, description, pages) {
   const base = siteUrl.replace(/\/$/, "");
-  const links = pages.filter((url) => url !== siteUrl && url !== base).slice(0, 20).map((url) => `- [${url.replace(base, "") || "/"}](${url})`).join("\n");
+  const trim = (url) => url.replace(/\/$/, "");
+  const links = pages.filter((url) => trim(url) !== base).map((url) => ({ url, path: url.replace(base, "").replace(/^$/, "/") })).filter((page) => page.path !== "/").slice(0, 20).map((page) => `- [${page.path}](${page.url})`).join("\n");
   return `# ${siteName}
 
 ${description ? `> ${description}
@@ -23903,6 +23930,12 @@ var SCHEMA_CODES = [
   "NO_ENTITY_SCHEMA",
   "STRUCTURED_DATA_MISSING"
 ];
+function metaDescriptionOf(html) {
+  if (!html)
+    return null;
+  const match = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
+  return match?.[1]?.trim() || null;
+}
 function buildDeterministicFixes(input) {
   const codes = new Set(input.issueCodes);
   const has = (...wanted) => wanted.some((code) => codes.has(code));
@@ -23911,6 +23944,7 @@ function buildDeterministicFixes(input) {
   const addressed = [];
   const base = input.siteUrl.replace(/\/$/, "");
   const pages = input.pages?.length ? input.pages : [`${base}/`];
+  const description = input.description ?? metaDescriptionOf(input.existing.indexHtml);
   if (has("ROBOTS_TXT_MISSING", "AI_BOTS_BLOCKED", "AI_CRAWLERS_BLOCKED") && !input.existing.robotsTxt) {
     files.push({
       path: `${root}public/robots.txt`,
@@ -23932,7 +23966,7 @@ function buildDeterministicFixes(input) {
   if (has("LLMS_TXT_MISSING") && !input.existing.llmsTxt) {
     files.push({
       path: `${root}public/llms.txt`,
-      content: llmsTxt(input.siteName, base, input.description, pages),
+      content: llmsTxt(input.siteName, base, description, pages),
       message: "fix(seo): add llms.txt for AI assistants",
       action: "created"
     });
@@ -23942,7 +23976,7 @@ function buildDeterministicFixes(input) {
   if (has(...SCHEMA_CODES) && indexHtml && !indexHtml.includes("application/ld+json") && indexHtml.includes("</head>")) {
     files.push({
       path: `${root}index.html`,
-      content: indexHtml.replace("</head>", `${jsonLdBlock(input.siteName, base, input.description)}  </head>`),
+      content: indexHtml.replace("</head>", `${jsonLdBlock(input.siteName, base, description)}  </head>`),
       message: "fix(seo): add WebSite and Organization JSON-LD",
       action: "edited"
     });

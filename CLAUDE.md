@@ -22,7 +22,9 @@ A real SaaS to audit against (the site is live; its source is **not** in this re
 **Product**: animerm.ai - Animate your Mermaid diagrams with Keynote-style controls
 **URL**: https://animerm.ai
 **Stack**: React + TypeScript + Vite (frontend), Rust (backend), Supabase (auth/DB)
-**SEO Status**: ZERO SEO implemented - perfect test case
+**SEO Status**: minimal - it has a real robots.txt and a meta description, but no sitemap,
+no llms.txt and no structured data (verified 2026-09-27). Its /sitemap.xml and /llms.txt
+answer 200 with the SPA shell, which makes it a good test of fallback detection.
 
 ## Environment
 
