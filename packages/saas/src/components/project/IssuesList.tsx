@@ -1,5 +1,4 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   ChevronDown,
@@ -257,19 +256,20 @@ export function IssuesList({
   const prsExhausted = prsRemaining === 0;
   const monthIsTheLimit = monthRemaining !== null && monthRemaining <= (reportRemaining ?? Infinity);
 
-  // Auto-fix PRs need a connected repo AND the user's own AI key. hasAIKey === null means
-  // we don't know yet, so nothing is claimed missing.
-  const needsAIKey = hasAIKey === false;
+  // An AI key is no longer required: without one create-seo-pr writes the template fixes
+  // (robots.txt, sitemap.xml, llms.txt, JSON-LD). It is a nudge now, not a blocker - the
+  // only hard prerequisite is a connected repository.
+  const noAIKey = hasAIKey === false;
   const prBlocker = !hasGitHub
     ? 'Connect a GitHub repository to open fix PRs'
-    : needsAIKey
-      ? 'Auto-fix PRs run on your own AI provider key - add one to enable them'
-      : prsExhausted
+    : prsExhausted
         ? monthIsTheLimit
           ? `Your ${planName ?? 'current'} plan includes ${prsAllowedThisMonth} auto-fix PRs a month, and this month's are used. Upgrade for unlimited.`
           : `This report has opened its ${prsAllowedForReport} PRs. Run a new audit to open more.`
-        : monthIsTheLimit && monthRemaining !== null
-          ? `${monthRemaining} of ${prsAllowedThisMonth} auto-fix PRs left this month on ${planName ?? 'your plan'}`
+      : monthIsTheLimit && monthRemaining !== null
+        ? `${monthRemaining} of ${prsAllowedThisMonth} auto-fix PRs left this month on ${planName ?? 'your plan'}`
+        : noAIKey
+          ? "Opens a PR with RankCLI's template fixes. Add an AI provider key for content rewrites too."
           : null;
 
   const showCheckboxes = issues.length > 0;
@@ -296,9 +296,8 @@ export function IssuesList({
                 variant="outline"
                 size="sm"
                 className={cn('gap-2', highlightFixPR && 'ring-2 ring-primary ring-offset-2')}
-                onClick={!hasGitHub ? onConnectGitHub : needsAIKey ? undefined : onCreateFixPR}
-                asChild={needsAIKey && hasGitHub}
-                disabled={isCreatingPR || (hasGitHub && !needsAIKey && prsExhausted)}
+                onClick={!hasGitHub ? onConnectGitHub : onCreateFixPR}
+                disabled={isCreatingPR || (hasGitHub && prsExhausted)}
                 title={prBlocker ?? 'Open a PR that fixes the issues in this report'}
               >
                 {isCreatingPR ? (
@@ -306,12 +305,6 @@ export function IssuesList({
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Creating PR...
                   </>
-                ) : needsAIKey && hasGitHub ? (
-                  // The only prerequisite that lives on another page.
-                  <Link to="/account?tab=ai-provider">
-                    <GitPullRequest className="h-4 w-4" />
-                    Add an AI key to fix
-                  </Link>
                 ) : (
                   <>
                     <GitPullRequest className="h-4 w-4" />

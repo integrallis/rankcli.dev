@@ -6,7 +6,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getInstallationToken } from '../_shared/github-app.ts';
 import { fetchFileContent, getDefaultBranchSha, createBranch, createOrUpdateFile, createPullRequest } from '../_shared/github-repo.ts';
 import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
-import { resolveAIConfig, aiConfigErrorMessage } from '../_shared/resolve-ai-config.ts';
+import { resolveAIConfig } from '../_shared/resolve-ai-config.ts';
+import { buildDeterministicFixes } from '../_shared/audit/index.ts';
 import { getEntitlement } from '../_shared/tier.ts';
 
 // The monthly auto-fix PR allowance comes from _shared/tier.ts (limits.autoFixPrsPerMonth,
@@ -27,6 +28,72 @@ const MAX_OPEN_AUTO_FIX_PRS = 1;
 // Capping it there means a double-click, a retry, or a loop can't bury a repo in
 // near-identical PRs off a single audit. Run a new audit to get a new allowance.
 const PRS_PER_REPORT = 3;
+
+// Whatever the model returned is JSON from a remote service, and the next thing we do with
+// it is commit it to someone's default branch. Before this, `JSON.parse(content)` was the
+// only check: a path of "../../etc" or a truncated index.html went straight into the PR.
+const MAX_GENERATED_FILES = 20;
+const MAX_FILE_BYTES = 256 * 1024;
+// A fix touches site content and config. Anything else - CI, lockfiles, source code we were
+// never asked to rewrite - is not what an SEO fix PR is for.
+const ALLOWED_EXTENSIONS = ['.html', '.htm', '.txt', '.xml', '.json', '.webmanifest', '.md', '.ts', '.tsx', '.js', '.jsx', '.vue', '.svelte', '.astro'];
+
+function validateGeneratedFiles(files: unknown, appRoot: string): FileChange[] {
+  if (!Array.isArray(files)) {
+    console.warn('[VALIDATE] generated files was not an array; dropping everything');
+    return [];
+  }
+
+  const kept: FileChange[] = [];
+  const seen = new Set<string>();
+
+  for (const candidate of files.slice(0, MAX_GENERATED_FILES)) {
+    const path = (candidate as { path?: unknown })?.path;
+    const content = (candidate as { content?: unknown })?.content;
+    const message = (candidate as { message?: unknown })?.message;
+    const reject = (why: string) => console.warn(`[VALIDATE] dropped ${String(path)}: ${why}`);
+
+    if (typeof path !== 'string' || !path.trim()) { reject('no path'); continue; }
+    if (typeof content !== 'string' || content.length === 0) { reject('empty content'); continue; }
+    if (content.length > MAX_FILE_BYTES) { reject(`${content.length} bytes`); continue; }
+
+    // Path traversal, absolute paths and Windows drive letters never reach the GitHub API.
+    if (path.includes('..') || path.startsWith('/') || path.startsWith('~') || /^[a-zA-Z]:/.test(path)) {
+      reject('unsafe path'); continue;
+    }
+    if (appRoot && !path.startsWith(appRoot)) { reject(`outside app root ${appRoot}`); continue; }
+    // Workflows are what create-ci-pr is for, and .git is not ours to write.
+    if (path.includes('.github/workflows/') || path.startsWith('.git/')) { reject('not an SEO file'); continue; }
+    if (!ALLOWED_EXTENSIONS.some((ext) => path.toLowerCase().endsWith(ext))) { reject('extension not allowed'); continue; }
+    if (seen.has(path)) { reject('duplicate path'); continue; }
+
+    seen.add(path);
+    kept.push({
+      path,
+      content,
+      message: typeof message === 'string' && message.trim() ? message : `fix(seo): update ${path}`,
+    });
+  }
+
+  if (kept.length !== files.length) {
+    console.warn(`[VALIDATE] kept ${kept.length} of ${files.length} generated files`);
+  }
+  return kept;
+}
+
+// A rewrite that loses most of the file, or an HTML file that comes back without its closing
+// tags, is a truncated generation rather than a fix. Compared against what the repo has.
+function looksTruncated(path: string, original: string, replacement: string): string | null {
+  if (replacement.length < original.length * 0.6) {
+    return `replacement is ${Math.round((replacement.length / original.length) * 100)}% of the original`;
+  }
+  if (/\.html?$/i.test(path)) {
+    for (const tag of ['</head>', '</body>', '</html>']) {
+      if (original.includes(tag) && !replacement.includes(tag)) return `lost ${tag}`;
+    }
+  }
+  return null;
+}
 
 // Same file, same bytes. Compared ignoring line endings and a trailing newline, so a PR
 // is never opened over a difference that no reviewer would call a change.
@@ -464,14 +531,11 @@ serve(async (req) => {
       );
     }
 
+    // No AI key is no longer the end of the road: the template fixes below need no model,
+    // so an account without one still gets a pull request. The key buys the content
+    // rewrites a template can't do.
     const aiResolution = await resolveAIConfig(supabase, project.user_id);
-    if (!aiResolution.ok) {
-      return new Response(JSON.stringify({ error: aiConfigErrorMessage('auto-fix PRs') }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const aiConfig = aiResolution.config;
+    const aiConfig = aiResolution.ok ? aiResolution.config : null;
 
     if (!project.github_repo_url) {
       return new Response(JSON.stringify({ error: 'No GitHub repository connected' }), {
@@ -563,6 +627,23 @@ serve(async (req) => {
       });
     }
 
+    // Issues whose only possible "fix" is inventing content. A model told to fix
+    // AI_NO_TESTIMONIALS writes testimonials; told to fix YMYL_NO_AUTHOR it invents an
+    // author with credentials; told to fix AI_NO_ORIGINAL_DATA it makes up data - and we
+    // commit the result to the customer's repository. These are real findings and they
+    // belong in the report, where a human can act on them. They do not belong in a prompt
+    // that ends in a commit.
+    const NEEDS_HUMAN_CONTENT = [
+      'AI_NO_TESTIMONIALS', 'AI_NO_REVIEW_INTEGRATION', 'AI_NO_REVIEW_PLATFORMS',
+      'AI_WEAK_REVIEW_ECOSYSTEM', 'REVIEW_NO_VIDEO', 'NO_SOCIAL_PROOF',
+      'BOFU_NO_SOCIAL_PROOF', 'AI_NO_AUTHOR_EXPERTISE', 'YMYL_NO_AUTHOR',
+      'YMYL_NO_CITATIONS', 'AI_NO_EXTERNAL_CITATIONS', 'AI_LOW_CITATION_QUALITY',
+      'AI_LOW_CITATION_WORTHINESS', 'LOW_AI_CITATION_READINESS', 'AI_NO_ORIGINAL_DATA',
+      'AI_NO_EXPERIENCE_SIGNALS', 'NO_EXPERIENCE_SIGNALS', 'AI_NO_COMPARISON_TABLE',
+      'AI_NO_QA_FORMAT', 'AI_NO_NUMBERED_STEPS', 'AI_NO_BRAND_DEFINITION',
+      'NO_AGENT_EXPERIENCE_SURFACE',
+    ];
+
     // Issues that CANNOT be auto-fixed (require manual intervention or architectural changes)
     const NON_FIXABLE_CODES = [
       // These require SSR/architectural changes
@@ -591,7 +672,10 @@ serve(async (req) => {
     );
 
     const fixableIssues = (rawIssues ?? []).filter(
-      (i) => !NON_FIXABLE_CODES.includes(i.code) && !claimedIssueIds.has(i.id)
+      (i) =>
+        !NON_FIXABLE_CODES.includes(i.code) &&
+        !NEEDS_HUMAN_CONTENT.includes(i.code) &&
+        !claimedIssueIds.has(i.id)
     );
 
     if (fixableIssues.length === 0) {
@@ -679,24 +763,56 @@ serve(async (req) => {
       }
     }
 
-    // Generate AI fixes
-    console.log('Generating AI-powered fixes...');
-    const aiResult = await generateAIFixes(
-      aiConfig,
-      issues as AuditIssue[],
-      repoContext,
-      project.url,
-      project.name,
-      aiSuggestions
-    );
+    // With a key, the model writes the fixes. Without one, the templates do - robots.txt,
+    // sitemap.xml, llms.txt and a JSON-LD block, all derived from the site's URL and name.
+    let aiResult: { files: FileChange[]; summary: string };
+    let generatedBy: 'ai' | 'templates';
+
+    if (aiConfig) {
+      console.log('Generating AI-powered fixes...');
+      generatedBy = 'ai';
+      const raw = await generateAIFixes(
+        aiConfig,
+        issues as AuditIssue[],
+        repoContext,
+        project.url,
+        project.name,
+        aiSuggestions
+      );
+      // The model's answer is parsed JSON from a remote service, not a trusted value.
+      aiResult = { files: validateGeneratedFiles(raw?.files, appRoot), summary: raw?.summary ?? '' };
+    } else {
+      console.log('No AI key - generating template fixes...');
+      generatedBy = 'templates';
+      const [robotsTxt, sitemapXml, llmsTxt] = await Promise.all([
+        fetchFileContent(token, owner, repoName, `${appRoot}public/robots.txt`),
+        fetchFileContent(token, owner, repoName, `${appRoot}public/sitemap.xml`),
+        fetchFileContent(token, owner, repoName, `${appRoot}public/llms.txt`),
+      ]);
+      const deterministic = buildDeterministicFixes({
+        siteUrl: project.url,
+        siteName: project.name,
+        appRoot,
+        issueCodes: issues.map((i: AuditIssue) => i.code),
+        existing: { indexHtml, robotsTxt, sitemapXml, llmsTxt },
+        pages: [project.url],
+      });
+      aiResult = { files: deterministic.files, summary: deterministic.summary };
+    }
 
     if (!aiResult.files || aiResult.files.length === 0) {
-      return noop('The AI could not generate fixes for these issues.', {
-        prsForReport: reportPrs.length,
-        prsAllowedForReport: PRS_PER_REPORT,
-        prsThisMonth,
-        prsAllowedThisMonth: monthlyAllowance,
-      });
+      return noop(
+        generatedBy === 'ai'
+          ? 'The AI could not generate fixes for these issues.'
+          : "None of this report's issues can be fixed from a template. Connect an AI provider key to fix the rest - RankCLI runs AI features on your own key: https://rankcli.dev/account?tab=ai-provider",
+        {
+          generatedBy,
+          prsForReport: reportPrs.length,
+          prsAllowedForReport: PRS_PER_REPORT,
+          prsThisMonth,
+          prsAllowedThisMonth: monthlyAllowance,
+        }
+      );
     }
 
     console.log(`AI generated ${aiResult.files.length} file changes`);
@@ -706,13 +822,25 @@ serve(async (req) => {
     // a branch, a commit per file, and no diff for the reviewer to look at.
     const changedFiles: FileChange[] = [];
     const unchangedPaths: string[] = [];
+    const rejectedPaths: string[] = [];
     for (const file of aiResult.files) {
       const existing = await fetchFileContent(token, owner, repoName, file.path);
       if (existing !== null && sameContent(existing, file.content)) {
         unchangedPaths.push(file.path);
-      } else {
-        changedFiles.push(file);
+        continue;
       }
+      // Replacing an existing file is the risky direction: a truncated generation would
+      // land as a commit that deletes most of a page. Only checkable here, where the
+      // original is in hand.
+      if (existing !== null) {
+        const truncated = looksTruncated(file.path, existing, file.content);
+        if (truncated) {
+          console.warn(`[VALIDATE] dropped ${file.path}: ${truncated}`);
+          rejectedPaths.push(file.path);
+          continue;
+        }
+      }
+      changedFiles.push(file);
     }
 
     if (changedFiles.length === 0) {
@@ -746,9 +874,11 @@ serve(async (req) => {
 
     // Create PR
     const prTitle = `fix(seo): ${issues.length} SEO improvements for ${project.name}`;
-    const prBody = `## 🚀 AI-Generated SEO Fixes
+    const prBody = `## ${generatedBy === 'ai' ? '🚀 AI-Generated SEO Fixes' : '🚀 SEO Fixes'}
 
-This PR was automatically generated by [RankCLI](https://rankcli.dev) using AI analysis of your codebase.
+${generatedBy === 'ai'
+  ? 'This PR was automatically generated by [RankCLI](https://rankcli.dev) using AI analysis of your codebase.'
+  : `This PR was generated by [RankCLI](https://rankcli.dev) from its templates - no AI involved, nothing invented, built from this site's URL and name. Connect an AI provider key to also get the content rewrites a template can't do (titles, meta descriptions, framework-specific edits): https://rankcli.dev/account?tab=ai-provider`}
 
 ### Issues Fixed
 
@@ -768,9 +898,9 @@ ${unchangedPaths.length > 0 ? `\n_Already up to date, left alone: ${unchangedPat
 ### How This Works
 
 1. RankCLI ran an SEO audit on ${project.url}
-2. AI analyzed your codebase (detected: **${framework}**)
-3. Generated framework-specific fixes that match your code style
-4. Created this PR with the changes
+2. ${generatedBy === 'ai' ? `AI analyzed your codebase (detected: **${framework}**)` : `Detected the framework (**${framework}**) and selected the template fixes for what the audit reported`}
+3. ${generatedBy === 'ai' ? 'Generated framework-specific fixes that match your code style' : 'Generated the files deterministically - the same report always produces the same PR'}
+4. Created this PR with the changes${rejectedPaths.length > 0 ? `\n\n> ${rejectedPaths.length} generated file(s) were rejected before committing as likely truncated: ${rejectedPaths.map((p) => `\`${p}\``).join(', ')}.` : ''}
 
 ### Test Plan
 
@@ -832,6 +962,8 @@ ${unchangedPaths.length > 0 ? `\n_Already up to date, left alone: ${unchangedPat
       prNumber: pr.number,
       filesChanged: changedFiles.length,
       unchangedFiles: unchangedPaths,
+      rejectedFiles: rejectedPaths,
+      generatedBy,
       issuesFixed: issues.length,
       // One more PR has been opened against this report than the caller last saw.
       prsForReport: reportPrs.length + 1,
