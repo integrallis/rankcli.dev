@@ -155,6 +155,13 @@ interface RepoContext {
   framework: string;
   files: string[];
   appRoot: string; // Root path of the app (e.g., 'ui/', 'web/', or '')
+  /**
+   * Where a file has to live to be served at the site root, relative to appRoot: 'public/'
+   * for bundlers, '' for a site served as-is (GitHub Pages from docs/). The prompt used to
+   * say public/ unconditionally, and on a Pages site the model duly wrote
+   * docs/public/robots.txt - a file that repository will never serve.
+   */
+  servedDir: string;
 }
 
 
@@ -219,6 +226,7 @@ async function generateAIFixes(
   aiSuggestions?: { titles?: string[]; descriptions?: string[] }
 ): Promise<{ files: FileChange[]; summary: string; usage?: { promptTokens?: number; completionTokens?: number } }> {
   const appRoot = repoContext.appRoot || '';
+  const servedDir = repoContext.servedDir;
   const isReactVite = repoContext.framework === 'react-vite' || repoContext.framework === 'react';
   const isNextjs = repoContext.framework === 'nextjs';
 
@@ -227,7 +235,7 @@ REACT/VITE SPECIFIC RULES (VERY IMPORTANT):
 - The app is in the "${appRoot}" directory - ALL file paths must start with "${appRoot}"
 - DO NOT create a new index.html - modify the EXISTING "${appRoot}index.html" in the <head> section only
 - For dynamic meta tags, create a React component using react-helmet-async or modify existing SEO component
-- Static files (robots.txt, sitemap.xml, _headers) go in "${appRoot}public/"
+- Static files (robots.txt, sitemap.xml, _headers) go in "${appRoot}${servedDir}"
 - The index.html already has a <div id="root"></div> - DO NOT remove or modify the body content
 - Add meta tags, preconnect links, and JSON-LD scripts to the <head> section of the existing index.html
 - If the index.html already has meta tags, UPDATE them, don't duplicate
@@ -236,11 +244,11 @@ NEXT.JS SPECIFIC RULES:
 - Use the app/ or pages/ directory structure
 - Create or modify app/layout.tsx for metadata
 - Use Next.js Metadata API for SEO tags
-- Static files go in public/
+- Static files go in ${servedDir || "the app root"}
 ` : `
 STATIC SITE RULES:
 - Modify index.html directly
-- Static files go in public/ or root
+- Static files go in ${servedDir || "the app root, beside index.html"}
 `;
 
   const systemPrompt = `You are an expert SEO engineer. Your task is to generate code changes to fix SEO issues.
@@ -263,11 +271,11 @@ GENERAL RULES:
 
 ISSUE CATEGORIES TO FIX:
 - Meta tags (title, description, OG, Twitter cards) -> modify existing index.html <head> section
-- robots.txt issues -> create/modify ${appRoot}public/robots.txt
-- sitemap issues -> create ${appRoot}public/sitemap.xml
-- llms.txt issues -> create/modify ${appRoot}public/llms.txt
+- robots.txt issues -> create/modify ${appRoot}${servedDir}robots.txt
+- sitemap issues -> create ${appRoot}${servedDir}sitemap.xml
+- llms.txt issues -> create/modify ${appRoot}${servedDir}llms.txt
 - Schema/structured data -> add JSON-LD scripts to index.html <head>
-- Security headers -> create ${appRoot}public/_headers or ${appRoot}vercel.json
+- Security headers -> create ${appRoot}${servedDir}_headers or ${appRoot}vercel.json
 - Preconnect/preload -> add link tags to index.html <head>
 
 OUTPUT FORMAT:
@@ -334,17 +342,17 @@ Files in repo (sample):
 ${repoContext.files.filter(f => f.startsWith(repoContext.appRoot)).slice(0, 50).join('\n')}
 
 CRITICAL INSTRUCTIONS:
-1. All file paths MUST start with "${repoContext.appRoot}" (e.g., "${repoContext.appRoot}public/robots.txt")
+1. All file paths MUST start with "${repoContext.appRoot}" (e.g., "${repoContext.appRoot}${repoContext.servedDir}robots.txt")
 2. For the existing index.html, ONLY modify the <head> section - DO NOT replace the entire file
 3. Preserve the existing <div id="root"></div> and body content
 4. Each commit message should have: subject line with fix count, then body with issue codes (e.g., "fix(seo): add meta tags (3 fixes)\\n\\nIssues fixed:\\n- CODE1\\n- CODE2")
 
 For this project, you should:
-1. Create/update ${repoContext.appRoot}public/robots.txt with proper rules
-2. Create ${repoContext.appRoot}public/sitemap.xml with the site URL
+1. Create/update ${repoContext.appRoot}${repoContext.servedDir}robots.txt with proper rules
+2. Create ${repoContext.appRoot}${repoContext.servedDir}sitemap.xml with the site URL
 3. Update ${repoContext.appRoot}index.html <head> section with all missing meta tags, OG tags, Twitter cards (DO NOT replace body!)
 4. Add JSON-LD structured data to ${repoContext.appRoot}index.html <head>
-5. Create ${repoContext.appRoot}public/_headers or ${repoContext.appRoot}vercel.json for security headers
+5. Create ${repoContext.appRoot}${repoContext.servedDir}_headers or ${repoContext.appRoot}vercel.json for security headers
 6. Add preconnect/preload hints to ${repoContext.appRoot}index.html <head>
 7. Fix any other issues that can be addressed with code changes
 
@@ -726,7 +734,11 @@ serve(async (req) => {
     // First get file tree to detect monorepo structure
     const files = await getRepoTree(token, owner, repoName);
     const appRoot = findAppRoot(files);
-    console.log(`Detected app root: ${appRoot || '(root)'}`);
+    // Vite and friends serve public/; a site served as-is (GitHub Pages from docs/) has no
+    // public/ and never would. One answer, used by the prompt and by the templates.
+    const publicDir = files.some((f) => f.startsWith(`${appRoot}public/`)) ? 'public/' : '';
+    const servedRoot = `${appRoot}${publicDir}`;
+    console.log(`Detected app root: ${appRoot || '(root)'}, served from: ${servedRoot || '(root)'}`);
 
     // Fetch package.json and index.html from the correct location
     const [packageJson, indexHtml] = await Promise.all([
@@ -749,6 +761,7 @@ serve(async (req) => {
       framework,
       files,
       appRoot,
+      servedDir: publicDir,
     };
 
     // Extract AI-generated suggestions to include in fix generation
@@ -821,11 +834,6 @@ serve(async (req) => {
     } else {
       console.log('No AI key - generating template fixes...');
       generatedBy = 'templates';
-      // Vite and friends serve public/; a static site (GitHub Pages from docs/) serves its
-      // own directory, where a public/ subdirectory would never be fetched. The tree says
-      // which, and the same answer decides where we look and where we write.
-      const publicDir = files.some((f) => f.startsWith(`${appRoot}public/`)) ? 'public/' : '';
-      const servedRoot = `${appRoot}${publicDir}`;
       const [robotsTxt, sitemapXml, llmsTxt] = await Promise.all([
         fetchFileContent(token, owner, repoName, `${servedRoot}robots.txt`),
         fetchFileContent(token, owner, repoName, `${servedRoot}sitemap.xml`),

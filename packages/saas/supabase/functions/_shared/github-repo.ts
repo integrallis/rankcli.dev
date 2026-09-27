@@ -5,6 +5,33 @@
 // commit - encoding, conflict handling, error text - lands in both.
 
 // Fetch file content from GitHub
+// GitHub's contents API speaks base64, and base64 is bytes - so the conversion has to go
+// through bytes, not through a string.
+//
+// `atob()` alone returns a latin1 string: one character per byte. An em dash (E2 80 94) comes
+// back as three characters, so "Integrallis — Independent" became "Integrallis â Independent"
+// the moment we read the file. That corruption was then handed to the model, echoed back
+// faithfully, and committed - a real PR rewrote a homepage's <title>, og:title and
+// twitter:title into mojibake. It also broke the unchanged-file comparison for any page with
+// a non-ASCII character, since the file we read never equalled the file that was there.
+function decodeBase64Utf8(base64: string): string {
+  const binary = atob(base64.replace(/\s/g, ''));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+/** The inverse. Chunked because String.fromCharCode(...bytes) overflows the stack on a big file. */
+function encodeBase64Utf8(text: string): string {
+  const bytes = new TextEncoder().encode(text);
+  let binary = '';
+  const CHUNK = 0x8000;
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+  }
+  return btoa(binary);
+}
+
 export async function fetchFileContent(token: string, owner: string, repo: string, path: string): Promise<string | null> {
   try {
     const response = await fetch(
@@ -21,7 +48,7 @@ export async function fetchFileContent(token: string, owner: string, repo: strin
 
     const data = await response.json();
     if (data.content) {
-      return atob(data.content.replace(/\n/g, ''));
+      return decodeBase64Utf8(data.content);
     }
     return null;
   } catch {
@@ -116,7 +143,7 @@ export async function createOrUpdateFile(
 
   const body: Record<string, string> = {
     message,
-    content: btoa(unescape(encodeURIComponent(content))), // Handle Unicode
+    content: encodeBase64Utf8(content),
     branch,
   };
 
