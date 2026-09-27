@@ -37,6 +37,16 @@ export interface TierLimits {
    * team running many client sites actually needs (pricing-tiers.json auto_fix_prs_open).
    */
   autoFixPrsOpen: number;
+
+  /**
+   * How many auto-fix PRs one report may open before a fresh audit is required.
+   *
+   * Was a flat 3 for everyone, which made Agency feel identical to Free on the
+   * thing Agency customers actually hit: a 50-site account working through one
+   * large report. It scales with the plan so a bigger report is a reason to be
+   * on a bigger plan.
+   */
+  autoFixPrsPerReport: number;
 }
 
 export interface Entitlement {
@@ -51,19 +61,19 @@ export interface Entitlement {
 
 // pricing-tiers.json: free_registered and subscriptions[].limits.
 export const TIER_LIMITS: Record<BaseTier, TierLimits> = {
-  free: { sites: 1, apiRequestsPerDay: 0, domainsPerMonth: 2, autoFixPrsPerMonth: 3, autoFixPrsOpen: 1 },
-  solo: { sites: 3, apiRequestsPerDay: 100, domainsPerMonth: 5, autoFixPrsPerMonth: null, autoFixPrsOpen: 1 },
-  pro: { sites: 10, apiRequestsPerDay: 1000, domainsPerMonth: 15, autoFixPrsPerMonth: null, autoFixPrsOpen: 3 },
-  agency: { sites: 50, apiRequestsPerDay: 10000, domainsPerMonth: null, autoFixPrsPerMonth: null, autoFixPrsOpen: 10 },
+  free: { sites: 1, apiRequestsPerDay: 0, domainsPerMonth: 2, autoFixPrsPerMonth: 3, autoFixPrsOpen: 1, autoFixPrsPerReport: 3 },
+  solo: { sites: 3, apiRequestsPerDay: 100, domainsPerMonth: 5, autoFixPrsPerMonth: null, autoFixPrsOpen: 1, autoFixPrsPerReport: 3 },
+  pro: { sites: 10, apiRequestsPerDay: 1000, domainsPerMonth: 15, autoFixPrsPerMonth: null, autoFixPrsOpen: 3, autoFixPrsPerReport: 5 },
+  agency: { sites: 50, apiRequestsPerDay: 10000, domainsPerMonth: null, autoFixPrsPerMonth: null, autoFixPrsOpen: 10, autoFixPrsPerReport: 10 },
 };
 
 // Lifetime deals were sold against a subscription tier ("pays for itself vs Solo/Pro/Agency")
 // with their own site and API caps (pricing-tiers.json lifetime_deals.tiers). They list no
 // domains-per-month cap, so they take their tier's.
 export const LTD_TIERS: Record<LtdTier, { tier: BaseTier; name: string; limits: TierLimits }> = {
-  ltd_starter: { tier: 'solo', name: 'LTD Starter', limits: { sites: 1, apiRequestsPerDay: 50, domainsPerMonth: 5, autoFixPrsPerMonth: null, autoFixPrsOpen: 1 } },
-  ltd_pro: { tier: 'pro', name: 'LTD Pro', limits: { sites: 3, apiRequestsPerDay: 200, domainsPerMonth: 15, autoFixPrsPerMonth: null, autoFixPrsOpen: 3 } },
-  ltd_agency: { tier: 'agency', name: 'LTD Agency', limits: { sites: 10, apiRequestsPerDay: 500, domainsPerMonth: null, autoFixPrsPerMonth: null, autoFixPrsOpen: 10 } },
+  ltd_starter: { tier: 'solo', name: 'LTD Starter', limits: { sites: 1, apiRequestsPerDay: 50, domainsPerMonth: 5, autoFixPrsPerMonth: null, autoFixPrsOpen: 1, autoFixPrsPerReport: 3 } },
+  ltd_pro: { tier: 'pro', name: 'LTD Pro', limits: { sites: 3, apiRequestsPerDay: 200, domainsPerMonth: 15, autoFixPrsPerMonth: null, autoFixPrsOpen: 3, autoFixPrsPerReport: 5 } },
+  ltd_agency: { tier: 'agency', name: 'LTD Agency', limits: { sites: 10, apiRequestsPerDay: 500, domainsPerMonth: null, autoFixPrsPerMonth: null, autoFixPrsOpen: 10, autoFixPrsPerReport: 10 } },
 };
 
 const TIER_RANK: Record<BaseTier, number> = { free: 0, solo: 1, pro: 2, agency: 3 };

@@ -144,11 +144,22 @@ describe('tier limits match pricing-tiers.json', () => {
       const limits = deno.TIER_LIMITS[sub.id as deno.BaseTier];
       expect(limits.autoFixPrsPerMonth).toBe(sub.limits.auto_fix_prs_per_month);
       expect(limits.autoFixPrsOpen).toBe(sub.limits.auto_fix_prs_open);
+      expect(limits.autoFixPrsPerReport).toBe(sub.limits.auto_fix_prs_per_report);
     }
 
     // The upgrade argument only exists if the numbers actually rise.
     expect(deno.TIER_LIMITS.agency.autoFixPrsOpen).toBeGreaterThan(deno.TIER_LIMITS.pro.autoFixPrsOpen);
     expect(deno.TIER_LIMITS.pro.autoFixPrsOpen).toBeGreaterThan(deno.TIER_LIMITS.solo.autoFixPrsOpen);
+    // The per-report cap was a flat 3, which made Agency identical to Free on the limit its
+    // customers actually hit - one large report across many sites. It has to scale too, or the
+    // tier ladder has a rung that means nothing.
+    expect(deno.TIER_LIMITS.free.autoFixPrsPerReport).toBe(pricing.free_registered.auto_fix_prs_per_report);
+    expect(deno.TIER_LIMITS.agency.autoFixPrsPerReport).toBeGreaterThan(
+      deno.TIER_LIMITS.pro.autoFixPrsPerReport
+    );
+    expect(deno.TIER_LIMITS.pro.autoFixPrsPerReport).toBeGreaterThan(
+      deno.TIER_LIMITS.solo.autoFixPrsPerReport
+    );
   });
 
   it('matches the lifetime deals', () => {

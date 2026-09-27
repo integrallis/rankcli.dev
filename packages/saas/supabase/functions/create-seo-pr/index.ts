@@ -35,7 +35,10 @@ import { getEntitlement } from '../_shared/tier.ts';
 // it left behind - issues from a PR that was closed unmerged, or ones the AI skipped.
 // Capping it there means a double-click, a retry, or a loop can't bury a repo in
 // near-identical PRs off a single audit. Run a new audit to get a new allowance.
-const PRS_PER_REPORT = 3;
+//
+// Scales with the plan (limits.autoFixPrsPerReport). It was a flat 3, which made Agency feel
+// identical to Free on the thing Agency customers actually hit: working through one large
+// report across 50 sites.
 
 // Whatever the model returned is JSON from a remote service, and the next thing we do with
 // it is commit it to someone's default branch. Before this, `JSON.parse(content)` was the
@@ -586,6 +589,7 @@ serve(async (req) => {
       });
     }
     const openAllowance = limits.autoFixPrsOpen;
+    const reportAllowance = limits.autoFixPrsPerReport;
     if ((openPrs?.length ?? 0) >= openAllowance) {
       const numbers = openPrs!.map((p) => `#${p.pr_number}`).join(', ');
       return noop(
@@ -687,12 +691,12 @@ serve(async (req) => {
     }
     const reportPrs = reportPrRows ?? [];
 
-    if (reportPrs.length >= PRS_PER_REPORT) {
+    if (reportPrs.length >= reportAllowance) {
       return new Response(JSON.stringify({
-        error: `This report has already opened its ${PRS_PER_REPORT} PRs (${reportPrs.map((p) => `#${p.pr_number}`).join(', ')}). Run a new audit to open more.`,
+        error: `This report has already opened its ${reportAllowance} PRs (${reportPrs.map((p) => `#${p.pr_number}`).join(', ')}). Run a new audit to open more.`,
         code: 'report_pr_limit_reached',
         prsForReport: reportPrs.length,
-        prsAllowedForReport: PRS_PER_REPORT,
+        prsAllowedForReport: reportAllowance,
         prsThisMonth,
         prsAllowedThisMonth: monthlyAllowance,
         prUrls: reportPrs.map((p) => p.pr_url),
@@ -760,12 +764,12 @@ serve(async (req) => {
         const open = reportPrs.filter((p) => p.pr_state === 'open');
         return noop(
           `Every auto-fixable issue on this report is already in ${open.length === 1 ? 'a PR' : 'a PR'} (${reportPrs.map((p) => `#${p.pr_number}`).join(', ')}). Nothing new to open.`,
-          { prUrls: reportPrs.map((p) => p.pr_url), prsForReport: reportPrs.length, prsAllowedForReport: PRS_PER_REPORT, prsThisMonth, prsAllowedThisMonth: monthlyAllowance }
+          { prUrls: reportPrs.map((p) => p.pr_url), prsForReport: reportPrs.length, prsAllowedForReport: reportAllowance, prsThisMonth, prsAllowedThisMonth: monthlyAllowance }
         );
       }
       return noop('No auto-fixable issues on this report.', {
         prsForReport: reportPrs.length,
-        prsAllowedForReport: PRS_PER_REPORT,
+        prsAllowedForReport: reportAllowance,
         prsThisMonth,
         prsAllowedThisMonth: monthlyAllowance,
       });
@@ -944,7 +948,7 @@ serve(async (req) => {
           {
             generatedBy,
             prsForReport: reportPrs.length,
-            prsAllowedForReport: PRS_PER_REPORT,
+            prsAllowedForReport: reportAllowance,
             prsThisMonth,
             prsAllowedThisMonth: monthlyAllowance,
           }
@@ -992,7 +996,7 @@ serve(async (req) => {
         {
           generatedBy,
           prsForReport: reportPrs.length,
-          prsAllowedForReport: PRS_PER_REPORT,
+          prsAllowedForReport: reportAllowance,
           prsThisMonth,
           prsAllowedThisMonth: monthlyAllowance,
         }
@@ -1042,7 +1046,7 @@ serve(async (req) => {
         {
           unchangedFiles: unchangedPaths,
           prsForReport: reportPrs.length,
-          prsAllowedForReport: PRS_PER_REPORT,
+          prsAllowedForReport: reportAllowance,
           prsThisMonth,
           prsAllowedThisMonth: monthlyAllowance,
         }
@@ -1092,7 +1096,7 @@ ${rejectedPaths.length > 0
 ${changedFiles.map((f: FileChange) => `- \`${f.path}\``).join('\n')}
 ${unchangedPaths.length > 0 ? `\n_Already up to date, left alone: ${unchangedPaths.map((p) => `\`${p}\``).join(', ')}._` : ''}
 
-${deferredIssues > 0 ? `> This PR addresses ${issues.length} of the ${issues.length + deferredIssues} fixable issues on the report - enough to stay reviewable. Open another from the same report for the rest (${reportPrs.length + 1} of ${PRS_PER_REPORT} used).\n` : ''}
+${deferredIssues > 0 ? `> This PR addresses ${issues.length} of the ${issues.length + deferredIssues} fixable issues on the report - enough to stay reviewable. Open another from the same report for the rest (${reportPrs.length + 1} of ${reportAllowance} used).\n` : ''}
 ### How This Works
 
 1. RankCLI ran an SEO audit on ${project.url}
@@ -1192,7 +1196,7 @@ instead. RankCLI will not invent those for you.
       issuesFixed: issues.length,
       // One more PR has been opened against this report than the caller last saw.
       prsForReport: reportPrs.length + 1,
-      prsAllowedForReport: PRS_PER_REPORT,
+      prsAllowedForReport: reportAllowance,
       prsThisMonth: prsThisMonth + 1,
       prsAllowedThisMonth: monthlyAllowance,
       framework,

@@ -66,10 +66,10 @@ RANKCLI_SUPABASE_URL=... RANKCLI_SUPABASE_ANON_KEY=... node dist/index.js audit 
 
 ## Pricing Tiers
 Source of truth: `packages/saas/src/config/pricing-tiers.json` (rationale: `docs/PRICING_ANALYSIS_2026-09.md`). Every plan runs all 280+ checks; the CLI, MCP server, GitHub Action and local `rankcli fix` are free forever; AI features run on the user's own key.
-- **Free**: 1 site audited weekly, README badge, weekly email report, 3 auto-fix PRs/month (1 open at a time)
-- **Solo** ($9/mo, $90/yr): 3 sites audited weekly, unlimited auto-fix PRs (1 open per site), Slack/Discord alerts, API 100/day
-- **Pro** ($29/mo, $290/yr; $19 founding for the first 100): 10 sites audited daily and on every push, 3 open auto-fix PRs per site, API 1K/day
-- **Agency** ($99/mo, $990/yr): 50 sites, white-label reports and widgets, client report links, 10 open auto-fix PRs per site, API 10K/day
+- **Free**: 1 site audited weekly, README badge, weekly email report, 3 auto-fix PRs/month (1 open at a time, 3 per report)
+- **Solo** ($9/mo, $90/yr): 3 sites audited weekly, unlimited auto-fix PRs (1 open per site, 3 per report), Slack/Discord alerts, API 100/day
+- **Pro** ($29/mo, $290/yr; $19 founding for the first 100): 10 sites audited daily and on every push, 3 open auto-fix PRs per site, 5 per report, API 1K/day
+- **Agency** ($99/mo, $990/yr): 50 sites, white-label reports and widgets, client report links, 10 open auto-fix PRs per site, 10 per report, API 10K/day
 
 ## Key Files
 

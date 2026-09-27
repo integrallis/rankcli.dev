@@ -28,7 +28,8 @@
       "readme_badge": true
     },
     "auto_fix_prs_per_month": 3,
-    "auto_fix_prs_open": 1
+    "auto_fix_prs_open": 1,
+    "auto_fix_prs_per_report": 3
   },
   "free_mcp": {
     "enabled": true,
@@ -79,7 +80,8 @@
         "gsc_sync_interval_hours": 168,
         "keyword_tracking": 100,
         "auto_fix_prs_per_month": null,
-        "auto_fix_prs_open": 1
+        "auto_fix_prs_open": 1,
+        "auto_fix_prs_per_report": 3
       },
       "features": {
         "full_audit": true,
@@ -103,7 +105,7 @@
       "highlights": [
         "3 sites, audited weekly",
         "All 280+ checks, 10 pages per audit",
-        "Unlimited auto-fix PRs, 1 open at a time",
+        "Unlimited auto-fix PRs, 1 open at a time, 3 per report",
         "Slack & Discord alerts",
         "AI analysis on your own key",
         "API access (100 req/day)"
@@ -131,7 +133,8 @@
         "gsc_sync_interval_hours": 24,
         "keyword_tracking": 500,
         "auto_fix_prs_per_month": null,
-        "auto_fix_prs_open": 3
+        "auto_fix_prs_open": 3,
+        "auto_fix_prs_per_report": 5
       },
       "features": {
         "full_audit": true,
@@ -155,7 +158,7 @@
       "highlights": [
         "10 sites, audited daily",
         "Audit on every push (GitHub App)",
-        "Unlimited auto-fix PRs, 3 open per site at a time",
+        "Unlimited auto-fix PRs, 3 open per site, 5 per report",
         "Slack & Discord alerts",
         "Keyword research on your own AI key",
         "API access (1K req/day)"
@@ -183,7 +186,8 @@
         "gsc_sync_interval_hours": 24,
         "keyword_tracking": null,
         "auto_fix_prs_per_month": null,
-        "auto_fix_prs_open": 10
+        "auto_fix_prs_open": 10,
+        "auto_fix_prs_per_report": 10
       },
       "features": {
         "full_audit": true,
@@ -209,7 +213,7 @@
         "50 sites, audited daily",
         "White-label reports & widgets",
         "Client report links",
-        "Unlimited auto-fix PRs, 10 open per site at a time",
+        "Unlimited auto-fix PRs, 10 open per site, 10 per report",
         "Everything in Pro",
         "API access (10K req/day)",
         "Priority support"
