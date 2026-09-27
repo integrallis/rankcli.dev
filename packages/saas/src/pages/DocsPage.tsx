@@ -641,7 +641,21 @@ function MCPServerSection() {
           </a>
         </div>
 
-        <h4 className="font-medium mt-4 mb-2">Claude Code</h4>
+        <h4 className="font-medium mt-4 mb-2">Claude Desktop</h4>
+        <p className="text-sm text-muted-foreground mb-2">
+          Download the latest{' '}
+          <a
+            href="https://github.com/integrallis/rankcli-cli/releases/latest"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline"
+          >
+            <code className="bg-muted px-1 rounded">.mcpb</code> extension
+          </a>{' '}
+          and double-click it. No config file, no terminal.
+        </p>
+
+        <h4 className="font-medium mt-6 mb-2">Claude Code</h4>
         <p className="text-sm text-muted-foreground mb-2">One line, no config file:</p>
         <CodeBlock code={`claude mcp add rankcli -- npx -y @rankcli/mcp-server`} />
       </section>

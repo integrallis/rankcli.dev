@@ -97,6 +97,89 @@ jobs:
             --title "${RELEASE_TITLE:-$TAG}" \
             --notes-file public-notes.md
 
+  # Claude Desktop installs extensions from a .mcpb bundle rather than by hand-editing
+  # claude_desktop_config.json. We shipped none, so the audience this product is most aimed at
+  # had the highest-friction install path of anyone. Built here and attached to the public
+  # release, which is the only release page a non-member can open.
+  desktop-extension:
+    name: Claude Desktop extension (.mcpb)
+    needs: ensure-public-release
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Resolve release context
+        id: release
+        run: |
+          tag="${{ github.event.release.tag_name || inputs.tag }}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref != '' && inputs.ref || steps.release.outputs.tag }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build agent-runtime
+        working-directory: packages/agent-runtime
+        run: pnpm build
+
+      - name: Build the bundle
+        working-directory: packages/mcp-server
+        run: |
+          pnpm build
+          pnpm build:mcpb
+
+      - name: Smoke-test it the way Claude Desktop runs it
+        working-directory: packages/mcp-server
+        run: |
+          # A bundle that unzips but does not speak MCP is worse than no bundle: the user gets a
+          # silent failure inside Claude rather than a missing feature.
+          mkdir -p /tmp/mcpb-check && unzip -q -o rankcli-*.mcpb -d /tmp/mcpb-check
+          node -e '
+            const { spawn } = require("node:child_process");
+            const p = spawn("node", ["/tmp/mcpb-check/server/index.js"]);
+            let out = "";
+            p.stdout.on("data", (d) => (out += d));
+            p.stdin.write(JSON.stringify({jsonrpc:"2.0",id:1,method:"initialize",params:{protocolVersion:"2025-06-18",capabilities:{},clientInfo:{name:"ci",version:"1"}}}) + "\n");
+            setTimeout(() => p.stdin.write(JSON.stringify({jsonrpc:"2.0",id:2,method:"tools/list",params:{}}) + "\n"), 1500);
+            setTimeout(() => {
+              let version = null, tools = 0;
+              for (const line of out.split("\n").filter(Boolean)) {
+                try {
+                  const j = JSON.parse(line);
+                  if (j.id === 1) version = j.result?.serverInfo?.version;
+                  if (j.id === 2) tools = (j.result?.tools || []).length;
+                } catch {}
+              }
+              p.kill();
+              console.log("version", version, "tools", tools);
+              // 0.0.0 means the package.json at the bundle root went missing: server.ts
+              // resolves its version through require("../package.json") and falls back silently.
+              if (!version || version === "0.0.0") { console.error("bundle reports no version"); process.exit(1); }
+              if (tools < 10) { console.error("bundle exposed " + tools + " tools"); process.exit(1); }
+            }, 7000);
+          '
+
+      - name: Attach to the public release
+        env:
+          GH_TOKEN: ${{ secrets.PACKAGES_PUBLISH_TOKEN }}
+        working-directory: packages/mcp-server
+        run: |
+          gh release upload "${{ steps.release.outputs.tag }}" rankcli-*.mcpb \
+            --clobber --repo "$PUBLIC_REPO"
+
   native:
     name: ${{ matrix.label }}
     needs: ensure-public-release

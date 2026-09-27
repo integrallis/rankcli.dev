@@ -99,3 +99,7 @@ pat.txt
 
 # Built by `pnpm build:wasm` (packages/cli); never committed - a stale copy once shipped for months.
 packages/cli/wasm/
+
+# Claude Desktop extension build output (built in CI, attached to the release)
+packages/mcp-server/mcpb-build/
+packages/mcp-server/*.mcpb
