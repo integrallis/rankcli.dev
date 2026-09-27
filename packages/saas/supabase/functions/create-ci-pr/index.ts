@@ -27,6 +27,7 @@ import {
   createPullRequest,
 } from '../_shared/github-repo.ts';
 import { getEntitlement } from '../_shared/tier.ts';
+import { userIdFromApiKey } from '../_shared/caller-auth.ts';
 // The Deno bundle is emitted JS re-exported by a .ts wrapper, so its runtime values cross
 // over but its types do not - importing WorkflowConfig from it fails type-check. Mirrored
 // here instead; agent-runtime's tracking/github-action-template.ts holds the original.
@@ -97,12 +98,20 @@ serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
+    // Same three ways in as create-seo-pr: the service key, a dashboard session, or an API key.
+    // Omitting the API key here meant the CLI and CI could ask for an audit and a fix PR but not
+    // for the workflow that runs them - the one thing this function exists to add.
     const bearer = (req.headers.get('Authorization') || '').replace('Bearer ', '');
     let callerId: string | null = null;
     if (bearer !== supabaseServiceKey) {
-      const { data: { user } } = await supabase.auth.getUser(bearer);
-      if (!user) return json({ error: 'Unauthorized' }, 401);
-      callerId = user.id;
+      const apiKeyUserId = await userIdFromApiKey(req, supabase);
+      if (apiKeyUserId) {
+        callerId = apiKeyUserId;
+      } else {
+        const { data: { user } } = await supabase.auth.getUser(bearer);
+        if (!user) return json({ error: 'Unauthorized' }, 401);
+        callerId = user.id;
+      }
     }
 
     const { projectId } = await req.json();
