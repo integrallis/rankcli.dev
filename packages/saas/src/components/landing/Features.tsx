@@ -105,7 +105,7 @@ export function Features() {
             The SEO tool that makes competitors look outdated
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            GEO, MCP, 11 frameworks, 280+ checks. Built for developers who ship fast.
+            GEO, MCP, {frameworks.detected.length} frameworks detected, 280+ checks. Built for developers who ship fast.
           </p>
         </ScrollReveal>
 

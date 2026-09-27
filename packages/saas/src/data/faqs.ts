@@ -4,6 +4,15 @@ import frameworks from '@/config/frameworks.json';
 const RECIPE_COUNT = `${frameworks.with_recipes.length} frameworks`;
 const FRAMEWORK_LIST = frameworks.with_recipes.map((f) => f.name).join(', ');
 
+// The detected set is the larger claim and was previously a hand-typed list in the answer
+// below, which is exactly the kind of sentence that goes stale the week someone adds a signal.
+const DETECTED_COUNT = frameworks.detected.length;
+const RECIPE_IDS = new Set(frameworks.with_recipes.map((f) => f.id));
+const DETECT_ONLY_LIST = frameworks.detected
+  .filter((f) => !RECIPE_IDS.has(f.id))
+  .map((f) => f.name)
+  .join(', ');
+
 // The landing page FAQ. The FAQPage structured data is generated from this
 // same list, so it can't drift from what visitors actually see.
 export const faqs = [
@@ -25,11 +34,12 @@ export const faqs = [
   {
     question: 'What frameworks do you support?',
     answer:
-      `RankCLI has framework-specific fix recipes for ${RECIPE_COUNT}: ${FRAMEWORK_LIST}. ` +
-      'Every audit detects your framework and says which one it found, and these are the ones ' +
-      'whose fixes follow that framework\'s own conventions. Detection recognises many more - ' +
-      'Spring, Phoenix, Hugo, Jekyll, Flask, FastAPI, Symfony, htmx and others - and reports ' +
-      'them, but their fixes are generic rather than framework-specific.',
+      `Every audit detects your framework from the live page and tells you which one it found - ` +
+      `${DETECTED_COUNT} of them. Detection weighs the evidence and says "unknown" rather than ` +
+      `guessing, so when it names a framework it is right. ` +
+      `${RECIPE_COUNT} also have framework-specific fix recipes, so their fixes follow that ` +
+      `framework's own conventions: ${FRAMEWORK_LIST}. ` +
+      `The rest are detected and reported - ${DETECT_ONLY_LIST} - but their fixes are generic.`,
   },
   {
     question: 'Is there a free tier?',

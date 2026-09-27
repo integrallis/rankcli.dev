@@ -3,6 +3,7 @@ import { Footer } from '@/components/layout/Footer';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink } from 'lucide-react';
 import { SEO } from '@/components/SEO';
+import frameworks from '@/config/frameworks.json';
 
 const highlights = [
   {
@@ -26,9 +27,14 @@ const highlights = [
       'npx @rankcli/mcp-server lets Claude, Cursor, or any MCP client audit your site directly - free, local, no signup.',
   },
   {
-    title: '11 Framework Recipes',
+    title: `${frameworks.with_recipes.length} Framework Recipes`,
     description:
-      'Auto-generated, framework-specific fixes for 11 frameworks, from the recipes shipped in @rankcli/agent-runtime.',
+      `Auto-generated, framework-specific fixes for ${frameworks.with_recipes.length} frameworks, from the recipes shipped in @rankcli/agent-runtime.`,
+  },
+  {
+    title: `Framework Detection Across ${frameworks.detected.length} Frameworks`,
+    description:
+      `Every audit names the framework it found, weighing all the evidence on the page rather than stopping at the first thing that matches - and answering "unknown" instead of guessing. Auto-fix PRs use it to write static files where your framework actually serves them: static/ for SvelteKit and Hugo, wwwroot/ for ASP.NET, priv/static/ for Phoenix.`,
   },
 ];
 

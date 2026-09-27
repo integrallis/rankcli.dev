@@ -1,5 +1,136 @@
 {
   "_comment": "Generated from packages/agent-runtime/src/frameworks/recipes/*.yaml - the recipes are the source of truth, because a recipe is what makes a framework more than 'detected'. src/test/frameworks.test.ts fails if this list and that directory disagree, which is what stops the marketing copy from drifting away from what the product does.",
+  "_detected_comment": "Generated from agent-runtime SIGNALS - every framework the audit can name from a live page. Strictly larger than with_recipes: naming the framework is what we detect, a recipe is what we know how to fix. Saying only \"11 frameworks\" undersold the audit by two thirds, so the copy states both numbers and this file is where both come from.",
+  "detected": [
+    {
+      "id": "angular",
+      "name": "Angular"
+    },
+    {
+      "id": "aspnet",
+      "name": "ASP.NET Core"
+    },
+    {
+      "id": "astro",
+      "name": "Astro"
+    },
+    {
+      "id": "django",
+      "name": "Django"
+    },
+    {
+      "id": "docusaurus",
+      "name": "Docusaurus"
+    },
+    {
+      "id": "eleventy",
+      "name": "Eleventy (11ty)"
+    },
+    {
+      "id": "fastapi",
+      "name": "FastAPI"
+    },
+    {
+      "id": "flask",
+      "name": "Flask"
+    },
+    {
+      "id": "fresh",
+      "name": "Fresh (Deno)"
+    },
+    {
+      "id": "gatsby",
+      "name": "Gatsby"
+    },
+    {
+      "id": "go",
+      "name": "Go (Gin/Echo/Fiber)"
+    },
+    {
+      "id": "hotwire",
+      "name": "Hotwire/Turbo"
+    },
+    {
+      "id": "htmx",
+      "name": "HTMX"
+    },
+    {
+      "id": "hugo",
+      "name": "Hugo"
+    },
+    {
+      "id": "jekyll",
+      "name": "Jekyll"
+    },
+    {
+      "id": "laravel",
+      "name": "Laravel"
+    },
+    {
+      "id": "nextjs",
+      "name": "Next.js"
+    },
+    {
+      "id": "nuxt",
+      "name": "Nuxt"
+    },
+    {
+      "id": "pelican",
+      "name": "Pelican"
+    },
+    {
+      "id": "phoenix",
+      "name": "Phoenix"
+    },
+    {
+      "id": "qwik",
+      "name": "Qwik"
+    },
+    {
+      "id": "rails",
+      "name": "Ruby on Rails"
+    },
+    {
+      "id": "react",
+      "name": "React"
+    },
+    {
+      "id": "remix",
+      "name": "Remix"
+    },
+    {
+      "id": "solidjs",
+      "name": "Solid.js"
+    },
+    {
+      "id": "sphinx",
+      "name": "Sphinx"
+    },
+    {
+      "id": "spring",
+      "name": "Spring Boot"
+    },
+    {
+      "id": "svelte",
+      "name": "Svelte"
+    },
+    {
+      "id": "sveltekit",
+      "name": "SvelteKit"
+    },
+    {
+      "id": "symfony",
+      "name": "Symfony"
+    },
+    {
+      "id": "vue",
+      "name": "Vue.js"
+    },
+    {
+      "id": "wordpress",
+      "name": "WordPress"
+    }
+  ],
   "with_recipes": [
     {
       "id": "angular",

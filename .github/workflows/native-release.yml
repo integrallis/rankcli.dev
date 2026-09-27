@@ -63,17 +63,39 @@ jobs:
           tag="${{ github.event.release.tag_name || inputs.tag }}"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
+      # The public release is not just where Homebrew and Scoop fetch binaries - it is the
+      # only release page anyone outside the org can open, and rankcli.dev/changelog sends
+      # people to it for "the full, version-by-version history". It used to say "Binaries for
+      # rankcli vX. Source: <link to a private repo>", so every announcement of a release
+      # landed on a content-free stub above a 404. The notes written on the source release
+      # come along now, and the "Source:" line only appears when it points somewhere the
+      # reader can actually go.
       - name: Create release on public repo if missing
         env:
           GH_TOKEN: ${{ secrets.PACKAGES_PUBLISH_TOKEN }}
           TAG: ${{ steps.release.outputs.tag }}
+          RELEASE_TITLE: ${{ github.event.release.name }}
+          RELEASE_BODY: ${{ github.event.release.body }}
         run: |
           if gh release view "$TAG" --repo "$PUBLIC_REPO" >/dev/null 2>&1; then
             echo "Release $TAG already exists on $PUBLIC_REPO"
-          else
-            gh release create "$TAG" --repo "$PUBLIC_REPO" --title "$TAG" \
-              --notes "Binaries for rankcli $TAG. Source: https://github.com/${{ github.repository }}"
+            exit 0
           fi
+
+          {
+            if [ -n "$RELEASE_BODY" ]; then
+              printf '%s\n\n---\n\n' "$RELEASE_BODY"
+            fi
+            printf '## Install\n\n'
+            printf '```bash\n'
+            printf 'npm install -g @rankcli/cli    # or: brew install integrallis/tap/rankcli\n'
+            printf '```\n\n'
+            printf 'Standalone binaries for macOS, Linux and Windows are attached below - no Node install required.\n'
+          } > public-notes.md
+
+          gh release create "$TAG" --repo "$PUBLIC_REPO" \
+            --title "${RELEASE_TITLE:-$TAG}" \
+            --notes-file public-notes.md
 
   native:
     name: ${{ matrix.label }}
