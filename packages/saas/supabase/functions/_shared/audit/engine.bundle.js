@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-27T00:25:59.547Z
+// Generated: 2026-09-27T00:34:51.797Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -23915,7 +23915,8 @@ function buildDeterministicFixes(input) {
     files.push({
       path: `${root}public/robots.txt`,
       content: generateAIFriendlyRobotsTxt(base),
-      message: "fix(seo): add robots.txt allowing search and AI crawlers"
+      message: "fix(seo): add robots.txt allowing search and AI crawlers",
+      action: "created"
     });
     addressed.push("ROBOTS_TXT_MISSING");
   }
@@ -23923,7 +23924,8 @@ function buildDeterministicFixes(input) {
     files.push({
       path: `${root}public/sitemap.xml`,
       content: sitemap(pages),
-      message: "fix(seo): add sitemap.xml"
+      message: "fix(seo): add sitemap.xml",
+      action: "created"
     });
     addressed.push("SITEMAP_MISSING");
   }
@@ -23931,7 +23933,8 @@ function buildDeterministicFixes(input) {
     files.push({
       path: `${root}public/llms.txt`,
       content: llmsTxt(input.siteName, base, input.description, pages),
-      message: "fix(seo): add llms.txt for AI assistants"
+      message: "fix(seo): add llms.txt for AI assistants",
+      action: "created"
     });
     addressed.push("LLMS_TXT_MISSING");
   }
@@ -23940,12 +23943,54 @@ function buildDeterministicFixes(input) {
     files.push({
       path: `${root}index.html`,
       content: indexHtml.replace("</head>", `${jsonLdBlock(input.siteName, base, input.description)}  </head>`),
-      message: "fix(seo): add WebSite and Organization JSON-LD"
+      message: "fix(seo): add WebSite and Organization JSON-LD",
+      action: "edited"
     });
     addressed.push(...SCHEMA_CODES.filter((code) => codes.has(code)));
   }
-  const summary = files.length ? `Added ${files.map((f) => f.path.split("/").pop()).join(", ")} from RankCLI's templates - generated from the site's URL and name, with no AI and nothing invented.` : "No template-generatable issues were open on this report.";
+  const name = (file) => file.path.split("/").pop();
+  const created = files.filter((f) => f.action === "created").map(name);
+  const edited = files.filter((f) => f.action === "edited").map(name);
+  const parts = [
+    created.length ? `Added ${created.join(", ")}` : null,
+    edited.length ? `updated ${edited.join(", ")}` : null
+  ].filter(Boolean);
+  const summary = files.length ? `${parts.join("; ")} from RankCLI's templates - generated from the site's URL and name, with no AI and nothing invented.` : "No template-generatable issues were open on this report.";
   return { files, addressed, summary };
+}
+
+// src/fixer/app-root.ts
+var PREFERRED_NAMES = ["web", "app", "site", "www", "frontend", "client", "ui", "saas", "marketing", "docs"];
+function directoryOf(path) {
+  const cut = path.lastIndexOf("/");
+  return cut === -1 ? "" : path.slice(0, cut);
+}
+function findAppRoot(files) {
+  const real = files.filter((f) => !f.includes("node_modules/") && !f.startsWith("."));
+  const packageDirs = new Set(
+    real.filter((f) => f === "package.json" || f.endsWith("/package.json")).map(directoryOf)
+  );
+  const candidates = real.filter((f) => f === "index.html" || f.endsWith("/index.html")).map(directoryOf).map((dir) => dir.endsWith("/public") ? dir.slice(0, -"/public".length) : dir === "public" ? "" : dir).filter((dir) => packageDirs.has(dir));
+  if (candidates.length > 0) {
+    const depth = (dir) => dir === "" ? 0 : dir.split("/").length;
+    candidates.sort((a, b) => {
+      if (depth(a) !== depth(b))
+        return depth(a) - depth(b);
+      const rank = (dir) => {
+        const name = dir.split("/").pop() ?? "";
+        const index = PREFERRED_NAMES.indexOf(name);
+        return index === -1 ? PREFERRED_NAMES.length : index;
+      };
+      return rank(a) - rank(b) || a.localeCompare(b);
+    });
+    const best = candidates[0];
+    return best === "" ? "" : `${best}/`;
+  }
+  const nonRoot = [...packageDirs].filter((dir) => dir !== "");
+  if (packageDirs.has("") || nonRoot.length === 0)
+    return "";
+  nonRoot.sort((a, b) => a.split("/").length - b.split("/").length || a.localeCompare(b));
+  return `${nonRoot[0]}/`;
 }
 
 // src/tracking/github-action-template.ts
@@ -24570,6 +24615,7 @@ export {
   detectTechnologies,
   discoverPagesFromLinks,
   discoverRoutesFromRepo,
+  findAppRoot,
   formatReport,
   generateSecretsDoc,
   generateWorkflow,

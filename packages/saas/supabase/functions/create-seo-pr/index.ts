@@ -7,7 +7,7 @@ import { getInstallationToken } from '../_shared/github-app.ts';
 import { fetchFileContent, getDefaultBranchSha, createBranch, createOrUpdateFile, createPullRequest } from '../_shared/github-repo.ts';
 import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
 import { resolveAIConfig } from '../_shared/resolve-ai-config.ts';
-import { buildDeterministicFixes } from '../_shared/audit/index.ts';
+import { buildDeterministicFixes, findAppRoot } from '../_shared/audit/index.ts';
 import { getEntitlement } from '../_shared/tier.ts';
 
 // The monthly auto-fix PR allowance comes from _shared/tier.ts (limits.autoFixPrsPerMonth,
@@ -168,35 +168,6 @@ async function getRepoTree(token: string, owner: string, repo: string): Promise<
   }
 }
 
-// Find the app root directory (for monorepos)
-function findAppRoot(files: string[]): string {
-  // Common frontend app directory names
-  const appDirs = ['ui', 'web', 'frontend', 'client', 'app', 'packages/web', 'packages/app'];
-
-  for (const dir of appDirs) {
-    // Check if there's a package.json in this directory
-    if (files.some(f => f === `${dir}/package.json`)) {
-      return `${dir}/`;
-    }
-  }
-
-  // Check if package.json exists at root
-  if (files.some(f => f === 'package.json')) {
-    return '';
-  }
-
-  // Fallback: look for index.html location
-  const indexHtml = files.find(f => f.endsWith('index.html') && !f.includes('node_modules'));
-  if (indexHtml) {
-    const parts = indexHtml.split('/');
-    if (parts.length > 1) {
-      // Return the directory containing index.html's parent (e.g., ui/ from ui/index.html)
-      return parts.slice(0, -1).join('/') + '/';
-    }
-  }
-
-  return '';
-}
 
 // Detect framework from package.json and file structure
 function detectFramework(packageJson: string | null, files: string[], appRoot: string): string {
