@@ -43,6 +43,22 @@ const MAX_GENERATED_FILES = 20;
 // and the truncation guard drops it, so this cannot quietly shrink someone's page.
 const MAX_HTML_CHARS_FOR_AI = 30_000;
 
+// Files RankCLI can generate itself, exactly, from facts it holds. The model may create one
+// that is missing; it may not rewrite one that exists.
+//
+// Both real PRs generated against a live site damaged a file of this kind. The first replaced
+// a homepage's robots.txt with a shorter one; the second rewrote a sitemap's lastmod dates
+// from 2026-09-15 to 2024-07-26 - a date it cannot know and got wrong by two years, which
+// tells crawlers the pages are staler than they are. There is no upside here worth that: an
+// existing robots.txt or sitemap is either fine or a finding for a human to read, and the
+// report still says so either way.
+const TEMPLATE_OWNED_FILES = ['robots.txt', 'sitemap.xml', 'sitemap_index.xml', 'llms.txt', 'llms-full.txt'];
+
+function isTemplateOwned(path: string): boolean {
+  const name = path.split('/').pop()?.toLowerCase() ?? '';
+  return TEMPLATE_OWNED_FILES.includes(name);
+}
+
 /** The <head> alone, when a page is too big to send whole. */
 function headOnly(html: string): string {
   const match = html.match(/<head[\s\S]*?<\/head>/i);
@@ -892,6 +908,13 @@ serve(async (req) => {
       const existing = await fetchFileContent(token, owner, repoName, file.path);
       if (existing !== null && sameContent(existing, file.content)) {
         unchangedPaths.push(file.path);
+        continue;
+      }
+      // A file we could have generated ourselves, that already exists, is not the model's to
+      // rewrite - see TEMPLATE_OWNED_FILES.
+      if (existing !== null && isTemplateOwned(file.path)) {
+        console.warn(`[VALIDATE] dropped ${file.path}: exists already and is template-owned`);
+        rejectedPaths.push(file.path);
         continue;
       }
       // Replacing an existing file is the risky direction: a truncated generation would
