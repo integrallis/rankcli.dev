@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-27T10:58:50.458Z
+// Generated: 2026-09-27T12:08:59.806Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -15470,20 +15470,20 @@ function findMissingPreconnects(thirdPartyDomains, existingHints) {
       }
     })
   );
-  const missing = [];
+  const missing2 = [];
   for (const domain of thirdPartyDomains) {
     try {
       const hostname = new URL(domain).hostname;
       const recommended = CRITICAL_THIRD_PARTIES[hostname] || [domain];
       for (const rec of recommended) {
         if (!preconnected.has(rec)) {
-          missing.push(rec);
+          missing2.push(rec);
         }
       }
     } catch {
     }
   }
-  return [...new Set(missing)];
+  return [...new Set(missing2)];
 }
 function analyzeResourceHints(html, url) {
   const issues = [];
@@ -24035,6 +24035,139 @@ function findAppRoot(files) {
   return `${nonRoot[0]}/`;
 }
 
+// src/fixer/safety.ts
+var HTML_EXT = /\.html?$/i;
+var SOURCE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs|vue|svelte|astro)$/i;
+function attributeValues(html, pattern) {
+  const found = /* @__PURE__ */ new Set();
+  for (const match of html.matchAll(pattern)) {
+    const value = match[1]?.trim();
+    if (value)
+      found.add(value);
+  }
+  return found;
+}
+function scriptSources(html) {
+  return attributeValues(html, /<script[^>]+src=["']([^"']+)["']/gi);
+}
+function stylesheetHrefs(html) {
+  return attributeValues(html, /<link[^>]+href=["']([^"']+)["'][^>]*>/gi);
+}
+function verificationTokens(html) {
+  const found = /* @__PURE__ */ new Set();
+  for (const match of html.matchAll(/<meta[^>]+name=["']([^"']*(?:site-verification|verify|verification)[^"']*)["'][^>]*>/gi)) {
+    found.add(match[1].toLowerCase());
+  }
+  return found;
+}
+function importSpecifiers(source) {
+  const found = /* @__PURE__ */ new Set();
+  for (const match of source.matchAll(/\bfrom\s+["']([^"']+)["']/g))
+    found.add(match[1]);
+  for (const match of source.matchAll(/\brequire\(\s*["']([^"']+)["']\s*\)/g))
+    found.add(match[1]);
+  return found;
+}
+function missing(before, after) {
+  return [...before].filter((value) => !after.has(value));
+}
+function xmlConcern(xml) {
+  const stack = [];
+  for (const match of xml.matchAll(/<\/?([A-Za-z_][\w:.-]*)[^>]*?(\/?)>/g)) {
+    const [tag, name, selfClosing] = match;
+    if (tag.startsWith("<?") || tag.startsWith("<!"))
+      continue;
+    if (tag.startsWith("</")) {
+      if (stack.pop() !== name)
+        return `unbalanced </${name}>`;
+    } else if (!selfClosing) {
+      stack.push(name);
+    }
+  }
+  return stack.length ? `unclosed <${stack[stack.length - 1]}>` : null;
+}
+function sitemapUrlCount(xml) {
+  return [...xml.matchAll(/<loc>/gi)].length;
+}
+function newestLastmod(xml) {
+  const dates = [...xml.matchAll(/<lastmod>([^<]+)<\/lastmod>/gi)].map((m) => Date.parse(m[1].trim())).filter((t) => !Number.isNaN(t));
+  return dates.length ? Math.max(...dates) : null;
+}
+function jsonLdConcerns(html) {
+  const bad = [];
+  for (const match of html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
+    try {
+      JSON.parse(match[1]);
+    } catch (error) {
+      bad.push(error.message);
+    }
+  }
+  return bad;
+}
+function assessReplacement(path, original, replacement) {
+  const concerns = [];
+  const add = (code, detail) => concerns.push({ code, detail });
+  if (/\.json$/i.test(path) || /\.webmanifest$/i.test(path)) {
+    try {
+      JSON.parse(replacement);
+    } catch (error) {
+      add("invalid_json", error.message);
+    }
+  }
+  if (/\.xml$/i.test(path)) {
+    const problem = xmlConcern(replacement);
+    if (problem)
+      add("invalid_xml", problem);
+  }
+  if (HTML_EXT.test(path)) {
+    for (const problem of jsonLdConcerns(replacement))
+      add("invalid_json_ld", problem);
+  }
+  if (original === null)
+    return concerns;
+  if (replacement.length < original.length * 0.6) {
+    add("shrunk", `${Math.round(replacement.length / original.length * 100)}% of the original length`);
+  }
+  if (HTML_EXT.test(path)) {
+    for (const tag of ["</head>", "</body>", "</html>"]) {
+      if (original.includes(tag) && !replacement.includes(tag))
+        add("lost_closing_tag", tag);
+    }
+    const lostScripts = missing(scriptSources(original), scriptSources(replacement));
+    if (lostScripts.length)
+      add("lost_script", lostScripts.join(", "));
+    const lostStyles = missing(stylesheetHrefs(original), stylesheetHrefs(replacement));
+    if (lostStyles.length)
+      add("lost_stylesheet", lostStyles.join(", "));
+    const lostVerification = missing(verificationTokens(original), verificationTokens(replacement));
+    if (lostVerification.length)
+      add("lost_verification", lostVerification.join(", "));
+  }
+  if (SOURCE_EXT.test(path)) {
+    const lostImports = missing(importSpecifiers(original), importSpecifiers(replacement));
+    if (lostImports.length)
+      add("lost_import", lostImports.join(", "));
+  }
+  if (/sitemap[^/]*\.xml$/i.test(path)) {
+    const before = sitemapUrlCount(original);
+    const after = sitemapUrlCount(replacement);
+    if (after < before)
+      add("fewer_sitemap_urls", `${before} -> ${after}`);
+    const newestBefore = newestLastmod(original);
+    const newestAfter = newestLastmod(replacement);
+    if (newestBefore !== null && newestAfter !== null && newestAfter < newestBefore) {
+      add(
+        "lastmod_moved_backwards",
+        `${new Date(newestBefore).toISOString().slice(0, 10)} -> ${new Date(newestAfter).toISOString().slice(0, 10)}`
+      );
+    }
+  }
+  return concerns;
+}
+function describeConcerns(concerns) {
+  return concerns.map((c) => `${c.code} (${c.detail})`).join("; ");
+}
+
 // src/tracking/github-action-template.ts
 function generateWorkflow(config) {
   const cronSchedule = getCronSchedule(config.schedule);
@@ -24644,6 +24777,7 @@ export {
   analyzeTopicalClusters,
   analyzeTrackerBloat,
   analyzeUrlSafety,
+  assessReplacement,
   buildDeterministicFixes,
   checkAIBotBlocking,
   checkCertificate,
@@ -24652,6 +24786,7 @@ export {
   checkRedirects,
   checkRobotsTxt,
   checkSitemap,
+  describeConcerns,
   detectFramework3 as detectFramework,
   detectSoft404,
   detectTechnologies,

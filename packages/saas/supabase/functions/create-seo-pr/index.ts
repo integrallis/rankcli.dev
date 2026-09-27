@@ -8,7 +8,7 @@ import { fetchFileContent, getDefaultBranchSha, createBranch, createOrUpdateFile
 import { callChatCompletion, type AIProviderConfig } from '../_shared/ai-provider.ts';
 import { resolveAIConfig, giftModel, giftCostUsd } from '../_shared/resolve-ai-config.ts';
 import { userIdFromApiKey } from '../_shared/caller-auth.ts';
-import { buildDeterministicFixes, findAppRoot } from '../_shared/audit/index.ts';
+import { buildDeterministicFixes, findAppRoot, assessReplacement, describeConcerns } from '../_shared/audit/index.ts';
 import { getEntitlement } from '../_shared/tier.ts';
 
 // The monthly auto-fix PR allowance comes from _shared/tier.ts (limits.autoFixPrsPerMonth,
@@ -113,18 +113,6 @@ function validateGeneratedFiles(files: unknown, appRoot: string): FileChange[] {
 }
 
 // A rewrite that loses most of the file, or an HTML file that comes back without its closing
-// tags, is a truncated generation rather than a fix. Compared against what the repo has.
-function looksTruncated(path: string, original: string, replacement: string): string | null {
-  if (replacement.length < original.length * 0.6) {
-    return `replacement is ${Math.round((replacement.length / original.length) * 100)}% of the original`;
-  }
-  if (/\.html?$/i.test(path)) {
-    for (const tag of ['</head>', '</body>', '</html>']) {
-      if (original.includes(tag) && !replacement.includes(tag)) return `lost ${tag}`;
-    }
-  }
-  return null;
-}
 
 // Same file, same bytes. Compared ignoring line endings and a trailing newline, so a PR
 // is never opened over a difference that no reviewer would call a change.
@@ -917,16 +905,17 @@ serve(async (req) => {
         rejectedPaths.push(file.path);
         continue;
       }
-      // Replacing an existing file is the risky direction: a truncated generation would
-      // land as a commit that deletes most of a page. Only checkable here, where the
-      // original is in hand.
-      if (existing !== null) {
-        const truncated = looksTruncated(file.path, existing, file.content);
-        if (truncated) {
-          console.warn(`[VALIDATE] dropped ${file.path}: ${truncated}`);
-          rejectedPaths.push(file.path);
-          continue;
-        }
+
+      // Everything this change would lose or break, checked against what the repo has: a
+      // dropped script or stylesheet, a lost verification tag, a missing import, invalid
+      // JSON/XML/JSON-LD, a shorter sitemap, a lastmod moved backwards. The list lives in
+      // agent-runtime/src/fixer/safety.ts with its own tests; anything non-empty means the
+      // file is not committed.
+      const concerns = assessReplacement(file.path, existing, file.content);
+      if (concerns.length > 0) {
+        console.warn(`[SAFETY] dropped ${file.path}: ${describeConcerns(concerns)}`);
+        rejectedPaths.push(`${file.path} (${concerns.map((c) => c.code).join(', ')})`);
+        continue;
       }
       changedFiles.push(file);
     }
@@ -998,6 +987,32 @@ ${unchangedPaths.length > 0 ? `\n_Already up to date, left alone: ${unchangedPat
 - [ ] Test locally to ensure no regressions
 - [ ] Deploy to staging and verify SEO improvements
 - [ ] Run \`rankcli audit ${project.url}\` to verify score improvement
+
+---
+
+### Before you merge
+
+${byModel()
+  ? `**A language model wrote these changes and no human has reviewed them.** Read the diff. It
+can be confidently wrong, and it is working from your repository's files plus an audit - not
+from knowing your product.`
+  : `**These changes came from RankCLI's templates.** They are deterministic and generated only
+from your site's URL, name and its own meta description, so there is nothing invented in them -
+but they are still changes to your repository, so read the diff.`}
+
+Refused before committing, so you should not see them here: paths outside the app, files that
+came back shorter than they went in, HTML that lost a \`<script>\`, a stylesheet or a
+site-verification tag, source files that lost an import, invalid JSON, XML or JSON-LD, sitemaps
+with fewer URLs or a \`lastmod\` moved backwards, and any rewrite of an existing robots.txt,
+sitemap.xml or llms.txt.${rejectedPaths.length > 0 ? ` On this PR that dropped: ${rejectedPaths.map((p) => `\`${p}\``).join(', ')}.` : ''}
+
+Not checked, and yours to judge: whether the copy sounds like you, whether the structured data
+describes your business correctly, and whether any of it is right for your site. Nothing here
+is claimed to be an improvement - it is a proposal, which is why it is a pull request.
+
+Issues that can only be fixed by writing real content - testimonials, author credentials,
+citations, original data - are deliberately left out of this PR and reported on your dashboard
+instead. RankCLI will not invent those for you.
 
 ---
 
