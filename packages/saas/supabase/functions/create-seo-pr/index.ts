@@ -994,6 +994,9 @@ ${issues.map((i: AuditIssue) => `| \`${i.code}\` | ${i.severity} | ${i.title} |`
 ### Changes Made
 
 ${aiResult.summary}
+${rejectedPaths.length > 0
+  ? `\n> The summary above is the generator's account of what it set out to do. ${rejectedPaths.length} file(s) were refused before committing and are **not** in this PR: ${rejectedPaths.map((p) => `\`${p}\``).join(', ')}. Anything the summary claims about them did not happen - see *Before you merge*.`
+  : ''}
 
 ### Files Modified
 
