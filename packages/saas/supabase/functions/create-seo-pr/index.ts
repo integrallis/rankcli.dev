@@ -755,18 +755,38 @@ serve(async (req) => {
     } else {
       console.log('No AI key - generating template fixes...');
       generatedBy = 'templates';
+      // Vite and friends serve public/; a static site (GitHub Pages from docs/) serves its
+      // own directory, where a public/ subdirectory would never be fetched. The tree says
+      // which, and the same answer decides where we look and where we write.
+      const publicDir = files.some((f) => f.startsWith(`${appRoot}public/`)) ? 'public/' : '';
+      const servedRoot = `${appRoot}${publicDir}`;
       const [robotsTxt, sitemapXml, llmsTxt] = await Promise.all([
-        fetchFileContent(token, owner, repoName, `${appRoot}public/robots.txt`),
-        fetchFileContent(token, owner, repoName, `${appRoot}public/sitemap.xml`),
-        fetchFileContent(token, owner, repoName, `${appRoot}public/llms.txt`),
+        fetchFileContent(token, owner, repoName, `${servedRoot}robots.txt`),
+        fetchFileContent(token, owner, repoName, `${servedRoot}sitemap.xml`),
+        fetchFileContent(token, owner, repoName, `${servedRoot}llms.txt`),
       ]);
+      // llms.txt exists to list a site's pages, so list them: every index.html the repo
+      // serves is a real URL, which is better than guessing and better than one link to the
+      // homepage. Capped, sorted, and derived only from files that exist.
+      const base = project.url.replace(/\/$/, '');
+      const pageUrls = [
+        `${base}/`,
+        ...files
+          .filter((f) => f.startsWith(servedRoot) && f.endsWith('/index.html'))
+          .map((f) => `${base}/${f.slice(servedRoot.length, -'index.html'.length)}`)
+          .filter((url) => url !== `${base}/`)
+          .sort()
+          .slice(0, 40),
+      ];
+
       const deterministic = buildDeterministicFixes({
         siteUrl: project.url,
         siteName: project.name,
         appRoot,
+        publicDir,
         issueCodes: issues.map((i: AuditIssue) => i.code),
         existing: { indexHtml, robotsTxt, sitemapXml, llmsTxt },
-        pages: [project.url],
+        pages: pageUrls,
       });
       aiResult = { files: deterministic.files, summary: deterministic.summary };
     }

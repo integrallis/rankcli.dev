@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-27T08:16:22.382Z
+// Generated: 2026-09-27T10:58:50.458Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -23940,6 +23940,8 @@ function buildDeterministicFixes(input) {
   const codes = new Set(input.issueCodes);
   const has = (...wanted) => wanted.some((code) => codes.has(code));
   const root = input.appRoot || "";
+  const publicDir = input.publicDir === void 0 ? "public/" : input.publicDir.replace(/\/?$/, input.publicDir ? "/" : "");
+  const served = `${root}${publicDir}`;
   const files = [];
   const addressed = [];
   const base = input.siteUrl.replace(/\/$/, "");
@@ -23947,7 +23949,7 @@ function buildDeterministicFixes(input) {
   const description = input.description ?? metaDescriptionOf(input.existing.indexHtml);
   if (has("ROBOTS_TXT_MISSING", "AI_BOTS_BLOCKED", "AI_CRAWLERS_BLOCKED") && !input.existing.robotsTxt) {
     files.push({
-      path: `${root}public/robots.txt`,
+      path: `${served}robots.txt`,
       content: generateAIFriendlyRobotsTxt(base),
       message: "fix(seo): add robots.txt allowing search and AI crawlers",
       action: "created"
@@ -23956,7 +23958,7 @@ function buildDeterministicFixes(input) {
   }
   if (has("SITEMAP_MISSING") && !input.existing.sitemapXml) {
     files.push({
-      path: `${root}public/sitemap.xml`,
+      path: `${served}sitemap.xml`,
       content: sitemap(pages),
       message: "fix(seo): add sitemap.xml",
       action: "created"
@@ -23965,7 +23967,7 @@ function buildDeterministicFixes(input) {
   }
   if (has("LLMS_TXT_MISSING") && !input.existing.llmsTxt) {
     files.push({
-      path: `${root}public/llms.txt`,
+      path: `${served}llms.txt`,
       content: llmsTxt(input.siteName, base, description, pages),
       message: "fix(seo): add llms.txt for AI assistants",
       action: "created"
@@ -24019,6 +24021,12 @@ function findAppRoot(files) {
     });
     const best = candidates[0];
     return best === "" ? "" : `${best}/`;
+  }
+  const PAGES_MARKERS = ["CNAME", ".nojekyll", "404.html", "site.webmanifest"];
+  const staticRoots = real.filter((f) => f === "index.html" || f.endsWith("/index.html")).map(directoryOf).filter((dir) => PAGES_MARKERS.some((marker) => real.includes(dir ? `${dir}/${marker}` : marker)));
+  if (staticRoots.length > 0) {
+    staticRoots.sort((a, b) => a.split("/").length - b.split("/").length || a.localeCompare(b));
+    return staticRoots[0] === "" ? "" : `${staticRoots[0]}/`;
   }
   const nonRoot = [...packageDirs].filter((dir) => dir !== "");
   if (packageDirs.has("") || nonRoot.length === 0)

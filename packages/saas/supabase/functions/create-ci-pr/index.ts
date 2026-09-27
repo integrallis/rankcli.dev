@@ -50,6 +50,28 @@ const corsHeaders = {
 const WORKFLOW_PATH = '.github/workflows/seo.yml';
 const SECRETS_DOC_PATH = '.github/SEO_SETUP.md';
 
+/**
+ * The path of a workflow that already runs RankCLI, or null. Reads the workflow directory
+ * and greps each file, because the name is the author's choice, not ours.
+ */
+async function findRankcliWorkflow(token: string, owner: string, repo: string): Promise<string | null> {
+  const response = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/contents/.github/workflows`,
+    { headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' } }
+  );
+  if (!response.ok) return null; // no workflows directory yet
+
+  const entries = (await response.json()) as Array<{ name: string; path: string; type: string }>;
+  const workflows = entries.filter((e) => e.type === 'file' && /\.ya?ml$/i.test(e.name));
+
+  for (const workflow of workflows) {
+    const content = await fetchFileContent(token, owner, repo, workflow.path);
+    // Either the published action or the CLI - both mean this repo is already covered.
+    if (content && /rankcli/i.test(content)) return workflow.path;
+  }
+  return null;
+}
+
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
@@ -129,12 +151,15 @@ serve(async (req) => {
 
     const token = await getInstallationToken(project.github_installation_id, githubPrivateKey, githubAppId);
 
-    // Already in CI on the default branch: nothing to add.
-    const existingWorkflow = await fetchFileContent(token, owner, repo, WORKFLOW_PATH);
-    if (existingWorkflow !== null) {
-      return noop(`${WORKFLOW_PATH} already exists on the default branch - RankCLI is already in CI.`, {
+    // Already in CI: any workflow that runs RankCLI, whatever it is called. Checking only
+    // for seo.yml meant a repository already auditing itself under another name - say
+    // seo-audit.yml, which is what integrallis/integrallis uses - got a second workflow
+    // doing the same job.
+    const existing = await findRankcliWorkflow(token, owner, repo);
+    if (existing) {
+      return noop(`${existing} already runs RankCLI on the default branch - it is already in CI.`, {
         code: 'already_set_up',
-        workflowUrl: `${project.github_repo_url}/blob/HEAD/${WORKFLOW_PATH}`,
+        workflowUrl: `${project.github_repo_url}/blob/HEAD/${existing}`,
       });
     }
 
