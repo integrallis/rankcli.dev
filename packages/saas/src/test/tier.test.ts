@@ -139,9 +139,16 @@ describe('tier limits match pricing-tiers.json', () => {
     // pricing-tiers.json states the free monthly PR allowance; paid plans list none, which
     // means unlimited. This is the assertion that keeps create-seo-pr's quota honest.
     expect(deno.TIER_LIMITS.free.autoFixPrsPerMonth).toBe(pricing.free_registered.auto_fix_prs_per_month);
+    expect(deno.TIER_LIMITS.free.autoFixPrsOpen).toBe(pricing.free_registered.auto_fix_prs_open);
     for (const sub of pricing.subscriptions) {
-      expect(deno.TIER_LIMITS[sub.id as deno.BaseTier].autoFixPrsPerMonth).toBeNull();
+      const limits = deno.TIER_LIMITS[sub.id as deno.BaseTier];
+      expect(limits.autoFixPrsPerMonth).toBe(sub.limits.auto_fix_prs_per_month);
+      expect(limits.autoFixPrsOpen).toBe(sub.limits.auto_fix_prs_open);
     }
+
+    // The upgrade argument only exists if the numbers actually rise.
+    expect(deno.TIER_LIMITS.agency.autoFixPrsOpen).toBeGreaterThan(deno.TIER_LIMITS.pro.autoFixPrsOpen);
+    expect(deno.TIER_LIMITS.pro.autoFixPrsOpen).toBeGreaterThan(deno.TIER_LIMITS.solo.autoFixPrsOpen);
   });
 
   it('matches the lifetime deals', () => {

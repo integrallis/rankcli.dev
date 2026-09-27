@@ -73,6 +73,9 @@ interface IssuesListProps {
   /** The plan's monthly allowance and usage. allowance null/undefined = unlimited. */
   prsUsedThisMonth?: number;
   prsAllowedThisMonth?: number | null;
+  /** Open auto-fix PRs on this project, and how many the plan allows. */
+  openPrs?: number;
+  openPrsAllowed?: number;
   planName?: string;
   onIssuesUpdated?: () => void;
 }
@@ -92,6 +95,8 @@ export function IssuesList({
   prsAllowedForReport,
   prsUsedThisMonth,
   prsAllowedThisMonth,
+  openPrs,
+  openPrsAllowed,
   planName,
   onIssuesUpdated,
 }: IssuesListProps) {
@@ -257,6 +262,8 @@ export function IssuesList({
         ? reportRemaining
         : Math.min(reportRemaining, monthRemaining);
   const prsExhausted = prsRemaining === 0;
+  const openPrWall =
+    openPrs !== undefined && openPrsAllowed !== undefined && openPrs >= openPrsAllowed;
   const monthIsTheLimit = monthRemaining !== null && monthRemaining <= (reportRemaining ?? Infinity);
 
   // An AI key is no longer required: without one create-seo-pr writes the template fixes
@@ -265,7 +272,11 @@ export function IssuesList({
   const noAIKey = hasAIKey === false;
   const prBlocker = !hasGitHub
     ? 'Connect a GitHub repository to open fix PRs'
-    : prsExhausted
+    : openPrWall
+      ? openPrsAllowed === 1
+        ? 'A fix PR is already open for this project - merge or close it first. Pro keeps 3 open per site, Agency 10.'
+        : `All ${openPrsAllowed} of this project's fix PRs are open - merge or close one first.`
+      : prsExhausted
         ? monthIsTheLimit
           ? `Your ${planName ?? 'current'} plan includes ${prsAllowedThisMonth} auto-fix PRs a month, and this month's are used. Upgrade for unlimited.`
           : `This report has opened its ${prsAllowedForReport} PRs. Run a new audit to open more.`
@@ -302,7 +313,7 @@ export function IssuesList({
                 size="sm"
                 className={cn('gap-2', highlightFixPR && 'ring-2 ring-primary ring-offset-2')}
                 onClick={!hasGitHub ? onConnectGitHub : onCreateFixPR}
-                disabled={isCreatingPR || (hasGitHub && prsExhausted)}
+                disabled={isCreatingPR || (hasGitHub && (prsExhausted || openPrWall))}
                 title={
                   prBlocker ??
                   'Opens a pull request that fixes the issues in this report. Nothing is merged for you - review the diff first.'

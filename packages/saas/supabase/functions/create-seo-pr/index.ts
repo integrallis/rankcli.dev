@@ -21,14 +21,13 @@ import { getEntitlement } from '../_shared/tier.ts';
 // The monthly auto-fix PR allowance comes from _shared/tier.ts (limits.autoFixPrsPerMonth,
 // null = unlimited) - one definition, shared with validate-api-key and the dashboard.
 
-// At most this many RankCLI auto-fix PRs may be open on a project at once. Neither the
-// monthly nor the per-report cap bounds the automated path: every push produces a new
-// audit, so a new report, so a fresh per-report allowance - and paid plans have no monthly
-// cap at all. An active repo on Pro ("audited daily and on every push") could therefore
-// accumulate PRs without limit. One open PR at a time is self-regulating: merge or close
-// it and the next audit picks up whatever is left, which is how Dependabot behaves. An
-// already-open PR is a skip, not a failure, so the push-triggered path stays quiet.
-const MAX_OPEN_AUTO_FIX_PRS = 1;
+// How many auto-fix PRs may be open on one project at once comes from the plan
+// (limits.autoFixPrsOpen). Neither the monthly nor the per-report cap bounds the automated
+// path - every push makes a new audit, so a new report, so a fresh per-report allowance, and
+// paid plans have no monthly cap - so without this a repo audited on every push accumulates
+// PRs nobody reads. It is a review-queue throttle rather than a quota, which is why it scales
+// with the plan: one at a time is right for a single site, and wrong for an agency running
+// fifty. Hitting it is a skip, not a failure, so the push-triggered path stays quiet.
 
 // How many PRs one audit report may open, on every plan. A report is a snapshot of one
 // moment: the first PR takes the fixable issues, and a follow-up is only useful for what
@@ -532,8 +531,8 @@ serve(async (req) => {
       }
     }
 
-    // One open auto-fix PR at a time (see MAX_OPEN_AUTO_FIX_PRS). A skip, not an error -
-    // the push-triggered path hits this constantly by design and must stay quiet.
+    // The plan's open-PR allowance. A skip, not an error - the push-triggered path hits this
+    // constantly by design and must stay quiet.
     const { data: openPrs, error: openPrsError } = await supabase
       .from('github_prs')
       .select('pr_number, pr_url')
@@ -547,11 +546,26 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    if ((openPrs?.length ?? 0) >= MAX_OPEN_AUTO_FIX_PRS) {
-      const open = openPrs![0];
+    const openAllowance = limits.autoFixPrsOpen;
+    if ((openPrs?.length ?? 0) >= openAllowance) {
+      const numbers = openPrs!.map((p) => `#${p.pr_number}`).join(', ');
       return noop(
-        `PR #${open.pr_number} is still open for this project. Merge or close it and the next audit picks up whatever it didn't fix.`,
-        { code: 'open_pr_exists', prUrls: openPrs!.map((p) => p.pr_url), prsThisMonth, prsAllowedThisMonth: monthlyAllowance }
+        openAllowance === 1
+          ? `PR ${numbers} is still open for this project. Merge or close it and the next audit picks up whatever it didn't fix.` +
+              (tier === 'free' || tier === 'solo'
+                ? ' Pro keeps 3 open per site at a time, Agency 10: https://rankcli.dev/pricing'
+                : '')
+          : `This project already has ${openPrs!.length} of its ${openAllowance} auto-fix PRs open (${numbers}). Merge or close one and the next audit picks up the rest.` +
+              (tier === 'pro' ? ' Agency keeps 10 open per site: https://rankcli.dev/pricing' : ''),
+        {
+          code: 'open_pr_exists',
+          prUrls: openPrs!.map((p) => p.pr_url),
+          openPrs: openPrs!.length,
+          openPrsAllowed: openAllowance,
+          tier,
+          prsThisMonth,
+          prsAllowedThisMonth: monthlyAllowance,
+        }
       );
     }
 

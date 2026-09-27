@@ -11,7 +11,7 @@
     "checks_limit": 280,
     "sites_limit": 1,
     "domains_per_month": 2,
-    "description": "Create an account: one site audited weekly, with history, alerts by email and a README badge",
+    "description": "Create an account: one site audited weekly, with history, alerts by email, a README badge, and 3 auto-fix PRs a month",
     "tagline": "All 280+ checks, audited weekly",
     "features": {
       "full_audit": true,
@@ -27,7 +27,8 @@
       "weekly_schedule": true,
       "readme_badge": true
     },
-    "auto_fix_prs_per_month": 3
+    "auto_fix_prs_per_month": 3,
+    "auto_fix_prs_open": 1
   },
   "free_mcp": {
     "enabled": true,
@@ -76,7 +77,9 @@
         "keyword_research_per_month": 5,
         "content_optimizations_per_month": 3,
         "gsc_sync_interval_hours": 168,
-        "keyword_tracking": 100
+        "keyword_tracking": 100,
+        "auto_fix_prs_per_month": null,
+        "auto_fix_prs_open": 1
       },
       "features": {
         "full_audit": true,
@@ -100,7 +103,7 @@
       "highlights": [
         "3 sites, audited weekly",
         "All 280+ checks, 10 pages per audit",
-        "Auto-fix PRs via the GitHub App",
+        "Unlimited auto-fix PRs, 1 open at a time",
         "Slack & Discord alerts",
         "AI analysis on your own key",
         "API access (100 req/day)"
@@ -126,7 +129,9 @@
         "content_optimizations_per_month": 15,
         "competitor_analyses_per_month": 5,
         "gsc_sync_interval_hours": 24,
-        "keyword_tracking": 500
+        "keyword_tracking": 500,
+        "auto_fix_prs_per_month": null,
+        "auto_fix_prs_open": 3
       },
       "features": {
         "full_audit": true,
@@ -150,7 +155,7 @@
       "highlights": [
         "10 sites, audited daily",
         "Audit on every push (GitHub App)",
-        "Auto-fix PRs",
+        "Unlimited auto-fix PRs, 3 open per site at a time",
         "Slack & Discord alerts",
         "Keyword research on your own AI key",
         "API access (1K req/day)"
@@ -176,7 +181,9 @@
         "content_optimizations_per_month": null,
         "competitor_analyses_per_month": null,
         "gsc_sync_interval_hours": 24,
-        "keyword_tracking": null
+        "keyword_tracking": null,
+        "auto_fix_prs_per_month": null,
+        "auto_fix_prs_open": 10
       },
       "features": {
         "full_audit": true,
@@ -202,6 +209,7 @@
         "50 sites, audited daily",
         "White-label reports & widgets",
         "Client report links",
+        "Unlimited auto-fix PRs, 10 open per site at a time",
         "Everything in Pro",
         "API access (10K req/day)",
         "Priority support"
@@ -327,7 +335,7 @@
     "api_access": "REST API to integrate RankCLI into your own tools, dashboards, and workflows. Build custom integrations, automate bulk audits, and receive webhook notifications.",
     "white_label": "Remove RankCLI branding from client reports, widgets and exports. Add your own logo and colors for client-facing deliverables.",
     "local_auto_fix": "Apply SEO fixes directly to your local codebase via CLI. Creates commits and branches ready for you to push.",
-    "github_auto_fix": "Automatically create fix PRs via GitHub App integration. No manual intervention required.",
+    "github_auto_fix": "RankCLI opens a pull request that fixes what the audit found. Free includes 3 a month; paid plans are unlimited. Every plan holds a limited number open per site at once, so a review queue never runs away: 1 on Free and Solo, 3 on Pro, 10 on Agency.",
     "gsc_integration": "Connect Google Search Console to track impressions, clicks, CTR, and average position. See which queries drive traffic and monitor keyword rankings.",
     "metrics_sync": "Automatic sync of SEO metrics from connected sources. Frequency varies by plan: Solo (weekly), Pro (daily), Agency (hourly).",
     "local_seo": "Local SEO analysis including NAP consistency detection, LocalBusiness schema validation, address/phone detection, and social profile linking.",

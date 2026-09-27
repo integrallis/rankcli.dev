@@ -30,6 +30,13 @@ export interface TierLimits {
    * the CLI's workflow generator). CI-setup PRs don't count against it.
    */
   autoFixPrsPerMonth: number | null;
+  /**
+   * Auto-fix PRs that may be open on one project at once. Not a quota - a review-queue
+   * throttle: an unbounded one lets a repo audited on every push accumulate PRs nobody reads.
+   * It is also the one PR limit that scales with the plan, because parallel review is what a
+   * team running many client sites actually needs (pricing-tiers.json auto_fix_prs_open).
+   */
+  autoFixPrsOpen: number;
 }
 
 export interface Entitlement {
@@ -44,19 +51,19 @@ export interface Entitlement {
 
 // pricing-tiers.json: free_registered and subscriptions[].limits.
 export const TIER_LIMITS: Record<BaseTier, TierLimits> = {
-  free: { sites: 1, apiRequestsPerDay: 0, domainsPerMonth: 2, autoFixPrsPerMonth: 3 },
-  solo: { sites: 3, apiRequestsPerDay: 100, domainsPerMonth: 5, autoFixPrsPerMonth: null },
-  pro: { sites: 10, apiRequestsPerDay: 1000, domainsPerMonth: 15, autoFixPrsPerMonth: null },
-  agency: { sites: 50, apiRequestsPerDay: 10000, domainsPerMonth: null, autoFixPrsPerMonth: null },
+  free: { sites: 1, apiRequestsPerDay: 0, domainsPerMonth: 2, autoFixPrsPerMonth: 3, autoFixPrsOpen: 1 },
+  solo: { sites: 3, apiRequestsPerDay: 100, domainsPerMonth: 5, autoFixPrsPerMonth: null, autoFixPrsOpen: 1 },
+  pro: { sites: 10, apiRequestsPerDay: 1000, domainsPerMonth: 15, autoFixPrsPerMonth: null, autoFixPrsOpen: 3 },
+  agency: { sites: 50, apiRequestsPerDay: 10000, domainsPerMonth: null, autoFixPrsPerMonth: null, autoFixPrsOpen: 10 },
 };
 
 // Lifetime deals were sold against a subscription tier ("pays for itself vs Solo/Pro/Agency")
 // with their own site and API caps (pricing-tiers.json lifetime_deals.tiers). They list no
 // domains-per-month cap, so they take their tier's.
 export const LTD_TIERS: Record<LtdTier, { tier: BaseTier; name: string; limits: TierLimits }> = {
-  ltd_starter: { tier: 'solo', name: 'LTD Starter', limits: { sites: 1, apiRequestsPerDay: 50, domainsPerMonth: 5, autoFixPrsPerMonth: null } },
-  ltd_pro: { tier: 'pro', name: 'LTD Pro', limits: { sites: 3, apiRequestsPerDay: 200, domainsPerMonth: 15, autoFixPrsPerMonth: null } },
-  ltd_agency: { tier: 'agency', name: 'LTD Agency', limits: { sites: 10, apiRequestsPerDay: 500, domainsPerMonth: null, autoFixPrsPerMonth: null } },
+  ltd_starter: { tier: 'solo', name: 'LTD Starter', limits: { sites: 1, apiRequestsPerDay: 50, domainsPerMonth: 5, autoFixPrsPerMonth: null, autoFixPrsOpen: 1 } },
+  ltd_pro: { tier: 'pro', name: 'LTD Pro', limits: { sites: 3, apiRequestsPerDay: 200, domainsPerMonth: 15, autoFixPrsPerMonth: null, autoFixPrsOpen: 3 } },
+  ltd_agency: { tier: 'agency', name: 'LTD Agency', limits: { sites: 10, apiRequestsPerDay: 500, domainsPerMonth: null, autoFixPrsPerMonth: null, autoFixPrsOpen: 10 } },
 };
 
 const TIER_RANK: Record<BaseTier, number> = { free: 0, solo: 1, pro: 2, agency: 3 };

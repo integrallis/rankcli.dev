@@ -44,7 +44,7 @@ free registered users **do** get GitHub connect and auto-fix PRs (3 a month, cap
 | Domains/Cycle | N/A | 2/month | 5 | 15 | Unlimited |
 | Audit Schedule | Manual only | Weekly | Weekly | Daily | Hourly |
 | GitHub Connect | ❌ | ✅ | ✅ | ✅ | ✅ |
-| Auto-Fix PRs | ❌ | 3/month | Unlimited | Unlimited | Unlimited |
+| Auto-Fix PRs | ❌ | 3/month, 1 open | Unlimited, 1 open | Unlimited, 3 open | Unlimited, 10 open |
 | Slack/Discord Alerts | ❌ | ❌ | ✅ | ✅ | ✅ |
 | White-Label Reports | ❌ | ❌ | ❌ | ❌ | ✅ |
 | API Access | ❌ | ❌ | ✅ (100/day) | ✅ (1K/day) | ✅ (10K/day) |
@@ -373,7 +373,11 @@ SELECT cleanup_stuck_audits();
 | 3A.4.5 | Repo shows connected | View project | Shows connected repo badge | ☐ MANUAL |
 | 3A.4.6 | Disconnect repo | Disconnect repository | Repo unlinked from project | ☐ MANUAL |
 
-### 3A.5 Auto-Fix PRs (every plan; Free is capped at 3 a month, paid plans unlimited)
+### 3A.5 Auto-Fix PRs (every plan; Free is capped at 3 a month, paid unlimited)
+
+Three limits apply. Monthly (Free 3, paid unlimited, counted per account); per report (3, every
+plan, counted per audit); and open at once per site (Free/Solo 1, Pro 3, Agency 10). The button
+shows whichever binds first. CI-setup PRs are not counted against any of them.
 
 | # | Test Case | Steps | Expected Result | Status |
 |---|-----------|-------|-----------------|--------|

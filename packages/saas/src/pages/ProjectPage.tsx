@@ -92,6 +92,8 @@ export function ProjectPage() {
   const [prsThisMonth, setPrsThisMonth] = useState<number | null>(null);
   // Whether this account still has its one gifted AI PR. null while unknown.
   const [giftAvailable, setGiftAvailable] = useState<boolean | null>(null);
+  // Auto-fix PRs open on this project right now - the limit that scales with the plan.
+  const [openPrs, setOpenPrs] = useState<number | null>(null);
   // Arriving from the audit email's "Open a PR that fixes these" link.
   const [highlightFixPR, setHighlightFixPR] = useState(false);
   const issuesRef = useRef<HTMLDivElement>(null);
@@ -277,6 +279,29 @@ export function ProjectPage() {
     };
   }, [project?.id]);
 
+  // How many auto-fix PRs are open on this project. Counted here rather than discovered by
+  // clicking, because on Pro and Agency this is the limit a customer is paying to raise.
+  useEffect(() => {
+    if (!project?.id) return;
+    let active = true;
+    (async () => {
+      try {
+        const { count, error } = await supabase
+          .from('github_prs')
+          .select('id', { count: 'exact', head: true })
+          .eq('project_id', project.id)
+          .eq('kind', 'auto_fix')
+          .eq('pr_state', 'open');
+        if (active && !error) setOpenPrs(count ?? 0);
+      } catch {
+        // Unknown means the button promises nothing about it.
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [project?.id]);
+
   // Monthly usage. Only auto-fix PRs count - a CI-setup PR is not quota'd. RLS scopes the
   // count to the caller's own projects.
   useEffect(() => {
@@ -383,12 +408,17 @@ export function ProjectPage() {
 
   // Opens the PR that adds .github/workflows/seo.yml. Separate from the auto-fix PR
   // because it needs neither an AI key nor a plan, and it doesn't spend PR quota.
-  // null = unlimited. Free is the only plan with a monthly PR cap; tier.ts enforces the
-  // same number server-side and src/test/tier.test.ts holds the two together.
+  // Both PR allowances come from pricing-tiers.json, which tier.ts is asserted against by
+  // src/test/tier.test.ts - so the number on the button is the number the server enforces.
+  const planLimits = pricingTiers.subscriptions.find((t) => t.id === entitlement?.tier)?.limits;
   const monthlyPrAllowance =
     entitlement && entitlement.tier !== 'free'
-      ? null
+      ? (planLimits?.auto_fix_prs_per_month ?? null)
       : pricingTiers.free_registered.auto_fix_prs_per_month;
+  const openPrAllowance =
+    entitlement && entitlement.tier !== 'free'
+      ? (planLimits?.auto_fix_prs_open ?? 1)
+      : pricingTiers.free_registered.auto_fix_prs_open;
 
   const handleAddToCI = async () => {
     if (!project || isAddingCI) return;
@@ -888,6 +918,8 @@ export function ProjectPage() {
             prsAllowedForReport={reportPrs?.allowed}
             prsUsedThisMonth={prsThisMonth ?? undefined}
             prsAllowedThisMonth={monthlyPrAllowance}
+            openPrs={openPrs ?? undefined}
+            openPrsAllowed={openPrAllowance}
             planName={entitlement?.tier}
             highlightFixPR={highlightFixPR}
           />
