@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-27T19:14:15.645Z
+// Generated: 2026-09-28T18:39:58.769Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -14133,17 +14133,16 @@ var DOM_SIZE_ERROR = 3e3;
 var DOM_DEPTH_WARNING = 32;
 function countNodes($) {
   let count = 0;
-  function traverse(element) {
-    count++;
-    const el = element;
+  function traverse(node) {
+    const el = node;
+    if (el.type === "tag")
+      count++;
     if (el.children) {
-      for (const child of el.children) {
+      for (const child of el.children)
         traverse(child);
-      }
     }
   }
-  const root = $.root();
-  root.each((_, el) => traverse(el));
+  $.root().each((_, el) => traverse(el));
   return count;
 }
 function calculateMaxDepth($) {
@@ -17049,7 +17048,7 @@ function analyzeResponsiveImages(html, url) {
   if (imagesWithoutDimensions >= 3) {
     issues.push({
       code: "IMAGES_MISSING_DIMENSIONS",
-      severity: "error",
+      severity: "warning",
       category: "performance",
       title: `${imagesWithoutDimensions} images missing width/height attributes`,
       description: `Found ${imagesWithoutDimensions} images without explicit dimensions.`,
@@ -17064,7 +17063,8 @@ function analyzeResponsiveImages(html, url) {
   } else if (imagesWithoutDimensions > 0) {
     issues.push({
       code: "IMAGES_MISSING_DIMENSIONS",
-      severity: "warning",
+      // One or two keeps a gradient below the >=3 case rather than flattening both to warning.
+      severity: "notice",
       category: "performance",
       title: `${imagesWithoutDimensions} image(s) missing width/height attributes`,
       description: `Found ${imagesWithoutDimensions} images without explicit dimensions.`,
