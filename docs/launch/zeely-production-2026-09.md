@@ -48,12 +48,23 @@ real `rankcli audit` run against rankcli.dev and live in `docs/launch/ad-assets/
 |---|---|---|
 | `tall-9x16.mp4` | Full audit, ending on the report | Reels/Stories hero |
 | `tall-1x1.mp4` | Same, square | Feed video |
-| `audit-9x16.mp4` / `audit-1x1.mp4` / `audit-16x9.mp4` | Tighter crop, faster | Hook cutaways |
-| `hero-report-9x16.png` / `hero-report-1x1.png` | The finished report: 71/100, React detected, health bars | **Static image ads** |
-| `audit-tall.gif` / `audit-terminal.gif` | Same, as GIF | Dev.to, Reddit, README, X |
+| `audit-16x9.mp4` | Same, landscape | YouTube, site embed |
+| `hero-report-9x16.png` / `hero-report-1x1.png` | The finished report: **75/100, 0 errors, AI Readiness 67%**, React detected | **Static image ads** |
+| `audit-tall.gif` | Same, as GIF | Dev.to, Reddit, README, X |
+| `audit-tall.cast` | The raw asciinema recording | Re-render at any size |
 
-The score shown is 71/100 — **our own site**. That is the point, not a flaw. Do not regenerate
-these with a fake higher number.
+The score shown is **75/100 with 0 errors** — our own site, measured with the published CLI on
+2026-09-28. That is the point, not a flaw. Do not regenerate these with a fake higher number.
+
+**Re-record them if the score moves.** The first set of these showed 71/100 and an AI Readiness
+of 1%, and that 1% turned out to be a bug in our own scoring rather than a fact about our
+content. Shipping ads built on it would have advertised a broken measurement. To refresh:
+
+```bash
+asciinema rec audit.cast --window-size 96x48 --idle-time-limit 0.5 \
+  -c "rankcli audit -u https://rankcli.dev --max-pages 1"
+agg --theme github-dark --font-size 20 --speed 1.8 audit.cast audit.gif
+```
 
 **Upload these into Zeely as the product footage** and let it build around them. An AI-generated
 approximation of a terminal will have nonsense text in it, and developers will spot it instantly.
@@ -108,13 +119,13 @@ client sites. $99/mo, cancel anytime.
 
 ## Angle C — The honesty angle (highest credibility)
 
-> We publish our own score. 71/100. It goes public whether it went up or not.
+> We publish our own score. 75/100, zero errors. It goes public whether it went up or not.
 
 - **C1 · 9:16 video, 15s.** Open on "Most SEO tools won't show you their own score." Then the
-  real run, landing on **71/100**. Text: "Ours is 71. We publish it weekly."
+  real run, landing on **75/100**. Text: "Ours is 75. We publish it weekly."
 - **C2 · 1:1 video, 15s.** Same.
 - **C3 · static 1:1.** `hero-report-1x1.png` unmodified. *"Our own score. Published weekly."*
-- **C4 · static 4:5.** Just the number 71/100, huge, on black. *"An SEO tool that shows its work"*
+- **C4 · static 4:5.** Just the number 75/100, huge, on black. *"An SEO tool that shows its work"*
 
 **Headline:** We audit ourselves in public · **Description:** See this week's score, then run
 the same audit on your site. Free.
@@ -136,13 +147,15 @@ to try it. · **→ rankcli.dev/free-audit**
 
 > ChatGPT can't read your site. You'd never know.
 
-The audit's **AI Readiness score on rankcli.dev is 1%** — use our own bad number, it is the
-most arresting stat available and it is true.
+Do **not** use the "our AI Readiness is 1%" line from the first draft of this file. That 1% was
+a bug in our own scoring, fixed in v0.0.46 — it read near zero for stripe.com, vercel.com and
+cloudflare.com too. rankcli.dev is 75/100 with AI Readiness 67. Sell the question, not a
+number about us.
 
-- **E1 · 9:16 video, 15s.** Health bars filling: Crawlability 95%, Local SEO 94%… then
-  AI Readiness **1%**. Text: "Can ChatGPT read your site?"
+- **E1 · 9:16 video, 15s.** Health bars filling across the categories, landing on AI Readiness.
+  Text: "Can ChatGPT read your site?"
 - **E2 · 1:1 video, 15s.** Same.
-- **E3 · static 1:1.** The health-bar block cropped. *"AI Readiness: 1%. Ours. Check yours."*
+- **E3 · static 1:1.** The health-bar block cropped. *"We publish ours. Check yours."*
 - **E4 · static 4:5.** *"GPTBot. ClaudeBot. PerplexityBot. Do they reach your site?"*
 
 **Headline:** Can AI assistants read your site? · **Description:** Free check. No signup.
@@ -188,7 +201,7 @@ paid Agency campaign. They are a win for Angle D and F only, which is why those 
 
 Every number above is checkable against `packages/saas/src/config/pricing-tiers.json` and
 `packages/saas/src/config/frameworks.json`: 280+ checks, 32 frameworks detected, 50 sites,
-$99/mo, 71/100, AI Readiness 1%. No invented customer counts, no invented rankings, no
+$99/mo, 75/100, 0 errors, AI Readiness 67. No invented customer counts, no invented rankings, no
 "guaranteed #1 on Google", no testimonials from people who do not exist.
 
 An SEO tool caught exaggerating its own SEO claims is the only unrecoverable own-goal
