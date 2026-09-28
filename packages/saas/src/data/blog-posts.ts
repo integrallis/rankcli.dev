@@ -14,6 +14,96 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'framework-aware-seo-fixes-and-one-click-mcp',
+    title: 'Your SEO Fixes Now Land Where Your Framework Actually Serves Them',
+    excerpt:
+      'Five releases in two days: framework detection rebuilt from 57% to 94% accuracy across 32 frameworks, auto-fix PRs that know static/ from wwwroot/ from priv/static/, a safety layer that refuses to commit invented content, and one-click install for Claude, Cursor and VS Code.',
+    publishedAt: '2026-09-28',
+    author: 'RankCLI Team',
+    readTime: 7,
+    tags: ['Release', 'Engineering', 'SEO'],
+    content: `
+# Your SEO Fixes Now Land Where Your Framework Actually Serves Them
+
+Five releases went out over two days. Here is what changed, and why each one exists.
+
+## Detection rebuilt: 57% to 94%
+
+A \`robots.txt\` written to the wrong directory is worse than no \`robots.txt\` at all. The audit stops reporting it missing, while crawlers still never see it. So before an auto-fix can write a file, it has to know what it is looking at.
+
+The old detector returned the first signal that matched. That is fast and wrong: signals conflict, and the first one to fire is not the most reliable one. It also matched on short substrings, which produced answers like classifying **nginx as Gin** because \`server\` contained "gin", and classifying any page with \`style="width: 50%"\` as Spring Boot because a Thymeleaf pattern matched \`th:\`.
+
+Detection now weighs every signal on the page. Each contributes evidence at one of three strengths, the highest total wins, and a score below the floor returns \`unknown\` rather than a guess. On a 51-site corpus that moved accuracy from **57% to 94%** — with no incorrect claims. When it names a framework, it is right; when it is unsure, it says so.
+
+It recognises **32 frameworks** now, including Docusaurus and Sphinx.
+
+## Fixes land in the right directory
+
+Knowing the framework is only useful if you then act on it. The served directory is a property of the framework, not of whether you happen to have created it yet:
+
+| Framework | Static files go to |
+|---|---|
+| React, Vue, Next.js, Nuxt, Astro, Remix, Rails, Laravel | \`public/\` |
+| SvelteKit, Hugo, Gatsby, Docusaurus, Fresh | \`static/\` |
+| ASP.NET Core | \`wwwroot/\` |
+| Phoenix | \`priv/static/\` |
+| Spring Boot | \`src/main/resources/static/\` |
+| Jekyll, Pelican | the app root itself |
+
+An earlier version looked for an existing \`public/\` directory in your repository. That is right for a project that has one and wrong for every project that does not yet — a fresh Next.js app, a fresh Nuxt app and a Docusaurus site all resolved to the repository root, because the directory they serve from had not been created.
+
+Monorepos work too: the app root is found by locating an \`index.html\` beside a \`package.json\`, so fixes land in the right package rather than at the top of the tree.
+
+## A safety layer that refuses to commit
+
+Generated file edits are now checked before they become a commit, and anything carrying a concern is dropped rather than committed. Among what it refuses:
+
+- A replacement that lost a \`<script>\` tag, a stylesheet, or a search-console verification tag
+- Invalid JSON, XML or JSON-LD
+- A sitemap that came back shorter, or a \`lastmod\` moved backwards
+- **Invented content** — a phone number in the reserved 555 range, "123 Main Street, Anytown", an unfilled \`your_...\` placeholder
+- **A canonical added to a single-page-app shell**, which would make every route declare itself a duplicate of one URL
+
+Those last two are there because a real generated pull request proposed both. We [wrote that one up separately](/blog/we-found-five-bugs-in-our-own-seo-tool) — it is the more interesting story.
+
+Files RankCLI owns from a template — \`robots.txt\`, \`sitemap.xml\`, \`llms.txt\` — may be created but never rewritten by a model. A template cannot hallucinate a date; a model can, and did.
+
+## One-click install for Claude, Cursor and VS Code
+
+The MCP server is the lowest-friction thing we ship: no signup, no API key, nothing leaves your machine. Every path we documented for it involved hand-editing a JSON config file, which is a strange way to introduce the easy option.
+
+**Claude Desktop** now has a downloadable extension bundle — grab the \`.mcpb\` from the [latest release](https://github.com/integrallis/rankcli-cli/releases/latest) and double-click it.
+
+**Claude Code** is one line:
+
+\`\`\`bash
+claude mcp add rankcli -- npx -y @rankcli/mcp-server
+\`\`\`
+
+**Cursor and VS Code** have one-click install links on [the docs page](/docs).
+
+All of it drives the same **15 tools** — full audits, AI-crawler access checks, structured data validation, Core Web Vitals, security headers, and generators for the fixes.
+
+## AI readiness that discriminates
+
+The AI-readiness sub-score used to read near zero for essentially every site, including ones that do it well. A score that says zero for everyone looks like a harsh grader and is actually a broken instrument — it carried no information and could not be acted on.
+
+It is recalibrated. Real sites now spread across a usable range and rank in a defensible order, so the number means something when it moves.
+
+## A tier ladder with no flat rung
+
+Auto-fix PR limits now scale properly across plans. The cap on how many pull requests one audit report can open was a flat 3 on every plan — which made the top tier identical to the free one on the limit its customers actually hit, working through a single large report across many sites. It is 3 / 3 / 5 / 10 now, and a test asserts it keeps rising: a rung that does not rise is a rung that means nothing.
+
+## Try it
+
+\`\`\`bash
+npx @rankcli/cli audit -u https://your-site.dev
+\`\`\`
+
+No signup, no account, 280+ checks. The CLI, the MCP server and the GitHub Action are free forever.
+`,
+  },
+  {
     slug: 'we-found-five-bugs-in-our-own-seo-tool',
     title: 'We Ran Our SEO Tool On Ourselves And Found Five Bugs. One Would Have Deindexed Our Site.',
     excerpt:
