@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-28T18:39:58.769Z
+// Generated: 2026-09-28T19:23:49.329Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -24067,9 +24067,37 @@ function jsonLdConcerns(html) {
   }
   return bad;
 }
+var PLACEHOLDERS = [
+  { pattern: /\+?1[-\s.]?\(?800\)?[-\s.]?555[-\s.]?\d{4}/i, what: "a reserved 555 phone number" },
+  { pattern: /\b555[-\s.]?01\d{2}\b/, what: "a reserved 555 phone number" },
+  { pattern: /\bAnytown\b/i, what: '"Anytown"' },
+  { pattern: /\b123 Main (Street|St)\b/i, what: '"123 Main Street"' },
+  { pattern: /your_[a-z_]+/i, what: 'an unfilled "your_..." placeholder' },
+  { pattern: /\b(yourdomain|your-domain|example)\.(com|org|net)\b/i, what: "a placeholder domain" },
+  { pattern: /\blorem ipsum\b/i, what: "lorem ipsum" },
+  { pattern: /\bXXX-XXX-XXXX\b/i, what: "an unfilled phone template" }
+];
+function isSharedShell(html) {
+  return /<div[^>]+id=["'](root|app|__next|__nuxt)["']/i.test(html);
+}
 function assessReplacement(path, original, replacement) {
   const concerns = [];
   const add = (code, detail) => concerns.push({ code, detail });
+  for (const { pattern, what } of PLACEHOLDERS) {
+    const hit = replacement.match(pattern);
+    if (hit && !(original && pattern.test(original))) {
+      add("placeholder_content", `contains ${what} (${hit[0]})`);
+    }
+  }
+  if (/\.html?$/i.test(path) && isSharedShell(replacement)) {
+    const addsCanonical = /<link[^>]+rel=["']canonical["']/i.test(replacement) && !(original && /<link[^>]+rel=["']canonical["']/i.test(original));
+    if (addsCanonical) {
+      add(
+        "canonical_in_shared_shell",
+        `${path} mounts a single-page app, so a canonical here applies to every route`
+      );
+    }
+  }
   if (/\.json$/i.test(path) || /\.webmanifest$/i.test(path)) {
     try {
       JSON.parse(replacement);
