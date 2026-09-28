@@ -136,8 +136,9 @@ Send Tier 1 and 2 to **`/free-audit`**, not the homepage and not `/pricing`. It 
 so the click has somewhere useful to land, and a developer who runs one audit is a far warmer
 lead than one who bounced off a pricing table.
 
-Tag every link so Cloudflare Web Analytics can separate them — this requires `CF_BEACON_TOKEN`
-to be set, which it currently is not, and without it none of this is measurable:
+Tag every link so Cloudflare Web Analytics can separate them. The beacon went live on
+2026-09-28, so this is measurable now — it is cookieless, needs no consent banner, and counts
+page views by URL:
 
 ```
 rankcli.dev/free-audit?utm_source=reddit&utm_medium=cpc&utm_campaign=ci-cd&utm_content=r-webdev

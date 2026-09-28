@@ -10,14 +10,36 @@ Everything below is ordered by what you lose if you run out of time.
 
 ## Before you generate anything (30 minutes, do not skip)
 
-1. **Connect Zeely to YOUR Meta ad account.** Zeely connects to your own account rather than
-   running ads from theirs, which is the good case — but confirm it. If the campaign lives in
-   your Business Manager, cancelling Zeely costs you an editor and nothing else: the campaigns,
-   the pixel and the custom audiences stay yours. If it lives in theirs, you lose the pixel
-   history you paid to build, which is worth more than the creative.
-2. **Put the Meta pixel on rankcli.dev** and mark two events: `/pricing` view and signup.
-   Without this you cannot tell a cheap click from a customer, and every judgment below is
-   guesswork.
+1. **Check whose ad account the campaign runs in.** Zeely is already connected to the Facebook
+   and Instagram accounts, so this is a verification rather than a setup step: in Meta Business
+   Suite, confirm the ad account the campaigns sit in is one you own. If it is, cancelling
+   Zeely costs you an editor and nothing else — the campaigns and audiences stay yours. If the
+   campaigns live in an ad account Zeely owns, they end when the subscription does, and that is
+   worth knowing before you spend rather than after.
+2. **Measure with what is already live: Cloudflare Web Analytics plus UTM'd links.** The beacon
+   is on every page as of 2026-09-28, it is cookieless, and it counts page views by URL — which
+   is all the week-one decision needs. Tag every ad so the groups are separable:
+
+   ```
+   rankcli.dev/free-audit?utm_source=meta&utm_medium=cpc&utm_campaign=margin&utm_content=a1
+   ```
+
+   Judge on **cost per `/free-audit` view**. Not `/pricing`: the creative below sends developer
+   traffic to the free audit because it needs no signup, so that is the page that has to be
+   counted.
+
+   **An earlier draft of this file said to install the Meta pixel. Do not, without deciding
+   two things first.** rankcli.dev's published privacy policy states: *"We do not use
+   third-party advertising or cross-site tracking cookies."* A Meta pixel is exactly that, so
+   installing one makes that sentence false until the policy is rewritten. And the geo list
+   below includes UK, DE and NL, where an advertising pixel needs prior consent — meaning a
+   consent banner, on a site that currently needs none.
+
+   That is a real trade, not a formality. The pixel buys conversion optimisation and
+   retargeting, which matter at scale and are worth having eventually. It costs a policy
+   rewrite, a consent banner, and — for a product whose pitch is publishing its own numbers
+   honestly — the awkwardness of a privacy page that had to be walked back. For a seven-day
+   read, page views by URL answer the question without any of that.
 3. **Mine the competitor ad library first.** It is the one Zeely feature that produces value
    you keep *as notes* rather than as files, and it is the first thing you lose on cancellation.
    Search: `ahrefs`, `semrush`, `screaming frog`, `seo audit`, `white label seo`,
@@ -178,8 +200,10 @@ number about us.
 - **Primary (Angles A, B):** web design agency, digital marketing agency, SEO consultant,
   freelance web developer, Shopify Partners, WordPress developer; business page admins
 - **Secondary (D, E):** software developer, DevOps, React/Next.js, GitHub, Stack Overflow
-- **Retarget (C):** everyone who hit rankcli.dev and did not sign up — this is what the pixel
-  is for, and it is where the honesty angle converts best
+- **Retarget (C):** everyone who hit rankcli.dev and did not sign up. This is the one thing the
+  page-view approach cannot do — building that audience needs the pixel, with the policy and
+  consent consequences in step 2. Skip this angle for the first week and decide afterwards,
+  once you know from the cost-per-visit numbers whether Meta is even the right channel
 - **Geo:** US, CA, UK, AU, DE, NL — highest agency retainers, so $99/mo reads as cheap
 - **Exclude:** students; existing rankcli.dev users
 
