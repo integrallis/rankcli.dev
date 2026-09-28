@@ -14,6 +14,116 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'we-found-five-bugs-in-our-own-seo-tool',
+    title: 'We Ran Our SEO Tool On Ourselves And Found Five Bugs. One Would Have Deindexed Our Site.',
+    excerpt:
+      'Our own audit said our site was invisible to Google, our text was unreadable, and our AI readiness was 1%. All three were wrong - and the auto-fix PR it generated would have taken the whole site out of the index. Here is what we found and what we changed.',
+    publishedAt: '2026-09-28',
+    author: 'RankCLI Team',
+    readTime: 9,
+    tags: ['Engineering', 'SEO', 'Dogfooding'],
+    content: `
+# We Ran Our SEO Tool On Ourselves And Found Five Bugs
+
+We publish rankcli.dev's own audit score every week, whether it went up or not. This week we did something slightly different: instead of reading the number, we read every finding and asked whether it was actually true.
+
+Five of them were not. Here they are, because the failures are more useful than the score.
+
+## 1. A page that asked not to be indexed, faulted for not being indexed
+
+For the same \`/login\` page, in the same run, the audit reported two things:
+
+- \`NOINDEX_TAG\` - correct, it carries \`<meta name="robots" content="noindex, nofollow">\` on purpose
+- \`REACT_CSR_DETECTED\`, severity **error**: *"Critical - your content is likely invisible to Google"*
+
+It knew the page had opted out of search, then raised a critical error because search could not see it.
+
+Every SaaS has a noindex \`/login\`, \`/signup\` and \`/account\`. They are all client-rendered shells. So every one of our users with a login page was collecting a critical SEO error that nobody should ever act on.
+
+Framework checks now carry an \`indexable_only\` flag, and 19 of them across 9 frameworks are marked with it. Deliberately not marked: render-blocking scripts, which is about performance, and hydration mismatches, which break the page for real users too. Those still fire on a noindex page, because they are still true there.
+
+## 2. Every dark-themed page failed colour contrast
+
+The contrast checker read only an element's own inline style. If it found no background, it assumed white.
+
+Our \`/login\` fallback is \`#a1a1aa\` text painted on \`#0a0a0a\`. That is about **9:1** - comfortably past WCAG AA. We reported **2.56:1** and called it critical.
+
+It now reads the background from the nearest ancestor that paints one, and when nothing up the tree paints anything it records the element as undetermined rather than measuring against a guess. Inline styles only, deliberately: resolving a real CSS cascade without a browser is a much larger job, and half-doing it would reintroduce exactly the confident guess we were removing.
+
+## 3. Our AI readiness score was 1%. So was everyone's.
+
+This is the one that stung, because AI readiness is the thing people come to us for.
+
+We assumed our content was bad. Then we ran the same check against sites that ought to score well:
+
+| Site | AI Readiness (before) |
+|---|---|
+| stripe.com | 13 |
+| vercel.com | 7 |
+| cloudflare.com | 0 |
+| docs.astro.build | 0 |
+| rankcli.dev | 1 |
+
+A documentation site - the ideal target for AI citation - scored zero. The metric was saturated. It carried no information at all.
+
+The cause was a category multiplier copied from categories with a tenth of the checks. Between 15 and 27 AI-readiness checks fire on a typical page, most of them aspirational content notices: no comparison table, no testimonials, no original data. At one point per notice and three per warning, multiplied by three, any real page blew past 100 points of deduction before the interesting checks were counted.
+
+The same five pages now spread **52-71**, and rank in a defensible order.
+
+## 4. Whitespace could fail your build
+
+\`--fail-on error\` exits 1. So an error in this tool is not a line in a report - it is somebody's broken build.
+
+\`DOM_SIZE_EXCESSIVE\` counted every node the parser returns, while its thresholds (1,500 and 3,000) are Lighthouse's - and Lighthouse counts **elements**.
+
+On tailwindcss.com that was **3,231 counted against 2,230 real elements**. The difference: 796 whitespace nodes and 205 comments. Enough to push a warning-sized DOM over the error line.
+
+Which means re-indenting a template, or leaving comments in your output, could have failed your build. It counts elements now, and a test asserts that formatting a page cannot change its severity.
+
+## 5. Missing image dimensions was rated "your site is broken"
+
+\`IMAGES_MISSING_DIMENSIONS\` fired at **error** for three or more images. That failed svelte.dev, tailwindcss.com, rust-lang.org, laravel.com and fastapi.tiangolo.com - five of the ten well-built sites we swept.
+
+Missing width and height is a real CLS cost and we still report it. It is not "your site is broken". Two other places in our own codebase already treated the same condition as a notice and as info; error was the outlier, not the consensus.
+
+## And then the auto-fix PR tried to deindex us
+
+While reviewing an open auto-fix pull request against our own repo before merging it, we found this:
+
+\`\`\`html
+<link rel="canonical" href="https://rankcli.dev/" />
+\`\`\`
+
+added to the Vite \`index.html\` - the shared shell that serves every route. The file carries a comment three lines above the insertion point explaining precisely why that must never happen: Helmet cannot remove static tags, so every page would inherit it.
+
+Merged, every page on the site - pricing, docs, blog - would have declared itself a duplicate of the homepage.
+
+The same PR proposed Organization structured data with a phone number of \`+1-800-555-0199\`, an address of "123 Main Street, Anytown, CA 90210", and a social profile of \`youtube.com/channel/your_youtube_channel\`. None of it real. It also linked \`/images/og-image.png\` and \`/search\`, both of which 404.
+
+We closed it. Then we fixed the generator: our safety layer now refuses **placeholder content** and **a canonical added to a single-page-app shell**, and any file carrying a safety concern is dropped rather than committed. We tested the new guards against that pull request's actual diff - all six problems are caught, while a real phone number in ordinary prose still passes.
+
+## What we actually learned
+
+**A confident wrong "critical" is worse than a missing check.** A missing check costs you one finding. A false critical teaches people that the red ones are noise - and then the real one goes unread.
+
+**Saturated metrics are invisible failures.** A score that reads zero for everyone looks like a harsh grader, not a broken instrument. The only way we caught it was running the same check against sites we already believed were good, and being surprised.
+
+**Generated fixes need a human read.** Ours carry a disclaimer saying so. This week that disclaimer stopped being boilerplate.
+
+## The numbers, today
+
+rankcli.dev scores **75/100** with **0 errors** and **AI Readiness 67**, measured with the published CLI. Not because the site improved this week - it barely changed. Because the tool stopped lying about it.
+
+You can run exactly the same audit, with no signup and no account:
+
+\`\`\`bash
+npx @rankcli/cli audit -u https://your-site.dev
+\`\`\`
+
+If it tells you something that is not true, we would genuinely like to know. That is how all five of these were found.
+`,
+  },
+  {
     slug: 'engineering-as-marketing',
     title: 'Engineering as Marketing: Why SEO Should Be Part of Your Development Process',
     excerpt: 'Stop treating SEO as an afterthought. Learn why the best engineering teams build SEO into their development workflow from day one, and how it leads to better products and faster growth.',
