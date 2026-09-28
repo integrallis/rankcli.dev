@@ -516,6 +516,33 @@ async function handlePullRequest(
       }
     }
 
+    // Closed without merging: hand the issues back.
+    //
+    // Opening a PR sets its issues to 'fixing'. Only a merge cleared that, so a PR that was
+    // closed unmerged left them in 'fixing' forever - the dashboard reporting work in progress
+    // on a branch that no longer exists. create-seo-pr was unaffected (it queries open and
+    // fixing, and un-claims closed PRs), which is why this stayed invisible: the product
+    // behaved correctly while the numbers on screen did not.
+    if (action === 'closed' && !pull_request.merged) {
+      const { data: pr } = await supabase
+        .from('github_prs')
+        .select('issue_ids')
+        .eq('id', existingPR.id)
+        .single();
+
+      if (pr?.issue_ids?.length) {
+        // Only the ones still held by this PR. An issue another PR already fixed stays fixed.
+        const { data: released } = await supabase
+          .from('audit_issues')
+          .update({ status: 'open' })
+          .in('id', pr.issue_ids)
+          .eq('status', 'fixing')
+          .select('id');
+
+        console.log(`Released ${released?.length ?? 0} issues back to open`);
+      }
+    }
+
     console.log(`Updated PR #${pull_request.number} state: ${prState}`);
   }
 }
