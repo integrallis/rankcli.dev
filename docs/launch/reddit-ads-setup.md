@@ -3,7 +3,7 @@
 This is the one-time setup. Ads run continuously afterwards, which is the point: unlike organic
 posting, you do this once and it keeps working.
 
-Account: **Integrallis Software** at [ads.reddit.com](https://ads.reddit.com).
+Account: **Integrallis Software**, [ads.reddit.com/account/jrtl7de1quoe](https://ads.reddit.com/account/jrtl7de1quoe/get-started).
 
 ---
 
@@ -100,17 +100,22 @@ Reddit ad copy is short. Headline is what people read.
 Reddit creative specs: image **1200x628** or **1:1**, video up to 15 minutes but keep it under
 30 seconds.
 
-Ready to upload, in `ad-assets/`:
+Ready to upload, in `ad-assets/`. Every Reddit format is covered:
 
-| File | Size | Note |
+| File | Size | Format |
 |---|---|---|
-| `hero-report-1200x628.png` | 1200x628 | Reddit's native landscape. Shows the URL, 75/100, React detected and the health bars. The right third is deliberately empty — put the headline there in Zeely |
-| `hero-report-1x1.png` | 1080x1080 | Square feed |
-| `tall-1x1.mp4` | 1080x1080 | Square video, the audit running |
+| `hero-report-1200x628.png` | 1200x628 | 1.91:1 link image. Right third left empty for a headline overlay |
+| `hero-report-1x1.png` | 1080x1080 | Square feed image |
+| `hero-report-4x5.png` | 1080x1350 | 4:5, the tallest ratio Reddit's feed allows and the best-performing |
+| `hero-report-9x16.png` | 1080x1920 | Vertical, for stories-style placements |
+| `tall-1x1.mp4` | 1080x1080 | Square video of the audit running |
+| `tall-4x5.mp4` | 1080x1350 | 4:5 video |
 | `tall-9x16.mp4` | 1080x1920 | Vertical video |
+| `audit-16x9.mp4` | 1920x1080 | Landscape video |
 
-All show **75/100, 0 errors, AI Readiness 67** — our real numbers, measured 2026-09-28. If the
-score moves, re-record before running the ad; see `zeely-production-2026-09.md`.
+All show the real numbers, measured 2026-09-28: **75/100, 0 errors, AI Readiness 67**, React
+detected, on rankcli.dev. Re-record before running if the score moves; the two commands are in
+`zeely-production-2026-09.md`.
 
 ## Step 6 — Judge it
 
