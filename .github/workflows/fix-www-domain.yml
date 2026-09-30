@@ -1,27 +1,35 @@
-# One-shot repair for www.rankcli.dev, which answered HTTP 522 (Cloudflare reaching no origin)
-# while the apex served fine. Found while debugging Reddit's "Base pixel configuration error":
-# Reddit's event setup tool loads the URL you give it, and www loaded nothing at all.
+# Repair for www.rankcli.dev, which answers HTTP 522 (Cloudflare reaching no origin) while the
+# apex serves fine. Every inbound link, directory listing or pasted URL using www has been
+# hitting a Cloudflare error page, and we sell an SEO tool.
 #
-# It is worth fixing well beyond that. Every inbound link, business listing or pasted URL using
-# www was hitting a Cloudflare error page, and we sell an SEO tool.
+# The first run established the facts this version acts on:
+#   - the zone reads fine (e1fbea0d...), so the token has Zone:Read
+#   - the dynamic-redirect ruleset write returns "Authentication error" (code 10000), so the
+#     token does NOT have Rulesets:Edit. The tidy www-to-apex 301 is not available to us.
+#   - www is ALREADY a Pages custom domain ("You have already added this custom domain")
+#     and still 522, so the domain is attached but its DNS is pointing somewhere with no origin.
 #
-# Preferred fix is a zone-level dynamic redirect, www to apex, 301, query string preserved: it
-# runs at the edge before Pages, costs no origin request, and consolidates link equity on one
-# hostname instead of serving the same site on two. If the deploy token lacks Rulesets:Edit the
-# job falls back to adding www as a Pages custom domain, which at least serves 200 rather than
-# 522, and our absolute canonical tags keep the duplicate from splitting rankings.
+# A Pages custom domain needs a CNAME to the pages.dev hostname. If www is instead an A record,
+# or a CNAME to the apex, Cloudflare proxies the request and finds nothing behind it: 522
+# exactly. So this fixes the DNS record, which the Pages token may well be allowed to do.
 #
-# Safe to re-run: both steps check for the existing state first.
+# Diagnoses before it changes anything, and prints every API response, so a failed run still
+# tells us which permission is missing rather than just going red.
+#
+# Safe to re-run.
 name: Fix www domain
 
 on:
   workflow_dispatch:
 
+env:
+  ZONE: e1fbea0d89d9037941e03c75d6f0efcc
+
 jobs:
   fix:
     runs-on: ubuntu-latest
     steps:
-      - name: Point www at the apex
+      - name: Diagnose
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -30,76 +38,79 @@ jobs:
           api() { curl -sS -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" "$@"; }
           B=https://api.cloudflare.com/client/v4
 
-          echo "::group::Resolve zone"
-          ZONES=$(api "$B/zones?name=rankcli.dev")
-          echo "$ZONES" | jq '{success, errors}'
-          ZONE=$(echo "$ZONES" | jq -r '.result[0].id // empty')
-          if [ -z "$ZONE" ]; then
-            echo "Could not read the zone. The token likely has Pages access only."
-            echo "NEED_FALLBACK=1" >> "$GITHUB_ENV"
-          else
-            echo "zone $ZONE"
-          fi
+          echo "::group::What the Pages project thinks www is"
+          api "$B/accounts/$CF_ACCOUNT_ID/pages/projects/rankcli/domains" \
+            | jq '{success, errors, domains: [.result[]? | {name, status, certificate_authority, validation_data: .validation_data.status}]}'
           echo "::endgroup::"
 
-          if [ -n "$ZONE" ]; then
-            echo "::group::Dynamic redirect rule"
-            EP=$(api "$B/zones/$ZONE/rulesets/phases/http_request_dynamic_redirect/entrypoint")
-            RSID=$(echo "$EP" | jq -r '.result.id // empty')
-            EXISTING=$(echo "$EP" | jq -c '[.result.rules[]? | select(.description != "www to apex")]')
-            [ "$EXISTING" = "null" ] && EXISTING='[]'
+          echo "::group::The pages.dev hostname to point at"
+          SUB=$(api "$B/accounts/$CF_ACCOUNT_ID/pages/projects/rankcli" | jq -r '.result.subdomain // empty')
+          echo "subdomain: ${SUB:-<could not read>}"
+          [ -n "$SUB" ] && echo "PAGES_HOST=$SUB" >> "$GITHUB_ENV"
+          echo "::endgroup::"
 
-            RULE='{
-              "action": "redirect",
-              "description": "www to apex",
-              "expression": "(http.host eq \"www.rankcli.dev\")",
-              "action_parameters": {
-                "from_value": {
-                  "status_code": 301,
-                  "preserve_query_string": true,
-                  "target_url": { "expression": "concat(\"https://rankcli.dev\", http.request.uri.path)" }
-                }
-              }
-            }'
-            RULES=$(jq -c --argjson r "$RULE" '. + [$r]' <<<"$EXISTING")
-            BODY=$(jq -n --argjson rules "$RULES" '{rules: $rules}')
+          echo "::group::The actual DNS records for www"
+          RECS=$(api "$B/zones/$ZONE/dns_records?name=www.rankcli.dev")
+          echo "$RECS" | jq '{success, errors, records: [.result[]? | {id, type, name, content, proxied}]}'
+          echo "$RECS" | jq -r '.result[0].id // empty'   > /tmp/www_id
+          echo "$RECS" | jq -r '.result[0].type // empty' > /tmp/www_type
+          echo "WWW_ID=$(cat /tmp/www_id)" >> "$GITHUB_ENV"
+          echo "::endgroup::"
 
-            if [ -n "$RSID" ]; then
-              OUT=$(api -X PUT "$B/zones/$ZONE/rulesets/$RSID" -d "$BODY")
-            else
-              OUT=$(api -X PUT "$B/zones/$ZONE/rulesets/phases/http_request_dynamic_redirect/entrypoint" -d "$BODY")
-            fi
-            echo "$OUT" | jq '{success, errors}'
-            if [ "$(echo "$OUT" | jq -r .success)" != "true" ]; then
-              echo "Redirect rule refused. Falling back to a Pages custom domain."
-              echo "NEED_FALLBACK=1" >> "$GITHUB_ENV"
-            fi
-            echo "::endgroup::"
-          fi
+          echo "::group::The apex, for comparison (this one works)"
+          api "$B/zones/$ZONE/dns_records?name=rankcli.dev" \
+            | jq '{records: [.result[]? | {type, name, content, proxied}]}'
+          echo "::endgroup::"
 
-      - name: Fallback, add www as a Pages custom domain
-        if: env.NEED_FALLBACK == '1'
+      - name: Point the www DNS record at Pages
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
-          B=https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/rankcli/domains
-          curl -sS -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" \
-            -X POST "$B" -d '{"name":"www.rankcli.dev"}' | jq '{success, errors, name: .result.name}'
+          api() { curl -sS -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" "$@"; }
+          B=https://api.cloudflare.com/client/v4
+
+          if [ -z "${PAGES_HOST:-}" ]; then
+            echo "Could not read the Pages subdomain, so there is nothing safe to point www at."
+            exit 1
+          fi
+          echo "target: $PAGES_HOST"
+
+          BODY=$(jq -n --arg c "$PAGES_HOST" \
+            '{type:"CNAME", name:"www", content:$c, proxied:true, comment:"www -> Pages; was 522"}')
+
+          if [ -n "${WWW_ID:-}" ]; then
+            echo "updating the existing record ${WWW_ID}"
+            OUT=$(api -X PUT "$B/zones/$ZONE/dns_records/$WWW_ID" -d "$BODY")
+          else
+            echo "no record found, creating one"
+            OUT=$(api -X POST "$B/zones/$ZONE/dns_records" -d "$BODY")
+          fi
+          echo "$OUT" | jq '{success, errors, result: {type: .result.type, name: .result.name, content: .result.content, proxied: .result.proxied}}'
+          [ "$(echo "$OUT" | jq -r .success)" = "true" ] || {
+            echo "The token cannot edit DNS records. This needs Zone > DNS > Edit on the"
+            echo "CLOUDFLARE_API_TOKEN, or the record has to be changed in the dashboard."
+            exit 1
+          }
 
       - name: Verify
         run: |
-          echo "Cloudflare can take a minute to apply this."
-          for i in 1 2 3 4 5 6; do
+          echo "DNS and certificate issuance can take a few minutes."
+          for i in $(seq 1 12); do
             sleep 20
             CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 https://www.rankcli.dev/ || echo 000)
-            LOC=$(curl -s -o /dev/null -w '%{redirect_url}' --max-time 20 https://www.rankcli.dev/ || true)
-            echo "attempt $i: HTTP $CODE ${LOC:+-> $LOC}"
+            echo "attempt $i: HTTP $CODE"
             case "$CODE" in
-              301|308) echo "www now redirects to the apex."; exit 0 ;;
-              200)     echo "www now serves the site."; exit 0 ;;
+              200)
+                if curl -s --max-time 20 https://www.rankcli.dev/ | grep -q "rdt('init'"; then
+                  echo "www serves the real site, pixel included."
+                else
+                  echo "www answers 200 but the page looks wrong."
+                  exit 1
+                fi
+                exit 0 ;;
+              301|308) echo "www redirects to the apex."; exit 0 ;;
             esac
           done
-          echo "www is still not answering correctly. See the API output above for the reason."
+          echo "www is still not answering correctly after four minutes."
           exit 1
