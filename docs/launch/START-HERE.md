@@ -4,7 +4,10 @@ There are fifteen files in this directory and some of them contradict each other
 were written across several sessions as things changed. This one is the index. If it disagrees
 with another file, this one is right, and fix the other one.
 
-**Last verified: 2026-09-28.**
+**Last verified: 2026-09-30.**
+
+For what has actually been done, with outcomes, see
+**[ACTIVITY-LOG.md](./ACTIVITY-LOG.md)**. This file is the plan; that one is the record.
 
 ---
 

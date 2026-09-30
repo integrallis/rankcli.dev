@@ -50,7 +50,12 @@ function redditPixel(pixelId: string | undefined): Plugin {
       if (!/^[A-Za-z0-9_-]+$/.test(pixelId)) {
         throw new Error('VITE_REDDIT_PIXEL_ID contains unexpected characters');
       }
-      const snippet = `<script>!function(w,d){if(!w.rdt){var p=w.rdt=function(){p.sendEvent?p.sendEvent.apply(p,arguments):p.callQueue.push(arguments)};p.callQueue=[];var t=d.createElement("script");t.src="https://www.redditstatic.com/ads/pixel.js";t.async=!0;var s=d.getElementsByTagName("script")[0];s.parentNode.insertBefore(t,s)}}(window,document);rdt('init','${pixelId}');rdt('track','PageVisit');</script>`;
+      // Reddit's own snippet verbatim, with the id substituted in both places it appears: the
+      // `pixel_id` query parameter on the script URL and the `rdt('init')` call. An earlier
+      // version set only the init call, which is the form Reddit's older docs used. Matching
+      // what Events Manager hands out today avoids a difference nobody would think to look for
+      // if attribution came back wrong.
+      const snippet = `<script>!function(w,d){if(!w.rdt){var p=w.rdt=function(){p.sendEvent?p.sendEvent.apply(p,arguments):p.callQueue.push(arguments)};p.callQueue=[];var t=d.createElement("script");t.src="https://www.redditstatic.com/ads/pixel.js?pixel_id=${pixelId}",t.async=!0;var s=d.getElementsByTagName("script")[0];s.parentNode.insertBefore(t,s)}}(window,document);rdt('init','${pixelId}');rdt('track','PageVisit');</script>`;
       return html.replace('</head>', `    ${snippet}\n  </head>`);
     },
   };

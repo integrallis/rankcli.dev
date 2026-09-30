@@ -266,6 +266,18 @@ async function renderRoute(browser: Browser, origin: string, route: string): Pro
       // (and its second <h1>) is only for the shell.
       document.querySelectorAll('noscript').forEach((node) => node.remove());
 
+      // Third-party tags that inject their own <script> get captured twice: once as the inline
+      // loader we shipped, and once as the element that loader created while this page was
+      // being rendered. Serving both means the loader runs again in the visitor's browser and
+      // adds a third, so the vendor script loads twice and every event fires twice. Remove what
+      // the loader created; it will recreate it at runtime, exactly once.
+      document
+        .querySelectorAll('script[src*="redditstatic.com/ads"], script[src*="cloudflareinsights.com"]')
+        .forEach((node) => {
+          // Keep anything we put in the HTML ourselves; only drop what was injected at runtime.
+          if (!node.hasAttribute('data-cf-beacon')) node.remove();
+        });
+
       // Fetch this page's chunks in parallel with the entry script instead of
       // after it: main.tsx won't render until they're loaded.
       const linked = new Set(
