@@ -34,7 +34,19 @@ Credentials work; you said you'd do this one. Copy is in the launch kit.
 
 **→ [launch-kit-2026-09.md](./launch-kit-2026-09.md)** (LinkedIn section)
 
-### 4. Then, and only then, spend money on ads
+### 4. Reddit Ads — 15 minutes once, then it runs itself
+
+You have the account and a budget. This is the automated path: set it up once and it keeps
+serving, unlike organic posting where every post costs another hour.
+
+**→ [reddit-ads-setup.md](./reddit-ads-setup.md)** — exact fields to enter, creative ready
+
+Blocked on one thing: the **Reddit conversion pixel ID**. Reddit requires a
+`conversion_pixel_id` on every ad group, so no pixel means no campaign. Create it in Events
+Manager, hand over the id, and the site picks it up on the next deploy - the code is already
+shipped and inert until that variable is set.
+
+### 5. Then, and only then, the rest of the ad spend
 
 Both ad plans assume the free channels above are already running. An ad buys a slot; a good
 r/webdev post buys a front page.
