@@ -2,10 +2,14 @@
 
 > Numbers in this file come from [VERIFIED-NUMBERS.md](./VERIFIED-NUMBERS.md). Re-check before posting.
 
-The account under `bsbodden@integrallis.com` is aged and active, which removes the only real
-blocker. Post these by hand from that account. Do not automate them: the scheduler advances its
-slot by elapsed time rather than by posts sent, so three of the four are already unreachable by
-`growth-ops`, and posting by hand is faster than fixing that.
+**Account age is not the blocker; standing is.** An earlier version of this file said the aged
+account "removes the only real blocker". It does not — see "The account is the blocker" below.
+r/webdev's removal told us to comment on other posts first, and the r/SideProject post appears
+to have been silently filtered. Read that section before posting anything else.
+
+Posting is by hand: Reddit holds new API apps for manual approval under the Responsible Builder
+Policy, so `reddit-post.mjs` cannot authenticate yet. `reddit-prefill.mjs` builds a launcher
+page with the composer pre-filled, which removes the typing without removing the judgement.
 
 **Numbers below are verified against a live run on 2026-09-27** (`@rankcli/cli@0.0.45`):
 homepage **75/100**, **AI Readiness 67**, **0 errors** (v0.0.46). Re-check before
@@ -28,6 +32,36 @@ written. The rules, verified:
 Site-wide, Reddit expects no more than **1 in 10** of your posts and comments to be
 self-promotional. Four promo posts from a cold account is the wrong ratio on its own — comment
 in these communities between posts, on other people's threads, about things that are not us.
+
+## The account is the blocker, not the copy
+
+r/webdev's removal notice on 2026-09-30 said to comment on other posts first, and the
+r/SideProject post did not appear in search afterwards. Those are the same signal: the account
+is below the participation bar, and low-standing accounts are **silently filtered**. No
+rejection notice arrives, the post looks completely normal to its author, and nobody else ever
+sees it. Checking while logged in tells you nothing - open the URL in a private window.
+
+That changes the plan more than any rewrite would. The posts are not the problem.
+
+**Reddit expects 90% participation to 10% self-promotion.** We are at roughly 0/100: four
+promotional posts from an account with no history in any of these communities. The fix is not
+better copy, it is standing, and standing takes days of genuine commenting - answering
+questions in r/webdev and r/nextjs where we actually know the answer, with no link and no
+mention of the product.
+
+We have real expertise to spend there. The Cloudflare mixed-use crawler change is live and
+costing people traffic - Googlebot's crawl share fell from 57.20% to 27.49% year on year - and
+"your CDN is refusing Googlebot even though robots.txt allows it" is a genuinely useful thing
+to be able to tell someone. Say it without the link.
+
+Practical sequence:
+
+1. **This week: comment only.** Ten to fifteen substantive replies across r/webdev, r/nextjs,
+   r/SideProject. No links, no product. Karma gates are 100+ for r/webdev and 200+ for r/SaaS.
+2. **Then repost.** The r/SideProject post is good and was never seen; it can go again once the
+   account carries weight.
+3. **Meanwhile, ads.** Reddit Ads need no karma and no account history at all, which is exactly
+   why they are the parallel track rather than the fallback - see reddit-ads-setup.md.
 
 ## Revised order
 

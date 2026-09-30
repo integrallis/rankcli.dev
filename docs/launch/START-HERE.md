@@ -10,17 +10,21 @@ with another file, this one is right — and fix the other one.
 
 ## Do these in this order
 
-### 1. Post to Reddit — by hand, from your aged account. **Closes 2026-10-06.**
+### 1. Reddit — build account standing first, do not post again yet
 
-The highest-value thing available, and the only one with a deadline. Four posts, written and
-fact-checked, one every two days in a *different* subreddit, Tue–Thu 8–10am ET.
+The r/webdev post was **removed on 2026-09-30** (it allows promotion only on Showoff Saturday),
+and its notice said to comment on other posts first. The r/SideProject post does not appear in
+search, which is what a silent filter looks like — low-standing accounts get filtered with no
+notice, and the post still looks normal to its author. Check any post in a private window, not
+while logged in.
 
-**→ [reddit-posting-plan.md](./reddit-posting-plan.md)** — paste-ready titles and bodies
+So the bottleneck is the account, not the copy. Reddit expects roughly **90% participation to
+10% self-promotion**; we are at 0/100. This week is comments only — no links, no product — in
+r/webdev, r/nextjs and r/SideProject, where the Cloudflare mixed-use crawler change gives us
+something genuinely useful to say. Karma gates: 100+ for r/webdev, 200+ for r/SaaS.
 
-Do not automate them. The scheduler advances its slot by elapsed time rather than by posts
-sent, so three of the four are already unreachable by `growth-ops`. By hand is also faster.
-
-Reply to every comment for the first two hours. That matters more than the post text.
+**→ [reddit-posting-plan.md](./reddit-posting-plan.md)** — the posts, the per-subreddit rules,
+and the participation sequence
 
 ### 2. Submit Product Hunt
 
