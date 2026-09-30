@@ -32,7 +32,7 @@ const OUT = path.join(__dirname, '..', '..', 'docs/launch/reddit-comments.html')
 const TOPICS = [
   {
     tag: 'Cloudflare / Googlebot',
-    subs: ['webdev', 'SEO', 'TechSEO', 'bigseo', 'sysadmin'],
+    subs: ['CloudFlare', 'webdev', 'SEO', 'TechSEO', 'bigseo', 'sysadmin'],
     query: 'cloudflare googlebot blocked 403',
     looksLike: 'Someone reporting an impressions or crawl drop, 403s in Search Console, or asking what Cloudflare’s AI crawler setting actually did.',
     draft: `Worth checking whether the block is at the CDN rather than in robots.txt. They fail in completely different places and robots.txt won't show you this one.
@@ -67,7 +67,7 @@ Fast way to check: \`curl -s yoursite.com/some-deep-page | grep canonical\`. If 
   },
   {
     tag: 'AI crawlers / robots.txt',
-    subs: ['webdev', 'SEO', 'TechSEO', 'selfhosted'],
+    subs: ['webdev', 'SEO', 'TechSEO', 'CloudFlare', 'selfhosted'],
     query: 'robots.txt GPTBot ClaudeBot allow block AI crawlers',
     looksLike: 'Someone deciding whether to allow or block AI crawlers, or writing robots.txt rules for them.',
     draft: `Worth knowing the RFC 9309 detail before you write those rules: a crawler obeys only the **most specific group that names it**, and ignores the \`*\` group entirely once there's a group with its own name.
@@ -108,7 +108,7 @@ If Search Console says "couldn't fetch", try fetching it with a Googlebot user-a
   },
   {
     tag: 'Structured data',
-    subs: ['webdev', 'SEO', 'TechSEO'],
+    subs: ['webdev', 'SEO', 'TechSEO', 'juststart'],
     query: 'json-ld schema markup organization rich results',
     looksLike: 'Someone adding JSON-LD, or asking which schema types are worth the effort.',
     draft: `Keep the structured data to things that are true and checkable. It's tempting to fill in every field the spec offers, but a phone number or address that doesn't correspond to anything real is a liability rather than a win. It's a machine-readable claim about your business, and it's the format search engines trust most.
@@ -128,7 +128,7 @@ Happy to go into specifics if you say which framework and what you're seeing in 
   },
   {
     tag: 'AI search visibility',
-    subs: ['SEO', 'TechSEO', 'bigseo', 'webdev'],
+    subs: ['SEO', 'TechSEO', 'bigseo', 'juststart', 'webdev'],
     query: 'chatgpt perplexity citing my website AI search traffic',
     looksLike: 'Someone asking how to show up in ChatGPT or Perplexity answers, or whether AI search is worth caring about.',
     draft: `Two separate problems that get conflated: whether the assistant can *fetch* your page, and whether what it fetches is *quotable*.

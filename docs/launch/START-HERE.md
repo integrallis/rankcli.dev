@@ -23,8 +23,13 @@ So the bottleneck is the account, not the copy. Reddit expects roughly **90% par
 r/webdev, r/nextjs and r/SideProject, where the Cloudflare mixed-use crawler change gives us
 something genuinely useful to say. Karma gates: 100+ for r/webdev, 200+ for r/SaaS.
 
-**→ [reddit-posting-plan.md](./reddit-posting-plan.md)** — the posts, the per-subreddit rules,
-and the participation sequence
+**→ [reddit-comments.html]** (generate with `node scripts/growth-ops/reddit-comments.mjs`):
+ten topics across seventeen subreddits, each with live searches and an answer to adapt.
+
+**→ [reddit-participation-log.md](./reddit-participation-log.md)**: the 90/10 ratio ledger.
+Two comments logged on 2026-09-30, both on the Cloudflare crawler issue.
+
+**→ [reddit-posting-plan.md](./reddit-posting-plan.md)**: the posts and the per-subreddit rules
 
 ### 2. Submit Product Hunt
 
