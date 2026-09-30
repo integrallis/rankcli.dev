@@ -1,4 +1,4 @@
-# Zeely / Meta ad creative — 2026-09
+# Zeely / Meta ad creative, 2026-09
 
 Paste-ready copy for app.zeely.ai. Zeely has no API, so this is a hand-off document, not
 automation.
@@ -28,7 +28,7 @@ margin, not the developer who will run the tool.
   (they are cheaper to reach by email)
 - Geo: US, CA, UK, AU, DE, NL first - highest agency-retainer prices, so $99/mo reads as
   cheap against what they bill
-- Landing page: **https://rankcli.dev/pricing** — not the homepage. The homepage sells the
+- Landing page: **https://rankcli.dev/pricing**, not the homepage. The homepage sells the
   CLI to developers, which is the wrong pitch for this audience.
 
 ### What not to claim
@@ -41,7 +41,7 @@ its own SEO claims is the only unrecoverable own-goal available here.
 
 ---
 
-## Ad 1 — The margin angle (lead with this)
+## Ad 1. The margin angle (lead with this)
 
 **Primary text**
 
@@ -58,7 +58,7 @@ its own SEO claims is the only unrecoverable own-goal available here.
 **Description:** 50 client sites, audited daily. White-label reports. $99/mo.
 **CTA:** Learn more
 
-## Ad 2 — The white-label angle
+## Ad 2. The white-label angle
 
 **Primary text**
 
@@ -68,14 +68,14 @@ its own SEO claims is the only unrecoverable own-goal available here.
 > email, and a live widget for your own site. 50 client sites, audited daily, 280+ checks
 > each.
 >
-> The fixes arrive as pull requests your developers review and merge — nothing changes on a
+> The fixes arrive as pull requests your developers review and merge, nothing changes on a
 > client site without a human approving it.
 
 **Headline:** SEO reports with your logo on them
 **Description:** White-label audits for 50 client sites. $99/mo, cancel anytime.
 **CTA:** Learn more
 
-## Ad 3 — The dogfood angle (most credible, narrowest appeal)
+## Ad 3. The dogfood angle (most credible, narrowest appeal)
 
 **Primary text**
 
@@ -91,7 +91,7 @@ its own SEO claims is the only unrecoverable own-goal available here.
 **Description:** See this week's score, then run the same audit on your client's site. Free.
 **CTA:** Learn more
 
-## Ad 4 — Free-first (cheapest clicks, slowest conversion)
+## Ad 4. Free-first (cheapest clicks, slowest conversion)
 
 **Primary text**
 
@@ -102,18 +102,18 @@ its own SEO claims is the only unrecoverable own-goal available here.
 
 **Headline:** Free SEO audit, no signup
 **Description:** 280+ checks on any URL. See what your client's site is missing.
-**CTA:** Try it free — send this one to **https://rankcli.dev/free-audit**
+**CTA:** Try it free, send this one to **https://rankcli.dev/free-audit**
 
 ---
 
 ## Visuals
 
-Zeely will push you toward stock footage of people looking pleased at laptops. Do not use it —
+Zeely will push you toward stock footage of people looking pleased at laptops. Do not use it -
 it says nothing and this audience has seen it ten thousand times. Use instead:
 
 1. A terminal running `rankcli audit`, real output, score visible. Screen-record it; the
    scrolling check list is the whole product in eight seconds.
-2. A real pull request diff — the "Files changed" tab of an auto-fix PR. Agency owners
+2. A real pull request diff, the "Files changed" tab of an auto-fix PR. Agency owners
    recognise this as work they currently pay someone to do by hand.
 3. A client report with a placeholder logo in the corner, to make white-label concrete.
 
@@ -124,7 +124,7 @@ the terminal is the visual, the copy is the pitch.
 
 Start at $10-15/day across Ads 1 and 2 only, one week, and judge on cost per pricing-page
 visit rather than on impressions or clicks. If cost per visit is above roughly $3, the audience
-is wrong and no amount of creative will fix it — Meta is simply not where this buyer is, and
+is wrong and no amount of creative will fix it. Meta is simply not where this buyer is, and
 the money belongs in Reddit (r/agency, r/bigseo), Dev.to, or sponsoring a newsletter agency
 owners actually read.
 

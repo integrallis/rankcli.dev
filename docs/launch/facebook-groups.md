@@ -17,7 +17,7 @@ Caveat: the About pages were read through an automated fetch that summarizes the
 in quotes is quoted rule text. Everything else is a paraphrase. **Read the full rules and
 pinned posts yourself after joining**, before the first post.
 
-**Fit score (1–5)** combines three things: whether the audience would actually use a CLI, CI
+**Fit score (1-5)** combines three things: whether the audience would actually use a CLI, CI
 or MCP SEO/GEO tool, how active the group is, and whether there's a legitimate path to
 promotion. A 5 needs all three.
 
@@ -36,7 +36,7 @@ promotion. A 5 needs all three.
    called "TNW" that bans promotion (V).
 3. **Most of the activity is in the AI-coding groups.** Vibe Coding is Life has 2,566 posts
    in the last month and AI Vibe Coding Club has 825. Many famous SEO and founder groups have
-   0–10. The AI-coding audience also has the exact problem RankCLI detects: client-rendered
+   0-10. The AI-coding audience also has the exact problem RankCLI detects: client-rendered
    apps that AI crawlers can't read (see Draft 2).
 4. **Several groups auto-reject or remove AI-written posts** (Superstar SEO, Local SEO
    Strategies) or require them to be labeled (Google SEO Mastermind, The Admin Bar). The
@@ -203,7 +203,7 @@ Each one is useful with no signup, which is what makes it postable in value-only
    `packages/github-action/README.md`**. It still says `seo-autopilot/action@v1` and "Powered
    by SEO Autopilot", which will confuse anyone who clicks through.
 5. **An aggregate teardown**: run the free checks (`seo_robots_ai`, `seo_geo_check`,
-   `seo_structured_data`) across 20–30 public sites in one category the group cares about,
+   `seo_structured_data`) across 20-30 public sites in one category the group cares about,
    such as vibe-coded showcase apps or dev-tool landing pages. Publish the aggregate table as a
    gist or blog post and screenshot it for Facebook. Report percentages, and don't single out
    individual sites.
@@ -218,14 +218,14 @@ Each one is useful with no signup, which is what makes it postable in value-only
   Intro/Work to "Founder, RankCLI" and Integrallis, and put rankcli.dev in the website field.
   Post as your personal profile, not a RankCLI Page. Group culture rewards people over brands.
   That's my judgment, not a documented rule.
-- Build artifacts 1–3 above, and fix the github-action README.
+- Build artifacts 1-3 above, and fix the github-action README.
 
 **Phase 1, week 1: join wave 1 (at most 3 joins a day), comments only.**
 Join order: **Claude Code (A1), Vibe Coding is Life (B1), Semantic SEO & AI Search (B4),
 Google SEO Mastermind (A2), Superstar SEO (A3), AI Vibe Coding Club (B2).**
 - Answer membership questions honestly (see "Manual tasks").
 - Read every pinned post. Update the Tier B rows in this file with what you find.
-- Leave 2–3 useful comments a day in total across all groups. Good topics are robots.txt and
+- Leave 2-3 useful comments a day in total across all groups. Good topics are robots.txt and
   AI-crawler questions, "why isn't my Lovable app indexed", schema errors, and Core Web
   Vitals. **No links, no product mentions.**
 
@@ -238,7 +238,7 @@ Google SEO Mastermind (A2), Superstar SEO (A3), AI Vibe Coding Club (B2).**
   whether it's OK as written.
 - Maximum pace: one top-level post every other day across all groups.
 
-**Phase 3, weeks 3–4: approved posts and wave 2.**
+**Phase 3, weeks 3-4: approved posts and wave 2.**
 - Publish approved posts at least 3 days apart. Stay in the thread for the first 2 hours to
   answer comments. Replies matter more than the post.
 - On a Saturday, post a rewritten Draft 4 in Artificial Intelligence & Deep Learning (A4).
@@ -580,7 +580,7 @@ Mavericks, which ban this.
     Draft 3.
   - Message the Google SEO Mastermind and Superstar SEO admins with Draft 5 (or 2).
   - SaaS Deals With Kabir: contact the admin named in its rule 1 if you want the giveaway route.
-- **Read pinned rules** in B1–B10 after joining, and update this file.
+- **Read pinned rules** in B1, B10 after joining, and update this file.
 - **Real numbers:** re-run the rankcli.dev audit for its current score, and run the teardown
   that fills in Draft 2's `[N]` values.
 - **Fix the github-action README** (`packages/github-action/README.md`), which still uses the

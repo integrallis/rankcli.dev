@@ -2,7 +2,7 @@
 
 Every claim in the launch copy that cites a number should cite one from here, and every file
 that does says so at the top. The dogfood score moves every week, so copy written against it
-goes stale silently — three separate drafts were carrying 60/100, 84/100 and 88/100
+goes stale silently, three separate drafts were carrying 60/100, 84/100 and 88/100
 simultaneously, and one Reddit ad was built on a 1% AI Readiness that turned out to be a bug in
 our own scoring.
 
@@ -31,7 +31,7 @@ cloudflare.com 68 (AI 63), docs.astro.build 57 (AI 52).
 
 Counts for frameworks and MCP tools are asserted against the source by
 `packages/saas/src/test/frameworks.test.ts` and `mcp-tools.test.ts`, so they cannot drift
-silently. The score cannot be asserted — it changes when the site does.
+silently. The score cannot be asserted, it changes when the site does.
 
 ## Refresh before posting
 

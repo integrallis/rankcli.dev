@@ -94,7 +94,7 @@
         },
         {
           "subreddit": "SaaS",
-          "title": "Every \"AI SEO\" tool is a $29–$2,000/mo dashboard for marketing teams. We built the CI-native one instead",
+          "title": "Every \"AI SEO\" tool is a $29-$2,000/mo dashboard for marketing teams. We built the CI-native one instead",
           "body": "Researched the GEO/AI-visibility space before building and found the same product everywhere: a\nmonitoring dashboard priced for marketing budgets that tells you whether ChatGPT mentioned your\nbrand. None of them run in CI, and none ship a fix as a pull request.\n\nPricing we landed on, for anyone weighing a similar decision: the CLI, the MCP server and the\nGitHub Action are free forever, AI features run on the user's own API key so the free tier costs\nus nothing per-user, and paid plans start at $9/mo for scheduled audits and hosted history.\nPutting the expensive part on the user's own key is what made an actually-unlimited free tier\npossible.\n\nHappy to talk through the pricing reasoning if it's useful. That decision took longer than the\nproduct did."
         }
       ]

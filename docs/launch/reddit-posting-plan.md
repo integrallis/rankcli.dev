@@ -1,9 +1,9 @@
-# Reddit posting plan — paste-ready, in order
+# Reddit posting plan, paste-ready, in order
 
 > Numbers in this file come from [VERIFIED-NUMBERS.md](./VERIFIED-NUMBERS.md). Re-check before posting.
 
 **Account age is not the blocker; standing is.** An earlier version of this file said the aged
-account "removes the only real blocker". It does not — see "The account is the blocker" below.
+account "removes the only real blocker". It does not, see "The account is the blocker" below.
 r/webdev's removal told us to comment on other posts first, and the r/SideProject post appears
 to have been silently filtered. Read that section before posting anything else.
 
@@ -13,11 +13,11 @@ page with the composer pre-filled, which removes the typing without removing the
 
 **Numbers below are verified against a live run on 2026-09-27** (`@rankcli/cli@0.0.45`):
 homepage **75/100**, **AI Readiness 67**, **0 errors** (v0.0.46). Re-check before
-posting if it's been more than a few days — a stale number is the fastest way to lose a thread.
+posting if it's been more than a few days, a stale number is the fastest way to lose a thread.
 
-## The rules, checked — read this before posting anything
+## The rules, checked, read this before posting anything
 
-An earlier version of this file said "post Tue–Thu" and told the reader to check each
+An earlier version of this file said "post Tue, Thu" and told the reader to check each
 subreddit's self-promotion rule. It did not check them itself, and the r/webdev post was
 **removed on 2026-09-30** for exactly that reason. Two of these four would have been removed as
 written. The rules, verified:
@@ -25,12 +25,12 @@ written. The rules, verified:
 | Subreddit | Self-promotion | Karma gate | Our post as written |
 |---|---|---|---|
 | **r/webdev** | **Showoff Saturday only.** Any other day is removed | 100+, 30+ days | ❌ Removed 2026-09-30. Needs the Saturday rewrite below |
-| **r/SideProject** | **Welcome**, if you show the real product — live URL or demo, not gated behind a signup | 100+ | ✅ Fits. Post this one first |
-| **r/programming** | **No promotion at all.** Technical content only | — | ❌ As written it names the CLI. Use the stripped version below |
+| **r/SideProject** | **Welcome**, if you show the real product, live URL or demo, not gated behind a signup | 100+ | ✅ Fits. Post this one first |
+| **r/programming** | **No promotion at all.** Technical content only |, | ❌ As written it names the CLI. Use the stripped version below |
 | **r/SaaS** | Founder stories may mention the product; pure ads removed. **One promotional post per 60 days** (rule added April 2026) | 200+ | ⚠️ Spend the 60-day slot deliberately |
 
 Site-wide, Reddit expects no more than **1 in 10** of your posts and comments to be
-self-promotional. Four promo posts from a cold account is the wrong ratio on its own — comment
+self-promotional. Four promo posts from a cold account is the wrong ratio on its own, comment
 in these communities between posts, on other people's threads, about things that are not us.
 
 ## The account is the blocker, not the copy
@@ -81,7 +81,7 @@ Below those, posts are filtered no matter how good they are.
 
 ---
 
-## Day 3 — r/webdev — Showoff Saturday only (Sat 2026-10-03)
+## Day 3: r/webdev, Showoff Saturday only (Sat 2026-10-03)
 
 The news-led version below was removed on 2026-09-30, because r/webdev confines anything
 promotional to Showoff Saturday. Showoff Saturday also wants a different shape: technical
@@ -135,7 +135,7 @@ tool can be named in that subreddit at all.
 
 ---
 
-## Removed on 2026-09-30 — the news-led version, kept for reference
+## Removed on 2026-09-30, the news-led version, kept for reference
 
 Posting this outside Showoff Saturday is what got it removed. Do not resend it to r/webdev.
 
@@ -172,7 +172,7 @@ The question at the end is the point. It gives people something to answer that i
 
 ---
 
-## Day 3 — r/SideProject
+## Day 1: r/SideProject
 
 **Title**
 
@@ -209,10 +209,10 @@ anything about the build.
 ```
 
 Leading with your own bugs is the move here. r/SideProject rewards candour and is immediately
-suspicious of a flawless launch post — and the AI-readiness story is genuinely the best thing
+suspicious of a flawless launch post, and the AI-readiness story is genuinely the best thing
 you have, because it is a measurement failure anyone who has built a scoring system recognises.
 
-## Day 5 — r/programming
+## Day 5: r/programming
 
 **Title**
 
@@ -250,19 +250,19 @@ or just SEO with new vocabulary.
 
 **The statistics are verified** (Seer Interactive, Sept 2025 update; 3,119 queries / 42 orgs /
 25.1M organic impressions). The earlier draft of this post attributed them to "Google's own
-numbers", which was wrong and would have been caught — they are Seer's. It also said CTR fell
+numbers", which was wrong and would have been caught, they are Seer's. It also said CTR fell
 to "under 1%", which understates the actual 1.76% to 0.61%. Both corrected above, along with
 the correlation caveat, which is better raised by you than by a commenter.
 
 
 ---
 
-## Day 7 — r/SaaS
+## Day 7: r/SaaS
 
 **Title**
 
 ```
-Every "AI SEO" tool is a $29–$2,000/mo dashboard for marketing teams. We built the CI-native one instead
+Every "AI SEO" tool is a $29-$2,000/mo dashboard for marketing teams. We built the CI-native one instead
 ```
 
 **Body**
@@ -288,7 +288,7 @@ product did.
 
 **Create r/rankcli** (values in `reddit-community-setup.md`). Two minutes, and worth doing once
 the posts are live so arrivals have somewhere to land. It is not an acquisition channel on its
-own — nobody finds a product by browsing to its empty community — so it comes after, not before.
+own, nobody finds a product by browsing to its empty community, so it comes after, not before.
 
 **Submit Product Hunt.** The draft in `product-hunt.md` has never been submitted and is the only
 realistic path to a large single-day number. Reddit builds a floor; PH is the spike.

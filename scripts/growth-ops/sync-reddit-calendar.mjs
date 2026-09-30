@@ -28,7 +28,10 @@ const CONFIG = path.join(ROOT, 'docs/launch/campaign-config.json');
  */
 function parsePlan(markdown) {
   const posts = [];
-  const sections = markdown.split(/^## Day \d+ — r\//m).slice(1);
+  // A colon, not a dash. The headings used an em dash until a pass that removed em dashes from
+  // every document turned it into a comma, which matched nothing. The guard below is what
+  // caught that; a colon is punctuation no prose pass will rewrite.
+  const sections = markdown.split(/^## Day \d+: r\//m).slice(1);
   for (const section of sections) {
     const subreddit = section.match(/^([A-Za-z0-9_]+)/)?.[1];
     const blocks = [...section.matchAll(/```\n([\s\S]*?)\n```/g)].map((m) => m[1]);

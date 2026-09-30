@@ -2,7 +2,7 @@
 
 Short version: **not through directories.** The official registry passed 9,400 servers and the
 community directories list 9,800+. Being listed makes you one in ten thousand, which is why
-submitting to more of them moved nothing. We are already in every list that matters — official
+submitting to more of them moved nothing. We are already in every list that matters, official
 registry, awesome-mcp-servers (merged), Glama, Smithery, mcp.so pending.
 
 Discovery happens three ways, in descending order of how much they actually convert.
@@ -14,7 +14,7 @@ This is the same funnel as the rest of the product, and it is why the Reddit and
 posts matter more to MCP adoption than any directory submission.
 
 The corollary: **the MCP server should be mentioned in the posts**, not just the CLI. It is the
-lowest-friction thing we ship — no signup, no key, nothing leaves the machine — which makes it
+lowest-friction thing we ship, no signup, no key, nothing leaves the machine, which makes it
 the best first touch we have.
 
 ## 2. Inside their client
@@ -22,13 +22,13 @@ the best first touch we have.
 The curated in-client surfaces are far higher signal than a 10,000-row list, because the user
 is already looking for a tool at that moment.
 
-- **Claude Code** — `claude mcp add`. The user must already know the name.
-- **Claude Desktop** — Extensions. One-click install from a bundle. **We do not ship one.**
-- **Cursor** — `mcp.json`, or a one-click deeplink.
-- **VS Code / Copilot** — native MCP since 1.99, install URL scheme.
-- **Codex** — MCP via config file; same package, no separate work.
+- **Claude Code**, `claude mcp add`. The user must already know the name.
+- **Claude Desktop**. Extensions. One-click install from a bundle. **We do not ship one.**
+- **Cursor**, `mcp.json`, or a one-click deeplink.
+- **VS Code / Copilot**, native MCP since 1.99, install URL scheme.
+- **Codex**. MCP via config file; same package, no separate work.
 
-Nothing here requires a new server. The same `@rankcli/mcp-server` works in all of them —
+Nothing here requires a new server. The same `@rankcli/mcp-server` works in all of them -
 MCP is client-agnostic. What differs is only how the user installs it, and every step of
 friction there costs installs.
 
@@ -65,13 +65,13 @@ Markdown button, using Cursor's own badge:
 vscode:mcp/install?%7B%22name%22%3A%22rankcli%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40rankcli%2Fmcp-server%22%5D%7D
 ```
 
-**Claude Code** — one line, no config file:
+**Claude Code**, one line, no config file:
 
 ```bash
 claude mcp add rankcli -- npx -y @rankcli/mcp-server
 ```
 
-**Claude Desktop / Codex / Windsurf** — the config block we already document:
+**Claude Desktop / Codex / Windsurf**, the config block we already document:
 
 ```json
 { "mcpServers": { "rankcli": { "command": "npx", "args": ["-y", "@rankcli/mcp-server"] } } }
@@ -85,8 +85,8 @@ code block.
 ## Second gap: no Claude Desktop Extension
 
 Claude Desktop installs extensions as a bundle rather than by hand-editing JSON. We ship no
-bundle, so Claude Desktop users — likely our largest client audience, given the product is
-pitched at Claude users — have the highest-friction path of anyone. Worth building.
+bundle, so Claude Desktop users, likely our largest client audience, given the product is
+pitched at Claude users, have the highest-friction path of anyone. Worth building.
 
 ## What is not worth doing
 

@@ -1,7 +1,7 @@
-# Zeely production run — burning 10K credits before the subscription ends
+# Zeely production run, burning 10K credits before the subscription ends
 
 The subscription is paid and ends in a month. Credits expire with it; **downloaded files do
-not**. So the goal is not "run good ads" — it is "leave the month owning a creative library you
+not**. So the goal is not "run good ads", it is "leave the month owning a creative library you
 can still use in six months, on any channel, for free."
 
 Everything below is ordered by what you lose if you run out of time.
@@ -13,11 +13,11 @@ Everything below is ordered by what you lose if you run out of time.
 1. **Check whose ad account the campaign runs in.** Zeely is already connected to the Facebook
    and Instagram accounts, so this is a verification rather than a setup step: in Meta Business
    Suite, confirm the ad account the campaigns sit in is one you own. If it is, cancelling
-   Zeely costs you an editor and nothing else — the campaigns and audiences stay yours. If the
+   Zeely costs you an editor and nothing else, the campaigns and audiences stay yours. If the
    campaigns live in an ad account Zeely owns, they end when the subscription does, and that is
    worth knowing before you spend rather than after.
 2. **Measure with what is already live: Cloudflare Web Analytics plus UTM'd links.** The beacon
-   is on every page as of 2026-09-28, it is cookieless, and it counts page views by URL — which
+   is on every page as of 2026-09-28, it is cookieless, and it counts page views by URL, which
    is all the week-one decision needs. Tag every ad so the groups are separable:
 
    ```
@@ -32,18 +32,18 @@ Everything below is ordered by what you lose if you run out of time.
    two things first.** rankcli.dev's published privacy policy states: *"We do not use
    third-party advertising or cross-site tracking cookies."* A Meta pixel is exactly that, so
    installing one makes that sentence false until the policy is rewritten. And the geo list
-   below includes UK, DE and NL, where an advertising pixel needs prior consent — meaning a
+   below includes UK, DE and NL, where an advertising pixel needs prior consent, meaning a
    consent banner, on a site that currently needs none.
 
    That is a real trade, not a formality. The pixel buys conversion optimisation and
    retargeting, which matter at scale and are worth having eventually. It costs a policy
-   rewrite, a consent banner, and — for a product whose pitch is publishing its own numbers
-   honestly — the awkwardness of a privacy page that had to be walked back. For a seven-day
+   rewrite, a consent banner, and, for a product whose pitch is publishing its own numbers
+   honestly, the awkwardness of a privacy page that had to be walked back. For a seven-day
    read, page views by URL answer the question without any of that.
 3. **Mine the competitor ad library first.** It is the one Zeely feature that produces value
    you keep *as notes* rather than as files, and it is the first thing you lose on cancellation.
    Search: `ahrefs`, `semrush`, `screaming frog`, `seo audit`, `white label seo`,
-   `agency reporting`. Screenshot every ad that has been running 60+ days — longevity is the
+   `agency reporting`. Screenshot every ad that has been running 60+ days, longevity is the
    only public signal that an ad is profitable. Paste the hooks into this file as you go.
 
 ## The download checklist (do this weekly, not at the end)
@@ -53,7 +53,7 @@ you forgot.
 
 - [ ] Every video: MP4, highest quality offered, **9:16 and 1:1 both**
 - [ ] Every image: PNG or high-quality JPG, 1:1 and 4:5
-- [ ] Any generated script/caption text — paste back into this repo
+- [ ] Any generated script/caption text, paste back into this repo
 - [ ] Any avatar you create and like (you cannot regenerate the same face later)
 - [ ] Competitor research screenshots
 
@@ -75,7 +75,7 @@ real `rankcli audit` run against rankcli.dev and live in `docs/launch/ad-assets/
 | `audit-tall.gif` | Same, as GIF | Dev.to, Reddit, README, X |
 | `audit-tall.cast` | The raw asciinema recording | Re-render at any size |
 
-The score shown is **75/100 with 0 errors** — our own site, measured with the published CLI on
+The score shown is **75/100 with 0 errors**, our own site, measured with the published CLI on
 2026-09-28. That is the point, not a flaw. Do not regenerate these with a fake higher number.
 
 **Re-record them if the score moves.** The first set of these showed 71/100 and an AI Readiness
@@ -100,18 +100,18 @@ claims to be a RankCLI customer.** It is a lie, it violates Meta's advertising p
 misleading representations, and for a tool whose entire pitch is "we publish our own score
 honestly" it is the one thing that makes the product look fraudulent.
 
-Avatars are fine as a **narrator** — a presenter explaining a product is a normal ad. The line
+Avatars are fine as a **narrator**, a presenter explaining a product is a normal ad. The line
 is first-person claims of experience: "I use this every day" is out, "RankCLI audits 50 client
 sites daily" is in.
 
 ---
 
-# The creative matrix — 24 pieces
+# The creative matrix, 24 pieces
 
 Six angles x four formats. Generate all of them; kill the losers with data, not taste.
 Roughly 400 credits each leaves headroom for regenerating the winners.
 
-## Angle A — The margin angle (agency owners; lead with this)
+## Angle A. The margin angle (agency owners; lead with this)
 
 > You audit a client's site. You write up the findings. You bill for the fix.
 > The audit and the write-up are the part a machine should be doing.
@@ -126,7 +126,7 @@ Roughly 400 credits each leaves headroom for regenerating the winners.
 **Headline:** Stop hand-writing SEO audits · **Description:** 50 client sites, audited daily.
 White-label reports. $99/mo. · **CTA:** Learn more · **→ rankcli.dev/pricing**
 
-## Angle B — White label
+## Angle B. White label
 
 > Your client does not need to know which tool found it.
 
@@ -139,7 +139,7 @@ White-label reports. $99/mo. · **CTA:** Learn more · **→ rankcli.dev/pricing
 **Headline:** SEO reports with your logo on them · **Description:** White-label audits for 50
 client sites. $99/mo, cancel anytime.
 
-## Angle C — The honesty angle (highest credibility)
+## Angle C. The honesty angle (highest credibility)
 
 > We publish our own score. 75/100, zero errors. It goes public whether it went up or not.
 
@@ -152,7 +152,7 @@ client sites. $99/mo, cancel anytime.
 **Headline:** We audit ourselves in public · **Description:** See this week's score, then run
 the same audit on your site. Free.
 
-## Angle D — CI/CD (developers; the free tier is the offer)
+## Angle D. CI/CD (developers; the free tier is the offer)
 
 > Your tests run on every push. Your SEO doesn't.
 
@@ -165,12 +165,12 @@ the same audit on your site. Free.
 **Headline:** SEO checks that run in CI · **Description:** Free forever on the CLI. No signup
 to try it. · **→ rankcli.dev/free-audit**
 
-## Angle E — The AI-search angle (newest, least competition)
+## Angle E. The AI-search angle (newest, least competition)
 
 > ChatGPT can't read your site. You'd never know.
 
 Do **not** use the "our AI Readiness is 1%" line from the first draft of this file. That 1% was
-a bug in our own scoring, fixed in v0.0.46 — it read near zero for stripe.com, vercel.com and
+a bug in our own scoring, fixed in v0.0.46, it read near zero for stripe.com, vercel.com and
 cloudflare.com too. rankcli.dev is 75/100 with AI Readiness 67. Sell the question, not a
 number about us.
 
@@ -182,7 +182,7 @@ number about us.
 
 **Headline:** Can AI assistants read your site? · **Description:** Free check. No signup.
 
-## Angle F — Zero friction (cheapest clicks; run only to build the retargeting pool)
+## Angle F. Zero friction (cheapest clicks; run only to build the retargeting pool)
 
 > Full technical SEO audit on any URL. No signup, no card, no trial timer.
 
@@ -201,10 +201,10 @@ number about us.
   freelance web developer, Shopify Partners, WordPress developer; business page admins
 - **Secondary (D, E):** software developer, DevOps, React/Next.js, GitHub, Stack Overflow
 - **Retarget (C):** everyone who hit rankcli.dev and did not sign up. This is the one thing the
-  page-view approach cannot do — building that audience needs the pixel, with the policy and
+  page-view approach cannot do, building that audience needs the pixel, with the policy and
   consent consequences in step 2. Skip this angle for the first week and decide afterwards,
   once you know from the cost-per-visit numbers whether Meta is even the right channel
-- **Geo:** US, CA, UK, AU, DE, NL — highest agency retainers, so $99/mo reads as cheap
+- **Geo:** US, CA, UK, AU, DE, NL, highest agency retainers, so $99/mo reads as cheap
 - **Exclude:** students; existing rankcli.dev users
 
 ## Budget and the kill criterion
@@ -212,7 +212,7 @@ number about us.
 $10-15/day across **A1, A3, C1, D3** only for the first week. Judge on **cost per
 pricing-page visit**, not impressions or clicks.
 
-Above roughly **$3 per pricing-page visit**, the audience is wrong and no creative fixes it —
+Above roughly **$3 per pricing-page visit**, the audience is wrong and no creative fixes it -
 Meta is not where this buyer is, and the money belongs on Reddit, Dev.to, or a newsletter
 agency owners actually read. Say that number out loud before you start, so you are not
 negotiating with yourself on day five.
