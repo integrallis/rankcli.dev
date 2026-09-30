@@ -94,9 +94,11 @@ archiving, not promotion.
   nothing. Revalidating the custom domain cleared it. Every inbound link, directory listing or
   pasted URL using www had been hitting a Cloudflare error page, for an unknown length of time.
   Nothing was monitoring it. Found while chasing an unrelated Reddit pixel error.
-  - Still worth doing: a 301 from www to the apex. Canonical tags on every page already point
-    at the apex, so rankings will not split, but two hostnames serve the same site. The
-    redirect needs `Zone > Rulesets > Edit` on `CLOUDFLARE_API_TOKEN`, which it does not have.
+  - **www now 301s to the apex**, path and query string preserved. The modern dynamic-redirect
+    ruleset is unavailable (`CLOUDFLARE_API_TOKEN` lacks `Rulesets > Edit`), so this is a legacy
+    Page Rule, which the token could write. Query-string preservation matters for more than
+    tidiness: Reddit and every other ad platform append click parameters, and a redirect that
+    dropped them would silently break attribution on any ad landing on a www URL.
 
 ---
 
