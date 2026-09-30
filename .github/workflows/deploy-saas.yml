@@ -142,6 +142,10 @@ jobs:
           # Fail the deploy rather than ship pages crawlers can't read.
           PRERENDER: required
           VITE_CF_BEACON_TOKEN: ${{ vars.CF_BEACON_TOKEN }}
+          # Reddit requires a conversion pixel on every ad group, so this is the price of
+          # running Reddit Ads at all. Unset means no pixel ships and the site carries no
+          # advertising tracker - see vite.config.ts and PrivacyPage.
+          VITE_REDDIT_PIXEL_ID: ${{ vars.REDDIT_PIXEL_ID }}
           VITE_SUPABASE_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co
           VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           VITE_AUDIT_WORKER_URL: https://rankcli-audit-worker.fly.dev

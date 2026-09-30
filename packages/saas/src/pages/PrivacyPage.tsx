@@ -90,6 +90,7 @@ export function PrivacyPage() {
             <li><strong>Fly.io</strong> - runs the audit engine that crawls and analyzes URLs</li>
             <li><strong>Stripe</strong> - payment processing for paid subscriptions</li>
             <li><strong>Resend</strong> - transactional email delivery</li>
+            <li><strong>Reddit</strong> - conversion measurement for Reddit ads, when a campaign is running (see Cookies below)</li>
             <li><strong>GitHub</strong> - OAuth sign-in and the RankCLI GitHub App, if you connect a repository</li>
             <li><strong>Google</strong> - sign-in with Google, and the Search Console API if you connect Search Console</li>
           </ul>
@@ -135,10 +136,19 @@ export function PrivacyPage() {
 
           <h2>Cookies</h2>
           <p>
-            The dashboard uses essential cookies/local storage to keep you signed in.
-            We do not use third-party advertising or cross-site tracking cookies. We
+            The dashboard uses essential cookies/local storage to keep you signed in. We
             count page views with Cloudflare Web Analytics, which sets no cookies and
             doesn't track you across sites.
+          </p>
+          <p>
+            When we are running ads on Reddit, the marketing pages also carry Reddit's
+            conversion pixel, which is a third-party advertising tracker: it records that a
+            visit or a signup followed a Reddit ad, and it can be used to build a retargeting
+            audience. Reddit requires it on every ad group, so it is the condition of
+            advertising there at all rather than something we added for its own sake. It is
+            never present on a build where it has not been deliberately configured, and it is
+            not loaded in the dashboard. You can check whether it is active on any page by
+            searching the page source for <code>redditstatic.com/ads/pixel.js</code>.
           </p>
 
           <h2>Data retention and deletion</h2>

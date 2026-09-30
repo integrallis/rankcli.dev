@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { trackSignup } from '@/lib/conversions';
 
 interface AuthState {
   user: User | null;
@@ -83,6 +84,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast.error('Unexpected error during sign up.');
       throw new Error('Signup failed: No user returned');
     }
+
+    // Reddit optimises ad delivery against this event, which is the difference between paying
+    // for clicks and paying for accounts. No-op on any build with no pixel configured.
+    trackSignup();
 
     // Check if email confirmation is required
     // If identities array is empty, email confirmation is pending
