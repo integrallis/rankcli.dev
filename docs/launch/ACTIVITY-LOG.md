@@ -20,7 +20,7 @@ users are somewhere between 1 and 5.
 | MCP directories | Listed everywhere that matters | Registry, Glama, Smithery, awesome-mcp-servers; mcp.so queued |
 | Reddit organic | 2 comments, 2 posts | **Both posts removed or filtered** |
 | Hacker News | Show HN submitted 2026-09-30 | Pending |
-| Reddit Ads | Blocked | Needs a conversion pixel ID |
+| Reddit Ads | **Unblocked** | Pixel `a2_jrtl7de1quoe` live, PageVisit and Search both verified firing |
 | Meta / Zeely | Not started | 10K credits unspent |
 | LinkedIn | Not started | Credentials work; owner's call |
 | Mastodon | **Dead** | Token invalid, never in CI secrets |
@@ -79,6 +79,15 @@ archiving, not promotion.
 - Changed the homepage to lead with `npx @rankcli/cli audit -u ...` instead of
   `npm install -g`, so an arriving developer can run it without committing to anything.
 - **Show HN submitted.**
+- **Reddit Pixel installed and verified**, `a2_jrtl7de1quoe`. Two bugs found in the process:
+  the prerenderer was capturing the script tag Reddit's loader creates at runtime, which would
+  have double-counted every `PageVisit`; and `trackFreeAudit()` existed with no call site, so
+  the free audit, the action every ad creative asks for, reported nothing. Both fixed. A real
+  browser run against the live site now shows `PageVisit` on load and `Search` on audit submit.
+- **Declined auto-advanced matching.** Reddit's "Send to Developer" option for email and phone
+  would ship visitor PII to Reddit, across GDPR geos, and would make the privacy policy false.
+  We collect no phone numbers and have 9 users, so the benefit is nil against a real cost.
+- Reddit Ads is no longer blocked on anything. Every field is written in `reddit-ads-setup.md`.
 
 ---
 
@@ -113,5 +122,6 @@ place.
    the karma gates. Drafts in `reddit-comments.html`.
 3. **r/webdev on Showoff Saturday (2026-10-03)**, using the rewrite in `reddit-posting-plan.md`.
 4. **Product Hunt.** Written months ago, never submitted.
-5. **Reddit Ads.** Blocked only on a conversion pixel ID; every other piece is built and inert.
+5. **Reddit Ads.** No longer blocked. Pixel is live and verified; create the campaign from
+   the field values in `reddit-ads-setup.md`.
 6. **Repost r/SideProject** once the account carries weight. It is a good post nobody saw.

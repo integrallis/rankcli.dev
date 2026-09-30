@@ -7,7 +7,40 @@ Account: **Integrallis Software**, [ads.reddit.com/account/jrtl7de1quoe](https:/
 
 ---
 
-## Step 1. Create the conversion pixel (5 minutes, blocks everything else)
+## Step 1. Create the conversion pixel: DONE 2026-09-30
+
+**Pixel ID `a2_jrtl7de1quoe` is live and verified firing.** This no longer blocks anything.
+Skip to step 2. The rest of this section is kept as the record of how it was installed.
+
+Verified by driving a real browser at the live site:
+
+```
+https://www.redditstatic.com/ads/pixel.js?pixel_id=a2_jrtl7de1quoe   loader
+https://alb.reddit.com/rp?id=a2_jrtl7de1quoe&event=PageVisit         on page load
+https://alb.reddit.com/rp?id=a2_jrtl7de1quoe&event=Search            on free-audit submit
+```
+
+Exactly one `rdt('init')` per page across all 13 prerendered pages.
+
+**If Events Manager still shows "Base pixel configuration error" on its Set up events step,
+ignore it.** That step verifies by watching for an event from *your own* browser session, and
+uBlock, Brave Shields, Safari ITP and Pi-hole all block `alb.reddit.com` by default. Its
+diagnostics also lag received events by roughly 20 to 30 minutes. Reddit Ads only needs the
+base pixel to create a campaign, and the base pixel is confirmed.
+
+Two things were wrong and are now fixed:
+
+- The prerenderer captured the script tag that Reddit's inline loader creates at runtime, so
+  the served HTML carried both the loader and its own output. Every `PageVisit` would have
+  counted twice. Fixed in `scripts/prerender.ts`.
+- `trackFreeAudit()` was written in `conversions.ts` and had **no call site anywhere**, so the
+  one action the ad creative asks for reported nothing. Reddit optimises delivery against
+  received conversion events, so the campaign would have had nothing to learn from and would
+  have spent the budget on raw clicks. Fixed in `f1ed81a`.
+
+<details>
+<summary>Original instructions, for reference</summary>
+
 
 Reddit requires a `conversion_pixel_id` on **every ad group**. Without one you cannot create a
 campaign at all.
@@ -26,6 +59,8 @@ gh workflow run deploy-saas.yml
 The code is already in place. Nothing ships until that variable exists; once it does, the pixel
 goes into `<head>` on all 26 marketing pages and `SignUp` fires from the auth context. The
 privacy policy already describes it.
+
+</details>
 
 Verify after deploy:
 
