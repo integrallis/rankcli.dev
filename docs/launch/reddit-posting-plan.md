@@ -90,7 +90,7 @@ detail and the working thing, not a news hook.
 **Title**
 
 ```
-[Showoff Saturday] I rebuilt SEO auditing as a linter — and found five bugs by running it on my own site
+[Showoff Saturday] I rebuilt SEO auditing as a linter, then found five bugs by running it on my own site
 ```
 
 **Body**
@@ -101,10 +101,10 @@ rather than a dashboard. Free, no signup, nothing leaves your machine:
 
     npx @rankcli/cli audit -u https://your-site.dev
 
-Live: https://rankcli.dev — our own score is published weekly, 75/100 today.
+Live: https://rankcli.dev. Our own score is published weekly, 75/100 today.
 
 The interesting part this week was pointing it at ourselves. Five findings were wrong, and all
-five were reporting *errors* — the severity that exits non-zero and breaks a build:
+five were reporting *errors*, the severity that exits non-zero and breaks a build:
 
 - A noindex /login flagged "your content is likely invisible to Google". It's noindex on
   purpose. Every SaaS has one, so it fired for everybody.
@@ -115,7 +115,7 @@ five were reporting *errors* — the severity that exits non-zero and breaks a b
   scored zero. The category had 3-4x more checks than any other using the same per-check
   penalty, so every real page blew past 100 points of deduction. They now spread 52-71.
 - DOM size counted text and whitespace nodes against a threshold borrowed from Lighthouse,
-  which counts elements. tailwindcss.com measured 3,231 against 2,230 real elements — 796
+  which counts elements. tailwindcss.com measured 3,231 against 2,230 real elements: 796
   whitespace nodes and 205 comments. Re-indenting a template could fail your build.
 - Missing image width/height was an error, which failed svelte.dev, tailwindcss.com,
   rust-lang.org, laravel.com and fastapi.tiangolo.com. It's a real CLS cost, not a broken site.
@@ -124,7 +124,7 @@ The lesson I keep relearning: a confident wrong "critical" is worse than a missi
 because it teaches people the red ones are noise.
 
 Stack is TypeScript, checks run in worker threads, and the framework detector is scored
-evidence rather than first-match — that went from 57% to 94% accuracy across 32 frameworks
+evidence rather than first-match, which took it from 57% to 94% accuracy across 32 frameworks
 once it was allowed to answer "unknown".
 
 Happy to go into any of the checks or the detection scoring.
@@ -155,13 +155,13 @@ security settings.
 
 The part I hadn't seen discussed: Googlebot is *mixed-use*. It crawls for Search and for AI
 training in one bot, and mixed-use crawlers are treated under whichever rule is most
-restrictive. So a site blocking Training crawlers — including through the legacy "Block AI
-Bots" toggle — can also be blocking Googlebot on its ad-supported pages, unless it explicitly
+restrictive. So a site blocking Training crawlers (including through the legacy "Block AI
+Bots" toggle) can also be blocking Googlebot on its ad-supported pages, unless it explicitly
 opted out.
 
 If you're on Cloudflare and haven't looked at that setting since the 15th, it's worth checking
 which crawlers actually reach you now. I maintain a CLI that checks this among other technical
-SEO things — `npx @rankcli/cli audit -u yoursite.dev`, no signup, runs locally — but you can
+SEO things (`npx @rankcli/cli audit -u yoursite.dev`, no signup, runs locally) but you can
 also just curl your own robots.txt and check the zone settings by hand.
 
 Has anyone actually seen impressions drop since the 15th? Curious whether this is showing up in
@@ -177,7 +177,7 @@ The question at the end is the point. It gives people something to answer that i
 **Title**
 
 ```
-Built an SEO tool that audits sites the way CI audits code — spent this week finding three bugs in it by running it on ourselves
+Built an SEO tool that audits sites the way CI audits code, then spent this week finding three bugs in it by running it on ourselves
 ```
 
 **Body**
@@ -188,15 +188,15 @@ something's fixable, instead of another dashboard alert nobody reads.
 
 We publish our own audit score weekly whether it went up or not. It's 75/100 today. Getting
 there this week meant finding three bugs by pointing the tool at ourselves, and all three were
-reporting *errors* — the severity people actually act on:
+reporting *errors*, the severity people actually act on:
 
 - Our noindex /login was flagged "your content is likely invisible to Google". It's noindex on
   purpose. Every SaaS has a /login, so this fired for everybody.
 - Any dark-themed page failed colour contrast. The checker read only an element's own inline
-  style and assumed white when it found no background — our text is 9:1 and it reported 2.56:1.
+  style and assumed white when it found no background. Our text is 9:1 and it reported 2.56:1.
 - The one that stung: our AI Readiness score was 1%. I assumed our content was bad. Then I ran
   the same check against stripe.com (13), vercel.com (7), cloudflare.com (0) and
-  docs.astro.build (0). A documentation site — the ideal AI-citation target — scored zero. The
+  docs.astro.build (0). A documentation site, the ideal AI-citation target, scored zero. The
   metric was saturated and meaningless. The category had 3-4x more checks than any other and
   was using the same per-check penalty, so every real page blew past 100 points of deduction
   before the interesting checks counted. Those five now spread 52-71.
@@ -223,14 +223,14 @@ Being crawled isn't the win any more; being cited is (35% more organic clicks, 9
 **Body**
 
 ```
-Seer Interactive tracked 3,119 informational queries across 42 organizations — 25.1M organic
-impressions, 1.1M paid — between June 2024 and September 2025. On queries showing an AI
+Seer Interactive tracked 3,119 informational queries across 42 organizations (25.1M organic
+impressions, 1.1M paid) between June 2024 and September 2025. On queries showing an AI
 Overview, organic CTR fell 61%, from 1.76% to 0.61%. Paid fell 68%.
 
 The part I find more interesting: brands actually *cited* in the AI Overview saw 35% more
 organic clicks and 91% more paid clicks than uncited brands.
 
-Worth stating the obvious caveat, because it's the first thing I'd ask — that's correlation.
+Worth stating the obvious caveat, because it's the first thing I'd ask. That's correlation.
 Seer are explicit that they can't show citation *causes* the lift, and the plausible reverse
 reading is that brands with more authority and better baseline CTR are the ones Google's model
 tends to cite. Either way, ranking and being cited have come apart, and most SEO tooling still
@@ -278,7 +278,7 @@ us nothing per-user, and paid plans start at $9/mo for scheduled audits and host
 Putting the expensive part on the user's own key is what made an actually-unlimited free tier
 possible.
 
-Happy to talk through the pricing reasoning if it's useful — that decision took longer than the
+Happy to talk through the pricing reasoning if it's useful. That decision took longer than the
 product did.
 ```
 

@@ -33,7 +33,7 @@ A \`robots.txt\` written to the wrong directory is worse than no \`robots.txt\` 
 
 The old detector returned the first signal that matched. That is fast and wrong: signals conflict, and the first one to fire is not the most reliable one. It also matched on short substrings, which produced answers like classifying **nginx as Gin** because \`server\` contained "gin", and classifying any page with \`style="width: 50%"\` as Spring Boot because a Thymeleaf pattern matched \`th:\`.
 
-Detection now weighs every signal on the page. Each contributes evidence at one of three strengths, the highest total wins, and a score below the floor returns \`unknown\` rather than a guess. On a 51-site corpus that moved accuracy from **57% to 94%** — with no incorrect claims. When it names a framework, it is right; when it is unsure, it says so.
+Detection now weighs every signal on the page. Each contributes evidence at one of three strengths, the highest total wins, and a score below the floor returns \`unknown\` rather than a guess. On a 51-site corpus that moved accuracy from **57% to 94%**, with no incorrect claims. When it names a framework, it is right; when it is unsure, it says so.
 
 It recognises **32 frameworks** now, including Docusaurus and Sphinx.
 
@@ -50,7 +50,7 @@ Knowing the framework is only useful if you then act on it. The served directory
 | Spring Boot | \`src/main/resources/static/\` |
 | Jekyll, Pelican | the app root itself |
 
-An earlier version looked for an existing \`public/\` directory in your repository. That is right for a project that has one and wrong for every project that does not yet — a fresh Next.js app, a fresh Nuxt app and a Docusaurus site all resolved to the repository root, because the directory they serve from had not been created.
+An earlier version looked for an existing \`public/\` directory in your repository. That is right for a project that has one and wrong for every project that does not yet. A fresh Next.js app, a fresh Nuxt app and a Docusaurus site all resolved to the repository root, because the directory they serve from had not been created.
 
 Monorepos work too: the app root is found by locating an \`index.html\` beside a \`package.json\`, so fixes land in the right package rather than at the top of the tree.
 
@@ -61,18 +61,18 @@ Generated file edits are now checked before they become a commit, and anything c
 - A replacement that lost a \`<script>\` tag, a stylesheet, or a search-console verification tag
 - Invalid JSON, XML or JSON-LD
 - A sitemap that came back shorter, or a \`lastmod\` moved backwards
-- **Invented content** — a phone number in the reserved 555 range, "123 Main Street, Anytown", an unfilled \`your_...\` placeholder
+- **Invented content**: a phone number in the reserved 555 range, "123 Main Street, Anytown", an unfilled \`your_...\` placeholder
 - **A canonical added to a single-page-app shell**, which would make every route declare itself a duplicate of one URL
 
-Those last two are there because a real generated pull request proposed both. We [wrote that one up separately](/blog/we-found-five-bugs-in-our-own-seo-tool) — it is the more interesting story.
+Those last two are there because a real generated pull request proposed both. We [wrote that one up separately](/blog/we-found-five-bugs-in-our-own-seo-tool), which is the more interesting story.
 
-Files RankCLI owns from a template — \`robots.txt\`, \`sitemap.xml\`, \`llms.txt\` — may be created but never rewritten by a model. A template cannot hallucinate a date; a model can, and did.
+Files RankCLI owns from a template (\`robots.txt\`, \`sitemap.xml\`, \`llms.txt\`) may be created but never rewritten by a model. A template cannot hallucinate a date; a model can, and did.
 
 ## One-click install for Claude, Cursor and VS Code
 
 The MCP server is the lowest-friction thing we ship: no signup, no API key, nothing leaves your machine. Every path we documented for it involved hand-editing a JSON config file, which is a strange way to introduce the easy option.
 
-**Claude Desktop** now has a downloadable extension bundle — grab the \`.mcpb\` from the [latest release](https://github.com/integrallis/rankcli-cli/releases/latest) and double-click it.
+**Claude Desktop** now has a downloadable extension bundle. Grab the \`.mcpb\` from the [latest release](https://github.com/integrallis/rankcli-cli/releases/latest) and double-click it.
 
 **Claude Code** is one line:
 
@@ -82,17 +82,17 @@ claude mcp add rankcli -- npx -y @rankcli/mcp-server
 
 **Cursor and VS Code** have one-click install links on [the docs page](/docs).
 
-All of it drives the same **15 tools** — full audits, AI-crawler access checks, structured data validation, Core Web Vitals, security headers, and generators for the fixes.
+All of it drives the same **15 tools**: full audits, AI-crawler access checks, structured data validation, Core Web Vitals, security headers, and generators for the fixes.
 
 ## AI readiness that discriminates
 
-The AI-readiness sub-score used to read near zero for essentially every site, including ones that do it well. A score that says zero for everyone looks like a harsh grader and is actually a broken instrument — it carried no information and could not be acted on.
+The AI-readiness sub-score used to read near zero for essentially every site, including ones that do it well. A score that says zero for everyone looks like a harsh grader and is actually a broken instrument. It carried no information and could not be acted on.
 
 It is recalibrated. Real sites now spread across a usable range and rank in a defensible order, so the number means something when it moves.
 
 ## A tier ladder with no flat rung
 
-Auto-fix PR limits now scale properly across plans. The cap on how many pull requests one audit report can open was a flat 3 on every plan — which made the top tier identical to the free one on the limit its customers actually hit, working through a single large report across many sites. It is 3 / 3 / 5 / 10 now, and a test asserts it keeps rising: a rung that does not rise is a rung that means nothing.
+Auto-fix PR limits now scale properly across plans. The cap on how many pull requests one audit report can open was a flat 3 on every plan, which made the top tier identical to the free one on the limit its customers actually hit, working through a single large report across many sites. It is 3 / 3 / 5 / 10 now, and a test asserts it keeps rising: a rung that does not rise is a rung that means nothing.
 
 ## Try it
 
@@ -225,7 +225,7 @@ If it tells you something that is not true, we would genuinely like to know. Tha
     content: `
 # Engineering as Marketing: Why SEO Should Be Part of Your Development Process
 
-The best developer tools don't just solve problems—they get discovered. Yet most engineering teams treat SEO like they treat documentation: something to add later, if there's time.
+The best developer tools don't just solve problems, they get discovered. Yet most engineering teams treat SEO like they treat documentation: something to add later, if there's time.
 
 This is a mistake.
 
@@ -420,7 +420,7 @@ When you frame it this way, it becomes obvious: SEO is engineering work that eng
 
 The companies winning at organic search aren't doing more marketing. They're doing better engineering.
 
-They've realized that every technical decision—from framework choice to URL structure to rendering strategy—has SEO implications. And they make those decisions with SEO in mind from day one.
+They've realized that every technical decision, from framework choice to URL structure to rendering strategy, has SEO implications. And they make those decisions with SEO in mind from day one.
 
 The best time to think about SEO was when you started building. The second best time is now.
 
@@ -432,7 +432,7 @@ The best time to think about SEO was when you started building. The second best 
   {
     slug: 'react-seo-guide',
     title: 'React SEO Guide: Fixing the Client-Side Rendering Problem',
-    excerpt: 'React apps are invisible to search engines by default. Learn the 5 critical SEO issues in React SPAs and how to fix them—from quick wins to full SSR migration.',
+    excerpt: 'React apps are invisible to search engines by default. Learn the 5 critical SEO issues in React SPAs and how to fix them, from quick wins to full SSR migration.',
     publishedAt: '2026-01-23',
     author: 'RankCLI Team',
     readTime: 10,
@@ -481,7 +481,7 @@ rankcli audit --url https://your-react-app.com
 
 **Solutions**
 
-You have several options depending on your app's needs. There's no one-size-fits-all answer—pick what works for your situation.
+You have several options depending on your app's needs. There's no one-size-fits-all answer, so pick what works for your situation.
 
 ### Option A: Add Prerendering (Quick Win)
 For apps with mostly static public pages, prerendering generates HTML at build time:
@@ -505,7 +505,7 @@ npm install react-snap
 This keeps your existing React setup and adds SEO for key pages.
 
 ### Option B: Use a Rendering Service
-Services like Prerender.io intercept crawler requests and serve pre-rendered HTML. Zero code changes required—just configure at the CDN/server level.
+Services like Prerender.io intercept crawler requests and serve pre-rendered HTML. Zero code changes required, just configure at the CDN/server level.
 
 ### Option C: Add SSR to Your Existing App
 If you need dynamic content rendered server-side, you can add SSR without migrating frameworks:
@@ -757,10 +757,10 @@ How do you decide what approach to take? Here's a framework:
 | Static marketing pages | Prerendering (react-snap, Vite SSG) |
 | Dynamic content that needs indexing | SSR via Vite SSR or rendering service |
 | New project with heavy SEO needs | Consider SSR-first framework (Next, Remix, Astro) |
-| Internal/dashboard app | React SPA is fine—no SEO needed |
+| Internal/dashboard app | React SPA is fine, no SEO needed |
 | Existing app, limited engineering time | Rendering service (Prerender.io) |
 
-The key question isn't "React vs Next.js"—it's "what pages need to be crawlable, and what's the simplest way to achieve that?"
+The key question isn't "React vs Next.js", it's "what pages need to be crawlable, and what's the simplest way to achieve that?"
 
 ## Quick Wins Checklist
 
@@ -788,7 +788,7 @@ Before any big changes, implement these:
   {
     slug: 'nextjs-seo-guide',
     title: 'Next.js SEO Guide: 7 Mistakes Even Experienced Developers Make',
-    excerpt: 'Next.js has great SEO out of the box—but it\'s easy to mess up. Learn the 7 most common SEO mistakes in Next.js apps and how to avoid them.',
+    excerpt: 'Next.js has great SEO out of the box, but it\'s easy to mess up. Learn the 7 most common SEO mistakes in Next.js apps and how to avoid them.',
     publishedAt: '2026-01-22',
     author: 'RankCLI Team',
     readTime: 9,
@@ -800,7 +800,7 @@ Next.js is the most SEO-friendly React framework. It gives you SSR, SSG, ISR, an
 
 But even experienced developers make mistakes that hurt their SEO.
 
-Here are 7 common ones—and how to fix them.
+Here are 7 common ones, and how to fix them.
 
 ## Mistake 1: Not Using the Metadata API (App Router)
 
