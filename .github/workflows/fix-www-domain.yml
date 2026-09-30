@@ -1,24 +1,19 @@
-# Repair for www.rankcli.dev, which answers HTTP 522 while the apex serves fine. Every inbound
-# link, directory listing or pasted URL using www has been hitting a Cloudflare error page, and
-# we sell an SEO tool.
+# www.rankcli.dev handling.
 #
-# Two earlier runs ruled out everything except one cause:
-#   - DNS is already correct and identical in shape to the working apex:
-#       www.rankcli.dev  CNAME -> rankcli.pages.dev  proxied
-#   - the token has Zone:Read and DNS:Edit, but NOT Rulesets:Edit ("Authentication error",
-#     code 10000), so a zone-level www-to-apex 301 is not available to us
-#   - www is already attached to the Pages project, so re-adding it is refused
-#   - and the Pages project reports:
-#       rankcli.dev      status active        validation active
-#       www.rankcli.dev  status deactivated   validation error
+# Phase one (done): the hostname answered HTTP 522 to every visitor. DNS was never wrong. It was
+# attached to the Pages project with status `deactivated` and validation `error`, so Pages
+# refused to serve it and Cloudflare proxied to nothing. Revalidating cleared it, and www now
+# serves the site with canonicals pointing at the apex.
 #
-# That last line is the whole bug. The custom domain is attached but its validation failed, so
-# Pages refuses to serve it and Cloudflare proxies to nothing: 522 exactly. DNS changes cannot
-# fix it because DNS was never wrong.
+# Phase two (this workflow): make www 301 to the apex instead of serving a second copy. Canonical
+# tags already stop rankings splitting, so this is tidiness rather than rescue, but two hostnames
+# serving identical pages is a thing we would flag in someone else's audit.
 #
-# So: ask Pages to revalidate. If that does not take, detach and reattach, which forces fresh
-# validation and certificate issuance. Detaching a domain that is already returning 522 cannot
-# make anything worse, and the apex is never touched.
+# The obvious route, a dynamic redirect ruleset, returns "Authentication error" (code 10000):
+# CLOUDFLARE_API_TOKEN has Zone:Read and DNS:Edit but not Rulesets:Edit. So this tries every
+# mechanism the token might reach, in order of preference, and reports precisely which permission
+# is missing if none work. It never leaves www worse than it is now: the Pages custom domain
+# stays attached throughout, so if no redirect can be installed, www keeps serving the site.
 #
 # Safe to re-run.
 name: Fix www domain
@@ -26,67 +21,94 @@ name: Fix www domain
 on:
   workflow_dispatch:
 
+env:
+  ZONE: e1fbea0d89d9037941e03c75d6f0efcc
+
 jobs:
-  fix:
+  redirect:
     runs-on: ubuntu-latest
     steps:
-      - name: Revalidate the www custom domain
+      - name: Install a www to apex 301
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
           api() { curl -sS -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" "$@"; }
-          D=https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/rankcli/domains
+          B=https://api.cloudflare.com/client/v4
+          ok() { [ "$(jq -r .success <<<"$1")" = "true" ]; }
 
-          status() { api "$D" | jq -r '.result[]? | select(.name=="www.rankcli.dev") | "\(.status)/\(.validation_data.status)"'; }
-
-          echo "before: $(status)"
-
-          echo "::group::Ask Pages to revalidate"
-          api -X PATCH "$D/www.rankcli.dev" -d '{}' | jq '{success, errors}'
+          echo "::group::Attempt 1: dynamic redirect ruleset (preferred)"
+          EP=$(api "$B/zones/$ZONE/rulesets/phases/http_request_dynamic_redirect/entrypoint")
+          RSID=$(jq -r '.result.id // empty' <<<"$EP")
+          KEEP=$(jq -c '[.result.rules[]? | select(.description != "www to apex")]' <<<"$EP")
+          [ "$KEEP" = "null" ] || [ -z "$KEEP" ] && KEEP='[]'
+          RULE='{
+            "action": "redirect",
+            "description": "www to apex",
+            "expression": "(http.host eq \"www.rankcli.dev\")",
+            "action_parameters": { "from_value": {
+              "status_code": 301,
+              "preserve_query_string": true,
+              "target_url": { "expression": "concat(\"https://rankcli.dev\", http.request.uri.path)" }
+            }}
+          }'
+          BODY=$(jq -n --argjson rules "$(jq -c --argjson r "$RULE" '. + [$r]' <<<"$KEEP")" '{rules: $rules}')
+          if [ -n "$RSID" ]; then
+            OUT=$(api -X PUT "$B/zones/$ZONE/rulesets/$RSID" -d "$BODY")
+          else
+            OUT=$(api -X PUT "$B/zones/$ZONE/rulesets/phases/http_request_dynamic_redirect/entrypoint" -d "$BODY")
+          fi
+          jq '{success, errors}' <<<"$OUT"
           echo "::endgroup::"
+          if ok "$OUT"; then echo "ruleset accepted"; exit 0; fi
 
-          for i in $(seq 1 6); do
-            sleep 15
-            S=$(status)
-            echo "after revalidate, attempt $i: $S"
-            [ "${S%%/*}" = "active" ] && { echo "DONE=1" >> "$GITHUB_ENV"; exit 0; }
-          done
-
-          echo "::group::Still not active. Detaching and reattaching."
-          api -X DELETE "$D/www.rankcli.dev" | jq '{success, errors}'
-          sleep 10
-          api -X POST "$D" -d '{"name":"www.rankcli.dev"}' | jq '{success, errors, name: .result.name, status: .result.status}'
+          echo "::group::Attempt 2: legacy Page Rule (different permission, often still granted)"
+          PR='{
+            "targets": [{"target":"url","constraint":{"operator":"matches","value":"www.rankcli.dev/*"}}],
+            "actions": [{"id":"forwarding_url","value":{"url":"https://rankcli.dev/$1","status_code":301}}],
+            "status": "active",
+            "priority": 1
+          }'
+          EXIST=$(api "$B/zones/$ZONE/pagerules" | jq -r '.result[]? | select(.targets[0].constraint.value == "www.rankcli.dev/*") | .id' | head -1)
+          if [ -n "$EXIST" ]; then
+            OUT=$(api -X PUT "$B/zones/$ZONE/pagerules/$EXIST" -d "$PR")
+          else
+            OUT=$(api -X POST "$B/zones/$ZONE/pagerules" -d "$PR")
+          fi
+          jq '{success, errors}' <<<"$OUT"
           echo "::endgroup::"
+          if ok "$OUT"; then echo "page rule accepted"; exit 0; fi
 
-          for i in $(seq 1 20); do
-            sleep 20
-            S=$(status)
-            echo "after reattach, attempt $i: $S"
-            [ "${S%%/*}" = "active" ] && { echo "DONE=1" >> "$GITHUB_ENV"; exit 0; }
-          done
-
-          echo "www.rankcli.dev is still not active on the Pages project."
-          echo "Last status: $(status)"
+          echo
+          echo "Neither mechanism is available to this token."
+          echo "www still serves the site correctly, so nothing is broken; it just is not a 301."
+          echo "To finish, add ONE of these to CLOUDFLARE_API_TOKEN at"
+          echo "  https://dash.cloudflare.com/profile/api-tokens"
+          echo "    Zone > Rulesets > Edit      (preferred, modern)"
+          echo "    Zone > Page Rules > Edit    (legacy, also fine)"
           exit 1
 
-      - name: Verify it actually serves
+      - name: Verify
         run: |
-          echo "Certificate issuance can lag activation by a few minutes."
-          for i in $(seq 1 15); do
-            CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 https://www.rankcli.dev/ || echo 000)
-            echo "attempt $i: HTTP $CODE"
-            if [ "$CODE" = "200" ]; then
-              if curl -s --max-time 20 https://www.rankcli.dev/ | grep -q "rdt('init'"; then
-                echo "www serves the real site, pixel included."
-                exit 0
-              fi
-              echo "200 but the page content looks wrong."
-              exit 1
-            fi
-            case "$CODE" in 301|308) echo "www redirects to the apex."; exit 0 ;; esac
-            sleep 20
+          for i in $(seq 1 10); do
+            sleep 15
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 https://www.rankcli.dev/pricing || echo 000)
+            LOC=$(curl -s -o /dev/null -w '%{redirect_url}' --max-time 20 https://www.rankcli.dev/pricing || true)
+            echo "attempt $i: HTTP $CODE ${LOC:+-> $LOC}"
+            case "$CODE" in
+              301|308)
+                case "$LOC" in
+                  https://rankcli.dev/pricing*) echo "www 301s to the apex, path preserved."; exit 0 ;;
+                  *) echo "Redirects, but to the wrong place: $LOC"; exit 1 ;;
+                esac ;;
+            esac
           done
-          echo "Pages reports the domain active but it is still not serving."
+          echo "No redirect observed yet. Check the API output above."
           exit 1
+
+      - name: Confirm the apex is untouched
+        if: always()
+        run: |
+          CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 https://rankcli.dev/pricing || echo 000)
+          echo "apex /pricing: HTTP $CODE"
+          [ "$CODE" = "200" ] || { echo "The apex is not serving. This needs attention now."; exit 1; }
