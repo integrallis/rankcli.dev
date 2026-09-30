@@ -15,7 +15,8 @@
     "seed:pricing": "tsx scripts/seed-pricing.ts",
     "seed:pricing:stripe": "tsx scripts/seed-pricing.ts --stripe",
     "setup:stripe": "tsx scripts/setup-stripe-webhook.ts",
-    "generate:og": "tsx scripts/generate-og-images.ts"
+    "generate:og": "tsx scripts/generate-og-images.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.0",
