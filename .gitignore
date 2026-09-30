@@ -103,3 +103,6 @@ packages/cli/wasm/
 # Claude Desktop extension build output (built in CI, attached to the release)
 packages/mcp-server/mcpb-build/
 packages/mcp-server/*.mcpb
+
+# Generated launcher, rebuilt from campaign-config.json on demand
+docs/launch/reddit-launcher.html
