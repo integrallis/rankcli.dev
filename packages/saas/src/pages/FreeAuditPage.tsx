@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { CategoryRadarChart } from '@/components/audit/CategoryRadarChart';
 import { SERPPreview } from '@/components/audit/SERPPreview';
 import { ShareResults } from '@/components/audit/ShareResults';
+import { trackFreeAudit } from '@/lib/conversions';
 
 interface AuditResult {
   score: number;
@@ -66,6 +67,9 @@ export function FreeAuditPage() {
     }
 
     setIsLoading(true);
+    // Fired on submit rather than on a successful result: this is the action the ad creative
+    // asks for, and whether our worker then succeeds is not something the visitor did.
+    trackFreeAudit();
 
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
