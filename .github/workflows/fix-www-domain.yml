@@ -1,0 +1,105 @@
+# One-shot repair for www.rankcli.dev, which answered HTTP 522 (Cloudflare reaching no origin)
+# while the apex served fine. Found while debugging Reddit's "Base pixel configuration error":
+# Reddit's event setup tool loads the URL you give it, and www loaded nothing at all.
+#
+# It is worth fixing well beyond that. Every inbound link, business listing or pasted URL using
+# www was hitting a Cloudflare error page, and we sell an SEO tool.
+#
+# Preferred fix is a zone-level dynamic redirect, www to apex, 301, query string preserved: it
+# runs at the edge before Pages, costs no origin request, and consolidates link equity on one
+# hostname instead of serving the same site on two. If the deploy token lacks Rulesets:Edit the
+# job falls back to adding www as a Pages custom domain, which at least serves 200 rather than
+# 522, and our absolute canonical tags keep the duplicate from splitting rankings.
+#
+# Safe to re-run: both steps check for the existing state first.
+name: Fix www domain
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Point www at the apex
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          api() { curl -sS -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" "$@"; }
+          B=https://api.cloudflare.com/client/v4
+
+          echo "::group::Resolve zone"
+          ZONES=$(api "$B/zones?name=rankcli.dev")
+          echo "$ZONES" | jq '{success, errors}'
+          ZONE=$(echo "$ZONES" | jq -r '.result[0].id // empty')
+          if [ -z "$ZONE" ]; then
+            echo "Could not read the zone. The token likely has Pages access only."
+            echo "NEED_FALLBACK=1" >> "$GITHUB_ENV"
+          else
+            echo "zone $ZONE"
+          fi
+          echo "::endgroup::"
+
+          if [ -n "$ZONE" ]; then
+            echo "::group::Dynamic redirect rule"
+            EP=$(api "$B/zones/$ZONE/rulesets/phases/http_request_dynamic_redirect/entrypoint")
+            RSID=$(echo "$EP" | jq -r '.result.id // empty')
+            EXISTING=$(echo "$EP" | jq -c '[.result.rules[]? | select(.description != "www to apex")]')
+            [ "$EXISTING" = "null" ] && EXISTING='[]'
+
+            RULE='{
+              "action": "redirect",
+              "description": "www to apex",
+              "expression": "(http.host eq \"www.rankcli.dev\")",
+              "action_parameters": {
+                "from_value": {
+                  "status_code": 301,
+                  "preserve_query_string": true,
+                  "target_url": { "expression": "concat(\"https://rankcli.dev\", http.request.uri.path)" }
+                }
+              }
+            }'
+            RULES=$(jq -c --argjson r "$RULE" '. + [$r]' <<<"$EXISTING")
+            BODY=$(jq -n --argjson rules "$RULES" '{rules: $rules}')
+
+            if [ -n "$RSID" ]; then
+              OUT=$(api -X PUT "$B/zones/$ZONE/rulesets/$RSID" -d "$BODY")
+            else
+              OUT=$(api -X PUT "$B/zones/$ZONE/rulesets/phases/http_request_dynamic_redirect/entrypoint" -d "$BODY")
+            fi
+            echo "$OUT" | jq '{success, errors}'
+            if [ "$(echo "$OUT" | jq -r .success)" != "true" ]; then
+              echo "Redirect rule refused. Falling back to a Pages custom domain."
+              echo "NEED_FALLBACK=1" >> "$GITHUB_ENV"
+            fi
+            echo "::endgroup::"
+          fi
+
+      - name: Fallback, add www as a Pages custom domain
+        if: env.NEED_FALLBACK == '1'
+        env:
+          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          B=https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/rankcli/domains
+          curl -sS -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" \
+            -X POST "$B" -d '{"name":"www.rankcli.dev"}' | jq '{success, errors, name: .result.name}'
+
+      - name: Verify
+        run: |
+          echo "Cloudflare can take a minute to apply this."
+          for i in 1 2 3 4 5 6; do
+            sleep 20
+            CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 https://www.rankcli.dev/ || echo 000)
+            LOC=$(curl -s -o /dev/null -w '%{redirect_url}' --max-time 20 https://www.rankcli.dev/ || true)
+            echo "attempt $i: HTTP $CODE ${LOC:+-> $LOC}"
+            case "$CODE" in
+              301|308) echo "www now redirects to the apex."; exit 0 ;;
+              200)     echo "www now serves the site."; exit 0 ;;
+            esac
+          done
+          echo "www is still not answering correctly. See the API output above for the reason."
+          exit 1
