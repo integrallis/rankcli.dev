@@ -11,6 +11,14 @@ interface InstallMethod {
 
 const METHODS: InstallMethod[] = [
   {
+    // First on purpose, and not an install at all. A developer arriving from Hacker News or a
+    // Reddit thread wants to see their own score in one command, not to install something on a
+    // promise. Every other tab asks for a commitment before the product has shown anything.
+    id: 'npx',
+    label: 'Run it now',
+    lines: ['npx @rankcli/cli audit -u https://your-site.dev'],
+  },
+  {
     id: 'npm',
     label: 'npm',
     lines: ['npm install -g @rankcli/cli'],
@@ -46,8 +54,10 @@ export function InstallTabs({ className }: { className?: string }) {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  // Defaults to the run-it-now command, not an install. Only the active tab's content is
+  // rendered, so this is also the line a crawler and an AI assistant see.
   return (
-    <Tabs defaultValue="npm" className={cn('w-full max-w-3xl', className)}>
+    <Tabs defaultValue="npx" className={cn('w-full max-w-3xl', className)}>
       <TabsList>
         {METHODS.map((method) => (
           <TabsTrigger key={method.id} value={method.id}>

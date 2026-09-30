@@ -52,7 +52,49 @@ Ready-to-post copy for the launch, written against the product as it is on 2026-
 >
 > The CLI, Action and MCP server are free. The hosted part (rankcli.dev) is scheduled audits, history, alerts and auto-fix PRs via a GitHub App, with a free tier. I'd love feedback on the checks that are wrong or noisy for your site.
 
-**First comment (post right after):** the technical notes HN likes. The audit engine runs in worker threads on the hosted side. The hardest bug was request timeouts that ended at the response headers, so a slow sitemap body could hang an audit forever. And the Apple Intelligence path: Foundation Models is Swift-only, so the CLI compiles a ~60-line helper with the Xcode command-line tools and caches it.
+**First comment (post right after).** HN rewards the specific and distrusts the polished, so
+lead with what went wrong rather than what works:
+
+> Author here. The most useful week of this project was pointing the tool at our own site and
+> reading every finding instead of the score. Five were wrong, and all five were reporting
+> *errors*, the severity that exits non-zero and breaks a build:
+>
+> - Our noindex /login was flagged "your content is likely invisible to Google". It is noindex
+>   on purpose. Every SaaS has one, so it fired for everybody.
+> - Dark-themed pages failed colour contrast: the checker read only an element's own inline
+>   style and assumed white when it found no background. Our text is 9:1; it reported 2.56:1.
+> - AI Readiness scored 1%. I assumed our content was bad, then ran the same check against
+>   stripe.com (13), vercel.com (7), cloudflare.com (0) and docs.astro.build (0). A docs site
+>   scored zero. The category had 3-4x more checks than any other using the same per-check
+>   penalty, so every real page blew past 100 points of deduction before the interesting checks
+>   counted. They now spread 52-71.
+> - DOM size counted text and whitespace nodes against a threshold borrowed from Lighthouse,
+>   which counts elements. tailwindcss.com measured 3,231 against 2,230 real elements: 796
+>   whitespace nodes and 205 comments. Re-indenting a template could fail your build.
+> - Missing image width/height was an error, which failed svelte.dev, tailwindcss.com,
+>   rust-lang.org, laravel.com and fastapi.tiangolo.com.
+>
+> The one I would not have found without the news: since Sept 15 Cloudflare disallows AI
+> Training and Agent crawlers by default on ad-supported pages, and Googlebot is classed as
+> mixed-use, so blocking Training can block Googlebot too. Every crawler check we had read
+> robots.txt, and this happens at the edge, in front of the origin. A site losing half its
+> Googlebot traffic audited as perfectly open. That check now fetches as each crawler and
+> compares against a browser: reddit.com reports Googlebot and bingbot at 403 while a browser
+> gets 200.
+>
+> Taste of the architecture if it is useful: checks run in worker threads on the hosted side,
+> and the framework detector is scored evidence rather than first-match, which took it from 57%
+> to 94% accuracy across 32 frameworks once it was allowed to answer "unknown". The hardest bug
+> was request timeouts that ended at the response headers, so a slow sitemap body could hang an
+> audit forever.
+
+**Before posting**
+
+- Re-check the score. It is 75/100 with 0 errors as of 2026-09-27; VERIFIED-NUMBERS.md has the
+  command.
+- Post and then stay for two to three hours. On HN the comments are the launch; a submission
+  nobody answers sinks regardless of the title.
+- Best window is roughly 8-10am US Eastern on a weekday, when the front page turns over.
 
 ## Reddit
 
