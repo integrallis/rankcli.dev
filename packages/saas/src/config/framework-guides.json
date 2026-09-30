@@ -1,0 +1,751 @@
+{
+  "_comment": "Generated from packages/agent-runtime/src/frameworks/recipes/*.yaml by scripts/generate-framework-guides.mjs. The recipes are the source of truth: these pages describe checks the product actually runs, and a page claiming one we do not run is worse than no page. src/test/framework-guides.test.ts fails if this drifts.",
+  "guides": [
+    {
+      "slug": "angular",
+      "name": "Angular",
+      "category": "spa",
+      "ssrDefault": false,
+      "strengths": [],
+      "challenges": [
+        "Client-side rendering by default",
+        "Heavy initial bundle size",
+        "Complex SSR setup (Angular Universal)",
+        "Zone.js can cause performance issues"
+      ],
+      "checks": [
+        {
+          "code": "ANGULAR_NO_UNIVERSAL",
+          "severity": "error",
+          "title": "Angular app without Universal (SSR)",
+          "description": "Client-side Angular apps send empty HTML to crawlers.",
+          "howToFix": "Add Angular Universal for SSR:\n\n```bash\nng add @angular/ssr\n```\n\nThis adds server-side rendering to your Angular app."
+        },
+        {
+          "code": "ANGULAR_NO_TITLE_SERVICE",
+          "severity": "error",
+          "title": "Not using Title/Meta services",
+          "description": "Angular has built-in services for managing title and meta tags.",
+          "howToFix": "Use Title and Meta services:\n\n```ts\nimport { Title, Meta } from '@angular/platform-browser';\n\n@Component({...})\nexport class ProductComponent {\n  constructor(\n    private title: Title,\n    private meta: Meta\n  ) {}\n\n  ngOnInit() {\n    this.title.setTitle('Product Name | Your Site');\n    this.meta.updateTag({ name: 'description', content: 'Product description' });\n    this.meta.updateTag({ property: 'og:title', content: 'Product Name' });\n  }\n}\n```"
+        },
+        {
+          "code": "ANGULAR_LAZY_LOAD_MISSING",
+          "severity": "warning",
+          "title": "Routes not lazy loaded",
+          "description": "Loading all modules upfront increases initial bundle size.",
+          "howToFix": "Use lazy loading for routes:\n\n```ts\nconst routes: Routes = [\n  {\n    path: 'products',\n    loadChildren: () => import('./products/products.module')\n      .then(m => m.ProductsModule)\n  },\n  // Or with standalone components\n  {\n    path: 'about',\n    loadComponent: () => import('./about/about.component')\n      .then(m => m.AboutComponent)\n  }\n];\n```"
+        },
+        {
+          "code": "ANGULAR_PRERENDER_MISSING",
+          "severity": "warning",
+          "title": "Static routes not prerendered",
+          "description": "Static pages should be prerendered at build time.",
+          "howToFix": "Configure prerendering in angular.json:\n\n```json\n{\n  \"projects\": {\n    \"your-app\": {\n      \"architect\": {\n        \"prerender\": {\n          \"options\": {\n            \"routes\": [\"/\", \"/about\", \"/contact\"]\n          }\n        }\n      }\n    }\n  }\n}\n```\n\nRun: `ng run your-app:prerender`"
+        },
+        {
+          "code": "ANGULAR_CHANGE_DETECTION",
+          "severity": "notice",
+          "title": "Using default change detection",
+          "description": "OnPush change detection improves performance significantly.",
+          "howToFix": "Use OnPush for components:\n\n```ts\n@Component({\n  selector: 'app-product',\n  changeDetection: ChangeDetectionStrategy.OnPush,\n  template: `...`\n})\nexport class ProductComponent {}\n```"
+        },
+        {
+          "code": "ANGULAR_LARGE_BUNDLE",
+          "severity": "warning",
+          "title": "Large initial bundle detected",
+          "description": "Bundle over 500KB significantly hurts performance.",
+          "howToFix": "1. Enable build optimizer:\n```json\n// angular.json\n\"optimization\": true,\n\"buildOptimizer\": true\n```\n\n2. Analyze bundle:\n```bash\nng build --stats-json\nnpx webpack-bundle-analyzer dist/your-app/stats.json\n```\n\n3. Remove unused dependencies"
+        },
+        {
+          "code": "ANGULAR_NO_IMAGE_DIRECTIVE",
+          "severity": "notice",
+          "title": "Not using NgOptimizedImage",
+          "description": "Angular 15+ has built-in image optimization.",
+          "howToFix": "Use NgOptimizedImage directive:\n\n```ts\nimport { NgOptimizedImage } from '@angular/common';\n\n@Component({\n  imports: [NgOptimizedImage],\n  template: `\n    <img ngSrc=\"/hero.jpg\" width=\"1200\" height=\"630\" priority />\n  `\n})\n```"
+        }
+      ]
+    },
+    {
+      "slug": "astro",
+      "name": "Astro",
+      "category": "static-first",
+      "ssrDefault": false,
+      "strengths": [
+        "Zero JavaScript by default",
+        "Static HTML output",
+        "Excellent performance (100 Lighthouse)",
+        "Content Collections for organized content",
+        "Built-in sitemap and RSS integrations",
+        "Partial hydration (Islands Architecture)"
+      ],
+      "challenges": [],
+      "checks": [
+        {
+          "code": "ASTRO_NO_SITEMAP",
+          "severity": "warning",
+          "title": "Missing sitemap integration",
+          "description": "Astro has a built-in sitemap integration.",
+          "howToFix": "Add the sitemap integration:\n\n```bash\nnpx astro add sitemap\n```\n\nConfigure in astro.config.mjs:\n```js\nimport sitemap from '@astrojs/sitemap';\n\nexport default defineConfig({\n  site: 'https://yoursite.com',\n  integrations: [sitemap()],\n});\n```"
+        },
+        {
+          "code": "ASTRO_NO_SITE_CONFIG",
+          "severity": "error",
+          "title": "Missing site URL configuration",
+          "description": "The site URL is required for sitemap and canonical URLs.",
+          "howToFix": "Add site to astro.config.mjs:\n\n```js\nexport default defineConfig({\n  site: 'https://yoursite.com',\n});\n```"
+        },
+        {
+          "code": "ASTRO_CLIENT_DIRECTIVE_OVERUSE",
+          "severity": "warning",
+          "title": "Overusing client: directives",
+          "description": "Too many client-side components reduce Astro's performance benefits.",
+          "howToFix": "Only hydrate components that need interactivity:\n\n```astro\n<!-- Bad - unnecessary JS -->\n<StaticCard client:load />\n\n<!-- Good - no JS for static content -->\n<StaticCard />\n\n<!-- Good - only hydrate when needed -->\n<InteractiveWidget client:visible />\n```\n\nPrefer client:visible over client:load for below-fold content."
+        },
+        {
+          "code": "ASTRO_NO_BASE_LAYOUT",
+          "severity": "notice",
+          "title": "Pages missing base layout",
+          "description": "Using a shared layout ensures consistent SEO tags.",
+          "howToFix": "Create a BaseLayout.astro:\n\n```astro\n---\n// src/layouts/BaseLayout.astro\ninterface Props {\n  title: string;\n  description: string;\n}\nconst { title, description } = Astro.props;\n---\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta name=\"viewport\" content=\"width=device-width\" />\n    <title>{title}</title>\n    <meta name=\"description\" content={description} />\n    <link rel=\"canonical\" href={Astro.url} />\n  </head>\n  <body>\n    <slot />\n  </body>\n</html>\n```"
+        },
+        {
+          "code": "ASTRO_NO_ASTRO_SEO",
+          "severity": "notice",
+          "title": "Not using @astrolib/seo",
+          "description": "The astro-seo package provides comprehensive SEO components.",
+          "howToFix": "Install astro-seo:\n\n```bash\nnpm install astro-seo\n```\n\n```astro\n---\nimport { SEO } from 'astro-seo';\n---\n<SEO\n  title=\"Page Title\"\n  description=\"Description\"\n  openGraph={{\n    basic: {\n      title: \"OG Title\",\n      type: \"website\",\n      image: \"/og-image.jpg\",\n    }\n  }}\n  twitter={{\n    creator: \"@handle\"\n  }}\n/>\n```"
+        },
+        {
+          "code": "ASTRO_IMAGE_NOT_OPTIMIZED",
+          "severity": "warning",
+          "title": "Images not using Astro Image",
+          "description": "Use Astro's built-in Image component for optimization.",
+          "howToFix": "Use the Image component:\n\n```astro\n---\nimport { Image } from 'astro:assets';\nimport heroImage from '../assets/hero.jpg';\n---\n<Image\n  src={heroImage}\n  alt=\"Hero\"\n  width={1200}\n  height={630}\n  loading=\"eager\"\n/>\n```"
+        },
+        {
+          "code": "ASTRO_NO_CONTENT_COLLECTIONS",
+          "severity": "notice",
+          "title": "Not using Content Collections",
+          "description": "Content Collections provide type-safe content with built-in frontmatter validation.",
+          "howToFix": "Define a collection in src/content/config.ts:\n\n```ts\nimport { defineCollection, z } from 'astro:content';\n\nconst blog = defineCollection({\n  schema: z.object({\n    title: z.string(),\n    description: z.string(),\n    pubDate: z.date(),\n  }),\n});\n\nexport const collections = { blog };\n```"
+        },
+        {
+          "code": "ASTRO_SSR_OVERUSE",
+          "severity": "notice",
+          "title": "Using SSR when static would work",
+          "description": "Static pages are faster and cheaper to host.",
+          "howToFix": "Use prerender for pages that don't need SSR:\n\n```astro\n---\nexport const prerender = true; // Static generation\n---\n```\n\nOr set default to static in config:\n```js\nexport default defineConfig({\n  output: 'hybrid', // Static by default, SSR opt-in\n});\n```"
+        }
+      ]
+    },
+    {
+      "slug": "django",
+      "name": "Django",
+      "category": "server-rendered",
+      "ssrDefault": true,
+      "strengths": [
+        "Server-rendered HTML by default",
+        "Built-in sitemap framework",
+        "Admin interface for content management",
+        "Mature ecosystem"
+      ],
+      "challenges": [],
+      "checks": [
+        {
+          "code": "DJANGO_NO_SITEMAP",
+          "severity": "warning",
+          "title": "Django sitemap framework not configured",
+          "description": "Django has a built-in sitemap framework that should be used.",
+          "howToFix": "Add sitemap to your project:\n\n```python\n# settings.py\nINSTALLED_APPS = [\n    'django.contrib.sitemaps',\n]\n\n# sitemaps.py\nfrom django.contrib.sitemaps import Sitemap\nfrom .models import Post\n\nclass PostSitemap(Sitemap):\n    changefreq = \"weekly\"\n    priority = 0.8\n\n    def items(self):\n        return Post.objects.filter(published=True)\n\n    def lastmod(self, obj):\n        return obj.updated_at\n\n# urls.py\nfrom django.contrib.sitemaps.views import sitemap\nfrom .sitemaps import PostSitemap\n\nsitemaps = {'posts': PostSitemap}\n\nurlpatterns = [\n    path('sitemap.xml', sitemap, {'sitemaps': sitemaps}),\n]\n```"
+        },
+        {
+          "code": "DJANGO_NO_META_FRAMEWORK",
+          "severity": "warning",
+          "title": "No SEO meta framework detected",
+          "description": "Use django-meta for consistent meta tag management.",
+          "howToFix": "Install django-meta:\n\n```bash\npip install django-meta\n```\n\n```python\n# settings.py\nINSTALLED_APPS = ['meta']\n\nMETA_SITE_PROTOCOL = 'https'\nMETA_USE_OG_PROPERTIES = True\nMETA_USE_TWITTER_PROPERTIES = True\n```\n\n```python\n# In views or models\nfrom meta.views import MetadataMixin\n\nclass PostDetailView(MetadataMixin, DetailView):\n    def get_meta_title(self):\n        return self.object.title\n\n    def get_meta_description(self):\n        return self.object.excerpt\n```"
+        },
+        {
+          "code": "DJANGO_DEBUG_TRUE",
+          "severity": "error",
+          "title": "DEBUG mode appears enabled",
+          "description": "DEBUG=True in production exposes sensitive information and hurts performance.",
+          "howToFix": "Ensure DEBUG is False in production:\n\n```python\n# settings.py\nDEBUG = os.environ.get('DEBUG', 'False') == 'True'\n```\n\nOr use django-environ:\n```python\nimport environ\nenv = environ.Env(DEBUG=(bool, False))\nDEBUG = env('DEBUG')\n```"
+        },
+        {
+          "code": "DJANGO_NO_CACHE",
+          "severity": "warning",
+          "title": "Caching not configured",
+          "description": "Django without caching is slower than it should be.",
+          "howToFix": "Configure caching in settings.py:\n\n```python\n# Redis (recommended)\nCACHES = {\n    'default': {\n        'BACKEND': 'django.core.cache.backends.redis.RedisCache',\n        'LOCATION': 'redis://127.0.0.1:6379',\n    }\n}\n\n# Use cache in views\nfrom django.views.decorators.cache import cache_page\n\n@cache_page(60 * 15)  # 15 minutes\ndef my_view(request):\n    ...\n```"
+        },
+        {
+          "code": "DJANGO_NO_GZIP",
+          "severity": "notice",
+          "title": "GZip middleware not enabled",
+          "description": "Enable GZip compression for faster page loads.",
+          "howToFix": "Add GZip middleware:\n\n```python\n# settings.py\nMIDDLEWARE = [\n    'django.middleware.gzip.GZipMiddleware',\n    # ... other middleware\n]\n```"
+        },
+        {
+          "code": "DJANGO_NO_WHITENOISE",
+          "severity": "notice",
+          "title": "Static files not optimized",
+          "description": "Use WhiteNoise for efficient static file serving.",
+          "howToFix": "Install and configure WhiteNoise:\n\n```bash\npip install whitenoise\n```\n\n```python\n# settings.py\nMIDDLEWARE = [\n    'django.middleware.security.SecurityMiddleware',\n    'whitenoise.middleware.WhiteNoiseMiddleware',\n    # ...\n]\n\nSTATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'\n```"
+        }
+      ]
+    },
+    {
+      "slug": "laravel",
+      "name": "Laravel",
+      "category": "server-rendered",
+      "ssrDefault": true,
+      "strengths": [
+        "Server-rendered HTML by default",
+        "Blade templates for clean SEO markup",
+        "Route caching for fast responses",
+        "Built-in CSRF and security"
+      ],
+      "challenges": [],
+      "checks": [
+        {
+          "code": "LARAVEL_NO_META_PACKAGE",
+          "severity": "warning",
+          "title": "No SEO package detected",
+          "description": "Laravel benefits from an SEO package like artesaos/seotools.",
+          "howToFix": "Install artesaos/seotools:\n\n```bash\ncomposer require artesaos/seotools\n```\n\n```php\n// In controller\nuse Artesaos\\SEOTools\\Facades\\SEOMeta;\n\nSEOMeta::setTitle('Page Title');\nSEOMeta::setDescription('Description');\n\n// In Blade\n{!! SEOMeta::generate() !!}\n```"
+        },
+        {
+          "code": "LARAVEL_NO_SITEMAP",
+          "severity": "warning",
+          "title": "No sitemap package detected",
+          "description": "Use spatie/laravel-sitemap for automatic sitemaps.",
+          "howToFix": "```bash\ncomposer require spatie/laravel-sitemap\n```\n\n```php\n// Generate sitemap\nuse Spatie\\Sitemap\\SitemapGenerator;\n\nSitemapGenerator::create('https://yoursite.com')\n    ->writeToFile(public_path('sitemap.xml'));\n\n// Or build manually\nuse Spatie\\Sitemap\\Sitemap;\nuse Spatie\\Sitemap\\Tags\\Url;\n\nSitemap::create()\n    ->add(Url::create('/')->setPriority(1.0))\n    ->add(Url::create('/about'))\n    ->writeToFile(public_path('sitemap.xml'));\n```"
+        },
+        {
+          "code": "LARAVEL_INERTIA_NO_SSR",
+          "severity": "error",
+          "title": "Inertia.js without SSR",
+          "description": "Inertia apps are client-rendered by default, losing SEO benefits.",
+          "howToFix": "Enable Inertia SSR:\n\n```bash\nphp artisan inertia:start-ssr\n```\n\nConfigure in config/inertia.php:\n```php\n'ssr' => [\n    'enabled' => true,\n    'url' => 'http://127.0.0.1:13714',\n],\n```"
+        },
+        {
+          "code": "LARAVEL_NO_RESPONSE_CACHE",
+          "severity": "notice",
+          "title": "Response caching not configured",
+          "description": "Cache full responses for better performance.",
+          "howToFix": "Install spatie/laravel-responsecache:\n\n```bash\ncomposer require spatie/laravel-responsecache\n```\n\nAdd middleware:\n```php\n// app/Http/Kernel.php\nprotected $middlewareGroups = [\n    'web' => [\n        \\Spatie\\ResponseCache\\Middlewares\\CacheResponse::class,\n    ],\n];\n```"
+        },
+        {
+          "code": "LARAVEL_LIVEWIRE_SEO",
+          "severity": "warning",
+          "title": "Livewire components may affect SEO",
+          "description": "Livewire content loads via JavaScript after initial page load.",
+          "howToFix": "For SEO-critical content, use wire:init to load immediately:\n\n```blade\n<div wire:init=\"loadData\">\n    @if($data)\n        {{-- Content --}}\n    @else\n        {{-- Loading skeleton --}}\n    @endif\n</div>\n```\n\nOr use Alpine.js for client-only interactions."
+        }
+      ]
+    },
+    {
+      "slug": "nextjs",
+      "name": "Next.js",
+      "category": "meta-framework",
+      "ssrDefault": true,
+      "strengths": [
+        "Server-side rendering by default",
+        "Static site generation support",
+        "Built-in Image component with optimization",
+        "Automatic code splitting",
+        "File-based routing",
+        "Built-in metadata API (App Router)"
+      ],
+      "challenges": [],
+      "checks": [
+        {
+          "code": "NEXTJS_NO_METADATA_API",
+          "severity": "warning",
+          "title": "Not using Next.js Metadata API",
+          "description": "Next.js 13+ has a built-in Metadata API that's better than react-helmet.",
+          "howToFix": "Use the Metadata API in your layout or page:\n\n```tsx\n// app/page.tsx\nimport { Metadata } from 'next';\n\nexport const metadata: Metadata = {\n  title: 'Page Title',\n  description: 'Page description',\n  openGraph: {\n    title: 'OG Title',\n    description: 'OG Description',\n    images: ['/og-image.jpg'],\n  },\n};\n\n// For dynamic metadata\nexport async function generateMetadata({ params }): Promise<Metadata> {\n  const product = await getProduct(params.id);\n  return {\n    title: product.name,\n    description: product.description,\n  };\n}\n```"
+        },
+        {
+          "code": "NEXTJS_GENERATESTATICPARAMS_MISSING",
+          "severity": "warning",
+          "title": "Dynamic routes without generateStaticParams",
+          "description": "Dynamic routes like [id] should pre-generate static pages for SEO.",
+          "howToFix": "Add generateStaticParams to pre-render dynamic pages:\n\n```tsx\n// app/products/[id]/page.tsx\nexport async function generateStaticParams() {\n  const products = await getProducts();\n  return products.map((product) => ({\n    id: product.id.toString(),\n  }));\n}\n```"
+        },
+        {
+          "code": "NEXTJS_NO_GETSTATICPROPS",
+          "severity": "warning",
+          "title": "Pages without getStaticProps/getServerSideProps",
+          "description": "Pages fetching data client-side miss SEO benefits of SSR/SSG.",
+          "howToFix": "Move data fetching to getStaticProps (for static) or getServerSideProps (for dynamic):\n\n```tsx\n// pages/products.tsx\nexport async function getStaticProps() {\n  const products = await fetchProducts();\n  return {\n    props: { products },\n    revalidate: 3600, // ISR: regenerate every hour\n  };\n}\n```"
+        },
+        {
+          "code": "NEXTJS_IMAGE_NOT_USED",
+          "severity": "warning",
+          "title": "Using <img> instead of next/image",
+          "description": "The next/image component provides automatic optimization, lazy loading, and prevents CLS.",
+          "howToFix": "Replace <img> with next/image:\n\n```tsx\nimport Image from 'next/image';\n\n// Before\n<img src=\"/hero.jpg\" alt=\"Hero\" />\n\n// After\n<Image\n  src=\"/hero.jpg\"\n  alt=\"Hero\"\n  width={1200}\n  height={630}\n  priority // for above-the-fold images\n/>\n```"
+        },
+        {
+          "code": "NEXTJS_NO_PRIORITY_IMAGE",
+          "severity": "notice",
+          "title": "LCP image missing priority prop",
+          "description": "The largest image above the fold should have priority={true} for faster LCP.",
+          "howToFix": "Add priority to your hero/LCP image:\n\n```tsx\n<Image\n  src=\"/hero.jpg\"\n  alt=\"Hero\"\n  width={1200}\n  height={630}\n  priority\n/>\n```"
+        },
+        {
+          "code": "NEXTJS_LINK_NO_PREFETCH",
+          "severity": "notice",
+          "title": "Link without prefetch consideration",
+          "description": "Next.js prefetches all links by default, which can waste bandwidth.",
+          "howToFix": "Disable prefetch for less important links:\n\n```tsx\n<Link href=\"/terms\" prefetch={false}>\n  Terms of Service\n</Link>\n```"
+        },
+        {
+          "code": "NEXTJS_NO_ROBOTS_TXT",
+          "severity": "warning",
+          "title": "Missing robots.txt configuration",
+          "description": "Next.js can generate robots.txt automatically.",
+          "howToFix": "App Router - create app/robots.ts:\n```tsx\nimport { MetadataRoute } from 'next';\n\nexport default function robots(): MetadataRoute.Robots {\n  return {\n    rules: {\n      userAgent: '*',\n      allow: '/',\n      disallow: '/api/',\n    },\n    sitemap: 'https://yoursite.com/sitemap.xml',\n  };\n}\n```\n\nPages Router - create public/robots.txt or use next-sitemap package."
+        },
+        {
+          "code": "NEXTJS_NO_SITEMAP",
+          "severity": "warning",
+          "title": "Missing sitemap configuration",
+          "description": "Next.js can generate sitemaps automatically.",
+          "howToFix": "App Router - create app/sitemap.ts:\n```tsx\nimport { MetadataRoute } from 'next';\n\nexport default async function sitemap(): Promise<MetadataRoute.Sitemap> {\n  const products = await getProducts();\n\n  return [\n    { url: 'https://yoursite.com', lastModified: new Date() },\n    { url: 'https://yoursite.com/about', lastModified: new Date() },\n    ...products.map((product) => ({\n      url: `https://yoursite.com/products/${product.id}`,\n      lastModified: product.updatedAt,\n    })),\n  ];\n}\n```"
+        },
+        {
+          "code": "NEXTJS_USE_CLIENT_OVERUSE",
+          "severity": "warning",
+          "title": "Overusing 'use client' directive",
+          "description": "Too many client components reduces SSR benefits.",
+          "howToFix": "Keep 'use client' at the leaf level:\n\n```tsx\n// Bad - entire page is client-rendered\n'use client';\nexport default function Page() { ... }\n\n// Good - only interactive parts are client\n// page.tsx (Server Component)\nimport ClientButton from './ClientButton';\nexport default function Page() {\n  return <div>\n    <h1>Server rendered content</h1>\n    <ClientButton /> {/* Only this is client */}\n  </div>\n}\n```"
+        },
+        {
+          "code": "NEXTJS_FONT_NOT_OPTIMIZED",
+          "severity": "notice",
+          "title": "Not using next/font for fonts",
+          "description": "next/font automatically optimizes fonts and prevents CLS.",
+          "howToFix": "Use next/font for Google Fonts or local fonts:\n\n```tsx\nimport { Inter } from 'next/font/google';\n\nconst inter = Inter({ subsets: ['latin'] });\n\nexport default function RootLayout({ children }) {\n  return (\n    <html lang=\"en\" className={inter.className}>\n      <body>{children}</body>\n    </html>\n  );\n}\n```"
+        },
+        {
+          "code": "NEXTJS_NO_TRAILING_SLASH_CONFIG",
+          "severity": "notice",
+          "title": "Inconsistent trailing slash handling",
+          "description": "Inconsistent URLs can cause duplicate content issues.",
+          "howToFix": "Configure trailingSlash in next.config.js:\n\n```js\nmodule.exports = {\n  trailingSlash: true, // or false\n};\n```"
+        }
+      ]
+    },
+    {
+      "slug": "nuxt",
+      "name": "Nuxt",
+      "category": "meta-framework",
+      "ssrDefault": true,
+      "strengths": [
+        "Universal rendering (SSR) by default",
+        "Static site generation support",
+        "Built-in useSeoMeta composable",
+        "Automatic code splitting",
+        "File-based routing",
+        "NuxtImage for image optimization"
+      ],
+      "challenges": [],
+      "checks": [
+        {
+          "code": "NUXT_NO_USESEOMETA",
+          "severity": "warning",
+          "title": "Not using useSeoMeta composable",
+          "description": "Nuxt 3 has built-in SEO meta composables that are cleaner than useHead.",
+          "howToFix": "Use useSeoMeta for SEO tags:\n\n```vue\n<script setup>\nuseSeoMeta({\n  title: 'Page Title',\n  description: 'Page description',\n  ogTitle: 'OG Title',\n  ogDescription: 'OG Description',\n  ogImage: '/og-image.jpg',\n  twitterCard: 'summary_large_image',\n});\n</script>\n```"
+        },
+        {
+          "code": "NUXT_USEFETCH_CLIENT_ONLY",
+          "severity": "warning",
+          "title": "Data fetching only on client side",
+          "description": "Using onMounted for data fetching bypasses SSR benefits.",
+          "howToFix": "Use useFetch or useAsyncData instead:\n\n```vue\n<script setup>\n// Bad - client only\nconst data = ref(null);\nonMounted(async () => {\n  data.value = await $fetch('/api/data');\n});\n\n// Good - SSR friendly\nconst { data } = await useFetch('/api/data');\n</script>\n```"
+        },
+        {
+          "code": "NUXT_NO_NUXT_IMAGE",
+          "severity": "warning",
+          "title": "Not using NuxtImage for images",
+          "description": "@nuxt/image provides automatic optimization and responsive images.",
+          "howToFix": "Install and use NuxtImage:\n\n```bash\nnpx nuxi module add image\n```\n\n```vue\n<template>\n  <NuxtImg\n    src=\"/hero.jpg\"\n    alt=\"Hero\"\n    width=\"1200\"\n    height=\"630\"\n    preload\n  />\n</template>\n```"
+        },
+        {
+          "code": "NUXT_NO_ROBOTS",
+          "severity": "warning",
+          "title": "Missing robots.txt configuration",
+          "description": "Use @nuxtjs/robots module for robots.txt.",
+          "howToFix": "Install and configure robots module:\n\n```bash\nnpm install @nuxtjs/robots\n```\n\n```ts\n// nuxt.config.ts\nexport default defineNuxtConfig({\n  modules: ['@nuxtjs/robots'],\n  robots: {\n    rules: [\n      { UserAgent: '*', Allow: '/' },\n      { UserAgent: '*', Disallow: '/api/' },\n    ],\n    sitemap: 'https://yoursite.com/sitemap.xml',\n  },\n});\n```"
+        },
+        {
+          "code": "NUXT_NO_SITEMAP",
+          "severity": "warning",
+          "title": "Missing sitemap configuration",
+          "description": "Use @nuxtjs/sitemap module for automatic sitemap.",
+          "howToFix": "Install sitemap module:\n\n```bash\nnpm install @nuxtjs/sitemap\n```\n\n```ts\n// nuxt.config.ts\nexport default defineNuxtConfig({\n  modules: ['@nuxtjs/sitemap'],\n  sitemap: {\n    hostname: 'https://yoursite.com',\n  },\n});\n```"
+        },
+        {
+          "code": "NUXT_SPA_MODE",
+          "severity": "error",
+          "title": "Nuxt running in SPA mode",
+          "description": "SPA mode disables SSR, losing SEO benefits.",
+          "howToFix": "Remove ssr: false from nuxt.config.ts:\n\n```ts\nexport default defineNuxtConfig({\n  // Remove this line\n  // ssr: false,\n});\n```\n\nIf you need client-only components, use <ClientOnly>:\n```vue\n<ClientOnly>\n  <BrowserOnlyWidget />\n</ClientOnly>\n```"
+        },
+        {
+          "code": "NUXT_NO_PRERENDER",
+          "severity": "notice",
+          "title": "Static pages not pre-rendered",
+          "description": "Static pages could be pre-rendered for better performance.",
+          "howToFix": "Enable route prerendering in nuxt.config.ts:\n\n```ts\nexport default defineNuxtConfig({\n  routeRules: {\n    '/about': { prerender: true },\n    '/blog/**': { prerender: true },\n  },\n});\n```\n\nOr generate a fully static site:\n```bash\nnuxt generate\n```"
+        }
+      ]
+    },
+    {
+      "slug": "react",
+      "name": "React",
+      "category": "spa",
+      "ssrDefault": false,
+      "strengths": [],
+      "challenges": [
+        "Client-side rendering means empty HTML for crawlers",
+        "Dynamic content invisible to search engines",
+        "Slow First Contentful Paint",
+        "No server-side meta tag generation",
+        "JavaScript-dependent routing breaks crawlability"
+      ],
+      "checks": [
+        {
+          "code": "REACT_CSR_DETECTED",
+          "severity": "error",
+          "title": "Client-side rendered React app detected",
+          "description": "React apps without SSR send empty HTML to crawlers. Search engines may not index your content.",
+          "howToFix": "Option 1: Migrate to Next.js for automatic SSR/SSG\nOption 2: Add prerendering with react-snap or prerender.io\nOption 3: Use react-helmet-async with a prerender service"
+        },
+        {
+          "code": "REACT_NO_SSR_META",
+          "severity": "error",
+          "title": "Meta tags not server-rendered",
+          "description": "Title and meta description are set client-side and won't be seen by crawlers.",
+          "howToFix": "For Vite/CRA: Use a prerender plugin or migrate to Next.js\n\nQuick fix with vite-plugin-ssr:\n```tsx\n// pages/+Head.tsx\nexport function Head() {\n  return <>\n    <title>Your Title</title>\n    <meta name=\"description\" content=\"Your description\" />\n  </>\n}\n```"
+        },
+        {
+          "code": "REACT_HYDRATION_MISMATCH",
+          "severity": "warning",
+          "title": "Hydration mismatch detected",
+          "description": "Server HTML differs from client render, causing flicker and potential SEO issues.",
+          "howToFix": "Common causes:\n1. Using Date.now() or Math.random() in render\n2. Browser-only APIs like window.localStorage\n3. Different data on server vs client\n\nFix: Use useEffect for browser-only code:\n```tsx\nconst [mounted, setMounted] = useState(false);\nuseEffect(() => setMounted(true), []);\nif (!mounted) return null; // or skeleton\n```"
+        },
+        {
+          "code": "REACT_HELMET_NOT_ASYNC",
+          "severity": "warning",
+          "title": "Using react-helmet instead of react-helmet-async",
+          "description": "react-helmet has memory leaks and doesn't work properly with SSR.",
+          "howToFix": "Replace react-helmet with react-helmet-async:\n```bash\nnpm uninstall react-helmet\nnpm install react-helmet-async\n```\n\nUpdate imports:\n```tsx\n// Before\nimport { Helmet } from 'react-helmet';\n\n// After\nimport { Helmet, HelmetProvider } from 'react-helmet-async';\n\n// Wrap app in provider\n<HelmetProvider>\n  <App />\n</HelmetProvider>\n```"
+        },
+        {
+          "code": "REACT_ROUTER_NO_SSR",
+          "severity": "warning",
+          "title": "React Router without server-side support",
+          "description": "Client-side routing breaks when crawlers access URLs directly.",
+          "howToFix": "Ensure your server returns the same HTML for all routes.\n\nFor static hosting (Netlify, Vercel):\nAdd a redirect rule to serve index.html for all routes.\n\nnetlify.toml:\n```toml\n[[redirects]]\n  from = \"/*\"\n  to = \"/index.html\"\n  status = 200\n```"
+        },
+        {
+          "code": "REACT_NO_PRERENDER",
+          "severity": "warning",
+          "title": "No prerendering configured",
+          "description": "Static pages could be prerendered for better SEO and performance.",
+          "howToFix": "Add react-snap for build-time prerendering:\n```bash\nnpm install react-snap\n```\n\npackage.json:\n```json\n{\n  \"scripts\": {\n    \"postbuild\": \"react-snap\"\n  },\n  \"reactSnap\": {\n    \"source\": \"build\"\n  }\n}\n```"
+        },
+        {
+          "code": "REACT_BUNDLE_TOO_LARGE",
+          "severity": "warning",
+          "title": "React bundle too large",
+          "description": "Large JavaScript bundles delay interactivity and hurt Core Web Vitals.",
+          "howToFix": "1. Use React.lazy() for code splitting:\n```tsx\nconst HeavyComponent = React.lazy(() => import('./HeavyComponent'));\n\n<Suspense fallback={<Loading />}>\n  <HeavyComponent />\n</Suspense>\n```\n\n2. Analyze bundle with source-map-explorer:\n```bash\nnpm install source-map-explorer\nnpx source-map-explorer build/static/js/*.js\n```"
+        },
+        {
+          "code": "REACT_NO_SUSPENSE",
+          "severity": "notice",
+          "title": "Not using Suspense for data fetching",
+          "description": "Without Suspense, content pops in causing layout shifts (CLS).",
+          "howToFix": "Use Suspense with a data fetching library:\n```tsx\n<Suspense fallback={<Skeleton />}>\n  <DataComponent />\n</Suspense>\n```"
+        }
+      ]
+    },
+    {
+      "slug": "rails",
+      "name": "Ruby on Rails",
+      "category": "server-rendered",
+      "ssrDefault": true,
+      "strengths": [
+        "Server-rendered HTML by default",
+        "Turbo for fast navigation without SPA",
+        "Strong conventions reduce mistakes",
+        "Mature gem ecosystem"
+      ],
+      "challenges": [],
+      "checks": [
+        {
+          "code": "RAILS_NO_META_TAGS_GEM",
+          "severity": "warning",
+          "title": "Not using meta-tags gem",
+          "description": "The meta-tags gem provides a clean API for SEO tags.",
+          "howToFix": "Add meta-tags to Gemfile:\n\n```ruby\ngem 'meta-tags'\n```\n\nRun `bundle install`, then:\n\n```ruby\n# app/views/layouts/application.html.erb\n<head>\n  <%= display_meta_tags site: 'Your Site' %>\n</head>\n```\n\n```ruby\n# In controllers or views\nset_meta_tags title: 'Page Title',\n              description: 'Page description',\n              keywords: 'seo, rails'\n```"
+        },
+        {
+          "code": "RAILS_NO_SITEMAP_GEM",
+          "severity": "warning",
+          "title": "Not using sitemap_generator gem",
+          "description": "sitemap_generator creates SEO-friendly sitemaps automatically.",
+          "howToFix": "Add to Gemfile:\n\n```ruby\ngem 'sitemap_generator'\n```\n\nGenerate config:\n```bash\nrails sitemap:install\n```\n\nConfigure config/sitemap.rb:\n```ruby\nSitemapGenerator::Sitemap.default_host = \"https://yoursite.com\"\n\nSitemapGenerator::Sitemap.create do\n  add '/about', changefreq: 'monthly'\n  Product.find_each do |product|\n    add product_path(product), lastmod: product.updated_at\n  end\nend\n```\n\nGenerate: `rails sitemap:refresh`"
+        },
+        {
+          "code": "RAILS_NO_CANONICAL",
+          "severity": "warning",
+          "title": "Missing canonical URLs",
+          "description": "Rails apps with multiple URLs for same content need canonicals.",
+          "howToFix": "Add canonical tag in layout:\n\n```erb\n<!-- Using meta-tags gem -->\n<%= display_meta_tags canonical: request.original_url %>\n\n<!-- Or manually -->\n<link rel=\"canonical\" href=\"<%= request.original_url.split('?').first %>\" />\n```"
+        },
+        {
+          "code": "RAILS_TURBO_BREAKS_CRAWLERS",
+          "severity": "notice",
+          "title": "Turbo may affect JavaScript-dependent crawlers",
+          "description": "Turbo Drive updates pages via JavaScript, which some crawlers may miss.",
+          "howToFix": "For SEO-critical pages, ensure content is in initial HTML.\n\nFor dynamic content, add data-turbo=\"false\":\n```erb\n<%= link_to 'Critical Page', critical_path, data: { turbo: false } %>\n```\n\nOr disable for specific pages:\n```erb\n<meta name=\"turbo-visit-control\" content=\"reload\">\n```"
+        },
+        {
+          "code": "RAILS_NO_JSON_LD",
+          "severity": "notice",
+          "title": "No structured data detected",
+          "description": "Add JSON-LD for rich snippets.",
+          "howToFix": "Create a helper:\n\n```ruby\n# app/helpers/seo_helper.rb\nmodule SeoHelper\n  def json_ld(data)\n    content_tag :script, data.to_json.html_safe,\n                type: 'application/ld+json'\n  end\nend\n```\n\nUse in views:\n```erb\n<%= json_ld({\n  \"@context\" => \"https://schema.org\",\n  \"@type\" => \"Product\",\n  \"name\" => @product.name,\n  \"description\" => @product.description\n}) %>\n```"
+        },
+        {
+          "code": "RAILS_SLOW_QUERIES",
+          "severity": "warning",
+          "title": "N+1 queries may slow pages",
+          "description": "Slow pages hurt SEO. Use includes/eager_load.",
+          "howToFix": "Use bullet gem to detect N+1:\n\n```ruby\n# Gemfile\ngem 'bullet', group: 'development'\n```\n\nFix with includes:\n```ruby\n# Before (N+1)\n@posts = Post.all\n@posts.each { |p| p.author.name }\n\n# After (2 queries)\n@posts = Post.includes(:author).all\n```"
+        },
+        {
+          "code": "RAILS_NO_CACHING",
+          "severity": "notice",
+          "title": "Page caching not configured",
+          "description": "Rails caching can dramatically improve response times.",
+          "howToFix": "Enable caching in production:\n\n```ruby\n# config/environments/production.rb\nconfig.action_controller.perform_caching = true\nconfig.cache_store = :redis_cache_store, { url: ENV['REDIS_URL'] }\n```\n\nUse fragment caching:\n```erb\n<% cache @product do %>\n  <%= render @product %>\n<% end %>\n```"
+        }
+      ]
+    },
+    {
+      "slug": "sveltekit",
+      "name": "SvelteKit",
+      "category": "meta-framework",
+      "ssrDefault": true,
+      "strengths": [
+        "SSR by default",
+        "Excellent performance (small runtime)",
+        "Built-in prerendering",
+        "File-based routing",
+        "Form actions for progressive enhancement"
+      ],
+      "challenges": [],
+      "checks": [
+        {
+          "code": "SVELTEKIT_NO_LOAD_FUNCTION",
+          "severity": "warning",
+          "title": "Page without load function",
+          "description": "Data fetching in +page.svelte bypasses SSR. Use +page.server.ts or +page.ts.",
+          "howToFix": "Move data fetching to a load function:\n\n```ts\n// src/routes/products/+page.server.ts\nexport async function load({ fetch }) {\n  const products = await fetch('/api/products').then(r => r.json());\n  return { products };\n}\n```\n\n```svelte\n<!-- src/routes/products/+page.svelte -->\n<script>\n  export let data;\n</script>\n\n{#each data.products as product}\n  <div>{product.name}</div>\n{/each}\n```"
+        },
+        {
+          "code": "SVELTEKIT_NO_LAYOUT_HEAD",
+          "severity": "warning",
+          "title": "Missing svelte:head in layout",
+          "description": "Common meta tags should be in a layout for consistency.",
+          "howToFix": "Add svelte:head to your layout:\n\n```svelte\n<!-- src/routes/+layout.svelte -->\n<script>\n  import { page } from '$app/stores';\n</script>\n\n<svelte:head>\n  <title>{$page.data.title ?? 'Your Site'}</title>\n  <meta name=\"description\" content={$page.data.description ?? 'Default description'} />\n  <link rel=\"canonical\" href={$page.url.href} />\n</svelte:head>\n\n<slot />\n```"
+        },
+        {
+          "code": "SVELTEKIT_NO_PRERENDER",
+          "severity": "notice",
+          "title": "Static pages not prerendered",
+          "description": "Static pages should be prerendered for best performance.",
+          "howToFix": "Add prerender to static pages:\n\n```ts\n// src/routes/about/+page.ts\nexport const prerender = true;\n```\n\nOr set default in svelte.config.js:\n```js\nkit: {\n  prerender: {\n    default: true\n  }\n}\n```"
+        },
+        {
+          "code": "SVELTEKIT_NO_TRAILING_SLASH",
+          "severity": "notice",
+          "title": "Inconsistent trailing slash handling",
+          "description": "Configure trailing slash to avoid duplicate content.",
+          "howToFix": "Set in svelte.config.js:\n\n```js\nkit: {\n  trailingSlash: 'never' // or 'always'\n}\n```"
+        },
+        {
+          "code": "SVELTEKIT_ENHANCED_IMAGE",
+          "severity": "notice",
+          "title": "Not using enhanced images",
+          "description": "SvelteKit supports enhanced images with @sveltejs/enhanced-img.",
+          "howToFix": "Install enhanced images:\n\n```bash\nnpm install @sveltejs/enhanced-img\n```\n\n```svelte\n<script>\n  import { Image } from '@sveltejs/enhanced-img';\n  import heroImage from '$lib/images/hero.jpg';\n</script>\n\n<Image src={heroImage} alt=\"Hero\" />\n```"
+        },
+        {
+          "code": "SVELTEKIT_NO_SITEMAP",
+          "severity": "warning",
+          "title": "Missing sitemap",
+          "description": "Use svelte-sitemap or generate manually.",
+          "howToFix": "Option 1: Use svelte-sitemap\n```bash\nnpm install svelte-sitemap\nnpx svelte-sitemap --domain https://yoursite.com\n```\n\nOption 2: Create src/routes/sitemap.xml/+server.ts:\n```ts\nexport async function GET() {\n  const pages = ['/', '/about', '/products'];\n  const sitemap = `<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n    <urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n      ${pages.map(page => `\n        <url>\n          <loc>https://yoursite.com${page}</loc>\n        </url>\n      `).join('')}\n    </urlset>`;\n  return new Response(sitemap, {\n    headers: { 'Content-Type': 'application/xml' }\n  });\n}\n```"
+        }
+      ]
+    },
+    {
+      "slug": "vue",
+      "name": "Vue.js",
+      "category": "spa",
+      "ssrDefault": false,
+      "strengths": [],
+      "challenges": [
+        "Client-side rendering sends empty HTML to crawlers",
+        "Vue Router requires proper server configuration",
+        "Async components delay content rendering",
+        "No built-in meta tag management"
+      ],
+      "checks": [
+        {
+          "code": "VUE_CSR_DETECTED",
+          "severity": "error",
+          "title": "Client-side rendered Vue app detected",
+          "description": "Vue apps without SSR send empty HTML to crawlers.",
+          "howToFix": "Option 1: Migrate to Nuxt for automatic SSR/SSG\nOption 2: Add SSR with @vue/server-renderer\nOption 3: Use prerendering with prerender-spa-plugin\n\nFor Nuxt migration, most Vue components work directly."
+        },
+        {
+          "code": "VUE_NO_META_MANAGEMENT",
+          "severity": "error",
+          "title": "No meta tag management library",
+          "description": "Title and meta description are not dynamically managed.",
+          "howToFix": "Install @vueuse/head or vue-meta:\n\n```bash\nnpm install @vueuse/head\n```\n\n```ts\n// main.ts\nimport { createHead } from '@vueuse/head';\nconst head = createHead();\napp.use(head);\n```\n\n```vue\n<script setup>\nimport { useHead } from '@vueuse/head';\n\nuseHead({\n  title: 'Page Title',\n  meta: [\n    { name: 'description', content: 'Page description' },\n  ],\n});\n</script>\n```"
+        },
+        {
+          "code": "VUE_ROUTER_HISTORY_MODE",
+          "severity": "warning",
+          "title": "Vue Router not in history mode",
+          "description": "Hash mode (#/) creates ugly URLs and SEO issues.",
+          "howToFix": "Use createWebHistory instead of createWebHashHistory:\n\n```ts\nimport { createRouter, createWebHistory } from 'vue-router';\n\nconst router = createRouter({\n  history: createWebHistory(),\n  routes: [...],\n});\n```\n\nThen configure your server to return index.html for all routes."
+        },
+        {
+          "code": "VUE_ASYNC_COMPONENT_NO_LOADING",
+          "severity": "warning",
+          "title": "Async components without loading state",
+          "description": "Async components can cause CLS when they pop in.",
+          "howToFix": "Provide a loading component:\n\n```ts\nimport { defineAsyncComponent } from 'vue';\n\nconst AsyncComp = defineAsyncComponent({\n  loader: () => import('./HeavyComponent.vue'),\n  loadingComponent: LoadingSpinner,\n  delay: 200,\n});\n```"
+        },
+        {
+          "code": "VUE_NO_KEY_ON_LIST",
+          "severity": "notice",
+          "title": "v-for without :key attribute",
+          "description": "Missing keys can cause rendering issues and affect SEO crawling.",
+          "howToFix": "Always use :key with v-for:\n\n```vue\n<div v-for=\"item in items\" :key=\"item.id\">\n  {{ item.name }}\n</div>\n```"
+        },
+        {
+          "code": "VUE_TRANSITION_CLS",
+          "severity": "notice",
+          "title": "Transitions may cause layout shifts",
+          "description": "CSS transitions that change element size cause CLS.",
+          "howToFix": "Use transform instead of width/height changes:\n\n```css\n/* Bad - causes CLS */\n.fade-enter-active { height: 0 to 100px; }\n\n/* Good - no CLS */\n.fade-enter-active { transform: scaleY(0) to scaleY(1); }\n```"
+        }
+      ]
+    },
+    {
+      "slug": "wordpress",
+      "name": "WordPress",
+      "category": "cms",
+      "ssrDefault": true,
+      "strengths": [
+        "Server-rendered HTML by default",
+        "Mature SEO plugin ecosystem",
+        "Built-in canonical URL support",
+        "Sitemap generation via plugins",
+        "Structured data plugins available"
+      ],
+      "challenges": [
+        "Plugin bloat can slow performance",
+        "Default themes often lack optimization",
+        "Image optimization requires plugins",
+        "Caching needed for performance"
+      ],
+      "checks": [
+        {
+          "code": "WORDPRESS_NO_SEO_PLUGIN",
+          "severity": "warning",
+          "title": "No SEO plugin detected",
+          "description": "WordPress benefits greatly from an SEO plugin like Yoast or Rank Math.",
+          "howToFix": "Install an SEO plugin:\n\n**Yoast SEO** (most popular):\n1. Go to Plugins > Add New\n2. Search \"Yoast SEO\"\n3. Install and activate\n\n**Rank Math** (feature-rich free tier):\n1. Go to Plugins > Add New\n2. Search \"Rank Math\"\n3. Install and activate\n\nBoth provide:\n- Meta title/description management\n- XML sitemap generation\n- Schema markup\n- Content analysis"
+        },
+        {
+          "code": "WORDPRESS_OUTDATED",
+          "severity": "error",
+          "title": "WordPress core is outdated",
+          "description": "Running outdated WordPress is a security risk and may have SEO bugs.",
+          "howToFix": "Update WordPress:\n1. Backup your site first\n2. Go to Dashboard > Updates\n3. Click \"Update Now\"\n\nEnable auto-updates in wp-config.php:\n```php\ndefine('WP_AUTO_UPDATE_CORE', true);\n```"
+        },
+        {
+          "code": "WORDPRESS_NO_CACHING",
+          "severity": "warning",
+          "title": "No caching plugin detected",
+          "description": "WordPress without caching is slow, hurting Core Web Vitals.",
+          "howToFix": "Install a caching plugin:\n\n**WP Super Cache** (simple):\n- Easy setup, good for most sites\n\n**W3 Total Cache** (advanced):\n- More features, steeper learning curve\n\n**LiteSpeed Cache** (if on LiteSpeed server):\n- Best performance on compatible hosts"
+        },
+        {
+          "code": "WORDPRESS_LARGE_IMAGES",
+          "severity": "warning",
+          "title": "Images not optimized",
+          "description": "Large images slow down WordPress significantly.",
+          "howToFix": "Install an image optimization plugin:\n\n**ShortPixel** or **Smush**:\n- Compresses existing images\n- Optimizes on upload\n- WebP conversion\n\nOr use Cloudflare Polish for automatic optimization."
+        },
+        {
+          "code": "WORDPRESS_TOO_MANY_PLUGINS",
+          "severity": "warning",
+          "title": "Too many plugins installed",
+          "description": "Each plugin adds overhead. Many sites have 30+ plugins when 10-15 suffice.",
+          "howToFix": "Audit your plugins:\n1. Go to Plugins > Installed Plugins\n2. Deactivate plugins not in use\n3. Delete deactivated plugins\n4. Consider consolidating (one SEO plugin, one security plugin)\n\nAim for under 20 plugins."
+        },
+        {
+          "code": "WORDPRESS_NO_LAZY_LOAD",
+          "severity": "notice",
+          "title": "Native lazy loading not enabled",
+          "description": "WordPress 5.5+ has native lazy loading, but themes may disable it.",
+          "howToFix": "Check if lazy loading is enabled:\n```php\n// In functions.php, remove if present:\nadd_filter('wp_lazy_loading_enabled', '__return_false');\n```\n\nFor older WordPress, add:\n```php\nadd_filter('wp_lazy_loading_enabled', '__return_true');\n```"
+        },
+        {
+          "code": "WORDPRESS_NO_WEBP",
+          "severity": "notice",
+          "title": "Not serving WebP images",
+          "description": "WebP images are 25-35% smaller than JPEG.",
+          "howToFix": "Use a plugin that serves WebP:\n\n1. **ShortPixel**: Auto-converts and serves WebP\n2. **WebP Express**: Converts and configures server\n\nOr use Cloudflare with Polish enabled for automatic WebP."
+        },
+        {
+          "code": "WORDPRESS_NO_PRELOAD_HINTS",
+          "severity": "notice",
+          "title": "Missing resource hints",
+          "description": "Preload hints can speed up critical resources.",
+          "howToFix": "Add to your theme's functions.php:\n\n```php\nfunction add_resource_hints() {\n  // Preload critical font\n  echo '<link rel=\"preload\" href=\"/wp-content/themes/yourtheme/fonts/main.woff2\" as=\"font\" type=\"font/woff2\" crossorigin>';\n\n  // Preconnect to external domains\n  echo '<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">';\n}\nadd_action('wp_head', 'add_resource_hints', 1);\n```"
+        },
+        {
+          "code": "WORDPRESS_BLOCKING_SCRIPTS",
+          "severity": "warning",
+          "title": "Render-blocking scripts detected",
+          "description": "JavaScript in <head> blocks rendering.",
+          "howToFix": "Use a plugin like **Autoptimize** or **Asset CleanUp** to:\n- Defer JavaScript\n- Inline critical CSS\n- Combine files\n\nOr add defer manually in functions.php:\n```php\nfunction defer_scripts($tag, $handle) {\n  if (is_admin()) return $tag;\n  return str_replace(' src', ' defer src', $tag);\n}\nadd_filter('script_loader_tag', 'defer_scripts', 10, 2);\n```"
+        },
+        {
+          "code": "WORDPRESS_NO_SCHEMA",
+          "severity": "warning",
+          "title": "No structured data detected",
+          "description": "Schema markup helps with rich snippets.",
+          "howToFix": "**If using Yoast/Rank Math**: Schema is included.\n\n**Manual schema** in theme:\n```php\nfunction add_organization_schema() {\n  if (is_front_page()) {\n    echo '<script type=\"application/ld+json\">\n    {\n      \"@context\": \"https://schema.org\",\n      \"@type\": \"Organization\",\n      \"name\": \"Your Company\",\n      \"url\": \"' . home_url() . '\"\n    }\n    </script>';\n  }\n}\nadd_action('wp_footer', 'add_organization_schema');\n```"
+        }
+      ]
+    }
+  ]
+}

@@ -9,6 +9,7 @@
  * served by the SPA shell through the rewrites in scripts/prerender.ts.
  */
 import { blogPosts } from '../src/data/blog-posts';
+import frameworkGuides from '../src/config/framework-guides.json';
 
 export const SITE_URL = 'https://rankcli.dev';
 
@@ -61,7 +62,25 @@ const blogRoutes: SiteRoute[] = blogPosts.map((post) => ({
   lastmod: post.updatedAt ?? post.publishedAt,
 }));
 
-export const siteRoutes: SiteRoute[] = [...staticRoutes, ...blogRoutes];
+// One page per framework we ship a recipe for, generated from the recipes themselves by
+// scripts/generate-framework-guides.mjs. These are the pages someone searching "SvelteKit SEO"
+// should land on, so they have to be prerendered and in the sitemap like any other public page.
+const frameworkRoutes: SiteRoute[] = [
+  {
+    path: '/seo',
+    changefreq: 'weekly',
+    priority: 0.8,
+    sources: ['src/pages/FrameworkGuidesIndexPage.tsx', 'src/config/framework-guides.json'],
+  },
+  ...frameworkGuides.guides.map((guide) => ({
+    path: `/seo/${guide.slug}`,
+    changefreq: 'monthly' as const,
+    priority: 0.7,
+    sources: ['src/pages/FrameworkGuidePage.tsx', 'src/config/framework-guides.json'],
+  })),
+];
+
+export const siteRoutes: SiteRoute[] = [...staticRoutes, ...blogRoutes, ...frameworkRoutes];
 
 /** Absolute URL for a route, matching the canonical <SEO> emits. */
 export function routeUrl(path: string) {
