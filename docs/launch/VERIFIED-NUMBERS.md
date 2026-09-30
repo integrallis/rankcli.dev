@@ -6,6 +6,21 @@ goes stale silently, three separate drafts were carrying 60/100, 84/100 and 88/1
 simultaneously, and one Reddit ad was built on a 1% AI Readiness that turned out to be a bug in
 our own scoring.
 
+## Scope changes the number. Always cite the homepage figure.
+
+Three different true numbers exist for rankcli.dev at the same moment, and mixing them looks
+like a regression when nothing has changed:
+
+| Measurement | Score | What it is |
+|---|---|---|
+| `--max-pages 1` | **75** | The homepage. **This is the number all launch copy cites.** |
+| default crawl (5 pages) | 72 | Averages in weaker inner pages |
+| SEO gate CI run | 81 | The published Action's own scope |
+
+Re-verified 2026-09-30 on `@rankcli/cli@0.0.49`: homepage still **75/100, 0 errors,
+22 warnings, 43 notices, AI Readiness 67**, React. Identical to the figures burned into the
+ad creatives, so those remain accurate and do not need re-recording.
+
 ## As of 2026-09-27, `@rankcli/cli@0.0.46`, `rankcli.dev` homepage
 
 | | |
