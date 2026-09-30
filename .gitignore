@@ -106,3 +106,4 @@ packages/mcp-server/*.mcpb
 
 # Generated launcher, rebuilt from campaign-config.json on demand
 docs/launch/reddit-launcher.html
+docs/launch/reddit-comments.html
