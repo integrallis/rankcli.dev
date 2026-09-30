@@ -14,6 +14,86 @@ export interface BlogPost {
 
 export const blogPosts: BlogPost[] = [
   {
+    slug: 'is-cloudflare-blocking-googlebot-on-your-site',
+    title: 'Cloudflare May Be Blocking Googlebot On Your Site, And robots.txt Will Not Tell You',
+    excerpt:
+      'Since September 15 Cloudflare disallows AI crawlers by default on ad-supported pages. Googlebot is classed as mixed-use, so blocking AI training can block Search too. Googlebot crawl share fell from 57.20% to 27.49%. Here is how to check in one command.',
+    publishedAt: '2026-09-30',
+    author: 'RankCLI Team',
+    readTime: 5,
+    tags: ['SEO', 'Cloudflare', 'Engineering'],
+    content: `
+# Cloudflare May Be Blocking Googlebot On Your Site
+
+On 2026-09-15 Cloudflare changed what "blocked" means for AI traffic. New domains, new sites on existing accounts, and free-tier accounts that had not changed the setting now start with **AI Training crawlers disallowed and AI Agents blocked on ad-bearing pages**. Search was supposed to stay open.
+
+It did not, for a lot of people.
+
+## The part that catches everyone: mixed-use crawlers
+
+Googlebot crawls for Search **and** collects data that feeds AI training. Cloudflare classes it as *mixed-use*, and a mixed-use crawler is treated under whichever rule is most restrictive.
+
+So if Training is blocked, including through the older "Block AI Bots" toggle, the block applies to **all** of Googlebot's functions on ad-supported pages. Googlebot starts getting 403 on pages and on sitemap fetches. The same applies to Bingbot and Applebot.
+
+Your robots.txt still says \`Allow\`. Nothing in your repository changed. Search Console reports fetch failures and nobody can find the cause, because everyone looks at robots.txt first.
+
+Cloudflare's own network data puts Googlebot's crawl share at **27.49% in Q2 2026, down from 57.20%** a year earlier.
+
+## Why robots.txt checks cannot see this
+
+This is the part worth internalising, because it applies well beyond Cloudflare.
+
+**robots.txt is a request. A CDN rule is enforcement.** They live in different layers and they fail in different places. robots.txt is served by your origin and read by a crawler that chooses to obey it. A bot rule at the edge refuses the connection before your origin is ever consulted.
+
+A crawler can be explicitly allowed in robots.txt and still receive a 403. Every "AI visibility" checker I know of, including ours until this week, stops at robots.txt and reports the site as open.
+
+## Checking it by hand
+
+Two curl requests, one as a browser and one as Googlebot:
+
+\`\`\`bash
+curl -s -o /dev/null -w "%{http_code}\\n" \\
+  -A "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" \\
+  https://your-site.dev/
+
+curl -s -o /dev/null -w "%{http_code}\\n" \\
+  -A "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/131.0" \\
+  https://your-site.dev/
+\`\`\`
+
+Browser 200 and Googlebot 403 means an edge rule, not robots.txt. Check the sitemap the same way, because that is often where it shows first.
+
+One honest caveat: real crawlers are verified by IP as well as user-agent, so a spoofed agent is indicative rather than conclusive. Confirm with Search Console's URL Inspection, which fetches as the verified Googlebot.
+
+## Or in one command
+
+\`\`\`bash
+npx @rankcli/cli@latest audit -u https://your-site.dev
+\`\`\`
+
+It asks as Googlebot, bingbot, GPTBot, ClaudeBot and PerplexityBot, compares each against a browser request, and reports two separate findings:
+
+- **\`SEARCH_CRAWLER_BLOCKED_AT_EDGE\`**, an error, when a search crawler is refused while a browser is served
+- **\`AI_CRAWLER_BLOCKED_AT_EDGE\`**, a warning, for the AI crawlers
+
+Separate because the costs are different. Losing Googlebot costs you the index. Losing GPTBot costs you citations in AI answers. One is an emergency, the other is a decision you might have made deliberately.
+
+No signup, nothing leaves your machine.
+
+## What it will not do
+
+It will not report anything if a browser cannot fetch your site either. A site that is simply down is not a bot-rule problem, and turning one outage into six confident findings about rules that do not exist is exactly the kind of false alarm that teaches people to ignore their tools.
+
+Tested against reddit.com, which refuses Googlebot, bingbot and GPTBot while serving browsers: it reports all three, split correctly. Tested against nytimes.com, which refuses browsers too: it reports nothing.
+
+## The fix, if you are affected
+
+It is in your CDN, not your repository. On Cloudflare: zone **Security → Bots**, and any "Block AI Bots" or AI Crawler Control toggle. Because Googlebot is mixed-use, you need to allow Search crawlers explicitly or opt out of the default on ad-supported pages.
+
+Existing paid customers were notified in advance and can opt out in zone security settings. New domains and free-tier accounts got the default without asking for it, which is why this keeps surprising people who never changed a setting.
+`,
+  },
+  {
     slug: 'framework-aware-seo-fixes-and-one-click-mcp',
     title: 'Your SEO Fixes Now Land Where Your Framework Actually Serves Them',
     excerpt:
