@@ -11,29 +11,99 @@ slot by elapsed time rather than by posts sent, so three of the four are already
 homepage **75/100**, **AI Readiness 67**, **0 errors** (v0.0.46). Re-check before
 posting if it's been more than a few days — a stale number is the fastest way to lose a thread.
 
-## Order and spacing
+## The rules, checked — read this before posting anything
 
-One post every two days, each in a **different** subreddit. Rapid multi-subreddit self-promo is
-the exact pattern that trips spam filters, and a removed post costs more than a delayed one.
+An earlier version of this file said "post Tue–Thu" and told the reader to check each
+subreddit's self-promotion rule. It did not check them itself, and the r/webdev post was
+**removed on 2026-09-30** for exactly that reason. Two of these four would have been removed as
+written. The rules, verified:
 
-| Day | Subreddit | Angle | Why this order |
+| Subreddit | Self-promotion | Karma gate | Our post as written |
 |---|---|---|---|
-| 1 | **r/webdev** | Cloudflare → Googlebot | Real news, time-sensitive, largest audience |
-| 3 | **r/SideProject** | Dogfooding, 71/100 | Friendliest to self-promo; low risk |
-| 5 | **r/programming** | The data behind AI SEO | Harshest crowd; needs the strongest post |
-| 7 | **r/SaaS** | Positioning vs. dashboards | Slowest burn, smallest lift |
+| **r/webdev** | **Showoff Saturday only.** Any other day is removed | 100+, 30+ days | ❌ Removed 2026-09-30. Needs the Saturday rewrite below |
+| **r/SideProject** | **Welcome**, if you show the real product — live URL or demo, not gated behind a signup | 100+ | ✅ Fits. Post this one first |
+| **r/programming** | **No promotion at all.** Technical content only | — | ❌ As written it names the CLI. Use the stripped version below |
+| **r/SaaS** | Founder stories may mention the product; pure ads removed. **One promotional post per 60 days** (rule added April 2026) | 200+ | ⚠️ Spend the 60-day slot deliberately |
 
-**Post Tue–Thu, 8–10am US Eastern.** Read each subreddit's self-promotion rule before posting —
-r/webdev and r/programming both remove promotional posts on sight, which is why these lead with
-the information and mention the tool once, in passing.
+Site-wide, Reddit expects no more than **1 in 10** of your posts and comments to be
+self-promotional. Four promo posts from a cold account is the wrong ratio on its own — comment
+in these communities between posts, on other people's threads, about things that are not us.
+
+## Revised order
+
+| When | Subreddit | Why |
+|---|---|---|
+| **Now** | **r/SideProject** | Welcomes it, post is ready and fits the format |
+| **Sat 2026-10-03** | **r/webdev** | Showoff Saturday, using the rewrite below |
+| Later, optional | **r/programming** | Only the promotion-free version |
+| Once, deliberately | **r/SaaS** | Burns the 60-day slot |
 
 **Then reply to every comment for the first two hours.** This matters more than the post text.
 An author who answers questions is what turns a thread into a front page; one who drops a link
 and leaves gets buried.
 
+**And check the account first.** r/webdev gates at 100+ karma and 30+ days, r/SaaS at 200+.
+Below those, posts are filtered no matter how good they are.
+
 ---
 
-## Day 1 — r/webdev
+## Day 3 — r/webdev — Showoff Saturday only (Sat 2026-10-03)
+
+The news-led version below was removed on 2026-09-30, because r/webdev confines anything
+promotional to Showoff Saturday. Showoff Saturday also wants a different shape: technical
+detail and the working thing, not a news hook.
+
+**Title**
+
+```
+[Showoff Saturday] I rebuilt SEO auditing as a linter — and found five bugs by running it on my own site
+```
+
+**Body**
+
+```
+RankCLI runs 280+ technical SEO and AI-search checks and exits non-zero in CI, like a linter
+rather than a dashboard. Free, no signup, nothing leaves your machine:
+
+    npx @rankcli/cli audit -u https://your-site.dev
+
+Live: https://rankcli.dev — our own score is published weekly, 75/100 today.
+
+The interesting part this week was pointing it at ourselves. Five findings were wrong, and all
+five were reporting *errors* — the severity that exits non-zero and breaks a build:
+
+- A noindex /login flagged "your content is likely invisible to Google". It's noindex on
+  purpose. Every SaaS has one, so it fired for everybody.
+- Dark-themed pages failed colour contrast: the checker read only an element's own inline
+  style and assumed white when it found no background. Our text is 9:1; it reported 2.56:1.
+- AI Readiness scored 1%. I assumed our content was bad, then ran the same check against
+  stripe.com (13), vercel.com (7), cloudflare.com (0) and docs.astro.build (0). A docs site
+  scored zero. The category had 3-4x more checks than any other using the same per-check
+  penalty, so every real page blew past 100 points of deduction. They now spread 52-71.
+- DOM size counted text and whitespace nodes against a threshold borrowed from Lighthouse,
+  which counts elements. tailwindcss.com measured 3,231 against 2,230 real elements — 796
+  whitespace nodes and 205 comments. Re-indenting a template could fail your build.
+- Missing image width/height was an error, which failed svelte.dev, tailwindcss.com,
+  rust-lang.org, laravel.com and fastapi.tiangolo.com. It's a real CLS cost, not a broken site.
+
+The lesson I keep relearning: a confident wrong "critical" is worse than a missing check,
+because it teaches people the red ones are noise.
+
+Stack is TypeScript, checks run in worker threads, and the framework detector is scored
+evidence rather than first-match — that went from 57% to 94% accuracy across 32 frameworks
+once it was allowed to answer "unknown".
+
+Happy to go into any of the checks or the detection scoring.
+```
+
+Showoff Saturday rewards technical specifics and the live thing. It is also the one day the
+tool can be named in that subreddit at all.
+
+---
+
+## Removed on 2026-09-30 — the news-led version, kept for reference
+
+Posting this outside Showoff Saturday is what got it removed. Do not resend it to r/webdev.
 
 **Title**
 
@@ -137,7 +207,7 @@ like marketing: is there structured data, is the content answer-shaped, can GPTB
 ClaudeBot actually reach the page. Those are deterministic checks. They run in CI and fail the
 build.
 
-That's the thesis behind a CLI I've been building. Source for the numbers:
+Source for the numbers:
 seerinteractive.com/insights/aio-impact-on-google-ctr-september-2025-update
 
 Mostly I'm curious whether people here think citation-readiness is a real engineering concern

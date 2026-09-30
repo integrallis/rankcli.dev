@@ -33,7 +33,9 @@ const escape = (s) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 // Recommended order and spacing: news first, and never two subreddits on the same day.
-const ORDER = ['webdev', 'SideProject', 'programming', 'SaaS'];
+// r/SideProject first: it welcomes self-promotion. r/webdev is Showoff Saturday only -
+// the news-led version was removed on 2026-09-30 for posting on a Wednesday.
+const ORDER = ['SideProject', 'webdev', 'programming', 'SaaS'];
 const ordered = [...posts].sort(
   (a, b) => ORDER.indexOf(a.subreddit) - ORDER.indexOf(b.subreddit)
 );
@@ -44,9 +46,14 @@ const cards = ordered
       `https://www.reddit.com/r/${p.subreddit}/submit?type=TEXT` +
       `&title=${encodeURIComponent(p.title)}` +
       `&text=${encodeURIComponent(p.body)}`;
-    const day = i * 2 + 1;
+    const WHEN = {
+      SideProject: 'Post now — self-promotion welcome here',
+      webdev: 'Saturday 2026-10-03 ONLY — Showoff Saturday',
+      programming: 'Optional — no promotion allowed, this version has none',
+      SaaS: 'Once only — burns the 60-day promo slot',
+    };
     return `  <article>
-    <div class="meta">Day ${day} &middot; r/${escape(p.subreddit)} &middot; ${url.length} chars</div>
+    <div class="meta">r/${escape(p.subreddit)} &middot; ${escape(WHEN[p.subreddit] ?? '')}</div>
     <h2>${escape(p.title)}</h2>
     <pre>${escape(p.body)}</pre>
     <a class="go" href="${escape(url)}" target="_blank" rel="noopener">Open pre-filled in r/${escape(p.subreddit)} &rarr;</a>
@@ -72,8 +79,12 @@ const html = `<!doctype html>
 <h1>Reddit launcher</h1>
 <p class="note">
   Each button opens Reddit's composer with the title and body already filled in. Read it, then
-  press Post. One post every two days, in a different subreddit each time &mdash; posting several
-  at once is the pattern that trips spam filters. Tue&ndash;Thu, 8&ndash;10am ET is best.<br><br>
+  press Post.<br><br>
+  <strong>Obey the label on each card.</strong> Every subreddit has its own self-promotion rule
+  and they are not the same. The r/webdev post was removed on 2026-09-30 because it went up on a
+  Wednesday, and that subreddit allows promotion only on Showoff Saturday. Posting several at
+  once is also the pattern that trips spam filters &mdash; leave a couple of days between
+  them.<br><br>
   Then reply to comments for the first two hours. That matters more than the post text.
 </p>
 ${cards}
