@@ -88,6 +88,15 @@ archiving, not promotion.
   would ship visitor PII to Reddit, across GDPR geos, and would make the privacy policy false.
   We collect no phone numbers and have 9 users, so the benefit is nil against a real cost.
 - Reddit Ads is no longer blocked on anything. Every field is written in `reddit-ads-setup.md`.
+- **Fixed `www.rankcli.dev`, which had been answering HTTP 522 to every visitor.** DNS was
+  never wrong; the hostname was attached to the Cloudflare Pages project with status
+  `deactivated` and validation `error`, so Pages refused to serve it and Cloudflare proxied to
+  nothing. Revalidating the custom domain cleared it. Every inbound link, directory listing or
+  pasted URL using www had been hitting a Cloudflare error page, for an unknown length of time.
+  Nothing was monitoring it. Found while chasing an unrelated Reddit pixel error.
+  - Still worth doing: a 301 from www to the apex. Canonical tags on every page already point
+    at the apex, so rankings will not split, but two hostnames serve the same site. The
+    redirect needs `Zone > Rulesets > Edit` on `CLOUDFLARE_API_TOKEN`, which it does not have.
 
 ---
 
