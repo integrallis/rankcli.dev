@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-28T19:23:49.329Z
+// Generated: 2026-09-30T15:49:26.752Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -13096,6 +13096,121 @@ async function analyzeRedirects(url, maxHops = 10) {
   return { issues, data };
 }
 
+// src/audit/checks/crawler-access.ts
+var CRAWLERS = [
+  {
+    name: "Googlebot",
+    userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+    matters: "Google Search indexing",
+    critical: true
+  },
+  {
+    name: "bingbot",
+    userAgent: "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
+    matters: "Bing indexing, and Copilot answers",
+    critical: true
+  },
+  {
+    name: "GPTBot",
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.1; +https://openai.com/gptbot)",
+    matters: "ChatGPT being able to read and cite the page",
+    critical: false
+  },
+  {
+    name: "ClaudeBot",
+    userAgent: "Mozilla/5.0 (compatible; ClaudeBot/1.0; +claudebot@anthropic.com)",
+    matters: "Claude being able to read and cite the page",
+    critical: false
+  },
+  {
+    name: "PerplexityBot",
+    userAgent: "Mozilla/5.0 (compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)",
+    matters: "Perplexity being able to read and cite the page",
+    critical: false
+  }
+];
+var BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+function isRefusal(status) {
+  return status === 401 || status === 403 || status === 429 || status === 503;
+}
+async function statusFor(url, userAgent) {
+  try {
+    const response = await httpGet(url, {
+      headers: { "User-Agent": userAgent },
+      timeout: 15e3,
+      // We want the status itself, not an exception on 4xx/5xx.
+      validateStatus: () => true
+    });
+    return response.status;
+  } catch {
+    return null;
+  }
+}
+async function analyzeCrawlerAccess(url) {
+  const issues = [];
+  const baselineStatus = await statusFor(url, BROWSER_UA);
+  const data = { baselineStatus, crawlers: [] };
+  if (baselineStatus === null || baselineStatus >= 400) {
+    return { issues, data };
+  }
+  const results = await Promise.all(
+    CRAWLERS.map(async (crawler) => ({
+      crawler,
+      status: await statusFor(url, crawler.userAgent)
+    }))
+  );
+  const blocked = results.filter(({ status }) => status !== null && isRefusal(status));
+  data.crawlers = results.map(({ crawler, status }) => ({
+    name: crawler.name,
+    status,
+    blocked: status !== null && isRefusal(status)
+  }));
+  if (blocked.length === 0)
+    return { issues, data };
+  const search = blocked.filter(({ crawler }) => crawler.critical);
+  const ai = blocked.filter(({ crawler }) => !crawler.critical);
+  if (search.length > 0) {
+    const names = search.map(({ crawler }) => crawler.name).join(", ");
+    issues.push({
+      code: "SEARCH_CRAWLER_BLOCKED_AT_EDGE",
+      severity: "error",
+      category: "crawlability",
+      title: `${names} refused at the edge, not by robots.txt`,
+      description: `A browser request to this URL returned ${baselineStatus}, but ${names} received ${search.map(({ status }) => status).join(", ")}. Something in front of the origin - a CDN, WAF or bot rule - is turning the crawler away, and robots.txt cannot show you this.`,
+      impact: "Pages a search crawler cannot fetch fall out of the index. This is the failure mode behind Cloudflare\u2019s 2026-09-15 default, where blocking AI training also blocked Googlebot because it is classed as a mixed-use crawler.",
+      howToFix: `Check your CDN or WAF bot rules rather than robots.txt.
+
+On Cloudflare: the zone's Security > Bots settings, and any "Block AI Bots" or AI Crawler Control toggle. Because Googlebot crawls for both Search and AI training, blocking Training applies to all of its functions on ad-supported pages - allow Search crawlers explicitly, or opt out of the default.
+
+Confirm with Search Console's URL Inspection, which fetches as the verified Googlebot.`,
+      affectedUrls: [url],
+      details: {
+        baselineStatus,
+        blocked: search.map(({ crawler, status }) => ({ crawler: crawler.name, status })),
+        note: "Observed with the crawler\u2019s user-agent. Real crawlers are also verified by IP, so a site may treat them differently."
+      }
+    });
+  }
+  if (ai.length > 0) {
+    const names = ai.map(({ crawler }) => crawler.name).join(", ");
+    issues.push({
+      code: "AI_CRAWLER_BLOCKED_AT_EDGE",
+      severity: "warning",
+      category: "ai-readiness",
+      title: `${names} refused at the edge, not by robots.txt`,
+      description: `A browser request returned ${baselineStatus}, but ${names} received ${ai.map(({ status }) => status).join(", ")}. The block is in front of the origin, so allowing these agents in robots.txt will not change it.`,
+      impact: "An assistant that cannot fetch the page cannot quote it. This is invisible to a robots.txt check, which is where most AI-visibility tools stop.",
+      howToFix: `If blocking them is deliberate, nothing to do. If not, the rule is in your CDN or WAF, not robots.txt - on Cloudflare see Security > Bots and any AI Crawler Control setting.`,
+      affectedUrls: [url],
+      details: {
+        baselineStatus,
+        blocked: ai.map(({ crawler, status }) => ({ crawler: crawler.name, status }))
+      }
+    });
+  }
+  return { issues, data };
+}
+
 // src/audit/checks/ai-readiness.ts
 import * as cheerio13 from "https://esm.sh/cheerio@1.0.0";
 
@@ -20456,6 +20571,7 @@ async function runFullAudit(options) {
   asyncChecks.push(safeAsyncIssues("Certificate", async () => (await checkCertificate(url)).issues));
   asyncChecks.push(safeAsync("Redirects", () => analyzeRedirects(url)));
   asyncChecks.push(safeAsync("Robots Validation", () => validateRobotsTxt(url)));
+  asyncChecks.push(safeAsyncIssues("Crawler Access", async () => (await analyzeCrawlerAccess(url)).issues));
   asyncChecks.push(safeAsync("Canonical Domain", () => analyzeCanonicalDomain(url)));
   asyncChecks.push(safeAsyncIssues("Framework Detection", async () => {
     const frameworkInfo = detectFramework({ html, headers });
