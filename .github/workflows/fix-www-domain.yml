@@ -1,20 +1,24 @@
-# Repair for www.rankcli.dev, which answers HTTP 522 (Cloudflare reaching no origin) while the
-# apex serves fine. Every inbound link, directory listing or pasted URL using www has been
-# hitting a Cloudflare error page, and we sell an SEO tool.
+# Repair for www.rankcli.dev, which answers HTTP 522 while the apex serves fine. Every inbound
+# link, directory listing or pasted URL using www has been hitting a Cloudflare error page, and
+# we sell an SEO tool.
 #
-# The first run established the facts this version acts on:
-#   - the zone reads fine (e1fbea0d...), so the token has Zone:Read
-#   - the dynamic-redirect ruleset write returns "Authentication error" (code 10000), so the
-#     token does NOT have Rulesets:Edit. The tidy www-to-apex 301 is not available to us.
-#   - www is ALREADY a Pages custom domain ("You have already added this custom domain")
-#     and still 522, so the domain is attached but its DNS is pointing somewhere with no origin.
+# Two earlier runs ruled out everything except one cause:
+#   - DNS is already correct and identical in shape to the working apex:
+#       www.rankcli.dev  CNAME -> rankcli.pages.dev  proxied
+#   - the token has Zone:Read and DNS:Edit, but NOT Rulesets:Edit ("Authentication error",
+#     code 10000), so a zone-level www-to-apex 301 is not available to us
+#   - www is already attached to the Pages project, so re-adding it is refused
+#   - and the Pages project reports:
+#       rankcli.dev      status active        validation active
+#       www.rankcli.dev  status deactivated   validation error
 #
-# A Pages custom domain needs a CNAME to the pages.dev hostname. If www is instead an A record,
-# or a CNAME to the apex, Cloudflare proxies the request and finds nothing behind it: 522
-# exactly. So this fixes the DNS record, which the Pages token may well be allowed to do.
+# That last line is the whole bug. The custom domain is attached but its validation failed, so
+# Pages refuses to serve it and Cloudflare proxies to nothing: 522 exactly. DNS changes cannot
+# fix it because DNS was never wrong.
 #
-# Diagnoses before it changes anything, and prints every API response, so a failed run still
-# tells us which permission is missing rather than just going red.
+# So: ask Pages to revalidate. If that does not take, detach and reattach, which forces fresh
+# validation and certificate issuance. Detaching a domain that is already returning 522 cannot
+# make anything worse, and the apex is never touched.
 #
 # Safe to re-run.
 name: Fix www domain
@@ -22,95 +26,67 @@ name: Fix www domain
 on:
   workflow_dispatch:
 
-env:
-  ZONE: e1fbea0d89d9037941e03c75d6f0efcc
-
 jobs:
   fix:
     runs-on: ubuntu-latest
     steps:
-      - name: Diagnose
+      - name: Revalidate the www custom domain
         env:
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -euo pipefail
           api() { curl -sS -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" "$@"; }
-          B=https://api.cloudflare.com/client/v4
+          D=https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/rankcli/domains
 
-          echo "::group::What the Pages project thinks www is"
-          api "$B/accounts/$CF_ACCOUNT_ID/pages/projects/rankcli/domains" \
-            | jq '{success, errors, domains: [.result[]? | {name, status, certificate_authority, validation_data: .validation_data.status}]}'
+          status() { api "$D" | jq -r '.result[]? | select(.name=="www.rankcli.dev") | "\(.status)/\(.validation_data.status)"'; }
+
+          echo "before: $(status)"
+
+          echo "::group::Ask Pages to revalidate"
+          api -X PATCH "$D/www.rankcli.dev" -d '{}' | jq '{success, errors}'
           echo "::endgroup::"
 
-          echo "::group::The pages.dev hostname to point at"
-          SUB=$(api "$B/accounts/$CF_ACCOUNT_ID/pages/projects/rankcli" | jq -r '.result.subdomain // empty')
-          echo "subdomain: ${SUB:-<could not read>}"
-          [ -n "$SUB" ] && echo "PAGES_HOST=$SUB" >> "$GITHUB_ENV"
+          for i in $(seq 1 6); do
+            sleep 15
+            S=$(status)
+            echo "after revalidate, attempt $i: $S"
+            [ "${S%%/*}" = "active" ] && { echo "DONE=1" >> "$GITHUB_ENV"; exit 0; }
+          done
+
+          echo "::group::Still not active. Detaching and reattaching."
+          api -X DELETE "$D/www.rankcli.dev" | jq '{success, errors}'
+          sleep 10
+          api -X POST "$D" -d '{"name":"www.rankcli.dev"}' | jq '{success, errors, name: .result.name, status: .result.status}'
           echo "::endgroup::"
 
-          echo "::group::The actual DNS records for www"
-          RECS=$(api "$B/zones/$ZONE/dns_records?name=www.rankcli.dev")
-          echo "$RECS" | jq '{success, errors, records: [.result[]? | {id, type, name, content, proxied}]}'
-          echo "$RECS" | jq -r '.result[0].id // empty'   > /tmp/www_id
-          echo "$RECS" | jq -r '.result[0].type // empty' > /tmp/www_type
-          echo "WWW_ID=$(cat /tmp/www_id)" >> "$GITHUB_ENV"
-          echo "::endgroup::"
-
-          echo "::group::The apex, for comparison (this one works)"
-          api "$B/zones/$ZONE/dns_records?name=rankcli.dev" \
-            | jq '{records: [.result[]? | {type, name, content, proxied}]}'
-          echo "::endgroup::"
-
-      - name: Point the www DNS record at Pages
-        env:
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          set -euo pipefail
-          api() { curl -sS -H "Authorization: Bearer $CF_API_TOKEN" -H "Content-Type: application/json" "$@"; }
-          B=https://api.cloudflare.com/client/v4
-
-          if [ -z "${PAGES_HOST:-}" ]; then
-            echo "Could not read the Pages subdomain, so there is nothing safe to point www at."
-            exit 1
-          fi
-          echo "target: $PAGES_HOST"
-
-          BODY=$(jq -n --arg c "$PAGES_HOST" \
-            '{type:"CNAME", name:"www", content:$c, proxied:true, comment:"www -> Pages; was 522"}')
-
-          if [ -n "${WWW_ID:-}" ]; then
-            echo "updating the existing record ${WWW_ID}"
-            OUT=$(api -X PUT "$B/zones/$ZONE/dns_records/$WWW_ID" -d "$BODY")
-          else
-            echo "no record found, creating one"
-            OUT=$(api -X POST "$B/zones/$ZONE/dns_records" -d "$BODY")
-          fi
-          echo "$OUT" | jq '{success, errors, result: {type: .result.type, name: .result.name, content: .result.content, proxied: .result.proxied}}'
-          [ "$(echo "$OUT" | jq -r .success)" = "true" ] || {
-            echo "The token cannot edit DNS records. This needs Zone > DNS > Edit on the"
-            echo "CLOUDFLARE_API_TOKEN, or the record has to be changed in the dashboard."
-            exit 1
-          }
-
-      - name: Verify
-        run: |
-          echo "DNS and certificate issuance can take a few minutes."
-          for i in $(seq 1 12); do
+          for i in $(seq 1 20); do
             sleep 20
+            S=$(status)
+            echo "after reattach, attempt $i: $S"
+            [ "${S%%/*}" = "active" ] && { echo "DONE=1" >> "$GITHUB_ENV"; exit 0; }
+          done
+
+          echo "www.rankcli.dev is still not active on the Pages project."
+          echo "Last status: $(status)"
+          exit 1
+
+      - name: Verify it actually serves
+        run: |
+          echo "Certificate issuance can lag activation by a few minutes."
+          for i in $(seq 1 15); do
             CODE=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 https://www.rankcli.dev/ || echo 000)
             echo "attempt $i: HTTP $CODE"
-            case "$CODE" in
-              200)
-                if curl -s --max-time 20 https://www.rankcli.dev/ | grep -q "rdt('init'"; then
-                  echo "www serves the real site, pixel included."
-                else
-                  echo "www answers 200 but the page looks wrong."
-                  exit 1
-                fi
-                exit 0 ;;
-              301|308) echo "www redirects to the apex."; exit 0 ;;
-            esac
+            if [ "$CODE" = "200" ]; then
+              if curl -s --max-time 20 https://www.rankcli.dev/ | grep -q "rdt('init'"; then
+                echo "www serves the real site, pixel included."
+                exit 0
+              fi
+              echo "200 but the page content looks wrong."
+              exit 1
+            fi
+            case "$CODE" in 301|308) echo "www redirects to the apex."; exit 0 ;; esac
+            sleep 20
           done
-          echo "www is still not answering correctly after four minutes."
+          echo "Pages reports the domain active but it is still not serving."
           exit 1
