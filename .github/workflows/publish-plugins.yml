@@ -1,40 +1,52 @@
 name: Publish framework plugins
 
-# Publishes astro-rankcli, vite-plugin-rankcli and next-rankcli to npm. Manual
+# Publishes astro-rankcli, vite-plugin-rankcli and next-rankcli to npm through
+# Trusted Publishing (OIDC), the same way build-cli.yml publishes the CLI. Manual
 # only. A version that is already on npm is skipped, so re-running is safe.
 #
-# Auth: a brand-new package cannot be linked to npm Trusted Publishing before
-# its first publish (the trusted-publisher form lives on the package's settings
-# page, which does not exist until then), so the first publish of each package
-# uses the NPM_TOKEN secret. After that, link the package to this workflow on
-# npmjs.com (package Settings -> Trusted Publisher -> GitHub Actions:
-# integrallis / rankcli.dev / publish-plugins.yml) and the token is no longer
-# needed; id-token: write below is what OIDC uses, as in build-cli.yml.
+# Why OIDC and not a token: on 2026-10-13 a publish with a granular token that
+# bypasses 2FA did not publish 0.0.1; npm staged it and put a 0.0.0-stage stub
+# on the registry, because direct token publishing is being retired (gone in
+# January 2027). Trusted Publishing is not affected. Each package has to be
+# linked to this workflow once, by a human with 2FA:
+#   npx npm@latest trust github <package> --file publish-plugins.yml \
+#     --repo integrallis/rankcli.dev --allow-publish
+# or npmjs.com -> package -> Settings -> Trusted Publisher.
+#
+# "diagnose" needs the NPM_TOKEN secret and only reads: whoami, versions,
+# staged versions and trust links, so a stuck publish can be understood.
 
 on:
   workflow_dispatch:
     inputs:
       package:
-        description: Which package to publish
+        description: Which package
         type: choice
         options:
+          - all
           - astro-rankcli
           - vite-plugin-rankcli
           - next-rankcli
-          - all
-        default: astro-rankcli
-      dry_run:
-        description: Build, test and pack, but do not publish
-        type: boolean
-        default: false
+        default: all
+      mode:
+        description: publish (Trusted Publishing), dry-run (build, test, pack), diagnose (read-only, uses NPM_TOKEN)
+        type: choice
+        options:
+          - publish
+          - dry-run
+          - diagnose
+        default: publish
+
+env:
+  PNPM_VERSION: '8'
 
 jobs:
-  publish:
-    name: Publish ${{ inputs.package }}
+  plugins:
+    name: ${{ inputs.mode }} ${{ inputs.package }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Trusted Publishing; no token involved in publish mode
 
     steps:
       - name: Checkout
@@ -43,7 +55,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: '8'
+          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -51,17 +63,28 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Update npm (Trusted Publishing needs npm >= 11.5.1)
-        run: npm install -g npm@latest
+      - name: Update npm (Trusted Publishing needs npm >= 11.5.1; stage/trust commands >= 11.15)
+        run: npm install -g npm@latest && npm --version
 
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build, test and publish
+      - name: Resolve packages
+        id: pkgs
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           PACKAGE: ${{ inputs.package }}
-          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          if [ "$PACKAGE" = all ]; then
+            echo "names=astro-rankcli vite-plugin-rankcli next-rankcli" >> "$GITHUB_OUTPUT"
+          else
+            echo "names=$PACKAGE" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build, test and publish
+        if: inputs.mode != 'diagnose'
+        env:
+          NAMES: ${{ steps.pkgs.outputs.names }}
+          DRY_RUN: ${{ inputs.mode == 'dry-run' }}
         run: |
           set -euo pipefail
           declare -A DIRS=(
@@ -69,18 +92,7 @@ jobs:
             [vite-plugin-rankcli]=vite-plugin
             [next-rankcli]=next-plugin
           )
-          if [ "$PACKAGE" = all ]; then
-            NAMES="astro-rankcli vite-plugin-rankcli next-rankcli"
-          else
-            NAMES="$PACKAGE"
-          fi
-
-          if [ -n "${NODE_AUTH_TOKEN:-}" ]; then
-            echo "NPM_TOKEN is set; npm whoami: $(npm whoami 2>/dev/null || echo 'REJECTED - the token is expired or revoked')"
-          else
-            echo "No NPM_TOKEN; relying on Trusted Publishing (OIDC)"
-          fi
-
+          failed=0
           for name in $NAMES; do
             dir="packages/${DIRS[$name]}"
             version=$(node -p "require('./$dir/package.json').version")
@@ -90,9 +102,33 @@ jobs:
               echo "$name@$version is already on npm, skipping"
             elif [ "$DRY_RUN" = true ]; then
               (cd "$dir" && npm pack --dry-run)
-            else
-              (cd "$dir" && npm publish --access public --ignore-scripts)
+            elif (cd "$dir" && npm publish --access public --ignore-scripts); then
               echo "published $name@$version"
+            else
+              failed=1
+              echo "::error::$name@$version was not published. If npm answered 404 or ENEEDAUTH, Trusted Publishing is not linked yet. A maintainer with 2FA runs:"
+              echo "::error::  npx npm@latest trust github $name --file publish-plugins.yml --repo integrallis/rankcli.dev --allow-publish"
+              echo "::error::or: npmjs.com -> $name -> Settings -> Trusted Publisher -> GitHub Actions (integrallis / rankcli.dev / publish-plugins.yml). If npm said the version is staged, approve or reject it first: npx npm@latest stage list $name"
             fi
+            echo "::endgroup::"
+          done
+          exit $failed
+
+      - name: Diagnose (read-only)
+        if: inputs.mode == 'diagnose'
+        env:
+          NAMES: ${{ steps.pkgs.outputs.names }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -uo pipefail
+          echo "whoami: $(npm whoami 2>/dev/null || echo 'REJECTED')"
+          for name in $NAMES; do
+            echo "::group::$name"
+            echo "-- versions / dist-tags on the registry"
+            npm view "$name" versions dist-tags 2>&1 | grep -v '^npm notice' || true
+            echo "-- staged versions"
+            npm stage list "$name" 2>&1 | grep -v '^npm notice' || true
+            echo "-- trusted publishers"
+            npm trust list "$name" 2>&1 | grep -v '^npm notice' || true
             echo "::endgroup::"
           done
