@@ -18,6 +18,8 @@ Alternative: give the `CLOUDFLARE_API_TOKEN` secret the **Account Analytics: Edi
 
 ## 3. List the GitHub Action on the Marketplace (gap 12) - two minutes
 
+Still not listed on 2026-10-13 (the Marketplace slugs 404). The manifest has `branding`, the name `RankCLI SEO Audit` is unique and the repo is public, so nothing but the tick is missing. GitHub has no API for this step; it needs your login with 2FA.
+
 https://github.com/integrallis/rankcli-action/releases/tag/v1.0.0 -> **Edit** -> tick **Publish this Action to the GitHub Marketplace** -> accept the Marketplace developer agreement (first time only) -> category "Code quality" or "Continuous integration" -> Update release.
 
 ## 4. Repo linking for email/Google sign-ups (gap 12b) - five minutes
@@ -54,3 +56,24 @@ Once it works, add Search Console to the Solo/Pro highlights in `packages/saas/s
 ## 6. Try Apple Intelligence on a Mac - two minutes
 
 On macOS 26+ with Apple Intelligence on: `npx @rankcli/cli@latest audit --url https://yoursite.com --ai`, then `npx @rankcli/cli@latest keywords --url https://yoursite.com --ai`. Expect "Using Apple Intelligence on this Mac (on-device, free)". The first run builds a small helper (Xcode command-line tools needed). CI compiles the helper, but no CI machine has Apple Intelligence, so this is its first real run.
+
+## 7. Submit the Claude Code plugin to Anthropic's directory - five minutes
+
+The plugin is merged and valid on `integrallis/rankcli-mcp-server` `main` (`4ee5d98`; `claude plugin validate .` passes). The directory only takes submissions from a GitHub account with push access to the repo, connected to claude.ai.
+
+1. https://claude.ai/directory/manage -> **Submit new** -> **Plugin bundle**.
+2. Repository `integrallis/rankcli-mcp-server`. Leave **Plugin path** empty (the manifest is at the root, `.claude-plugin/plugin.json`) and **Branch or tag** empty (follows `main`).
+3. **Validate**. It runs the same checks as `claude plugin validate` plus a security scan.
+4. **Data handling**: the plugin runs `npx @rankcli/cli` on the user's machine against the URL they name; without an API key nothing is sent to rankcli.dev; with one, audit results sync to that user's own account. No personal data is stored by the plugin; not intended for under-18s.
+5. **Compliance**: contact email, four acknowledgements. **Review and submit**, keeping the default "GitHub push webhook" so every merge to `main` re-validates, and choose whether passing versions auto-publish.
+
+Bump `version` in `.claude-plugin/plugin.json` with each release after that.
+
+## 8. Give npm a credential for the framework plugins - five minutes
+
+`astro-rankcli`, `vite-plugin-rankcli` and `next-rankcli` are ready (`42056f5`) and the **Publish framework plugins** workflow publishes them, but its first run (38481967050) was rejected: the `NPM_TOKEN` secret dates from January and is dead, and npm cannot link a package to Trusted Publishing before its first version exists ([npm/cli#8544](https://github.com/npm/cli/issues/8544)). Either path works:
+
+- **From a machine**: `npm login`, then in `packages/astro-plugin` run `pnpm build && npm publish --access public`; the same for `packages/vite-plugin` and `packages/next-plugin`.
+- **From CI**: npmjs.com -> Access Tokens -> Generate new token -> Granular, read and write on packages, allow publishing from CI (bypass 2FA), shortest expiry you accept -> `gh secret set NPM_TOKEN --repo integrallis/rankcli.dev`, then Actions -> **Publish framework plugins** -> Run workflow -> package `all`.
+
+After each package's first publish: npmjs.com -> package -> Settings -> **Trusted Publisher** -> GitHub Actions: organization `integrallis`, repository `rankcli.dev`, workflow `publish-plugins.yml`. Then the token can be deleted again; `build-cli.yml` already publishes the CLI, runtime and MCP server that way.

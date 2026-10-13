@@ -83,15 +83,95 @@ keep the premium checks and the SaaS private, and make that repo the thing every
 and README points at. If the answer is no, the rest of this plan still works; it just caps how
 far HN, YouTube and the skill directories can carry it.
 
+### 3.1 What opening it would reveal, and why it is still closed (checked 2026-10-13)
+
+Measured against the packages on npm today (`@rankcli/cli@0.0.49`, `@rankcli/agent-runtime@0.0.37`):
+
+| What is in the public tarballs already | Measured |
+|---|---|
+| `agent-runtime/dist/index.js`, the 260 free checks | 36,171 lines, not minified, 558 comment lines survive |
+| `cli/dist/index.js` | 4,406 lines, not minified |
+| `INJECTED_CONFIG` in `cli/dist/index.js` | `supabaseUrl`, `supabaseAnonKey`, `webAppUrl` and **`decryptPassphrase`**, in plain text |
+| `wasm/rankcli_audit_engine_bg.wasm` | the 21 premium checks, AES-256-GCM encrypted, with the key in the file next to it |
+| `"license"` in every published package.json | `MIT` |
+
+So the question "what would open source reveal" has a short answer: **nothing a `node_modules`
+folder does not already show.** Every free check is readable JavaScript with its comments.
+The premium checks (9,468 lines of TypeScript in `packages/agent-runtime-premium/src`: E-E-A-T,
+citation worthiness, RAG chunk readiness, entity SEO, featured snippets and 16 more) are
+encrypted, and the passphrase is injected into the same package at publish time; one `grep` and
+one call to the WASM's decrypt export returns the source. `wasm-engine.ts` says this itself:
+"This is code protection, not access control". And since `c755700` (2026-09-18, "every plan
+runs all 280+ checks, as the pricing says") the CLI decrypts them for anonymous users too, so
+the encryption guards nothing that anyone is charged for. Legally, everyone who ran `npx
+@rankcli/cli` already holds an MIT licence to what they downloaded.
+
+What is actually closed is the git repository, and what opening it adds is:
+
+- the free and premium checks as readable, commented, tested TypeScript instead of built output,
+  so the thresholds and heuristics can be read, forked and copied (the OSS rivals' are already);
+- the tests and fixtures, including the 32-framework detection benchmark, which is a selling
+  point, not a secret;
+- the Rust wrapper (`decrypt.rs`, `lib.rs`, `build.rs`: 352 lines) and the build scripts, which
+  show that the "protection" is a passphrase in the bundle;
+- nothing from the hosted product. The SaaS, the edge functions, the audit worker, the GitHub
+  App, Stripe, the database and the pricing analyses stay in the private monorepo. That is also
+  why the monorepo itself must not be flipped public: the public repo has to be an export of
+  `packages/cli`, `packages/agent-runtime`, `packages/mcp-server` and the three plugins.
+
+Checked for leaks before recommending the export: no token-shaped strings in the source of
+those packages; `.env` was never committed; the only JWT-shaped string in the monorepo's whole
+history (lockfiles excluded) is the `anon` key of the first Supabase project
+`uisqfyeasobjjrgurwnb`, which is dead and was public by design.
+
+Why it is not open already, from the record:
+
+1. **The plan always said open.** `PROJECT_PLAN.md` ("Open Source Strategy": CLI core and
+   Action open; AI engine, analytics and team features proprietary) and
+   `COMPETITOR_RESEARCH_SYNTHESIS.md` (`cli` and `agent-runtime` MIT, `saas` proprietary) both
+   predate the code. It was never executed: everything was built in one private monorepo, and
+   publishing to npm with `"license": "MIT"` looked like the same thing. It is not: the
+   directories that matter (skills.sh, the plugin directory, awesome lists, HN) index
+   repositories, and `accounts.md` records skipping awesome-cli-apps on 2026-09-06 for exactly
+   that reason.
+2. **From February to September the work went the other way.** `b85d47e` ("stop leaking
+   paid-tier check logic in the public npm package"), `ab8cdd7` (WASM decryption gated on
+   entitlement), `4ef234c`, a Rust toolchain in the CLI build and `RANKCLI_BUILD_KEY` in CI were
+   all built for a pricing model in which the premium checks were the paid difference.
+3. **The pricing changed on 2026-09-18 and the repo did not.** Every plan got every check; the
+   encryption lost its purpose; nobody revisited the repo's visibility.
+4. **Coupling.** `cli` depends on `agent-runtime`, which builds the premium bundle through
+   `wasm-adapter`; the SaaS edge functions consume `agent-runtime` through a Deno build
+   (`build:deno`, `deno-entry.ts`); the audit worker imports the premium package directly.
+   Opening means an export pipeline (a subtree push or `git filter-repo` of the public
+   packages on each release) and a decision about where the premium source lives.
+
+What this changes about the recommendation above: open all of it, including the premium
+checks, and delete the encryption. That removes `wasm-pack` and the Rust toolchain from the CLI
+build, `RANKCLI_BUILD_KEY` from CI, the 0.7 MB WASM and the VM sandbox from every install, and
+the "premium checks unavailable" failure mode, for a protection that was already void. If the
+answer is instead "keep the premium source private", keep `agent-runtime-premium` out of the
+export and ship the WASM as a built artifact, knowing it protects nothing.
+
 ## 4. Done on 2026-10-13
 
-- **Two agent skills and a Claude Code plugin**, on branch `agent-skills-and-plugin` of
-  `integrallis/rankcli-mcp-server` (draft PR, founder merges): `skills/seo-audit/SKILL.md`,
+- **Two agent skills and a Claude Code plugin**, merged to `main` of
+  `integrallis/rankcli-mcp-server` as `4ee5d98` (PR #1): `skills/seo-audit/SKILL.md`,
   `skills/seo-ci-gate/SKILL.md`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`,
-  `.mcp.json`, README section. `claude plugin validate` passes. After the merge:
-  `npx skills add integrallis/rankcli-mcp-server` and
-  `/plugin install rankcli --marketplace integrallis/rankcli-mcp-server` work, and the repo is
-  eligible for skills.sh and for Anthropic's plugin directory.
+  `.mcp.json`, README section. `claude plugin validate .` passes on `main`;
+  `npx skills add integrallis/rankcli-mcp-server` lists both skills and was run once (both
+  installed, which is what registers the repo on skills.sh);
+  `/plugin install rankcli --marketplace integrallis/rankcli-mcp-server` works. What is left is
+  the directory submission, which needs the founder's GitHub login (FOUNDER_CHECKLIST §7).
+- **The three framework plugins are ready to publish** (`42056f5`): `repository` no longer
+  points at a repo that does not exist, `homepage` is the framework landing page, MIT LICENSE
+  files, `engines`, `publishConfig`. A manual workflow, **Publish framework plugins**
+  (`publish-plugins.yml`), builds, tests and publishes one or all of them and skips versions
+  already on npm. Its first run (astro-rankcli, run 38481967050) stopped at npm: the
+  `NPM_TOKEN` secret is rejected (`npm whoami` fails; it dates from January, before npm revoked
+  classic tokens), and npm cannot link a package to Trusted Publishing before its first publish
+  ([npm/cli#8544](https://github.com/npm/cli/issues/8544)). One founder step unblocks all three
+  (FOUNDER_CHECKLIST §8).
 - **GitHub topics** on both public repos now include `ai-visibility`,
   `generative-engine-optimization`, `agent-skills`, `claude-code`, `cursor`, `seo-audit`,
   `core-web-vitals`, `structured-data`, `ai-search`. GitHub Topics pages are where the OSS rivals'
@@ -103,14 +183,19 @@ far HN, YouTube and the skill directories can carry it.
 
 Each item says who can do it. "Founder" means it needs an account only you hold.
 
-1. **Merge the skills/plugin PR** (founder, one click). Then submit the plugin to Anthropic's
-   directory from the Claude Code docs "publish" page, and run
-   `npx skills add integrallis/rankcli-mcp-server` once yourself so it registers an install.
+1. ~~Merge the skills/plugin PR~~ Done (`4ee5d98`). **Submit the plugin to Anthropic's
+   directory** (founder, five minutes, FOUNDER_CHECKLIST §7): claude.ai/directory/manage,
+   Submit new, Plugin bundle, repository `integrallis/rankcli-mcp-server`, path and branch
+   empty. The portal re-validates on every push to `main`.
 2. **Publish the Action to the GitHub Marketplace** (founder, two minutes, FOUNDER_CHECKLIST §3).
-3. **Publish `astro-rankcli`** (founder: add the package to the Trusted Publishing list on npm or
-   publish once with `NPM_TOKEN`; `pnpm --filter astro-rankcli build` then `npm publish`). It
-   appears in Astro's integrations directory automatically. Then `vite-plugin-rankcli` and
-   `next-rankcli`. A Nuxt module is new code plus one PR to nuxt/modules.
+   Checked 2026-10-13: the manifest has `branding`, the name is unique, the repo is public, the
+   v1.0.0 release exists; nothing but the tick is missing. There is no API for it.
+3. **Publish `astro-rankcli`, then `vite-plugin-rankcli` and `next-rankcli`** (founder, one
+   credential, FOUNDER_CHECKLIST §8): either `npm login` on a machine and `npm publish` from
+   `packages/astro-plugin`, or a new npm granular token in the `NPM_TOKEN` secret, then
+   Actions -> Publish framework plugins -> `all`. After the first publish, link each package to
+   the workflow on npmjs.com and the token can go. Astro's directory lists the package on its
+   own. A Nuxt module is new code plus one PR to nuxt/modules.
 4. **Decide §3.** If yes: one public repo, MIT, README that leads with `npx @rankcli/cli audit`,
    topics as above, and every listing repointed at it.
 5. **Hacker News, properly** (founder). Email hn@ycombinator.com first (§6.2): the moderators
@@ -118,7 +203,8 @@ Each item says who can do it. "Founder" means it needs an account only you hold.
    Thursday, 8 to 10am ET, with the title in §6.1, and stay in the thread for three hours. Expect
    single digits unless the repo is public; the best "SEO" Show HN since January is 36 points.
 6. **Reddit, as planned** (founder): the comment ledger to 9:1, Showoff Saturday with the rewrite,
-   then r/SideProject again. And the Reddit Ads campaign from `reddit-ads-setup.md` at $20 to
+   then r/SideProject again. And the Reddit Ads campaign from `reddit-ads-setup.md`, which was
+   never created (the pixel has been live since 2026-09-30 with no campaign behind it), at $20 to
    $50 a day for one week, measured by the pixel; the research expects 90 to 225 clicks and 10 to
    30 signups at that spend, not more.
 7. **Talk to the 17 users and the 7 free-audit emails** (founder, §6.4). Seven people signed up in

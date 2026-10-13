@@ -28,7 +28,7 @@ founder's test subscriptions are included in the user counts below.
 | GitHub | `rankcli-mcp-server` 1 star, 2 views in 14 days; `rankcli-action` 0 stars, 0 views, **not on the GitHub Marketplace** (both slug guesses 404) |
 | growth-ops | Posts the weekly score to Bluesky and LinkedIn. Mastodon, Discord and X unconfigured; Dev.to disabled; Reddit API still gated |
 | Founder checklist | Google OAuth and GitHub App OAuth secrets still unset; 0 Search Console connections; deep audits run |
-| Reddit | Comments logged: 2 (2026-09-30). Posts: 0 since the removals. Whether the Reddit Ads campaign was started is not visible from the repo |
+| Reddit | Comments logged: 2 (2026-09-30). Posts: 0 since the removals. The Reddit Ads campaign was **never created** (founder, 2026-10-13); the pixel fires for nobody |
 
 What drove the 7 signups and 31 free audits in the week of Oct 5 is not knowable from here:
 nothing was published or pushed that week (only the weekly Bluesky post, 0 likes), and the
@@ -43,6 +43,20 @@ Analytics -> rankcli.dev -> Referrers for Oct 5 to Oct 11 before deciding what t
   v0.0.45) and were dropped. The fourth, YMYL detection that flagged nearly every page on words
   like "price" and "warning", was not upstream; committed as `734b7f1` with tests.
 - Found the Show HN dead (above). The activity log had it as pending for two weeks.
+- Merged PR #1 on `integrallis/rankcli-mcp-server` (`4ee5d98`): two agent skills (`seo-audit`,
+  `seo-ci-gate`) and a Claude Code plugin. `claude plugin validate` passes on `main`;
+  `npx skills add integrallis/rankcli-mcp-server` installed both once. Directory submission
+  needs the founder (FOUNDER_CHECKLIST §7).
+- Tried to publish `astro-rankcli` (run 38481967050 of the new **Publish framework plugins**
+  workflow, `42056f5`). Build and 32 tests passed; npm rejected the `NPM_TOKEN` secret
+  (January token, dead) and a new package cannot use Trusted Publishing for its first version.
+  Needs one founder credential (FOUNDER_CHECKLIST §8); the same run then publishes all three.
+- Founder confirmed the Reddit Ads campaign never ran. The pixel has fired for organic visitors
+  only since 2026-09-30.
+- Checked what open-sourcing the CLI would reveal: nothing `node_modules` does not already show.
+  The published JS is unminified with comments, every package is already `"license": "MIT"`, and
+  the premium checks' decrypt passphrase ships in plain text inside `@rankcli/cli`'s own
+  `dist/index.js`. Details in COMPETITION-AND-OUTREACH-2026-10.md §3.1.
 
 ---
 
@@ -57,7 +71,7 @@ Analytics -> rankcli.dev -> Referrers for Oct 5 to Oct 11 before deciding what t
 | MCP directories | Listed everywhere that matters | Registry, Glama, Smithery, awesome-mcp-servers; mcp.so queued |
 | Reddit organic | 2 comments, 2 posts | **Both posts removed or filtered** |
 | Hacker News | Show HN submitted 2026-09-30 | **Dead on arrival** (new account, 7 karma); 0 views. See "Status on 2026-10-13" |
-| Reddit Ads | **Unblocked** | Pixel `a2_jrtl7de1quoe` live, PageVisit and Search both verified firing |
+| Reddit Ads | **Never run** | Pixel `a2_jrtl7de1quoe` live, PageVisit and Search verified; no campaign was ever created (founder, 2026-10-13) |
 | Meta / Zeely | Not started | 10K credits unspent |
 | LinkedIn | Not started | Credentials work; owner's call |
 | Mastodon | **Dead** | Token invalid, never in CI secrets |
@@ -170,6 +184,6 @@ place.
    the karma gates. Drafts in `reddit-comments.html`.
 3. **r/webdev on Showoff Saturday (2026-10-03)**, using the rewrite in `reddit-posting-plan.md`.
 4. **Product Hunt.** Written months ago, never submitted.
-5. **Reddit Ads.** No longer blocked. Pixel is live and verified; create the campaign from
-   the field values in `reddit-ads-setup.md`.
+5. **Reddit Ads.** Never run as of 2026-10-13. Pixel is live and verified; create the campaign
+   from the field values in `reddit-ads-setup.md`.
 6. **Repost r/SideProject** once the account carries weight. It is a good post nobody saw.
