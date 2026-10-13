@@ -1,0 +1,98 @@
+name: Publish framework plugins
+
+# Publishes astro-rankcli, vite-plugin-rankcli and next-rankcli to npm. Manual
+# only. A version that is already on npm is skipped, so re-running is safe.
+#
+# Auth: a brand-new package cannot be linked to npm Trusted Publishing before
+# its first publish (the trusted-publisher form lives on the package's settings
+# page, which does not exist until then), so the first publish of each package
+# uses the NPM_TOKEN secret. After that, link the package to this workflow on
+# npmjs.com (package Settings -> Trusted Publisher -> GitHub Actions:
+# integrallis / rankcli.dev / publish-plugins.yml) and the token is no longer
+# needed; id-token: write below is what OIDC uses, as in build-cli.yml.
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Which package to publish
+        type: choice
+        options:
+          - astro-rankcli
+          - vite-plugin-rankcli
+          - next-rankcli
+          - all
+        default: astro-rankcli
+      dry_run:
+        description: Build, test and pack, but do not publish
+        type: boolean
+        default: false
+
+jobs:
+  publish:
+    name: Publish ${{ inputs.package }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: '8'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Update npm (Trusted Publishing needs npm >= 11.5.1)
+        run: npm install -g npm@latest
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build, test and publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PACKAGE: ${{ inputs.package }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          set -euo pipefail
+          declare -A DIRS=(
+            [astro-rankcli]=astro-plugin
+            [vite-plugin-rankcli]=vite-plugin
+            [next-rankcli]=next-plugin
+          )
+          if [ "$PACKAGE" = all ]; then
+            NAMES="astro-rankcli vite-plugin-rankcli next-rankcli"
+          else
+            NAMES="$PACKAGE"
+          fi
+
+          if [ -n "${NODE_AUTH_TOKEN:-}" ]; then
+            echo "NPM_TOKEN is set; npm whoami: $(npm whoami 2>/dev/null || echo 'REJECTED - the token is expired or revoked')"
+          else
+            echo "No NPM_TOKEN; relying on Trusted Publishing (OIDC)"
+          fi
+
+          for name in $NAMES; do
+            dir="packages/${DIRS[$name]}"
+            version=$(node -p "require('./$dir/package.json').version")
+            echo "::group::$name@$version"
+            (cd "$dir" && pnpm build && pnpm test)
+            if npm view "$name@$version" version >/dev/null 2>&1; then
+              echo "$name@$version is already on npm, skipping"
+            elif [ "$DRY_RUN" = true ]; then
+              (cd "$dir" && npm pack --dry-run)
+            else
+              (cd "$dir" && npm publish --access public --ignore-scripts)
+              echo "published $name@$version"
+            fi
+            echo "::endgroup::"
+          done
