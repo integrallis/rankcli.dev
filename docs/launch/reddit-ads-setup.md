@@ -73,11 +73,18 @@ curl -s https://rankcli.dev | grep -o "rdt('init','[^']*')"
 | Field | Value |
 |---|---|
 | Objective | **Conversions** |
-| Conversion event | **Sign Up** |
+| Conversion event | **Search** (the free audit) for the first $100, see note below |
 | Campaign name | `rankcli-devs-2026-10` |
 | Budget type | Daily |
 | Daily budget | **$25** |
 | Schedule | Start today, no end date |
+
+**Why Search, not Sign Up, to start (changed 2026-10-02):** the site gets roughly one sign-up
+every few days. Reddit's optimiser needs a steady stream of the chosen event to learn from, and
+at that rate Sign Up gives it close to nothing, so delivery would drift toward cheap clicks
+anyway. `Search` fires on every free-audit submit (verified 2026-09-30) and is the action every
+creative asks for. Sign Up still reports either way; switch the objective to it once it is
+firing a few times a week.
 
 Conversions rather than Traffic: Traffic optimises for clicks, and cheap clicks from people who
 will use the free tier forever are not the goal. Conversions makes Reddit find people who sign
@@ -154,7 +161,8 @@ detected, on rankcli.dev. Re-record before running if the score moves; the two c
 
 ## Step 6. Judge it
 
-After **$100 spent**, look at cost per sign-up in Events Manager.
+After **$100 spent**, look at cost per free audit (Search) and cost per sign-up in Events Manager.
+Decide the thresholds below before launch and do not move them after seeing the data.
 
 - Under **$30/signup**: keep going, scale the winning ad group
 - **$30 to $60**: narrow to the two best communities and retest

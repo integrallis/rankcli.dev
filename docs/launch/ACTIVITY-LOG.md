@@ -19,7 +19,7 @@ users are somewhere between 1 and 5.
 | IndexNow | Working | 35 URLs to Bing, Yandex, Seznam, Naver |
 | MCP directories | Listed everywhere that matters | Registry, Glama, Smithery, awesome-mcp-servers; mcp.so queued |
 | Reddit organic | 2 comments, 2 posts | **Both posts removed or filtered** |
-| Hacker News | Show HN submitted 2026-09-30 | Pending |
+| Hacker News | Show HN submitted 2026-09-30 | **Dead on arrival.** Item 49913246, `dead: true`, score 1, account karma 1. Nobody saw it (checked 2026-10-02) |
 | Reddit Ads | **Unblocked** | Pixel `a2_jrtl7de1quoe` live, PageVisit and Search both verified firing |
 | Meta / Zeely | Not started | 10K credits unspent |
 | LinkedIn | Not started | Credentials work; owner's call |
@@ -100,6 +100,17 @@ archiving, not promotion.
     tidiness: Reddit and every other ad platform append click parameters, and a redirect that
     dropped them would silently break attribution on any ad landing on a www URL.
 
+### 2026-10-02
+
+- **Show HN was dead on arrival.** Item 49913246 was `[flagged]` and `dead`, account karma 1. It looks
+  normal to its author, which is why it seemed live. Account karma is being built with genuine comments.
+- **Facebook: intro post in 15 SEO/GEO groups**, spaced about 10 minutes apart, from Brian's profile,
+  linking rankcli.dev. All 15 went in; most are waiting for admin approval. **WordPress • AI | Speed | SEO |
+  Developers removed it within minutes.** Four groups that require admin permission first (Superstar
+  SEO, SEO Projects and SEO Jobs, SEO Masterminds Pakistan, SEO & Digital Marketing by Riha Webtech) were
+  not posted to. Four that ban promotion were skipped (SEO Philippines, SEO EXPERT, SEO Expert In
+  Bangladesh, SEO Masters Academy). Check the approvals in a day before posting anywhere else.
+
 ---
 
 ## What was learned, and cost something
@@ -128,7 +139,7 @@ place.
 
 ## Open, in order of expected value
 
-1. **Hacker News thread.** Submitted; answer every comment for the first two to three hours.
+1. **Hacker News.** The 2026-09-30 Show HN was killed on submission (new account, karma 1). Ask hn@ycombinator.com to re-up it; see `REVIEW-2026-10-02.md`.
 2. **Reddit standing.** Eight to thirteen more genuine comments to reach roughly 9:1 and clear
    the karma gates. Drafts in `reddit-comments.html`.
 3. **r/webdev on Showoff Saturday (2026-10-03)**, using the rewrite in `reddit-posting-plan.md`.

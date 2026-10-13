@@ -3,6 +3,7 @@
 > Numbers in this file come from [VERIFIED-NUMBERS.md](./VERIFIED-NUMBERS.md). Re-check before posting.
 
 Draft, review and post yourself. Nothing here has been submitted.
+Copy re-checked against the product on 2026-10-02 (numbers, pricing, free-tier claims).
 
 ## Tagline (60 char limit)
 
@@ -18,10 +19,9 @@ RankCLI runs 280+ SEO and GEO (AI-search-citation) checks against your site
 in CI, the same pipeline that ships your code, and opens a pull request
 with the fix, instead of another dashboard alert nobody reads.
 
-Every GEO/AI-visibility tool right now is a $29-$2,000/mo monitoring
-dashboard built for marketing teams. None of them run in CI, none of them
-open PRs, and none of them are priced for a solo developer. RankCLI is the
-one that does.
+Most GEO/AI-visibility tools are monitoring dashboards built for marketing
+teams. RankCLI is built for the developer who ships the fix: it runs in CI
+and opens the PR.
 
 **What it checks:** technical SEO (crawlability, structured data, Core Web
 Vitals, security headers) plus GEO, is your site actually visible to
@@ -32,19 +32,16 @@ explicitly configured your robots.txt for that, you may already be invisible
 to AI search and not know it. RankCLI checks for exactly this.
 
 **How you use it:**
-- Free forever via MCP (`npx @rankcli/mcp-server`), no signup, no API key,
-  runs entirely in your AI coding assistant (Claude Code, Cursor, etc.)
-  against HTML you already have.
+- Free forever via MCP (`npx @rankcli/mcp-server`) or the CLI, no signup.
+  The checks run locally; the AI features use your own OpenAI/Anthropic key.
 - CLI + GitHub Action for CI-native scheduled audits and auto-fix PRs.
-- We dogfood it against our own site every week, rankcli.dev currently
-  scores 75/100 with 0 errors, audited by the exact tool you'd run.
-  ⚠️ Only claim this publicly if the repo/issue is visible, see the repo
-  visibility note in `mcp-directories.md`. If the repo stays private, drop
-  "tracked in our own GitHub issues" below and keep only the score claim.
+- We dogfood it against our own site every week, the rankcli.dev homepage
+  currently scores 75/100 with 0 errors, audited by the exact tool you'd run.
 
-**Launch pricing:** first 100 customers get Pro (CI scheduling, auto-fix
-PRs, hosted GEO tracking) at $19/mo instead of $29/mo, locked in for as
-long as you stay subscribed.
+**Launch pricing:** a free account gets one site audited weekly and 3
+auto-fix PRs a month. The first 100 Pro customers (10 sites audited daily,
+an audit on every push, unlimited auto-fix PRs) pay $19/mo instead of
+$29/mo, locked in for as long as they stay subscribed.
 
 ## First comment (post immediately after launch, from founder account)
 
@@ -59,12 +56,13 @@ long as you stay subscribed.
 > crawler you're accidentally blocking, open a PR instead of an email
 > nobody reads.
 >
-> We're dogfooding this against rankcli.dev itself, currently a 75/100
-> with 70 open issues, fixed the same way we're asking you to fix yours.
+> We're dogfooding this against rankcli.dev itself: the homepage is 75/100
+> today, 0 errors and 65 warnings and notices still open, fixed the same way
+> we're asking you to fix yours.
 > No cherry-picked demo site.
 >
-> Free tier is genuinely free, the MCP server runs locally with your own
-> OpenAI/Anthropic key, no signup required. Happy to answer anything about
+> The CLI and MCP server are free with no signup, and the AI features run on
+> your own OpenAI/Anthropic key. Happy to answer anything about
 > the GEO checks, the CI setup, or why we think "AI SEO" dashboards are
 > solving the wrong problem for developers.
 
@@ -73,5 +71,6 @@ long as you stay subscribed.
 
 ## Timing note
 Product Hunt launches perform best posted 12:01am PT on a Tuesday, Thursday.
-Coordinate with the MCP directory submissions (see `mcp-directories.md`) so
-they're live before the PH post goes up. PH commenters will click through.
+MCP directory listings are already live. Blocker as of 2026-10-02: no
+Product Hunt account exists yet (see `accounts.md`); a brand-new account
+launching on day one gets little reach, so create it a few days ahead.
