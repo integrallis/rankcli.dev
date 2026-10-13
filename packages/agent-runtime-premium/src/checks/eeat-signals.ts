@@ -110,15 +110,20 @@ const AUTHORITATIVE_DOMAINS = [
 ];
 
 // YMYL (Your Money Your Life) topic indicators
-const YMYL_PATTERNS = [
-  /\b(medical|health|disease|treatment|symptom|diagnosis|medication|drug)\b/i,
-  /\b(financial|investment|tax|insurance|mortgage|credit|loan|retirement)\b/i,
-  /\b(legal|attorney|lawyer|lawsuit|court|divorce|custody)\b/i,
-  /\b(safety|emergency|danger|warning|crisis)\b/i,
-  /\b(government|voting|election|law|regulation)\b/i,
-  /\b(religion|ethnic|race|gender|sexuality)\b/i,
-  /\b(buy|purchase|price|cost|shop)\b/i,
+// YMYL (Your Money or Your Life): pages whose advice can affect health, finances, legal standing
+// or safety. A page counts when it's *about* one of these - a term in its title or H1, or one
+// topic's terms recurring through the body - not when a word appears once. Matching single words
+// ("warning", "price", "health", "law") flagged nearly every page, SEO reports included.
+const YMYL_TOPICS: RegExp[] = [
+  /\b(medical|medicine|diseases?|treatments?|symptoms?|diagnos(?:is|ed|e)|medications?|prescriptions?|doctors?|patients?|therapy|clinical|mental health|nutrition|pregnan(?:cy|t))\b/gi,
+  /\b(invest(?:ing|ments?)?|stocks?|taxes|tax (?:return|advice|filing)|insurance|mortgages?|loans?|credit (?:cards?|scores?)|retirement|pensions?|banking|cryptocurrenc(?:y|ies)|financial advice)\b/gi,
+  /\b(attorneys?|lawyers?|lawsuits?|legal advice|divorce|custody|immigration|court cases?)\b/gi,
+  /\b(first aid|poison(?:ing)?|suicide|overdose|crisis (?:line|hotline))\b/gi,
+  /\b(voting|voter registration|elections?|ballots?)\b/gi,
 ];
+// Tech phrases that reuse YMYL words.
+const YMYL_FALSE_FRIENDS = /\b(?:site |seo |system |api )?health (?:scores?|checks?|status|endpoints?|reports?)\b|\bsite health\b/gi;
+const YMYL_PATH = /\/(health|medical|finance|financial|legal|money|insurance|taxes|invest(?:ing|ment)?)(\/|$)/i;
 
 /**
  * Extract author information from the page
@@ -736,27 +741,21 @@ export function extractContentDates(html: string): { published: string | null; m
  */
 export function detectYMYL(html: string, url: string): boolean {
   const $ = cheerio.load(html);
-  const text = ($('title').text() + ' ' + $('h1').text() + ' ' + $('body').text()).toLowerCase();
+  const heading = `${$('title').text()} ${$('h1').text()}`.replace(YMYL_FALSE_FRIENDS, ' ');
+  const body = $('body').text().replace(YMYL_FALSE_FRIENDS, ' ');
+  const words = Math.max(1, body.split(/\s+/).filter(Boolean).length);
 
-  for (const pattern of YMYL_PATTERNS) {
-    if (pattern.test(text)) {
-      return true;
-    }
+  for (const topic of YMYL_TOPICS) {
+    if ((heading.match(topic) ?? []).length > 0) return true; // the page is about it
+    const hits = (body.match(topic) ?? []).length;
+    if (hits >= 5 && (hits / words) * 1000 >= 4) return true; // or keeps coming back to it
   }
 
-  // Check URL path for YMYL indicators
-  const urlLower = url.toLowerCase();
-  if (
-    urlLower.includes('/health') ||
-    urlLower.includes('/finance') ||
-    urlLower.includes('/legal') ||
-    urlLower.includes('/medical') ||
-    urlLower.includes('/money')
-  ) {
-    return true;
+  try {
+    return YMYL_PATH.test(new URL(url).pathname);
+  } catch {
+    return false;
   }
-
-  return false;
 }
 
 /**
