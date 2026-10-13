@@ -4,10 +4,30 @@ There are fifteen files in this directory and some of them contradict each other
 were written across several sessions as things changed. This one is the index. If it disagrees
 with another file, this one is right, and fix the other one.
 
-**Last verified: 2026-09-30.**
+**Last verified: 2026-10-13.**
 
 For what has actually been done, with outcomes, see
 **[ACTIVITY-LOG.md](./ACTIVITY-LOG.md)**. This file is the plan; that one is the record.
+
+---
+
+## 2026-10-13: read this before the numbered list
+
+The numbered list below was written on 2026-09-30, before anything was measured. On 2026-10-13
+the measurement came in ([ACTIVITY-LOG.md, "Status on 2026-10-13"](./ACTIVITY-LOG.md#status-on-2026-10-13-measured-not-remembered)):
+the Show HN was dead on arrival, both Reddit posts were removed or filtered, Bluesky has 2
+followers, the Action is not on the GitHub Marketplace, and 17 accounts exist, 7 of them from
+the week of Oct 5 and none since.
+
+**The current plan, in order, with the competitor evidence behind it, is
+[COMPETITION-AND-OUTREACH-2026-10.md](./COMPETITION-AND-OUTREACH-2026-10.md) §5.** Its first
+three items are clicks, not work: merge the agent-skills PR on `rankcli-mcp-server`, publish the
+Action to the GitHub Marketplace, publish `astro-rankcli` to npm. Item 4 is the one decision:
+whether the CLI stays closed in a category where every 2026 rival is open source.
+
+The list below is still right about Reddit (standing first) and Reddit Ads; it is wrong about
+Hacker News ("submitted" became "killed") and it did not know about the skill directories,
+the Marketplace gap, or the unpublished framework plugins.
 
 ---
 
@@ -79,15 +99,18 @@ r/webdev post buys a front page.
 | Analytics | **Live.** Cloudflare Web Analytics, cookieless, one beacon on every page since 2026-09-28 |
 | Blog | Two posts live on rankcli.dev/blog |
 | Dev.to | Two articles published on the `rankcli` account, both canonical to rankcli.dev |
-| Bluesky | Two posts from `@rankclidev.bsky.social` |
+| Bluesky | 16 posts from `@rankclidev.bsky.social`, 2 followers, 1 like total |
 | IndexNow | Working, 22 URLs submitted to Bing, Yandex, Seznam, Naver |
-| MCP distribution | Official registry, Glama, Smithery, awesome-mcp-servers; mcp.so queued |
+| MCP distribution | Official registry, Glama, Smithery, awesome-mcp-servers; mcp.so queued. Measured: ~185 downloads a week, no signups traceable to it |
 | Ad creative | Re-recorded 2026-09-28 in `ad-assets/`, 75/100, 0 errors, AI Readiness 67 |
 
 ## What is broken or blocked
 
 | | |
 |---|---|
+| **Hacker News** | The 2026-09-30 Show HN is **dead** (new account, 7 karma, 1 point, 0 comments, not indexed). Email hn@ycombinator.com, then resubmit from the aged account; drafts in COMPETITION-AND-OUTREACH-2026-10.md §6 |
+| **GitHub Marketplace** | `rankcli-action` is **not listed**; the v1.0.0 release needs the "Publish this Action to the GitHub Marketplace" box ticked (FOUNDER_CHECKLIST §3) |
+| **Framework plugins** | `astro-rankcli`, `vite-plugin-rankcli`, `next-rankcli` are built and tested in the monorepo and **not on npm**; Astro lists any published package with the `astro-integration` keyword automatically |
 | **Mastodon** | Token in `.env` is **invalid**, and was never added to GitHub secrets. Regenerate at mastodon.social → Preferences → Development with `write:statuses`, then `gh secret set` both values |
 | **X / Twitter** | No credentials anywhere. Deliberate, the free tier ended Feb 2026, roughly $0.20 per post with a link |
 | **Reddit account** | `accounts.md` says `u/rankcli` is pending registration, but you have an aged account under `bsbodden@integrallis.com`. Use the aged one, a new account posting links gets auto-removed |

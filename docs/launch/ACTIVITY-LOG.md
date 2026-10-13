@@ -7,6 +7,43 @@ Baseline on 2026-09-28: **9 registered users**, of which 3 are `@integrallis.com
 disposable address, and 2 of the remaining signed in once and never returned. Real external
 users are somewhere between 1 and 5.
 
+
+## Status on 2026-10-13 (measured, not remembered)
+
+Sources: the `e2e-check-auth-config` diagnostics run, the npm downloads API, the GitHub API, the
+Bluesky and Dev.to public APIs, the HN Firebase API. The three `@integrallis.com` accounts and the
+founder's test subscriptions are included in the user counts below.
+
+| | |
+|---|---|
+| Accounts | **17** (8 Google, 7 email, 2 GitHub). Before launch 3; week of Aug 31: 3; Sep 14: 1; Sep 21: 1; Sep 28: 2; **Oct 5: 7**; since: 0 |
+| Plans | 13 free, 2 Pro, 1 Solo, 1 Agency (the paid rows are almost certainly the founder's own test accounts) |
+| Free audits | 31 in the week of Oct 5 (7 left an email), 12 / 17 / 17 the three weeks before. **0 recorded conversions** to signup; conversion is only measurable when an email was entered |
+| Audits by users | 11 manual audits finished in the last 7 days, latest 2026-10-09 |
+| Show HN | **Dead.** Submitted 2026-09-30 19:32 UTC from `integrallis` (account created 2026-09-06, karma 7). HN marked it dead at 1 point, 0 comments; Algolia does not index it; nobody saw it. The log above said "Pending" |
+| HN account | 7 karma, 4 comments on 2026-10-02, 1 dead story |
+| Bluesky | 16 posts, **2 followers**, 1 like total (the first dogfood post) |
+| Dev.to `rankcli` | 5 articles. The Cloudflare/Googlebot one: 7 reactions, 2 comments. The other four: 0 reactions |
+| npm `@rankcli/cli` | 67 downloads last week; 0 to 6 a day outside release days. The spikes (1,382 on Sep 27) are release days, CI and mirrors, not users |
+| GitHub | `rankcli-mcp-server` 1 star, 2 views in 14 days; `rankcli-action` 0 stars, 0 views, **not on the GitHub Marketplace** (both slug guesses 404) |
+| growth-ops | Posts the weekly score to Bluesky and LinkedIn. Mastodon, Discord and X unconfigured; Dev.to disabled; Reddit API still gated |
+| Founder checklist | Google OAuth and GitHub App OAuth secrets still unset; 0 Search Console connections; deep audits run |
+| Reddit | Comments logged: 2 (2026-09-30). Posts: 0 since the removals. Whether the Reddit Ads campaign was started is not visible from the repo |
+
+What drove the 7 signups and 31 free audits in the week of Oct 5 is not knowable from here:
+nothing was published or pushed that week (only the weekly Bluesky post, 0 likes), and the
+Cloudflare Web Analytics referrer report is only in the dashboard. Check Cloudflare -> Web
+Analytics -> rankcli.dev -> Referrers for Oct 5 to Oct 11 before deciding what to repeat.
+
+### 2026-10-13
+
+- Local checkout was 113 commits behind `origin/main`; synced. Of the four audit-accuracy fixes
+  left uncommitted on 2026-09-19, three had been re-solved upstream (framework detector rebuilt
+  on weighed evidence in v0.0.43, AI readiness recalibrated in v0.0.46, noindex gating in
+  v0.0.45) and were dropped. The fourth, YMYL detection that flagged nearly every page on words
+  like "price" and "warning", was not upstream; committed as `734b7f1` with tests.
+- Found the Show HN dead (above). The activity log had it as pending for two weeks.
+
 ---
 
 ## Channels reached
@@ -15,11 +52,11 @@ users are somewhere between 1 and 5.
 |---|---|---|
 | Blog (rankcli.dev) | 3 posts live | Indexed, in sitemap |
 | Dev.to | 3 articles, account `rankcli` | 10, 14 and 34 views |
-| Bluesky `@rankclidev` | 4 posts | **0 likes, 0 reposts, 0 replies. 2 followers** |
+| Bluesky `@rankclidev` | 16 posts (2026-10-13) | **1 like, 0 reposts, 0 replies. 2 followers** |
 | IndexNow | Working | 35 URLs to Bing, Yandex, Seznam, Naver |
 | MCP directories | Listed everywhere that matters | Registry, Glama, Smithery, awesome-mcp-servers; mcp.so queued |
 | Reddit organic | 2 comments, 2 posts | **Both posts removed or filtered** |
-| Hacker News | Show HN submitted 2026-09-30 | Pending |
+| Hacker News | Show HN submitted 2026-09-30 | **Dead on arrival** (new account, 7 karma); 0 views. See "Status on 2026-10-13" |
 | Reddit Ads | **Unblocked** | Pixel `a2_jrtl7de1quoe` live, PageVisit and Search both verified firing |
 | Meta / Zeely | Not started | 10K credits unspent |
 | LinkedIn | Not started | Credentials work; owner's call |
