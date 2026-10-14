@@ -99,13 +99,21 @@ export function analyzeBrandMentionOptimization(
   let hasBrandStatement = false;
   const quotableBrandStatements: string[] = [];
 
+  // "<Brand> is a <category> ..." is the definition this check's own advice asks
+  // for, and it needs no superlative: "RankCLI is a free SEO tool" counts, the
+  // generic patterns above only matched "is a leading ..." style puffery.
+  const brandDefinition = new RegExp(
+    `\\b${potentialBrandName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+(?:is|are)\\s+(?:a|an|the)\\b`,
+    'i'
+  );
+
   // Analyze paragraphs for brand statements
   $content.find('p, li, h1, h2, h3').each((_, el) => {
     const text = $(el).text().trim();
     if (text.length < 20 || text.length > 300) return;
 
     // Check for brand definitions
-    for (const pattern of BRAND_DEFINITION_PATTERNS) {
+    for (const pattern of [brandDefinition, ...BRAND_DEFINITION_PATTERNS]) {
       if (pattern.test(text)) {
         hasBrandDefinition = true;
         if (text.length <= 200 && quotableBrandStatements.length < 5) {
