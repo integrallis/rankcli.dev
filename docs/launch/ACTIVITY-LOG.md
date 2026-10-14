@@ -47,10 +47,13 @@ Analytics -> rankcli.dev -> Referrers for Oct 5 to Oct 11 before deciding what t
   `seo-ci-gate`) and a Claude Code plugin. `claude plugin validate` passes on `main`;
   `npx skills add integrallis/rankcli-mcp-server` installed both once. Directory submission
   needs the founder (FOUNDER_CHECKLIST §7).
-- Tried to publish `astro-rankcli` (run 38481967050 of the new **Publish framework plugins**
-  workflow, `42056f5`). Build and 32 tests passed; npm rejected the `NPM_TOKEN` secret
-  (January token, dead) and a new package cannot use Trusted Publishing for its first version.
-  Needs one founder credential (FOUNDER_CHECKLIST §8); the same run then publishes all three.
+- Published `astro-rankcli`, `vite-plugin-rankcli` and `next-rankcli`, all 0.0.1, through the new
+  **Publish framework plugins** workflow. It took three tokens: the January `NPM_TOKEN` was dead,
+  the first regenerated one was read-only (npm answered 403 on PUT), the third had read/write on
+  all packages and 2FA bypass. npm created a `0.0.0-stage` stub beside each package during that
+  publish, which a bypass token may not unpublish. The workflow now tries Trusted Publishing
+  first and falls back to the token with a warning; linking each package to OIDC needs a 2FA
+  code (FOUNDER_CHECKLIST §8).
 - Founder confirmed the Reddit Ads campaign never ran. The pixel has fired for organic visitors
   only since 2026-09-30.
 - Checked what open-sourcing the CLI would reveal: nothing `node_modules` does not already show.

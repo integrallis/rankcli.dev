@@ -69,11 +69,26 @@ The plugin is merged and valid on `integrallis/rankcli-mcp-server` `main` (`4ee5
 
 Bump `version` in `.claude-plugin/plugin.json` with each release after that.
 
-## 8. Give npm a credential for the framework plugins - five minutes
+## 8. Link the framework plugins to npm Trusted Publishing - two minutes per package
 
-`astro-rankcli`, `vite-plugin-rankcli` and `next-rankcli` are ready (`42056f5`) and the **Publish framework plugins** workflow publishes them, but its first run (38481967050) was rejected: the `NPM_TOKEN` secret dates from January and is dead, and npm cannot link a package to Trusted Publishing before its first version exists ([npm/cli#8544](https://github.com/npm/cli/issues/8544)). Either path works:
+`astro-rankcli`, `vite-plugin-rankcli` and `next-rankcli` are on npm at 0.0.1 (2026-10-13, published by the **Publish framework plugins** workflow with the regenerated `NPM_TOKEN`). Two things only a 2FA code can do remain:
 
-- **From a machine**: `npm login`, then in `packages/astro-plugin` run `pnpm build && npm publish --access public`; the same for `packages/vite-plugin` and `packages/next-plugin`.
-- **From CI**: npmjs.com -> Access Tokens -> Generate new token -> Granular, read and write on packages, allow publishing from CI (bypass 2FA), shortest expiry you accept -> `gh secret set NPM_TOKEN --repo integrallis/rankcli.dev`, then Actions -> **Publish framework plugins** -> Run workflow -> package `all`.
+1. **Link each package to the workflow**, so releases stop depending on the token (npm retires direct token publishing in January 2027). On any machine with npm 11.15 or newer (`npx npm@latest` is fine), logged in as `integrallis`:
 
-After each package's first publish: npmjs.com -> package -> Settings -> **Trusted Publisher** -> GitHub Actions: organization `integrallis`, repository `rankcli.dev`, workflow `publish-plugins.yml`. Then the token can be deleted again; `build-cli.yml` already publishes the CLI, runtime and MCP server that way.
+   ```bash
+   npx npm@latest trust github astro-rankcli       --file publish-plugins.yml --repo integrallis/rankcli.dev --allow-publish
+   npx npm@latest trust github vite-plugin-rankcli --file publish-plugins.yml --repo integrallis/rankcli.dev --allow-publish
+   npx npm@latest trust github next-rankcli        --file publish-plugins.yml --repo integrallis/rankcli.dev --allow-publish
+   ```
+
+   Each asks for your 2FA code. The website does the same: package -> Settings -> Trusted Publisher -> GitHub Actions, organization `integrallis`, repository `rankcli.dev`, workflow `publish-plugins.yml`. Afterwards the workflow publishes through OIDC and the `NPM_TOKEN` secret can be deleted.
+
+2. **Optional: remove the `0.0.0-stage` stubs.** npm put a 335-byte placeholder version beside each package when it created them. `latest` is 0.0.1 and installs are unaffected, but the version list shows the stub. A 2FA-bypass token may not unpublish, so it needs a code, and npm allows it for 72 hours after publish (until 2026-10-16):
+
+   ```bash
+   npx npm@latest unpublish astro-rankcli@0.0.0-stage --otp <code>
+   npx npm@latest unpublish vite-plugin-rankcli@0.0.0-stage --otp <code>
+   npx npm@latest unpublish next-rankcli@0.0.0-stage --otp <code>
+   ```
+
+   After that window, `npm deprecate <package>@0.0.0-stage "placeholder, use 0.0.1"` is the alternative.

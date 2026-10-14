@@ -163,15 +163,13 @@ export and ship the WASM as a built artifact, knowing it protects nothing.
   installed, which is what registers the repo on skills.sh);
   `/plugin install rankcli --marketplace integrallis/rankcli-mcp-server` works. What is left is
   the directory submission, which needs the founder's GitHub login (FOUNDER_CHECKLIST §7).
-- **The three framework plugins are ready to publish** (`42056f5`): `repository` no longer
-  points at a repo that does not exist, `homepage` is the framework landing page, MIT LICENSE
-  files, `engines`, `publishConfig`. A manual workflow, **Publish framework plugins**
-  (`publish-plugins.yml`), builds, tests and publishes one or all of them and skips versions
-  already on npm. Its first run (astro-rankcli, run 38481967050) stopped at npm: the
-  `NPM_TOKEN` secret is rejected (`npm whoami` fails; it dates from January, before npm revoked
-  classic tokens), and npm cannot link a package to Trusted Publishing before its first publish
-  ([npm/cli#8544](https://github.com/npm/cli/issues/8544)). One founder step unblocks all three
-  (FOUNDER_CHECKLIST §8).
+- **The three framework plugins are on npm**: `astro-rankcli@0.0.1`, `vite-plugin-rankcli@0.0.1`
+  and `next-rankcli@0.0.1`, published 2026-10-13 by the new **Publish framework plugins**
+  workflow (`42056f5`, `67b858a`, `64a50dd`) once a regenerated `NPM_TOKEN` had read/write on
+  all packages. Astro's integrations directory lists any package keyworded `astro-integration`
+  on its own. Two things npm only lets a 2FA code do are left for the founder: link each package
+  to Trusted Publishing so the token can go, and remove the `0.0.0-stage` stub npm created
+  beside each package (FOUNDER_CHECKLIST §8).
 - **GitHub topics** on both public repos now include `ai-visibility`,
   `generative-engine-optimization`, `agent-skills`, `claude-code`, `cursor`, `seo-audit`,
   `core-web-vitals`, `structured-data`, `ai-search`. GitHub Topics pages are where the OSS rivals'
@@ -190,12 +188,10 @@ Each item says who can do it. "Founder" means it needs an account only you hold.
 2. **Publish the Action to the GitHub Marketplace** (founder, two minutes, FOUNDER_CHECKLIST §3).
    Checked 2026-10-13: the manifest has `branding`, the name is unique, the repo is public, the
    v1.0.0 release exists; nothing but the tick is missing. There is no API for it.
-3. **Publish `astro-rankcli`, then `vite-plugin-rankcli` and `next-rankcli`** (founder, one
-   credential, FOUNDER_CHECKLIST §8): either `npm login` on a machine and `npm publish` from
-   `packages/astro-plugin`, or a new npm granular token in the `NPM_TOKEN` secret, then
-   Actions -> Publish framework plugins -> `all`. After the first publish, link each package to
-   the workflow on npmjs.com and the token can go. Astro's directory lists the package on its
-   own. A Nuxt module is new code plus one PR to nuxt/modules.
+3. ~~Publish `astro-rankcli`, `vite-plugin-rankcli` and `next-rankcli`~~ Done, all at 0.0.1 on
+   2026-10-13. Left for the founder (FOUNDER_CHECKLIST §8): link the three packages to Trusted
+   Publishing with a 2FA code, then delete the token. A Nuxt module is new code plus one PR to
+   nuxt/modules.
 4. **Decide §3.** If yes: one public repo, MIT, README that leads with `npx @rankcli/cli audit`,
    topics as above, and every listing repointed at it.
 5. **Hacker News, properly** (founder). Email hn@ycombinator.com first (§6.2): the moderators

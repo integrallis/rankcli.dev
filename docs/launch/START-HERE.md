@@ -23,9 +23,8 @@ the week of Oct 5 and none since.
 [COMPETITION-AND-OUTREACH-2026-10.md](./COMPETITION-AND-OUTREACH-2026-10.md) §5.** Its first
 three items are clicks, not work. The agent-skills PR on `rankcli-mcp-server` is merged; what is
 left needs accounts only you hold: submit the plugin at claude.ai/directory/manage, tick the
-Marketplace box on the Action's v1.0.0 release, and give npm a working credential so the
-**Publish framework plugins** workflow can ship `astro-rankcli` (the January `NPM_TOKEN` is
-dead). FOUNDER_CHECKLIST §7 and §8 have the exact steps. Item 4 is the one decision: whether the
+Marketplace box on the Action's v1.0.0 release, and link the three framework plugins, now on
+npm at 0.0.1, to Trusted Publishing. FOUNDER_CHECKLIST §7 and §8 have the exact steps. Item 4 is the one decision: whether the
 CLI stays closed in a category where every 2026 rival is open source; §3.1 there shows that
 opening it reveals nothing the npm tarballs do not already contain.
 
@@ -114,7 +113,7 @@ r/webdev post buys a front page.
 |---|---|
 | **Hacker News** | The 2026-09-30 Show HN is **dead** (new account, 7 karma, 1 point, 0 comments, not indexed). Email hn@ycombinator.com, then resubmit from the aged account; drafts in COMPETITION-AND-OUTREACH-2026-10.md §6 |
 | **GitHub Marketplace** | `rankcli-action` is **not listed**; the v1.0.0 release needs the "Publish this Action to the GitHub Marketplace" box ticked (FOUNDER_CHECKLIST §3) |
-| **Framework plugins** | `astro-rankcli`, `vite-plugin-rankcli`, `next-rankcli` are built, tested and ready (`42056f5`) and **not on npm**: the `NPM_TOKEN` secret is dead and npm cannot Trusted-Publish a package's first version. One credential, then Actions -> Publish framework plugins -> `all` (FOUNDER_CHECKLIST §8). Astro lists any published package with the `astro-integration` keyword automatically |
+| **Framework plugins** | **Published** 2026-10-13: `astro-rankcli`, `vite-plugin-rankcli`, `next-rankcli` at 0.0.1. Astro lists `astro-integration` packages automatically. Left: link them to Trusted Publishing with a 2FA code and drop the `0.0.0-stage` stubs (FOUNDER_CHECKLIST §8) |
 | **Claude plugin directory** | Plugin merged and valid on `rankcli-mcp-server` `main`; the submission form needs your GitHub login (FOUNDER_CHECKLIST §7) |
 | **Reddit Ads** | Pixel live since 2026-09-30, **campaign never created** (confirmed 2026-10-13). Fields in `reddit-ads-setup.md` |
 | **Mastodon** | Token in `.env` is **invalid**, and was never added to GitHub secrets. Regenerate at mastodon.social → Preferences → Development with `write:statuses`, then `gh secret set` both values |
