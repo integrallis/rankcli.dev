@@ -1,0 +1,491 @@
+{
+  "_comment": "Comparison and alternative pages (/compare/<slug>, /alternatives/<slug>). Every rival cell carries a source URL read on verifiedAt; RankCLI cells come from docs/launch/VERIFIED-NUMBERS.md and pricing-tiers.json. A page with draft: true is not routed, prerendered or in the sitemap.",
+  "comparisons": [
+    {
+      "slug": "lighthouse-ci",
+      "kind": "compare",
+      "rival": "Lighthouse CI",
+      "title": "RankCLI vs Lighthouse CI",
+      "description": "Lighthouse CI gates performance and accessibility in CI; RankCLI gates SEO and AI search. What each checks, costs and automates, with sources.",
+      "verifiedAt": "2026-10-14",
+      "summary": "Lighthouse CI runs Google's Lighthouse on URLs you list and fails the build on scores or budgets. RankCLI crawls a site, runs 280+ SEO and AI-search checks, fails the build the same way, and can open the fix as a pull request. They overlap on CI gating and little else; most teams that use one can use both.",
+      "rows": [
+        {
+          "aspect": "What it is",
+          "rankcli": "An SEO and AI-search linter for developers: 280+ checks from the CLI, a GitHub Action and an MCP server, with fixes as pull requests.",
+          "rival": "\"A suite of tools that make continuously running, saving, retrieving, and asserting against Lighthouse results as easy as possible.\"",
+          "source": "https://github.com/GoogleChrome/lighthouse-ci"
+        },
+        {
+          "aspect": "Licence and source",
+          "rankcli": "Free npm packages under MIT (@rankcli/cli, @rankcli/agent-runtime, @rankcli/mcp-server). The GitHub Action and MCP server repositories are public; the CLI source is not yet published as a repository.",
+          "rival": "Apache-2.0, by Google. 7,110 GitHub stars; v0.15.1 is the latest release.",
+          "source": "https://github.com/GoogleChrome/lighthouse-ci"
+        },
+        {
+          "aspect": "Price",
+          "rankcli": "CLI, Action, MCP server and local fixes are free with no account. Hosted: Free (1 site, weekly), Solo $9/mo, Pro $29/mo ($19 founding for the first 100), Agency $99/mo; every plan runs all 280+ checks.",
+          "rival": "Free. Results upload to temporary public storage (deleted after a few days), to a Lighthouse CI server you host, or to the filesystem.",
+          "source": "https://github.com/GoogleChrome/lighthouse-ci/blob/main/docs/configuration.md"
+        },
+        {
+          "aspect": "Install and run",
+          "rankcli": "npx @rankcli/cli audit --url https://your-site.dev. Action integrallis/rankcli-action@v1 (public repository; Marketplace listing pending). MCP: npx @rankcli/mcp-server, 15 tools. Agent skills: npx skills add integrallis/rankcli-mcp-server. Hosted dashboard at rankcli.dev.",
+          "rival": "npm install -g @lhci/cli, then lhci autorun. GitHub Action: the community treosh/lighthouse-ci-action (not published by Google). Self-hosted server via Docker image or npx lhci server. No MCP server or agent skill stated.",
+          "source": "https://github.com/GoogleChrome/lighthouse-ci/blob/main/docs/getting-started.md"
+        },
+        {
+          "aspect": "What it audits",
+          "rankcli": "280+ checks: crawlability, indexability, on-page, content, links, Core Web Vitals heuristics, security headers, structured data, local SEO, social, accessibility, AI readiness. Multi-page crawl, --max-pages N (default 5).",
+          "rival": "Lighthouse's categories: performance (lab metrics and budgets), accessibility, best practices, SEO. The SEO category in Lighthouse 12.6.1, which @lhci/cli 0.15.1 pins, has 11 audits (title, meta description, crawlable, canonical, hreflang, robots.txt, link text, image alt, HTTP status, structured data as a manual item). No crawl: you list the URLs, or it audits each HTML file in a static directory.",
+          "source": "https://github.com/GoogleChrome/lighthouse/blob/v12.8.2/core/config/default-config.js"
+        },
+        {
+          "aspect": "AI search (GEO) checks",
+          "rankcli": "AI crawler access tested by fetching as each crawler and comparing with a browser (catches CDN-level blocks robots.txt cannot show), llms.txt, citation-worthiness, answer structure, E-E-A-T, RAG chunk readiness, entity and brand checks.",
+          "rival": "None in the pinned Lighthouse 12.6.1. Lighthouse 13.5 adds llms.txt, agent accessibility tree, WebMCP and ard-schema audits, but Lighthouse CI 0.15.1 does not ship it.",
+          "source": "https://github.com/GoogleChrome/lighthouse/blob/v12.8.2/core/config/default-config.js"
+        },
+        {
+          "aspect": "CI gating",
+          "rankcli": "--fail-on error|warning|notice and --min-score N; exit 0 pass, 1 gate failed, 2 bad invocation, 3 site unreachable, so a down site never passes. The Action posts a PR comment and can alert Slack or Discord. README badge on the hosted Free plan. No SARIF output.",
+          "rival": "Assertions at off, warn or error with minScore, maxLength and maxNumericValue, presets, and budget files; error exits non-zero. GitHub status checks through the LHCI GitHub App or a token. No PR comments, SARIF or badges stated.",
+          "source": "https://github.com/GoogleChrome/lighthouse-ci/blob/main/docs/configuration.md"
+        },
+        {
+          "aspect": "Fixes",
+          "rankcli": "rankcli fix applies fixes locally (--dry-run, --only CODES), free. Hosted auto-fix pull requests through the RankCLI GitHub App: 3 a month on Free, unlimited on paid plans, with per-site open-PR limits.",
+          "rival": "Reports contain Lighthouse's recommendations. No fix application or pull requests stated.",
+          "source": "https://github.com/GoogleChrome/lighthouse-ci"
+        },
+        {
+          "aspect": "Monitoring and history",
+          "rankcli": "Hosted: scheduled audits (weekly on Free, daily and on every push on Pro), history, weekly email report, Slack and Discord alerts on Solo and up. Search Console sync is built but not yet enabled.",
+          "rival": "A self-hosted server keeps history, shows trends and diffs builds. Scheduling, alerts and Search Console are not stated; temporary public storage keeps no history.",
+          "source": "https://github.com/GoogleChrome/lighthouse-ci/blob/main/docs/server.md"
+        },
+        {
+          "aspect": "AI model use",
+          "rankcli": "The checks are deterministic and need no model. Optional AI analysis runs on your model only: Apple Intelligence on-device on a Mac that has it, else Ollama or LM Studio, else your own OpenRouter, OpenAI, Anthropic, Groq, Gemini or DeepSeek key. Nothing goes through RankCLI.",
+          "rival": "None stated.",
+          "source": "https://github.com/GoogleChrome/lighthouse-ci"
+        },
+        {
+          "aspect": "Frameworks",
+          "rankcli": "Detects 32 frameworks (94% on a 51-site corpus); fix recipes for 11; build-time plugins astro-rankcli, vite-plugin-rankcli and next-rankcli; framework guides at /seo.",
+          "rival": "None; staticDistDir for static output, startServerCommand for servers; CI walkthroughs for GitHub Actions, Travis, CircleCI, GitLab, Jenkins and Cloud Build.",
+          "source": "https://github.com/GoogleChrome/lighthouse-ci/blob/main/docs/getting-started.md"
+        },
+        {
+          "aspect": "Limits worth knowing",
+          "rankcli": "No headless browser: pages are audited as served, which is what crawlers see first, so client-rendered content is reported as such rather than rendered. Performance is heuristic, not Lighthouse lab metrics. First public release in 2026.",
+          "rival": "Per-URL, no crawl. Three runs per URL by default to tame variance. Public storage is readable by anyone with the link; the server accepts data from anyone with HTTP access unless you add auth.",
+          "source": "https://github.com/GoogleChrome/lighthouse-ci/blob/main/docs/getting-started.md"
+        }
+      ],
+      "pickRival": [
+        "You want Lighthouse's own performance and accessibility scores, with budgets, as a CI gate.",
+        "You already run Lighthouse and need history and build diffs on infrastructure you host.",
+        "Your SEO needs stop at titles, descriptions, canonicals and crawlability."
+      ],
+      "pickRankcli": [
+        "You want the SEO and AI-search checks Lighthouse does not run: structured data validation, security headers, AI crawler access at the CDN, llms.txt, citation-readiness.",
+        "You want a crawl of the site, not a list of URLs, and a PR comment with the findings.",
+        "You want the fix opened as a pull request, or applied locally with rankcli fix.",
+        "You want an MCP server so Claude Code or Cursor can run the checks."
+      ],
+      "sources": [
+        {
+          "label": "GoogleChrome/lighthouse-ci README",
+          "url": "https://github.com/GoogleChrome/lighthouse-ci"
+        },
+        {
+          "label": "Lighthouse CI configuration docs (assertions, upload targets)",
+          "url": "https://github.com/GoogleChrome/lighthouse-ci/blob/main/docs/configuration.md"
+        },
+        {
+          "label": "Lighthouse CI getting started",
+          "url": "https://github.com/GoogleChrome/lighthouse-ci/blob/main/docs/getting-started.md"
+        },
+        {
+          "label": "Lighthouse CI server docs",
+          "url": "https://github.com/GoogleChrome/lighthouse-ci/blob/main/docs/server.md"
+        },
+        {
+          "label": "Lighthouse 12.8 default config (SEO audits)",
+          "url": "https://github.com/GoogleChrome/lighthouse/blob/v12.8.2/core/config/default-config.js"
+        },
+        {
+          "label": "Lighthouse SEO audits overview",
+          "url": "https://developer.chrome.com/docs/lighthouse/seo/"
+        },
+        {
+          "label": "treosh/lighthouse-ci-action on the GitHub Marketplace",
+          "url": "https://github.com/marketplace/actions/lighthouse-ci-action"
+        }
+      ]
+    },
+    {
+      "slug": "squirrelscan",
+      "kind": "compare",
+      "rival": "squirrelscan",
+      "title": "RankCLI vs squirrelscan",
+      "description": "Two open CLI auditors with a GitHub Action, an MCP server and agent skills. Where squirrelscan and RankCLI differ: fixes, rendering, pricing and AI use.",
+      "verifiedAt": "2026-10-14",
+      "summary": "squirrelscan and RankCLI are the two closest tools in this category: both run hundreds of deterministic checks from a free CLI, gate CI on a score or severity, comment on pull requests, expose an MCP server and ship agent skills. squirrelscan renders pages in a cloud browser and sells credits for that; RankCLI applies fixes and opens pull requests, and runs any AI analysis on your own model.",
+      "rows": [
+        {
+          "aspect": "What it is",
+          "rankcli": "An SEO and AI-search linter for developers: 280+ checks from the CLI, a GitHub Action and an MCP server, with fixes as pull requests.",
+          "rival": "\"The website QA tool for your coding agent\": an open source CLI that audits websites for SEO, performance, security, accessibility, agent experience and other issues, and gives your coding agent exact fixes.",
+          "source": "https://github.com/squirrelscan/squirrelscan"
+        },
+        {
+          "aspect": "Licence and source",
+          "rankcli": "Free npm packages under MIT (@rankcli/cli, @rankcli/agent-runtime, @rankcli/mcp-server). The GitHub Action and MCP server repositories are public; the CLI source is not yet published as a repository.",
+          "rival": "MIT for the CLI and repository (names and logos trademarked). 274 GitHub stars; repository created 2026-01-02; v0.0.112 released 2026-10-13.",
+          "source": "https://github.com/squirrelscan/squirrelscan"
+        },
+        {
+          "aspect": "Price",
+          "rankcli": "CLI, Action, MCP server and local fixes are free with no account. Hosted: Free (1 site, weekly), Solo $9/mo, Pro $29/mo ($19 founding for the first 100), Agency $99/mo; every plan runs all 280+ checks.",
+          "rival": "Local audits unlimited and free when signed out. Cloud: Free (about 5 cloud audits a month, 500 pages each, one site weekly), Pro $19/mo, Team $29 per seat/mo with a 2-seat minimum, Enterprise custom. Cloud audits cost credits: 50 per audit plus 2 per page.",
+          "source": "https://squirrelscan.com/pricing"
+        },
+        {
+          "aspect": "Install and run",
+          "rankcli": "npx @rankcli/cli audit --url https://your-site.dev. Action integrallis/rankcli-action@v1 (public repository; Marketplace listing pending). MCP: npx @rankcli/mcp-server, 15 tools. Agent skills: npx skills add integrallis/rankcli-mcp-server. Hosted dashboard at rankcli.dev.",
+          "rival": "Install script, Homebrew cask, or npm install -g squirrelscan; squirrel audit example.com. GitHub Action squirrelscan/audit-action@v1 on the Marketplace. MCP server local (squirrel mcp) and hosted. squirrel skills install adds Agent Skills and Claude Code and Cursor plugins. Hosted reports and scheduling at reports.squirrelscan.com.",
+          "source": "https://docs.squirrelscan.com/guides/ci"
+        },
+        {
+          "aspect": "What it audits",
+          "rankcli": "280+ checks: crawlability, indexability, on-page, content, links, Core Web Vitals heuristics, security headers, structured data, local SEO, social, accessibility, AI readiness. Multi-page crawl, --max-pages N (default 5).",
+          "rival": "300+ rules in 22 categories, including 61 accessibility, 30 performance, 25 structured data, 22 security and 24 content rules. Crawl levels quick (25 pages), surface (100) and full (500), with --max-pages.",
+          "source": "https://github.com/squirrelscan/squirrelscan"
+        },
+        {
+          "aspect": "AI search (GEO) checks",
+          "rankcli": "AI crawler access tested by fetching as each crawler and comparing with a browser (catches CDN-level blocks robots.txt cannot show), llms.txt, citation-worthiness, answer structure, E-E-A-T, RAG chunk readiness, entity and brand checks.",
+          "rival": "17 Agent Experience rules: whether GPTBot and Claude-User get the same content as a browser, AGENTS.md, llms.txt, Markdown responses, API and MCP discovery, licensing and noai signals, pay-per-crawl, response token weight.",
+          "source": "https://github.com/squirrelscan/squirrelscan"
+        },
+        {
+          "aspect": "CI gating",
+          "rankcli": "--fail-on error|warning|notice and --min-score N; exit 0 pass, 1 gate failed, 2 bad invocation, 3 site unreachable, so a down site never passes. The Action posts a PR comment and can alert Slack or Discord. README badge on the hosted Free plan. No SARIF output.",
+          "rival": "--fail-on with score<N, per-category scores, severity>=error, errors>0, warnings>0; exit 2 when a threshold trips. The Action posts a PR summary comment. Badges on every plan from a published report. SARIF not stated.",
+          "source": "https://docs.squirrelscan.com/guides/ci"
+        },
+        {
+          "aspect": "Fixes",
+          "rankcli": "rankcli fix applies fixes locally (--dry-run, --only CODES), free. Hosted auto-fix pull requests through the RankCLI GitHub App: 3 a month on Free, unlimited on paid plans, with per-site open-PR limits.",
+          "rival": "Fix instructions in every finding, and an audit-website skill that has your coding agent map issues to files, fix them in batches and re-audit. Tool-applied fixes or pull requests not stated.",
+          "source": "https://github.com/squirrelscan/squirrelscan"
+        },
+        {
+          "aspect": "Monitoring and history",
+          "rankcli": "Hosted: scheduled audits (weekly on Free, daily and on every push on Pro), history, weekly email report, Slack and Discord alerts on Solo and up. Search Console sync is built but not yet enabled.",
+          "rival": "Scheduled cloud audits on every plan (one site weekly on Free, daily on Pro and Team), email digest per run, webhooks with a Slack relay as the example. Score history on Pro and up. Search Console not stated.",
+          "source": "https://docs.squirrelscan.com/cloud/scheduled-audits"
+        },
+        {
+          "aspect": "AI model use",
+          "rankcli": "The checks are deterministic and need no model. Optional AI analysis runs on your model only: Apple Intelligence on-device on a Mac that has it, else Ollama or LM Studio, else your own OpenRouter, OpenAI, Anthropic, Groq, Gemini or DeepSeek key. Nothing goes through RankCLI.",
+          "rival": "Local audits are deterministic with no login. Cloud audits add AI page analysis and browser rendering; the provider is not stated. --format llm pipes output to your own assistant.",
+          "source": "https://docs.squirrelscan.com/guides/cloud-audits"
+        },
+        {
+          "aspect": "Frameworks",
+          "rankcli": "Detects 32 frameworks (94% on a 51-site corpus); fix recipes for 11; build-time plugins astro-rankcli, vite-plugin-rankcli and next-rankcli; framework guides at /seo.",
+          "rival": "No framework-specific rules stated; the entity-map fix guide has sections for Yoast, Rank Math, WordLift, Next.js and Astro; cloud audits detect the technology.",
+          "source": "https://docs.squirrelscan.com/guides/entity-map/fixing"
+        },
+        {
+          "aspect": "Limits worth knowing",
+          "rankcli": "No headless browser: pages are audited as served, which is what crawlers see first, so client-rendered content is reported as such rather than rendered. Performance is heuristic, not Lighthouse lab metrics. First public release in 2026.",
+          "rival": "JavaScript rendering is cloud-only; the local CLI does not render. Signed-out runs default to 25 pages. Cloud features are metered by credits. First commit 2026-01-02, still at v0.0.x.",
+          "source": "https://docs.squirrelscan.com/cli/audit"
+        }
+      ],
+      "pickRival": [
+        "You need pages rendered in a browser before auditing, and a cloud plan to do it.",
+        "Accessibility depth matters most: 61 rules against WCAG.",
+        "You want a public score badge from a published report on the free plan.",
+        "You want per-seat team plans with white-label reports."
+      ],
+      "pickRankcli": [
+        "You want the fix applied, locally with rankcli fix or as a pull request from the GitHub App, not only described.",
+        "You want AI analysis that never leaves your machine or your own account: Apple Intelligence on-device, Ollama, or your key.",
+        "You want framework-specific fix recipes and build-time plugins for Astro, Vite and Next.js.",
+        "You want hosted monitoring billed per site, not per credit."
+      ],
+      "sources": [
+        {
+          "label": "squirrelscan/squirrelscan README",
+          "url": "https://github.com/squirrelscan/squirrelscan"
+        },
+        {
+          "label": "squirrelscan pricing",
+          "url": "https://squirrelscan.com/pricing"
+        },
+        {
+          "label": "squirrelscan CI guide (exit codes, --fail-on, Action)",
+          "url": "https://docs.squirrelscan.com/guides/ci"
+        },
+        {
+          "label": "squirrelscan audit command (crawl levels, rendering)",
+          "url": "https://docs.squirrelscan.com/cli/audit"
+        },
+        {
+          "label": "squirrelscan scheduled audits",
+          "url": "https://docs.squirrelscan.com/cloud/scheduled-audits"
+        },
+        {
+          "label": "squirrelscan cloud audits",
+          "url": "https://docs.squirrelscan.com/guides/cloud-audits"
+        },
+        {
+          "label": "squirrelscan badges",
+          "url": "https://docs.squirrelscan.com/guides/badges"
+        },
+        {
+          "label": "squirrelscan entity map fix guide",
+          "url": "https://docs.squirrelscan.com/guides/entity-map/fixing"
+        }
+      ]
+    },
+    {
+      "slug": "geoready",
+      "kind": "compare",
+      "rival": "GeoReady",
+      "title": "RankCLI vs GeoReady (geo-optimizer-skill)",
+      "description": "GeoReady scores a page on whether AI engines can crawl, understand and cite it. RankCLI runs the same checks inside a full SEO audit with CI gates and fixes.",
+      "verifiedAt": "2026-10-14",
+      "summary": "GeoReady, the geo-optimizer-skill CLI, is a Python toolkit built around one question: can ChatGPT, Perplexity, Gemini, Claude and Google AI Overviews crawl, understand and cite this page. RankCLI asks the same question as one category of a 280+ check audit that also covers technical SEO, performance, security and structured data, gates CI, and opens fix pull requests.",
+      "rows": [
+        {
+          "aspect": "What it is",
+          "rankcli": "An SEO and AI-search linter for developers: 280+ checks from the CLI, a GitHub Action and an MCP server, with fixes as pull requests.",
+          "rival": "\"One command scores any website 0 to 100 on whether ChatGPT, Perplexity, Gemini, Claude, and Google AI Overviews can crawl it, understand it, and cite it, then tells you exactly what to fix.\"",
+          "source": "https://github.com/Auriti-Labs/geo-optimizer-skill"
+        },
+        {
+          "aspect": "Licence and source",
+          "rankcli": "Free npm packages under MIT (@rankcli/cli, @rankcli/agent-runtime, @rankcli/mcp-server). The GitHub Action and MCP server repositories are public; the CLI source is not yet published as a repository.",
+          "rival": "MIT, by Auriti Labs. 1,061 GitHub stars; v4.19.0 released 2026-10-09; repository created 2026-02-18. Python 3.9 or newer.",
+          "source": "https://github.com/Auriti-Labs/geo-optimizer-skill"
+        },
+        {
+          "aspect": "Price",
+          "rankcli": "CLI, Action, MCP server and local fixes are free with no account. Hosted: Free (1 site, weekly), Solo $9/mo, Pro $29/mo ($19 founding for the first 100), Agency $99/mo; every plan runs all 280+ checks.",
+          "rival": "CLI free forever. GeoReady SaaS at founding prices: Free $0 (5 audits a day, no account), Pro $19/mo (weekly monitoring, 1 domain), Studio $49/mo (daily, 15 domains, 5 automated Perplexity checks a day), Agency $89/mo (50 domains), Enterprise custom. The README and the pricing page disagree on what the Free plan monitors.",
+          "source": "https://geoready.dev/pricing/"
+        },
+        {
+          "aspect": "Install and run",
+          "rankcli": "npx @rankcli/cli audit --url https://your-site.dev. Action integrallis/rankcli-action@v1 (public repository; Marketplace listing pending). MCP: npx @rankcli/mcp-server, 15 tools. Agent skills: npx skills add integrallis/rankcli-mcp-server. Hosted dashboard at rankcli.dev.",
+          "rival": "pip install -U geo-optimizer-skill or uvx; 16 CLI commands. GitHub Action Auriti-Labs/geo-optimizer-skill on the Marketplace (url, min-score, format json, sarif, junit or text). MCP server with 12 tools via geo-mcp. Free web audit at geoready.dev.",
+          "source": "https://github.com/marketplace/actions/geo-optimizer-audit"
+        },
+        {
+          "aspect": "What it audits",
+          "rankcli": "280+ checks: crawlability, indexability, on-page, content, links, Core Web Vitals heuristics, security headers, structured data, local SEO, social, accessibility, AI readiness. Multi-page crawl, --max-pages N (default 5).",
+          "rival": "Nine weighted categories: Google AI readiness, robots.txt, schema, content, brand and entity, meta tags, llms.txt, signals, AI discovery. Standard technical SEO (meta tags, canonicals, Open Graph) is audited alongside; performance, accessibility and security headers are not stated. Single URL by default; --sitemap with --max-urls for more.",
+          "source": "https://github.com/Auriti-Labs/geo-optimizer-skill"
+        },
+        {
+          "aspect": "AI search (GEO) checks",
+          "rankcli": "AI crawler access tested by fetching as each crawler and comparing with a browser (catches CDN-level blocks robots.txt cannot show), llms.txt, citation-worthiness, answer structure, E-E-A-T, RAG chunk readiness, entity and brand checks.",
+          "rival": "The core: 27 AI crawlers checked through robots.txt, CDN crawler access, llms.txt and llms-full.txt, AI discovery endpoints, 47 content checks for citability, plus commands for citations, access, logs and perception.",
+          "source": "https://github.com/Auriti-Labs/geo-optimizer-skill"
+        },
+        {
+          "aspect": "CI gating",
+          "rankcli": "--fail-on error|warning|notice and --min-score N; exit 0 pass, 1 gate failed, 2 bad invocation, 3 site unreachable, so a down site never passes. The Action posts a PR comment and can alert Slack or Discord. README badge on the hosted Free plan. No SARIF output.",
+          "rival": "geo audit --threshold 70 exits 1 below 70; the Action fails below min-score; SARIF output for the GitHub Security tab; JUnit and GitHub formats. A public badge re-audited hourly, no account needed. PR comments not stated.",
+          "source": "https://github.com/Auriti-Labs/geo-optimizer-skill"
+        },
+        {
+          "aspect": "Fixes",
+          "rankcli": "rankcli fix applies fixes locally (--dry-run, --only CODES), free. Hosted auto-fix pull requests through the RankCLI GitHub App: 3 a month on Free, unlimited on paid plans, with per-site open-PR limits.",
+          "rival": "geo fix previews and, with --apply, writes robots.txt rules, llms.txt, JSON-LD, AI discovery endpoints and meta tags; the same through the MCP geo_fix tool. Pull requests not stated.",
+          "source": "https://github.com/Auriti-Labs/geo-optimizer-skill"
+        },
+        {
+          "aspect": "Monitoring and history",
+          "rankcli": "Hosted: scheduled audits (weekly on Free, daily and on every push on Pro), history, weekly email report, Slack and Discord alerts on Solo and up. Search Console sync is built but not yet enabled.",
+          "rival": "CLI: --save-history, geo history, geo drift and geo track. SaaS: weekly on Pro, daily on Studio and Agency, regression alerts; webhooks and Slack listed under Enterprise only. Search Console not stated.",
+          "source": "https://geoready.dev/pricing/"
+        },
+        {
+          "aspect": "AI model use",
+          "rankcli": "The checks are deterministic and need no model. Optional AI analysis runs on your model only: Apple Intelligence on-device on a Mac that has it, else Ollama or LM Studio, else your own OpenRouter, OpenAI, Anthropic, Groq, Gemini or DeepSeek key. Nothing goes through RankCLI.",
+          "rival": "The core audit needs no install, account or API key. geo citations uses your own key: Perplexity, OpenAI, Anthropic, Groq, Gemini, MiniMax, DeepSeek or SerpBase. No telemetry. On-device models not stated.",
+          "source": "https://github.com/Auriti-Labs/geo-optimizer-skill"
+        },
+        {
+          "aspect": "Frameworks",
+          "rankcli": "Detects 32 frameworks (94% on a 51-site corpus); fix recipes for 11; build-time plugins astro-rankcli, vite-plugin-rankcli and next-rankcli; framework guides at /seo.",
+          "rival": "An Astro integration that writes llms.txt, /.well-known/ai.txt and /ai/summary.json at build time, not yet on npm (copied from the repository). Others not stated.",
+          "source": "https://github.com/Auriti-Labs/geo-optimizer-skill"
+        },
+        {
+          "aspect": "Limits worth knowing",
+          "rankcli": "No headless browser: pages are audited as served, which is what crawlers see first, so client-rendered content is reported as such rather than rendered. Performance is heuristic, not Lighthouse lab metrics. First public release in 2026.",
+          "rival": "Its own README: it measures readiness signals and cannot guarantee any engine will cite you; AI answers vary run to run; llms.txt is an organisational signal, not a proven ranking factor; the 1,400-site benchmark is self-selected and directional. JavaScript content is detected, not rendered.",
+          "source": "https://github.com/Auriti-Labs/geo-optimizer-skill"
+        }
+      ],
+      "pickRival": [
+        "You only want the AI-search angle, scored 0 to 100, from Python.",
+        "You need SARIF in the GitHub Security tab or a JUnit report.",
+        "You want a public badge with no account at all.",
+        "You want citation tracking across many AI engines with your own keys."
+      ],
+      "pickRankcli": [
+        "You want AI-search readiness as one category of a full audit, with the technical SEO, performance and security findings that decide whether a page is worth citing at all.",
+        "You want the whole site crawled by default, not one URL.",
+        "You want a PR comment on every deploy and the fix as a pull request.",
+        "You work in JavaScript and want npm, npx and build-time plugins for Astro, Vite and Next.js."
+      ],
+      "sources": [
+        {
+          "label": "Auriti-Labs/geo-optimizer-skill README",
+          "url": "https://github.com/Auriti-Labs/geo-optimizer-skill"
+        },
+        {
+          "label": "GeoReady pricing",
+          "url": "https://geoready.dev/pricing/"
+        },
+        {
+          "label": "GEO Optimizer Audit on the GitHub Marketplace",
+          "url": "https://github.com/marketplace/actions/geo-optimizer-audit"
+        },
+        {
+          "label": "geo-optimizer-skill on PyPI",
+          "url": "https://pypi.org/project/geo-optimizer-skill/"
+        }
+      ]
+    },
+    {
+      "slug": "screaming-frog",
+      "kind": "alternatives",
+      "rival": "Screaming Frog SEO Spider",
+      "title": "A Screaming Frog alternative for developers: RankCLI",
+      "description": "Screaming Frog is the desktop crawler SEOs run by hand. RankCLI runs 280+ checks in CI, fails the build and opens the fix. When each one fits, with sources.",
+      "verifiedAt": "2026-10-14",
+      "summary": "Screaming Frog SEO Spider is the desktop crawler most SEO teams use: it crawls up to 500 URLs free and millions on a licence, and exports everything for a human to work through. RankCLI is not a feature-for-feature replacement. It is the developer-workflow alternative: the same kind of checks, run from the terminal or CI on every push, with a non-zero exit code and a pull request instead of a spreadsheet.",
+      "rows": [
+        {
+          "aspect": "What it is",
+          "rankcli": "An SEO and AI-search linter for developers: 280+ checks from the CLI, a GitHub Action and an MCP server, with fixes as pull requests.",
+          "rival": "\"A website crawler that audits your site for over 300 SEO issues to help improve both SEO, and UX.\"",
+          "source": "https://www.screamingfrog.co.uk/seo-spider/"
+        },
+        {
+          "aspect": "Licence and source",
+          "rankcli": "Free npm packages under MIT (@rankcli/cli, @rankcli/agent-runtime, @rankcli/mcp-server). The GitHub Action and MCP server repositories are public; the CLI source is not yet published as a repository.",
+          "rival": "Proprietary desktop software for Windows, macOS, Ubuntu and Fedora; no source repository. Current version 24.3.",
+          "source": "https://www.screamingfrog.co.uk/seo-spider/pricing/"
+        },
+        {
+          "aspect": "Price",
+          "rankcli": "CLI, Action, MCP server and local fixes are free with no account. Hosted: Free (1 site, weekly), Solo $9/mo, Pro $29/mo ($19 founding for the first 100), Agency $99/mo; every plan runs all 280+ checks.",
+          "rival": "Free up to 500 URLs per crawl, no sign-up. Licence £199 per user per year (bulk from £169) adds configuration, saved crawls, JavaScript rendering, custom extraction, Google Analytics, Search Console and PageSpeed Insights integrations, and scheduling.",
+          "source": "https://www.screamingfrog.co.uk/seo-spider/pricing/"
+        },
+        {
+          "aspect": "Install and run",
+          "rankcli": "npx @rankcli/cli audit --url https://your-site.dev. Action integrallis/rankcli-action@v1 (public repository; Marketplace listing pending). MCP: npx @rankcli/mcp-server, 15 tools. Agent skills: npx skills add integrallis/rankcli-mcp-server. Hosted dashboard at rankcli.dev.",
+          "rival": "Desktop installer. Command line and headless mode: ScreamingFrogSEOSpiderCli.exe or screamingfrogseospider --crawl URL --headless --export-tabs ... with a saved config. An MCP server since v24.0 for Claude, LM Studio and other assistants. No GitHub Action or hosted dashboard; Looker Studio export for reporting.",
+          "source": "https://www.screamingfrog.co.uk/seo-spider/user-guide/general/"
+        },
+        {
+          "aspect": "What it audits",
+          "rankcli": "280+ checks: crawlability, indexability, on-page, content, links, Core Web Vitals heuristics, security headers, structured data, local SEO, social, accessibility, AI readiness. Multi-page crawl, --max-pages N (default 5).",
+          "rival": "Over 300 issues across response codes, security, URLs, titles, descriptions, headings, content, images, canonicals, pagination, directives, hreflang, JavaScript, links, AMP, structured data, sitemaps, PageSpeed (via the PageSpeed Insights API), mobile, accessibility (WCAG via axe), analytics, Search Console and validation. Crawls up to 500 URLs free, effectively unlimited on a licence within memory and storage.",
+          "source": "https://www.screamingfrog.co.uk/seo-spider/issues/"
+        },
+        {
+          "aspect": "AI search (GEO) checks",
+          "rankcli": "AI crawler access tested by fetching as each crawler and comparing with a browser (catches CDN-level blocks robots.txt cannot show), llms.txt, citation-worthiness, answer structure, E-E-A-T, RAG chunk readiness, entity and brand checks.",
+          "rival": "Can crawl as Googlebot, Bingbot, AI crawlers or a custom user agent. We found no llms.txt or AI-crawler-access audit on the official site as of 2026-10-14.",
+          "source": "https://www.screamingfrog.co.uk/seo-spider/"
+        },
+        {
+          "aspect": "CI gating",
+          "rankcli": "--fail-on error|warning|notice and --min-score N; exit 0 pass, 1 gate failed, 2 bad invocation, 3 site unreachable, so a down site never passes. The Action posts a PR comment and can alert Slack or Discord. README badge on the hosted Free plan. No SARIF output.",
+          "rival": "None stated: the CLI exports tabs and reports; no threshold exit codes, PR comments, SARIF or badges are documented.",
+          "source": "https://www.screamingfrog.co.uk/seo-spider/user-guide/general/"
+        },
+        {
+          "aspect": "Fixes",
+          "rankcli": "rankcli fix applies fixes locally (--dry-run, --only CODES), free. Hosted auto-fix pull requests through the RankCLI GitHub App: 3 a month on Free, unlimited on paid plans, with per-site open-PR limits.",
+          "rival": "Reports for humans: bulk export the errors and source URLs to fix, or send to a developer. No fix application or pull requests stated.",
+          "source": "https://www.screamingfrog.co.uk/seo-spider/"
+        },
+        {
+          "aspect": "Monitoring and history",
+          "rankcli": "Hosted: scheduled audits (weekly on Free, daily and on every push on Pro), history, weekly email report, Slack and Discord alerts on Solo and up. Search Console sync is built but not yet enabled.",
+          "rival": "Scheduled crawls in the app (licence feature), headless when scheduled; saved crawls and crawl comparison; v24 added auto-compare and crawl-change email notifications. Search Console integration on a licence. Slack and Discord not stated.",
+          "source": "https://www.screamingfrog.co.uk/seo-spider-24/"
+        },
+        {
+          "aspect": "AI model use",
+          "rankcli": "The checks are deterministic and need no model. Optional AI analysis runs on your model only: Apple Intelligence on-device on a Mac that has it, else Ollama or LM Studio, else your own OpenRouter, OpenAI, Anthropic, Groq, Gemini or DeepSeek key. Nothing goes through RankCLI.",
+          "rival": "Custom AI prompts with OpenAI, Gemini, Ollama and Anthropic on your own accounts; token usage shown per provider; MCP server for chat assistants.",
+          "source": "https://www.screamingfrog.co.uk/seo-spider-24/"
+        },
+        {
+          "aspect": "Frameworks",
+          "rankcli": "Detects 32 frameworks (94% on a 51-site corpus); fix recipes for 11; build-time plugins astro-rankcli, vite-plugin-rankcli and next-rankcli; framework guides at /seo.",
+          "rival": "None stated. JavaScript rendering with headless Chromium on a licence.",
+          "source": "https://www.screamingfrog.co.uk/seo-spider/"
+        },
+        {
+          "aspect": "Limits worth knowing",
+          "rankcli": "No headless browser: pages are audited as served, which is what crawlers see first, so client-rendered content is reported as such rather than rendered. Performance is heuristic, not Lighthouse lab metrics. First public release in 2026.",
+          "rival": "Per-user licences. The vendor asks you to run the UI once before the command line (EULA, licence key and storage are set there); headless JavaScript rendering on Linux needs a display. Crawl size is bounded by memory and storage.",
+          "source": "https://www.screamingfrog.co.uk/seo-spider/user-guide/general/"
+        }
+      ],
+      "pickRival": [
+        "You are an SEO working through a large site by hand and want every URL, tab and export in a desktop app.",
+        "You need crawls far beyond a few hundred pages, rendered with headless Chromium, on your own machine.",
+        "You want Google Analytics, Search Console and PageSpeed data joined to the crawl in one table."
+      ],
+      "pickRankcli": [
+        "You want the audit to run on every push and fail the build, not on the day someone remembers to crawl.",
+        "You want the fix as a pull request, or applied locally, instead of an export someone has to turn into tickets.",
+        "You want AI-search checks, including whether AI crawlers are blocked at the CDN, which we did not find in Screaming Frog.",
+        "You want it free, scriptable with npx, and usable by Claude Code or Cursor through MCP."
+      ],
+      "sources": [
+        {
+          "label": "Screaming Frog SEO Spider",
+          "url": "https://www.screamingfrog.co.uk/seo-spider/"
+        },
+        {
+          "label": "Screaming Frog pricing (free limit, licence)",
+          "url": "https://www.screamingfrog.co.uk/seo-spider/pricing/"
+        },
+        {
+          "label": "Screaming Frog user guide: command line",
+          "url": "https://www.screamingfrog.co.uk/seo-spider/user-guide/general/"
+        },
+        {
+          "label": "Screaming Frog SEO Spider 24 release post",
+          "url": "https://www.screamingfrog.co.uk/seo-spider-24/"
+        },
+        {
+          "label": "Screaming Frog issues list",
+          "url": "https://www.screamingfrog.co.uk/seo-spider/issues/"
+        },
+        {
+          "label": "Screaming Frog FAQ",
+          "url": "https://www.screamingfrog.co.uk/seo-spider/faq/"
+        }
+      ]
+    }
+  ]
+}

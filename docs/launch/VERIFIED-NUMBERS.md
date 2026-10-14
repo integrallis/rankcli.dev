@@ -13,12 +13,15 @@ like a regression when nothing has changed:
 
 | Measurement | Score | What it is |
 |---|---|---|
-| `--max-pages 1` | **80** (75 until 2026-10-14) | The homepage. **This is the number all launch copy cites.** |
+| `--max-pages 1` | **85** on `@rankcli/cli@0.0.50` (80 on 0.0.49 the same day; 75 until 2026-10-14) | The homepage. **This is the number all launch copy cites.** |
 | default crawl (5 pages) | 72 before 2026-10-14; 8 pages score 80 after | Averages in weaker inner pages |
 | SEO gate CI run | 81 (last checked 2026-10-02) | The published Action's own scope |
 
-**Re-verified 2026-10-14 on `@rankcli/cli@0.0.49`, after the site fixes of that day: homepage
-80/100, 0 errors, 19 warnings, 37 notices, AI Readiness 67**, React. The 8-page crawl scores 80
+**Re-verified 2026-10-14 on `@rankcli/cli@0.0.50`: homepage 85/100, 0 errors, 13 warnings, 37
+notices, AI Readiness 67**, React. The six warnings that left between 0.0.49 and 0.0.50 were the
+checker's own false positives (GA4, GTM and Search Console verification, empty anchor, brand
+definition, two YMYL), not site changes. On 0.0.49 the same day, after the site fixes: 80/100, 0
+errors, 19 warnings, 37 notices. The 8-page crawl scores 80
 as well (security 75 to 95, performance 36 to 60, social 90 to 96). The ad creatives recorded on
 2026-09-28 still show 75/100; they are not wrong about the day they were made, but new copy
 should cite 80 and re-check before posting.

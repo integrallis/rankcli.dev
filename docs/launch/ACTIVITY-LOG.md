@@ -75,6 +75,12 @@ Analytics -> rankcli.dev -> Referrers for Oct 5 to Oct 11 before deciding what t
   Dev.to, Mastodon and Threads as social profiles, and the YMYL fix. `@rankcli/agent-runtime`
   0.0.38 and `@rankcli/mcp-server` 0.0.23 went with it; the edge audit engine was redeployed with
   the same code.
+- With `@rankcli/cli@0.0.50` the homepage audits at **85/100** (13 warnings, 37 notices); the
+  seven codes the release targeted are gone from our own report. Native binaries, the Claude
+  Desktop extension, Homebrew and Scoop all published for 0.0.50.
+- Four comparison pages, every rival fact sourced from the vendor's own pages and dated:
+  `/compare/lighthouse-ci`, `/compare/squirrelscan`, `/compare/geoready`,
+  `/alternatives/screaming-frog`. Linked from the footer, in the sitemap.
 - Founder confirmed the Reddit Ads campaign never ran. The pixel has fired for organic visitors
   only since 2026-09-30.
 - Checked what open-sourcing the CLI would reveal: nothing `node_modules` does not already show.

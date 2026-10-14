@@ -10,6 +10,7 @@
  */
 import { blogPosts } from '../src/data/blog-posts';
 import frameworkGuides from '../src/config/framework-guides.json';
+import comparisons from '../src/config/comparisons.json';
 
 export const SITE_URL = 'https://rankcli.dev';
 
@@ -80,7 +81,18 @@ const frameworkRoutes: SiteRoute[] = [
   })),
 ];
 
-export const siteRoutes: SiteRoute[] = [...staticRoutes, ...blogRoutes, ...frameworkRoutes];
+// Comparison and alternative pages, one per rival, from src/config/comparisons.json.
+type ComparisonEntry = { slug: string; kind: string; verifiedAt: string; draft?: boolean };
+const comparisonRoutes: SiteRoute[] = (comparisons.comparisons as ComparisonEntry[])
+  .filter((c) => !c.draft)
+  .map((c) => ({
+    path: `/${c.kind}/${c.slug}`,
+    changefreq: 'monthly' as const,
+    priority: 0.7,
+    lastmod: c.verifiedAt,
+  }));
+
+export const siteRoutes: SiteRoute[] = [...staticRoutes, ...blogRoutes, ...frameworkRoutes, ...comparisonRoutes];
 
 /** Absolute URL for a route, matching the canonical <SEO> emits. */
 export function routeUrl(path: string) {
