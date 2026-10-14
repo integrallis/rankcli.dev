@@ -69,6 +69,12 @@ Analytics -> rankcli.dev -> Referrers for Oct 5 to Oct 11 before deciding what t
   75), security 95, performance 60, social 96; VERIFIED-NUMBERS.md updated. The checker's, fixed
   in the runtime for the next release: a logo link counted as an empty anchor, and a brand
   definition only counted if it contained "leading", "premier" or "best".
+- **Released v0.0.50** ("seven findings that fired on things every developer site does"):
+  DNS-based Search Console and Bing verification, analytics other than Google, stylesheets in
+  files (and Tailwind v4 breakpoints), logo links as anchors, plain brand definitions, Bluesky,
+  Dev.to, Mastodon and Threads as social profiles, and the YMYL fix. `@rankcli/agent-runtime`
+  0.0.38 and `@rankcli/mcp-server` 0.0.23 went with it; the edge audit engine was redeployed with
+  the same code.
 - Founder confirmed the Reddit Ads campaign never ran. The pixel has fired for organic visitors
   only since 2026-09-30.
 - Checked what open-sourcing the CLI would reveal: nothing `node_modules` does not already show.
