@@ -13,13 +13,18 @@ like a regression when nothing has changed:
 
 | Measurement | Score | What it is |
 |---|---|---|
-| `--max-pages 1` | **75** | The homepage. **This is the number all launch copy cites.** |
-| default crawl (5 pages) | 72 | Averages in weaker inner pages |
-| SEO gate CI run | 81 | The published Action's own scope |
+| `--max-pages 1` | **80** (75 until 2026-10-14) | The homepage. **This is the number all launch copy cites.** |
+| default crawl (5 pages) | 72 before 2026-10-14; 8 pages score 80 after | Averages in weaker inner pages |
+| SEO gate CI run | 81 (last checked 2026-10-02) | The published Action's own scope |
 
-Re-verified 2026-10-02 (and 2026-09-30) on `@rankcli/cli@0.0.49`: homepage still **75/100, 0 errors,
-22 warnings, 43 notices, AI Readiness 67**, React. Identical to the figures burned into the
-ad creatives, so those remain accurate and do not need re-recording.
+**Re-verified 2026-10-14 on `@rankcli/cli@0.0.49`, after the site fixes of that day: homepage
+80/100, 0 errors, 19 warnings, 37 notices, AI Readiness 67**, React. The 8-page crawl scores 80
+as well (security 75 to 95, performance 36 to 60, social 90 to 96). The ad creatives recorded on
+2026-09-28 still show 75/100; they are not wrong about the day they were made, but new copy
+should cite 80 and re-check before posting.
+
+Before that (2026-10-02 and 2026-09-30, same CLI): homepage **75/100, 0 errors, 22 warnings,
+43 notices, AI Readiness 67**.
 
 ## As of 2026-09-27, `@rankcli/cli@0.0.46`, `rankcli.dev` homepage
 

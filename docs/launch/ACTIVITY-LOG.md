@@ -61,6 +61,14 @@ Analytics -> rankcli.dev -> Referrers for Oct 5 to Oct 11 before deciding what t
   before the week that produced 7 signups. The status section now says so.
 - The Astro and Next.js guide pages (`/seo/astro`, `/seo/nextjs`) now show their npm plugins with
   an install line and a snippet from the package README; deployed and checked live.
+- Audited rankcli.dev with the published CLI (8 pages: 75/100, 0 errors, 127 findings) and split
+  the findings into ours and the checker's. Ours, fixed and deployed: no security headers and
+  4-hour caching on hashed assets (`_headers`), Organization schema only on the home page, a
+  footer with one unlabelled icon link, a logo with no intrinsic size, 15-character titles and
+  190-character descriptions, dark-mode muted text at 4.1:1. Result: homepage **80/100** (from
+  75), security 95, performance 60, social 96; VERIFIED-NUMBERS.md updated. The checker's, fixed
+  in the runtime for the next release: a logo link counted as an empty anchor, and a brand
+  definition only counted if it contained "leading", "premier" or "best".
 - Founder confirmed the Reddit Ads campaign never ran. The pixel has fired for organic visitors
   only since 2026-09-30.
 - Checked what open-sourcing the CLI would reveal: nothing `node_modules` does not already show.
