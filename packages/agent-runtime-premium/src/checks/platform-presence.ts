@@ -107,6 +107,28 @@ const PLATFORM_PATTERNS: {
     urlPatterns: [/github\.com/],
     priority: 'medium',
   },
+  // Where developer and open-source brands actually are in 2026. A dev-tool site
+  // that links Bluesky and Dev.to has a social presence, whatever it thinks of Facebook.
+  {
+    name: 'Bluesky',
+    urlPatterns: [/bsky\.app/],
+    priority: 'medium',
+  },
+  {
+    name: 'Mastodon',
+    urlPatterns: [/mastodon\.(social|online|world)/, /fosstodon\.org/, /hachyderm\.io/, /mstdn\./, /infosec\.exchange/],
+    priority: 'low',
+  },
+  {
+    name: 'Threads',
+    urlPatterns: [/threads\.net/, /threads\.com/],
+    priority: 'medium',
+  },
+  {
+    name: 'Dev.to',
+    urlPatterns: [/dev\.to/],
+    priority: 'low',
+  },
   {
     name: 'Medium',
     urlPatterns: [/medium\.com/],
@@ -214,9 +236,17 @@ function getLinkType(url: string, platform: string): PlatformLink['type'] {
     /reddit\.com\/user\//,
     /reddit\.com\/r\/[^/]+\/?$/,
     /pinterest\.com\/[^/]+\/?$/,
+    /bsky\.app\/profile\//,
+    /threads\.(net|com)\/@/,
+    /dev\.to\/[^/]+\/?$/,
   ];
 
   if (profilePatterns.some(p => p.test(urlLower))) {
+    return 'profile';
+  }
+
+  // Mastodon profiles are https://<instance>/@user on any instance.
+  if (platform === 'Mastodon' && /\/@[^/]+\/?$/.test(urlLower)) {
     return 'profile';
   }
 
