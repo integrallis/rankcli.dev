@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-09-30T15:49:26.752Z
+// Generated: 2026-10-14T00:34:27.268Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -10392,7 +10392,8 @@ async function httpGet(url, config = {}) {
     timeout = DEFAULT_TIMEOUT,
     validateStatus = (status) => status >= 200 && status < 300,
     maxRedirects = 5,
-    params
+    params,
+    maxBytes
   } = config;
   let finalUrl = url;
   if (params) {
@@ -10419,7 +10420,7 @@ async function httpGet(url, config = {}) {
     if (contentType.includes("application/json")) {
       data = await response.json();
     } else {
-      data = await response.text();
+      data = await readText(response, maxBytes);
     }
     clearTimeout(timeoutId);
     if (!validateStatus(response.status)) {
@@ -10445,6 +10446,27 @@ async function httpGet(url, config = {}) {
     }
     throw error;
   }
+}
+async function readText(response, maxBytes) {
+  if (!maxBytes || !response.body)
+    return response.text();
+  const reader = response.body.getReader();
+  const chunks = [];
+  let received = 0;
+  while (received < maxBytes) {
+    const { done, value } = await reader.read();
+    if (done)
+      break;
+    chunks.push(value);
+    received += value.byteLength;
+  }
+  if (received >= maxBytes)
+    await reader.cancel().catch(() => void 0);
+  const decoder = new TextDecoder();
+  let text = "";
+  for (const chunk of chunks)
+    text += decoder.decode(chunk, { stream: true });
+  return text + decoder.decode();
 }
 async function httpHead(url, config = {}) {
   const {
@@ -12725,7 +12747,9 @@ function analyzeAnchorText(html, url) {
     } catch {
       internalLinks++;
     }
-    const hasAccessibleText = text.length > 0 || ariaLabel || title;
+    const imgAlt = $(el).find("img[alt]").map((_2, img) => ($(img).attr("alt") || "").trim()).get().join(" ").trim();
+    const svgTitle = $(el).find("svg title").text().trim();
+    const hasAccessibleText = text.length > 0 || ariaLabel || title || imgAlt.length > 0 || svgTitle.length > 0;
     if (!hasAccessibleText) {
       emptyAnchors++;
       if (emptyAnchorUrls.length < 5) {
@@ -17290,6 +17314,110 @@ function analyzeResponsiveImages(html, url) {
 
 // src/audit/checks/bing-optimization.ts
 import * as cheerio28 from "https://esm.sh/cheerio@1.0.0";
+
+// src/audit/checks/site-verification.ts
+var UNCHECKED = {
+  dnsChecked: false,
+  googleDns: false,
+  bingDns: false,
+  bingSiteAuthFile: false
+};
+var DNS_TIMEOUT_MS = 2e3;
+var FILE_TIMEOUT_MS = 5e3;
+var CACHE_TTL_MS = 10 * 60 * 1e3;
+var cache = /* @__PURE__ */ new Map();
+function lookupSiteVerification(url) {
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return Promise.resolve(UNCHECKED);
+  }
+  const host = parsed.hostname.toLowerCase();
+  const now = Date.now();
+  const cached = cache.get(host);
+  if (cached && cached.expires > now)
+    return cached.result;
+  const result = Promise.all([readTxtRecords(host), fetchBingSiteAuth(parsed.origin)]).then(
+    ([txt, bingSiteAuthFile]) => ({
+      dnsChecked: txt.checked,
+      googleDns: txt.records.some((record) => /^google-site-verification=/i.test(record)),
+      bingDns: txt.records.some((record) => /^MS=/i.test(record)),
+      bingSiteAuthFile
+    })
+  );
+  cache.set(host, { expires: now + CACHE_TTL_MS, result });
+  return result;
+}
+var resolveTxtLoader;
+function loadResolveTxt() {
+  resolveTxtLoader ??= (async () => {
+    if (typeof process === "undefined" || !process.versions?.node)
+      return null;
+    try {
+      const specifier = "node:dns";
+      const dns = await import(specifier);
+      const resolveTxt = dns?.promises?.resolveTxt ?? dns?.default?.promises?.resolveTxt;
+      return typeof resolveTxt === "function" ? resolveTxt : null;
+    } catch {
+      return null;
+    }
+  })();
+  return resolveTxtLoader;
+}
+function domainCandidates(host) {
+  if (/^[\d.]+$/.test(host) || host.includes(":"))
+    return [];
+  const labels = host.split(".").filter(Boolean);
+  const names = [];
+  for (let n = 2; n <= labels.length && names.length < 4; n++) {
+    names.push(labels.slice(-n).join("."));
+  }
+  return names.length > 0 ? names : [host];
+}
+async function readTxtRecords(host) {
+  const resolveTxt = await loadResolveTxt();
+  if (!resolveTxt)
+    return { checked: false, records: [] };
+  const lookups = await Promise.all(domainCandidates(host).map((name) => resolveTxtWithin(resolveTxt, name)));
+  return {
+    checked: lookups.every((records) => records !== null),
+    records: lookups.flatMap((records) => records ?? [])
+  };
+}
+var NO_RECORD_CODES = /* @__PURE__ */ new Set(["ENODATA", "ENOTFOUND"]);
+async function resolveTxtWithin(resolveTxt, name) {
+  let timer;
+  const timeout = new Promise((resolve) => {
+    timer = setTimeout(() => resolve(null), DNS_TIMEOUT_MS);
+  });
+  try {
+    return await Promise.race([
+      resolveTxt(name).then(
+        (records) => records.map((chunks) => chunks.join("").trim()),
+        (error) => NO_RECORD_CODES.has(error?.code ?? "") ? [] : null
+      ),
+      timeout
+    ]);
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+async function fetchBingSiteAuth(origin) {
+  try {
+    const response = await httpGet(`${origin}/BingSiteAuth.xml`, {
+      timeout: FILE_TIMEOUT_MS,
+      maxBytes: 64 * 1024
+    });
+    return response.status === 200 && typeof response.data === "string" && !looksLikeHtmlFallback(response.data, response.headers["content-type"]) && /<users[\s>]/i.test(response.data);
+  } catch {
+    return false;
+  }
+}
+
+// src/audit/checks/bing-optimization.ts
 async function analyzeBingOptimization(html, url) {
   const issues = [];
   const $ = cheerio28.load(html);
@@ -17298,12 +17426,9 @@ async function analyzeBingOptimization(html, url) {
   const detectedIssues = [];
   const bingMetaTag = $('meta[name="msvalidate.01"]').attr("content");
   const hasBingMetaTag = !!bingMetaTag && bingMetaTag.length > 0;
-  let hasBingSiteAuth = false;
-  try {
-    const authResponse = await httpGet(`${baseUrl}/BingSiteAuth.xml`, { timeout: 5e3 });
-    hasBingSiteAuth = authResponse.status === 200 && authResponse.data.includes("<?xml") && authResponse.data.toLowerCase().includes("users");
-  } catch {
-  }
+  const verification = await lookupSiteVerification(url);
+  const hasBingSiteAuth = verification.bingSiteAuthFile;
+  const hasBingDnsRecord = verification.bingDns;
   let hasBingIndexNowKey = false;
   try {
     const keyPatterns = [
@@ -17351,22 +17476,25 @@ async function analyzeBingOptimization(html, url) {
     bingSitemapAccessible = sitemapResponse.status === 200 && sitemapResponse.data.includes("<?xml");
   } catch {
   }
-  if (!hasBingMetaTag && !hasBingSiteAuth) {
+  if (!hasBingMetaTag && !hasBingSiteAuth && !hasBingDnsRecord) {
     detectedIssues.push("No Bing site verification");
     issues.push({
       code: "BING_NOT_VERIFIED",
       severity: "warning",
       category: "ai-readiness",
-      title: "Site not verified with Bing Webmaster Tools",
-      description: "ChatGPT Search uses Bing's index. Verifying your site with Bing Webmaster Tools ensures proper indexing and access to Bing-specific SEO tools.",
+      title: verification.dnsChecked ? "Site not verified with Bing Webmaster Tools" : "Bing Webmaster Tools verification not visible in the HTML",
+      description: verification.dnsChecked ? "No msvalidate.01 meta tag in the HTML, no MS= TXT record on the domain and no /BingSiteAuth.xml file. ChatGPT Search uses Bing's index. Verifying your site with Bing Webmaster Tools ensures proper indexing and access to Bing-specific SEO tools." : "No msvalidate.01 meta tag in the HTML and no /BingSiteAuth.xml file. The site may be verified through a DNS record instead, which this run could not check. ChatGPT Search uses Bing's index. Verifying your site with Bing Webmaster Tools ensures proper indexing and access to Bing-specific SEO tools.",
       impact: "May reduce visibility in ChatGPT Search results and miss Bing-specific optimization opportunities.",
-      howToFix: "Add Bing verification: 1) Go to Bing Webmaster Tools, 2) Add your site, 3) Choose verification method (meta tag or XML file), 4) Add the verification code to your site.",
+      howToFix: "If the site is not yet in Bing Webmaster Tools: 1) Go to Bing Webmaster Tools, 2) Add your site (or import it from Google Search Console), 3) Choose a verification method (meta tag, DNS record or XML file), 4) Add the verification code to your site.",
       affectedUrls: [url],
       details: {
         hasBingMetaTag,
         hasBingSiteAuth,
+        hasBingDnsRecord,
+        dnsChecked: verification.dnsChecked,
         verificationMethods: [
           'Add <meta name="msvalidate.01" content="YOUR_CODE"> to <head>',
+          "Add an MS=YOUR_CODE TXT record to the domain's DNS",
           "Upload BingSiteAuth.xml to root directory"
         ]
       }
@@ -17426,6 +17554,8 @@ async function analyzeBingOptimization(html, url) {
     data: {
       hasBingSiteAuth,
       hasBingMetaTag,
+      hasBingDnsRecord,
+      dnsChecked: verification.dnsChecked,
       hasBingIndexNowKey,
       bingPlacesDetected,
       bingSitemapAccessible,
@@ -19420,6 +19550,10 @@ function analyzePageResources(html, url) {
 
 // src/audit/checks/responsive-css.ts
 import * as cheerio35 from "https://esm.sh/cheerio@1.0.0";
+var MAX_STYLESHEETS = 3;
+var MAX_STYLESHEET_BYTES = 1024 * 1024;
+var STYLESHEET_TIMEOUT_MS = 3e3;
+var RESPONSIVE_SIGNAL = /@media\b|@container\b|\bclamp\(|(?<![\w-])(?:min|max)\(/i;
 function extractMediaQueries(css) {
   const mediaQueries = [];
   const regex = /@media\s*([^{]+)/g;
@@ -19429,35 +19563,30 @@ function extractMediaQueries(css) {
   }
   return mediaQueries;
 }
+var WIDTH_RULE = /(?:(?:min|max)-width\s*:|width\s*(?:<=|>=|<|>))\s*(\d+(?:\.\d+)?)\s*(px|em|rem)?|(\d+(?:\.\d+)?)\s*(px|em|rem)?\s*(?:<=|>=|<|>)\s*width/gi;
 function classifyBreakpoints(mediaQueries) {
   const breakpoints = /* @__PURE__ */ new Set();
   let hasMobile = false;
   let hasTablet = false;
   let hasDesktop = false;
   for (const query of mediaQueries) {
-    const widthMatches = query.match(/(?:min|max)-width\s*:\s*(\d+)(?:px|em|rem)?/gi);
-    if (widthMatches) {
-      for (const match of widthMatches) {
-        const valueMatch = match.match(/(\d+)/);
-        if (valueMatch) {
-          const value = parseInt(valueMatch[1], 10);
-          breakpoints.add(`${value}px`);
-          if (value <= 480) {
-            hasMobile = true;
-          } else if (value <= 768) {
-            hasMobile = true;
-          } else if (value <= 1024) {
-            hasTablet = true;
-          } else {
-            hasDesktop = true;
-          }
-        }
-      }
-    }
-    if (/screen\s+and/i.test(query)) {
-    }
     if (/print/i.test(query)) {
       continue;
+    }
+    for (const match of query.matchAll(WIDTH_RULE)) {
+      const raw = match[1] ?? match[3];
+      const unit = (match[2] ?? match[4] ?? "px").toLowerCase();
+      const value = Math.round(parseFloat(raw) * (unit === "px" ? 1 : 16));
+      breakpoints.add(`${value}px`);
+      if (value <= 480) {
+        hasMobile = true;
+      } else if (value <= 768) {
+        hasMobile = true;
+      } else if (value <= 1024) {
+        hasTablet = true;
+      } else {
+        hasDesktop = true;
+      }
     }
   }
   return {
@@ -19476,6 +19605,7 @@ async function analyzeResponsiveCss(html, url) {
   const allMediaQueries = [];
   const externalSources = [];
   let inlineCount = 0;
+  let hasResponsiveSignals = false;
   $("style").each((_, el) => {
     const css = $(el).text();
     const queries = extractMediaQueries(css);
@@ -19483,40 +19613,50 @@ async function analyzeResponsiveCss(html, url) {
       allMediaQueries.push(...queries);
       inlineCount += queries.length;
     }
+    if (RESPONSIVE_SIGNAL.test(css))
+      hasResponsiveSignals = true;
   });
-  const cssLinks = $('link[rel="stylesheet"][href]').toArray().slice(0, 3).map((el) => $(el).attr("href")).filter((href) => {
+  const sameOrigin = [];
+  let crossOrigin = 0;
+  $("link[rel][href]").each((_, el) => {
+    if (!/\bstylesheet\b/i.test($(el).attr("rel") ?? ""))
+      return;
+    const href = $(el).attr("href");
     if (!href || href.startsWith("data:"))
-      return false;
+      return;
     try {
-      const cssHostname = new URL(href, url).hostname;
-      return cssHostname === baseUrl.hostname;
+      const resolved = new URL(href, url);
+      if (resolved.hostname === baseUrl.hostname)
+        sameOrigin.push(resolved.href);
+      else
+        crossOrigin++;
     } catch {
-      return false;
+      crossOrigin++;
     }
   });
-  const cssPromises = cssLinks.map(async (cssUrl) => {
-    try {
-      const fullUrl = new URL(cssUrl, url).href;
-      const response = await httpGet(fullUrl, {
-        timeout: 3e3,
-        // Reduced timeout
-        validateStatus: () => true
-      });
-      if (response.status === 200 && typeof response.data === "string") {
+  let fetchFailed = 0;
+  await Promise.all(
+    sameOrigin.slice(0, MAX_STYLESHEETS).map(async (cssUrl) => {
+      try {
+        const response = await httpGet(cssUrl, {
+          timeout: STYLESHEET_TIMEOUT_MS,
+          maxBytes: MAX_STYLESHEET_BYTES
+        });
+        if (typeof response.data !== "string")
+          throw new Error("not text");
         const queries = extractMediaQueries(response.data);
-        if (queries.length > 0) {
+        if (queries.length > 0)
           allMediaQueries.push(...queries);
+        if (RESPONSIVE_SIGNAL.test(response.data)) {
+          hasResponsiveSignals = true;
           externalSources.push(cssUrl);
         }
+      } catch {
+        fetchFailed++;
       }
-    } catch {
-    }
-  });
-  await Promise.race([
-    Promise.all(cssPromises),
-    new Promise((resolve) => setTimeout(resolve, 6e3))
-    // 6s overall timeout
-  ]);
+    })
+  );
+  const stylesheetsCovered = crossOrigin === 0 && fetchFailed === 0 && sameOrigin.length <= MAX_STYLESHEETS;
   const hasMediaQueries = allMediaQueries.length > 0;
   const { hasMobile, hasTablet, hasDesktop, breakpoints } = classifyBreakpoints(allMediaQueries);
   if (!hasViewport) {
@@ -19531,21 +19671,22 @@ async function analyzeResponsiveCss(html, url) {
       affectedUrls: [url]
     });
   }
-  if (!hasMediaQueries) {
+  if (!hasResponsiveSignals && stylesheetsCovered) {
     issues.push({
       code: "RESPONSIVE_NO_MEDIA_QUERIES",
       severity: "warning",
       category: "mobile",
       title: "No CSS media queries detected",
-      description: "No @media queries found in inline styles or first-party stylesheets.",
+      description: "No @media or @container queries and no fluid sizing (clamp, min, max) found in inline styles or first-party stylesheets.",
       impact: "Without media queries, the site likely uses fixed layouts that do not adapt to different screen sizes. This hurts mobile usability and SEO.",
       howToFix: "Add CSS media queries to adapt layout for different screen sizes. Consider using a mobile-first approach with min-width breakpoints.",
       affectedUrls: [url],
       details: {
-        suggestion: "Common breakpoints: 480px (mobile), 768px (tablet), 1024px (desktop)"
+        suggestion: "Common breakpoints: 480px (mobile), 768px (tablet), 1024px (desktop)",
+        stylesheetsScanned: sameOrigin.length
       }
     });
-  } else if (!hasMobile && !hasTablet) {
+  } else if (hasMediaQueries && !hasMobile && !hasTablet) {
     issues.push({
       code: "RESPONSIVE_NO_MOBILE_BREAKPOINT",
       severity: "warning",
@@ -19571,6 +19712,8 @@ async function analyzeResponsiveCss(html, url) {
         inline: inlineCount,
         external: externalSources
       },
+      hasResponsiveSignals,
+      stylesheetsCovered,
       breakpoints,
       hasMobileBreakpoint: hasMobile,
       hasTabletBreakpoint: hasTablet,
@@ -20222,7 +20365,22 @@ var urlSafetyDatabase = {
 
 // src/audit/checks/tracking-verification.ts
 import * as cheerio36 from "https://esm.sh/cheerio@1.0.0";
-function analyzeTrackingVerification(html, url) {
+var OTHER_ANALYTICS = [
+  { name: "Cloudflare Web Analytics", pattern: /cloudflareinsights\.com\/beacon(?:\.min)?\.js/i },
+  { name: "Plausible", pattern: /plausible\.io\/js\/|<script[^>]*data-domain=[^>]*plausible|<script[^>]*plausible[^>]*data-domain=/i },
+  { name: "Fathom", pattern: /cdn\.usefathom\.com/i },
+  // data-website-id is Umami's attribute, on the hosted script and on self-hosted ones alike.
+  { name: "Umami", pattern: /<script[^>]*\bdata-website-id=/i },
+  { name: "PostHog", pattern: /posthog\.init\s*\(|\.posthog\.com\//i },
+  { name: "Matomo", pattern: /matomo\.js|piwik\.js|_paq\s*(?:=|\.push)/i },
+  { name: "Simple Analytics", pattern: /scripts\.simpleanalyticscdn\.com/i },
+  { name: "Mixpanel", pattern: /cdn\.mxpnl\.com|mixpanel\.init\s*\(/i },
+  { name: "Segment", pattern: /cdn\.segment\.com/i }
+];
+function detectOtherAnalytics(html) {
+  return OTHER_ANALYTICS.filter(({ pattern }) => pattern.test(html)).map(({ name }) => name);
+}
+async function analyzeTrackingVerification(html, url) {
   const issues = [];
   const $ = cheerio36.load(html);
   const ga4Match = html.match(/gtag\s*\(\s*['"]config['"]\s*,\s*['"](G-[A-Z0-9]+)['"]/i) || html.match(/googletagmanager\.com\/gtag\/js\?id=(G-[A-Z0-9]+)/i);
@@ -20232,10 +20390,16 @@ function analyzeTrackingVerification(html, url) {
   const hasGtm = !!gtmMatch;
   const gtmContainerId = gtmMatch ? gtmMatch[1] : void 0;
   const hasGtmNoscript = /googletagmanager\.com\/ns\.html\?id=GTM-[A-Z0-9]+/i.test(html);
+  const otherAnalytics = detectOtherAnalytics(html);
+  const verification = await lookupSiteVerification(url);
   const gscMeta = $('meta[name="google-site-verification"]').attr("content");
-  const hasGscVerification = !!(gscMeta && gscMeta.length > 10);
+  const hasGscMeta = !!(gscMeta && gscMeta.length > 10);
+  const hasGscVerification = hasGscMeta || verification.googleDns;
+  const gscSource = hasGscMeta ? "meta" : verification.googleDns ? "dns" : void 0;
   const bingMeta = $('meta[name="msvalidate.01"]').attr("content");
-  const hasBingVerification = !!(bingMeta && bingMeta.length > 10);
+  const hasBingMeta = !!(bingMeta && bingMeta.length > 10);
+  const hasBingVerification = hasBingMeta || verification.bingDns || verification.bingSiteAuthFile;
+  const bingSource = hasBingMeta ? "meta" : verification.bingDns ? "dns" : verification.bingSiteAuthFile ? "file" : void 0;
   const jsonLdScripts = $('script[type="application/ld+json"]');
   const hasMicrodata = $('[itemtype*="schema.org"]').length > 0;
   const hasJsonLd = jsonLdScripts.length > 0;
@@ -20257,13 +20421,15 @@ function analyzeTrackingVerification(html, url) {
   const data = {
     ga4: { detected: hasGa4, measurementId: ga4MeasurementId },
     gtm: { detected: hasGtm, containerId: gtmContainerId, hasNoscript: hasGtmNoscript },
-    gsc: { verified: hasGscVerification, verificationCode: gscMeta },
-    bing: { verified: hasBingVerification, verificationCode: bingMeta },
+    otherAnalytics,
+    gsc: { verified: hasGscVerification, verificationCode: gscMeta, source: gscSource },
+    bing: { verified: hasBingVerification, verificationCode: bingMeta, source: bingSource },
+    dnsChecked: verification.dnsChecked,
     schemaOrg: { detected: hasJsonLd || hasMicrodata, types: schemaTypes, hasValidJson },
     sitemap: { inRobotsTxt: false }
     // Set later if we check robots.txt
   };
-  if (!hasGa4 && !hasGtm) {
+  if (!hasGa4 && !hasGtm && otherAnalytics.length === 0) {
     issues.push({
       code: "GA4_MISSING",
       severity: "warning",
@@ -20276,40 +20442,46 @@ function analyzeTrackingVerification(html, url) {
     });
   }
   if (!hasGscVerification) {
+    const dnsChecked = verification.dnsChecked;
     issues.push({
       code: "GSC_VERIFICATION_MISSING",
       severity: "warning",
       category: "on-page",
-      title: "Google Search Console verification not found",
-      description: "No GSC verification meta tag detected. GSC provides essential data about your search performance.",
+      title: dnsChecked ? "Google Search Console verification not found" : "Google Search Console verification not visible in the HTML",
+      description: dnsChecked ? "No google-site-verification meta tag in the HTML and no google-site-verification TXT record on the domain. GSC provides essential data about your search performance." : "No google-site-verification meta tag in the HTML. The site may be verified through a DNS TXT record instead, which this run could not check. GSC provides essential data about your search performance.",
       impact: "Missing critical insights into Google search visibility, impressions, and clicks.",
-      howToFix: "Add your GSC verification meta tag to the <head> section. Get it from search.google.com/search-console.",
-      affectedUrls: [url]
+      howToFix: dnsChecked ? "Verify the site in Google Search Console: add the meta tag to <head>, or a TXT record to the domain's DNS. Get it from search.google.com/search-console." : "If the site is not yet verified in Google Search Console, add the meta tag to <head> or a TXT record to the domain's DNS. Get it from search.google.com/search-console.",
+      affectedUrls: [url],
+      details: { dnsChecked }
     });
   }
   if (!hasBingVerification) {
+    const dnsChecked = verification.dnsChecked;
     issues.push({
       code: "BING_VERIFICATION_MISSING",
       severity: "notice",
       category: "on-page",
-      title: "Bing Webmaster Tools verification not found",
-      description: "No Bing verification meta tag detected. Bing/Yahoo account for 5-8% of search traffic.",
+      title: dnsChecked ? "Bing Webmaster Tools verification not found" : "Bing Webmaster Tools verification not visible in the HTML",
+      description: dnsChecked ? "No msvalidate.01 meta tag in the HTML, no MS= TXT record on the domain and no /BingSiteAuth.xml file. Bing/Yahoo account for 5-8% of search traffic." : "No msvalidate.01 meta tag in the HTML and no /BingSiteAuth.xml file. The site may be verified through a DNS record instead, which this run could not check. Bing/Yahoo account for 5-8% of search traffic.",
       impact: "Missing insights on Bing/Yahoo search traffic.",
-      howToFix: "Add Bing Webmaster Tools verification for insights on Bing/Yahoo traffic. Get it from bing.com/webmasters.",
-      affectedUrls: [url]
+      howToFix: "If the site is not yet in Bing Webmaster Tools, add it there: import it from Google Search Console, or verify with the meta tag, a DNS record or BingSiteAuth.xml. Get it from bing.com/webmasters.",
+      affectedUrls: [url],
+      details: { dnsChecked }
     });
   }
   if (!hasGtm) {
-    issues.push({
-      code: "GTM_MISSING",
-      severity: "notice",
-      category: "on-page",
-      title: "Google Tag Manager not detected",
-      description: "GTM not found. While not required, GTM makes it easier to manage tracking tags without code changes.",
-      impact: "Tag management requires developer involvement for each change.",
-      howToFix: "Consider using GTM for easier tag management. It allows marketing to add tags without developer help.",
-      affectedUrls: [url]
-    });
+    if (otherAnalytics.length === 0) {
+      issues.push({
+        code: "GTM_MISSING",
+        severity: "notice",
+        category: "on-page",
+        title: "Google Tag Manager not detected",
+        description: "GTM not found. While not required, GTM makes it easier to manage tracking tags without code changes.",
+        impact: "Tag management requires developer involvement for each change.",
+        howToFix: "Consider using GTM for easier tag management. It allows marketing to add tags without developer help.",
+        affectedUrls: [url]
+      });
+    }
   } else if (!hasGtmNoscript) {
     issues.push({
       code: "GTM_NOSCRIPT_MISSING",
@@ -20449,7 +20621,6 @@ async function runFullAudit(options) {
   const urlSafetyResult = analyzeUrlSafety(url);
   const domSizeResult = analyzeDomSize(html, url);
   const imageDimensionsResult = analyzeImageDimensions(html, url);
-  const trackingResult = analyzeTrackingVerification(html, url);
   const anchorResult = runExtendedChecks ? analyzeAnchorText(html, url) : { issues: [], data: {} };
   const localSeoResult = runExtendedChecks ? analyzeLocalSEO(html, url) : { issues: [], data: {} };
   const modernImageResult = runExtendedChecks ? analyzeModernImages(html, url) : { issues: [], data: {} };
@@ -20524,8 +20695,7 @@ async function runFullAudit(options) {
     ...colorContrastResult.issues,
     ...pageResourcesResult.issues,
     ...urlSafetyResult.issues,
-    ...paginationResult.issues,
-    ...trackingResult.issues
+    ...paginationResult.issues
   );
   if (!structuredDataResult.data.hasSchema) {
     const suggestions = suggestSchemaTypes(html, url);
@@ -20571,6 +20741,7 @@ async function runFullAudit(options) {
   asyncChecks.push(safeAsyncIssues("Certificate", async () => (await checkCertificate(url)).issues));
   asyncChecks.push(safeAsync("Redirects", () => analyzeRedirects(url)));
   asyncChecks.push(safeAsync("Robots Validation", () => validateRobotsTxt(url)));
+  asyncChecks.push(safeAsync("Tracking Verification", () => analyzeTrackingVerification(html, url)));
   asyncChecks.push(safeAsyncIssues("Crawler Access", async () => (await analyzeCrawlerAccess(url)).issues));
   asyncChecks.push(safeAsync("Canonical Domain", () => analyzeCanonicalDomain(url)));
   asyncChecks.push(safeAsyncIssues("Framework Detection", async () => {
@@ -21897,6 +22068,28 @@ var PLATFORM_PATTERNS = [
     urlPatterns: [/github\.com/],
     priority: "medium"
   },
+  // Where developer and open-source brands actually are in 2026. A dev-tool site
+  // that links Bluesky and Dev.to has a social presence, whatever it thinks of Facebook.
+  {
+    name: "Bluesky",
+    urlPatterns: [/bsky\.app/],
+    priority: "medium"
+  },
+  {
+    name: "Mastodon",
+    urlPatterns: [/mastodon\.(social|online|world)/, /fosstodon\.org/, /hachyderm\.io/, /mstdn\./, /infosec\.exchange/],
+    priority: "low"
+  },
+  {
+    name: "Threads",
+    urlPatterns: [/threads\.net/, /threads\.com/],
+    priority: "medium"
+  },
+  {
+    name: "Dev.to",
+    urlPatterns: [/dev\.to/],
+    priority: "low"
+  },
   {
     name: "Medium",
     urlPatterns: [/medium\.com/],
@@ -21987,9 +22180,15 @@ function getLinkType(url, platform) {
     /github\.com\/[^/]+\/?$/,
     /reddit\.com\/user\//,
     /reddit\.com\/r\/[^/]+\/?$/,
-    /pinterest\.com\/[^/]+\/?$/
+    /pinterest\.com\/[^/]+\/?$/,
+    /bsky\.app\/profile\//,
+    /threads\.(net|com)\/@/,
+    /dev\.to\/[^/]+\/?$/
   ];
   if (profilePatterns.some((p) => p.test(urlLower))) {
+    return "profile";
+  }
+  if (platform === "Mastodon" && /\/@[^/]+\/?$/.test(urlLower)) {
     return "profile";
   }
   const embedPatterns = [
