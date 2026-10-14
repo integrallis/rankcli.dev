@@ -6,6 +6,7 @@ import { Footer } from '@/components/layout/Footer';
 import { Badge } from '@/components/ui/badge';
 import { SEO } from '@/components/SEO';
 import guides from '@/config/framework-guides.json';
+import frameworkPlugins from '@/config/framework-plugins.json';
 
 /**
  * One page per framework we ship a recipe for, built from that recipe.
@@ -38,6 +39,7 @@ export function FrameworkGuidePage() {
   }
 
   const errors = guide.checks.filter((c) => c.severity === 'error').length;
+  const plugin = frameworkPlugins.plugins.find((p) => p.slug === guide.slug);
 
   return (
     <div className="min-h-screen bg-background">
@@ -77,6 +79,24 @@ export function FrameworkGuidePage() {
             <code>npx @rankcli/cli audit -u https://your-site.dev</code>
           </pre>
         </div>
+
+        {plugin && (
+          <section className="mb-12">
+            <h2 className="text-2xl font-semibold mb-2">The {guide.name} plugin</h2>
+            <p className="text-muted-foreground mb-4">
+              <a href={plugin.npm} className="text-primary underline" rel="noopener">
+                <code>{plugin.package}</code>
+              </a>{' '}
+              on npm, MIT. {plugin.summary}
+            </p>
+            <pre className="bg-muted rounded p-3 text-sm overflow-x-auto mb-3">
+              <code>{plugin.install}</code>
+            </pre>
+            <pre className="bg-muted rounded p-3 text-sm overflow-x-auto">
+              <code>{plugin.snippet}</code>
+            </pre>
+          </section>
+        )}
 
         {guide.challenges.length > 0 && (
           <section className="mb-12">

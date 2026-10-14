@@ -1,0 +1,21 @@
+{
+  "_comment": "Build-time plugins we publish on npm, keyed by framework guide slug. Not generated: edit by hand when a plugin ships. Each snippet is lifted from the package README in packages/*-plugin, so the page cannot promise an option the plugin lacks.",
+  "plugins": [
+    {
+      "slug": "astro",
+      "package": "astro-rankcli",
+      "npm": "https://www.npmjs.com/package/astro-rankcli",
+      "install": "npm install astro-rankcli",
+      "summary": "On astro build it writes sitemap.xml and robots.txt into the output unless public/ already provides them, then checks every built page and, with failOnError, fails the build on error-level issues. Astro 3 through 7.",
+      "snippet": "// astro.config.mjs\nimport { defineConfig } from 'astro/config';\nimport rankcli from 'astro-rankcli';\n\nexport default defineConfig({\n  integrations: [\n    rankcli({\n      siteUrl: 'https://example.com',\n      validate: { failOnError: true },\n    }),\n  ],\n});"
+    },
+    {
+      "slug": "nextjs",
+      "package": "next-rankcli",
+      "npm": "https://www.npmjs.com/package/next-rankcli",
+      "install": "npm install next-rankcli",
+      "summary": "A metadata generator for the App Router with a title template and canonical per path, plus sitemap and robots handlers for app/sitemap.ts and app/robots.ts. Next.js 13 through 16.",
+      "snippet": "// lib/metadata.ts\nimport { createMetadataGenerator } from 'next-rankcli/metadata';\n\nexport const generateMetadata = createMetadataGenerator({\n  siteUrl: 'https://example.com',\n  siteName: 'My Site',\n  titleTemplate: '%s | My Site',\n});\n\n// app/about/page.tsx\nexport const metadata = generateMetadata({\n  title: 'About Us',\n  description: 'Learn about our company',\n  path: '/about',\n});"
+    }
+  ]
+}
