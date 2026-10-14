@@ -8,7 +8,7 @@ export function ContactPage() {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Contact"
+        title="Contact: support, billing and bug reports"
         description="Contact RankCLI: email support@rankcli.dev for account, billing and general questions, or open an issue on GitHub for bugs and feature requests."
         path="/contact"
       />

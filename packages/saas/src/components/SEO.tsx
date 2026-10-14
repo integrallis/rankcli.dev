@@ -5,7 +5,28 @@ const SITE_NAME = 'RankCLI';
 const DEFAULT_TITLE = 'RankCLI - Ship code, get ranked';
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.png`;
 export const DEFAULT_DESCRIPTION =
-  'RankCLI is a developer-first SEO and GEO tool: 280+ automated checks from your terminal, CI pipeline or dashboard, framework-aware fixes, and GitHub auto-fix PRs.';
+  'RankCLI is a developer-first SEO and GEO tool: 280+ checks from your terminal or CI, framework-aware fixes, and GitHub auto-fix PRs. Free to start.';
+
+/** Public profiles, in the footer and in the Organization schema's sameAs. */
+export const SOCIAL_PROFILES = [
+  { label: 'GitHub', href: 'https://github.com/integrallis/rankcli-cli' },
+  { label: 'npm', href: 'https://www.npmjs.com/package/@rankcli/cli' },
+  { label: 'Bluesky', href: 'https://bsky.app/profile/rankclidev.bsky.social' },
+  { label: 'Dev.to', href: 'https://dev.to/rankcli' },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/rankcli' },
+];
+
+/** Site-wide Organization, added to every page that does not declare its own. */
+export const ORGANIZATION_JSON_LD = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  '@id': `${SITE_URL}/#organization`,
+  name: SITE_NAME,
+  url: SITE_URL,
+  logo: `${SITE_URL}/logo.png`,
+  sameAs: SOCIAL_PROFILES.map((p) => p.href),
+  parentOrganization: { '@type': 'Organization', name: 'Integrallis Software, LLC', url: 'https://integrallis.com' },
+};
 
 interface SEOProps {
   /** Page name; rendered as "<title> | RankCLI". */
@@ -72,7 +93,11 @@ export function SEO({
   const pageTitle = fullTitle ?? (title ? `${title} | ${SITE_NAME}` : DEFAULT_TITLE);
   const url = path ? `${SITE_URL}${path === '/' ? '/' : path}` : undefined;
   const imageUrl = image.startsWith('http') ? image : `${SITE_URL}${image}`;
-  const structuredData = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+  const pageData = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+  const hasOrganization = pageData.some(
+    (d) => (d as { '@type'?: string })['@type'] === 'Organization'
+  );
+  const structuredData = hasOrganization ? pageData : [...pageData, ORGANIZATION_JSON_LD];
 
   return (
     <Helmet>

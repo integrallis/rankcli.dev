@@ -7,8 +7,8 @@ export function AboutPage() {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="About"
-        description="RankCLI is a developer-first SEO tool built by Integrallis Software: 280+ checks from the command line and CI, framework-aware fixes, auto-fix pull requests and a free local MCP server."
+        title="About: SEO tooling built by Integrallis Software"
+        description="RankCLI is a developer-first SEO tool by Integrallis Software: 280+ checks from the CLI and CI, framework-aware fixes, auto-fix PRs and a local MCP server."
         path="/about"
       />
       <Navbar />
@@ -23,6 +23,8 @@ export function AboutPage() {
             but a check that runs in your terminal and your CI pipeline, right alongside
             your linter and your test suite.
           </p>
+
+          <h2>Why we built it</h2>
 
           <p>
             We built RankCLI after watching the same pattern play out on project after
@@ -39,6 +41,8 @@ export function AboutPage() {
             assistants can run the same checks directly against your codebase - no signup,
             nothing sent to our servers.
           </p>
+
+          <h2>Who builds it</h2>
 
           <p>
             RankCLI is built and maintained by{' '}

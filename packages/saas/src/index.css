@@ -87,7 +87,7 @@
     --secondary: 210 12% 16%;
     --secondary-foreground: 210 9% 91%;
     --muted: 210 12% 16%;
-    --muted-foreground: 210 4% 46%;  /* Warm gray #71767B */
+    --muted-foreground: 210 4% 58%;  /* Warm gray #8F9499; 46% was 4.1:1 on the background, below WCAG AA */
     --accent: 160 84% 39%;           /* Emerald #10B981 */
     --accent-foreground: 210 9% 91%;
     --destructive: 0 62% 50%;

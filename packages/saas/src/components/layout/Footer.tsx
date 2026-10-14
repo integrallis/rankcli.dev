@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Terminal, Github } from 'lucide-react';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
+import { SOCIAL_PROFILES } from '@/components/SEO';
 
 const footerLinks = {
   product: [
@@ -37,15 +38,27 @@ export function Footer() {
               <br />
               Get cited, not just crawled.
             </p>
-            <div className="flex gap-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <a
                 href="https://github.com/integrallis/rankcli-cli"
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="RankCLI on GitHub"
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Github className="h-5 w-5" />
               </a>
+              {SOCIAL_PROFILES.filter((p) => p.label !== 'GitHub').map((p) => (
+                <a
+                  key={p.href}
+                  href={p.href}
+                  target="_blank"
+                  rel="noopener noreferrer me"
+                  className="font-tech text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {p.label}
+                </a>
+              ))}
             </div>
           </div>
 

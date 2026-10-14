@@ -44,7 +44,7 @@ export function Navbar() {
       <div className="container flex h-14 items-center justify-between">
         {/* Logo */}
         <Link to="/" className="flex items-center">
-          <img src="/logo_w_text.svg" alt="RankCLI" className="h-8" />
+          <img src="/logo_w_text.svg" alt="RankCLI" width={280} height={48} className="h-8 w-auto" />
         </Link>
 
         {/* Desktop Navigation */}

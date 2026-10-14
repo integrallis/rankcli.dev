@@ -6,12 +6,12 @@ import { Features } from '@/components/landing/Features';
 import { Differentiators } from '@/components/landing/Differentiators';
 import { Pricing } from '@/components/landing/Pricing';
 import { FAQ } from '@/components/landing/FAQ';
-import { SEO, SITE_URL } from '@/components/SEO';
+import { SEO, SITE_URL, SOCIAL_PROFILES } from '@/components/SEO';
 import { faqPageJsonLd } from '@/data/faqs';
 import pricingConfig from '@/config/pricing-tiers.json';
 
 const description =
-  'RankCLI is a developer-first SEO and GEO tool. Run 280+ checks from your terminal or CI, get framework-aware fixes and GitHub auto-fix PRs, and see whether AI search cites you. Free to start.';
+  'RankCLI is a developer-first SEO and GEO tool: 280+ checks from your terminal or CI, framework-aware fixes, GitHub auto-fix PRs and AI search visibility.';
 
 // Offers come from pricing-tiers.json, the same source as the pricing cards.
 const offers = [
@@ -34,6 +34,7 @@ const structuredData = [
     operatingSystem: 'macOS, Linux, Windows',
     description,
     url: `${SITE_URL}/`,
+    mainEntityOfPage: `${SITE_URL}/`,
     offers,
     featureList: [
       '280+ SEO and GEO checks',
@@ -48,10 +49,11 @@ const structuredData = [
   {
     '@context': 'https://schema.org',
     '@type': 'Organization',
+    '@id': `${SITE_URL}/#organization`,
     name: 'RankCLI',
     url: `${SITE_URL}/`,
     logo: `${SITE_URL}/logo.png`,
-    sameAs: ['https://github.com/apps/rankcli'],
+    sameAs: ['https://github.com/apps/rankcli', ...SOCIAL_PROFILES.map((p) => p.href)],
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'customer support',

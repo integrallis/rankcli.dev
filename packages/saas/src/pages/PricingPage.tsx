@@ -12,8 +12,8 @@ export function PricingPage() {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Pricing"
-        description={`RankCLI pricing: free for one site, plus unlimited local audits via the CLI and MCP server. Paid plans (${paidPlans} a month) add sites, scheduled audits, auto-fix PRs and white-label reports.`}
+        title="Pricing: free CLI, hosted plans from $9 a month"
+        description={`RankCLI pricing: the CLI, MCP server and Action are free. Hosted plans (${paidPlans} a month) add sites, schedules, auto-fix PRs and reports.`}
         path="/pricing"
         image="/og-pricing.png"
         imageAlt="RankCLI pricing"

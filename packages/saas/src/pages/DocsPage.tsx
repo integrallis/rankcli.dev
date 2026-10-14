@@ -119,8 +119,8 @@ export function DocsPage() {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Documentation"
-        description="RankCLI documentation: install the CLI, run SEO and GEO audits, use the MCP server with AI assistants, connect GitHub for auto-fix PRs, run audits in CI, and call the API."
+        title="Docs: CLI, CI gate, MCP server and auto-fix PRs"
+        description="RankCLI docs: install the CLI, run SEO and GEO audits, use the MCP server with AI assistants, connect GitHub for auto-fix PRs, gate CI and call the API."
         path="/docs"
       />
       <Navbar />
