@@ -30,8 +30,10 @@ founder's test subscriptions are included in the user counts below.
 | Founder checklist | Google OAuth and GitHub App OAuth secrets still unset; 0 Search Console connections; deep audits run |
 | Reddit | Comments logged: 2 (2026-09-30). Posts: 0 since the removals. The Reddit Ads campaign was **never created** (founder, 2026-10-13); the pixel fires for nobody |
 
-What drove the 7 signups and 31 free audits in the week of Oct 5 is not knowable from here:
-nothing was published or pushed that week (only the weekly Bluesky post, 0 likes), and the
+What drove the 7 signups and 31 free audits in the week of Oct 5 is not provable from here,
+but one thing happened right before it: on 2026-10-02 the founder posted an intro to 15 SEO/GEO
+Facebook groups (timeline below), most of them pending admin approval, which is when posts
+surface a few days later. Nothing else was published or pushed that week (only the weekly Bluesky post, 0 likes), and the
 Cloudflare Web Analytics referrer report is only in the dashboard. Check Cloudflare -> Web
 Analytics -> rankcli.dev -> Referrers for Oct 5 to Oct 11 before deciding what to repeat.
 
@@ -73,7 +75,7 @@ Analytics -> rankcli.dev -> Referrers for Oct 5 to Oct 11 before deciding what t
 | IndexNow | Working | 35 URLs to Bing, Yandex, Seznam, Naver |
 | MCP directories | Listed everywhere that matters | Registry, Glama, Smithery, awesome-mcp-servers; mcp.so queued |
 | Reddit organic | 2 comments, 2 posts | **Both posts removed or filtered** |
-| Hacker News | Show HN submitted 2026-09-30 | **Dead on arrival** (new account, 7 karma); 0 views. See "Status on 2026-10-13" |
+| Hacker News | Show HN submitted 2026-09-30 | **Dead on arrival.** Item 49913246, `dead: true`, score 1, new account (karma 1 on 2026-10-02). Nobody saw it. See "Status on 2026-10-13" |
 | Reddit Ads | **Never run** | Pixel `a2_jrtl7de1quoe` live, PageVisit and Search verified; no campaign was ever created (founder, 2026-10-13) |
 | Meta / Zeely | Not started | 10K credits unspent |
 | LinkedIn | Not started | Credentials work; owner's call |
@@ -154,6 +156,17 @@ archiving, not promotion.
     tidiness: Reddit and every other ad platform append click parameters, and a redirect that
     dropped them would silently break attribution on any ad landing on a www URL.
 
+### 2026-10-02
+
+- **Show HN was dead on arrival.** Item 49913246 was `[flagged]` and `dead`, account karma 1. It looks
+  normal to its author, which is why it seemed live. Account karma is being built with genuine comments.
+- **Facebook: intro post in 15 SEO/GEO groups**, spaced about 10 minutes apart, from Brian's profile,
+  linking rankcli.dev. All 15 went in; most are waiting for admin approval. **WordPress • AI | Speed | SEO |
+  Developers removed it within minutes.** Four groups that require admin permission first (Superstar
+  SEO, SEO Projects and SEO Jobs, SEO Masterminds Pakistan, SEO & Digital Marketing by Riha Webtech) were
+  not posted to. Four that ban promotion were skipped (SEO Philippines, SEO EXPERT, SEO Expert In
+  Bangladesh, SEO Masters Academy). Check the approvals in a day before posting anywhere else.
+
 ---
 
 ## What was learned, and cost something
@@ -182,7 +195,7 @@ place.
 
 ## Open, in order of expected value
 
-1. **Hacker News thread.** Submitted; answer every comment for the first two to three hours.
+1. **Hacker News.** The 2026-09-30 Show HN was killed on submission (new account, karma 1). Ask hn@ycombinator.com to re-up it; see `REVIEW-2026-10-02.md`.
 2. **Reddit standing.** Eight to thirteen more genuine comments to reach roughly 9:1 and clear
    the karma gates. Drafts in `reddit-comments.html`.
 3. **r/webdev on Showoff Saturday (2026-10-03)**, using the rewrite in `reddit-posting-plan.md`.

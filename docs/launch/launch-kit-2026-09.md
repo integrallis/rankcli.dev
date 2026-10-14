@@ -12,7 +12,7 @@ Ready-to-post copy for the launch, written against the product as it is on 2026-
 
 - `npx @rankcli/cli audit --url <site>` runs the full engine locally, free, no account. On a test page it reported 86 issues, 28 of them from the premium AI-search checks (citation-worthiness, answer structure, E-E-A-T, entities).
 - CI gates: `--fail-on error|warning|notice`, `--min-score N`. Exit codes 0 pass / 1 gate failed / 2 bad invocation / 3 site unreachable or erroring, so a down site never passes.
-- `uses: integrallis/rankcli-action@v1` is public and open source. rankcli.dev gates itself with it: 75/100, 0 errors on 2026-09-27 (`.github/workflows/seo-gate.yml`). **Before posting, re-check the score** (VERIFIED-NUMBERS.md, or Actions -> SEO gate).
+- `uses: integrallis/rankcli-action@v1` is public and open source. rankcli.dev gates itself with it (`.github/workflows/seo-gate.yml`). Cite the homepage figure, 75/100 and 0 errors (re-verified 2026-10-02), not the gate's own 81, which covers a different scope. **Before posting, re-check the score** (VERIFIED-NUMBERS.md, or Actions -> SEO gate).
 - AI analysis never goes through RankCLI. It picks Apple Intelligence on-device on a Mac that has it, else your key (OpenRouter first; OpenAI, Anthropic, Groq, Gemini, DeepSeek and more), else a local Ollama or LM Studio.
 - `npx @rankcli/mcp-server`: 15 tools, local, no signup. Listed on Smithery, Glama, mcp.so, cursor.directory and awesome-mcp-servers.
 - Hosted: sign-up to first completed audit took under a minute in the end-to-end test.
@@ -127,14 +127,14 @@ lead with what went wrong rather than what works:
 >
 > We built RankCLI to treat SEO like linting. It runs 280+ checks from the command line or a GitHub Action, fails the build when something regresses, and covers the new part too: whether AI crawlers can reach your site and whether an AI answer could quote it.
 >
-> It's developer-first: the CLI, the GitHub Action and a local MCP server for Claude/Cursor are free, and AI analysis runs on your own model - on-device Apple Intelligence if you're on a Mac. Our own site gates itself with it (75/100 today).
+> It's developer-first: the CLI, the GitHub Action and a local MCP server for Claude/Cursor are free, and AI analysis runs on your own model - on-device Apple Intelligence if you're on a Mac. Our own site runs it in CI, and the homepage scores 75/100 on it today.
 >
 > rankcli.dev/?ref=li
 
 ## Bluesky / X thread
 
 1. `SEO breaks quietly. We built RankCLI so it fails your build instead: 280+ SEO and AI-search checks from the CLI or a GitHub Action. Free: npx @rankcli/cli audit --url yoursite.com 🧵`
-2. `CI gate: --fail-on error or --min-score 80. A site that's down or answering 5xx exits non-zero - it never "passes". Our own site gates itself with the public Action: 75/100 today.`
+2. `CI gate: --fail-on error or --min-score 80. A site that's down or answering 5xx exits non-zero - it never "passes". Our own site gates itself with the public Action, and the homepage scores 75/100 today.`
 3. `AI analysis runs on your model, never ours. On a Mac with Apple Intelligence it's on-device and free. Otherwise Ollama, LM Studio, or your OpenRouter/OpenAI key.`
 4. `Using Claude Code or Cursor? npx @rankcli/mcp-server gives them 15 SEO/GEO tools, locally, no signup.`
 5. `Hosted monitoring, history and auto-fix PRs have a free tier. rankcli.dev/?ref=bsky`
