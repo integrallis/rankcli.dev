@@ -56,6 +56,11 @@ Analytics -> rankcli.dev -> Referrers for Oct 5 to Oct 11 before deciding what t
   publish, which a bypass token may not unpublish. The workflow now tries Trusted Publishing
   first and falls back to the token with a warning; linking each package to OIDC needs a 2FA
   code (FOUNDER_CHECKLIST §8).
+- Merged PR #12 (the 2026-10-02 review branch, conflicting with this log) and learned from it that
+  the founder posted an intro to 15 SEO/GEO Facebook groups on 2026-10-02, the one event right
+  before the week that produced 7 signups. The status section now says so.
+- The Astro and Next.js guide pages (`/seo/astro`, `/seo/nextjs`) now show their npm plugins with
+  an install line and a snippet from the package README; deployed and checked live.
 - Founder confirmed the Reddit Ads campaign never ran. The pixel has fired for organic visitors
   only since 2026-09-30.
 - Checked what open-sourcing the CLI would reveal: nothing `node_modules` does not already show.
