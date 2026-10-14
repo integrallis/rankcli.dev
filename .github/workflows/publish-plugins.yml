@@ -12,6 +12,9 @@ name: Publish framework plugins
 #   npx npm@latest trust github <package> --file publish-plugins.yml \
 #     --repo integrallis/rankcli.dev --allow-publish
 # or npmjs.com -> package -> Settings -> Trusted Publisher.
+# Until that link exists the publish step falls back to the NPM_TOKEN secret
+# (a granular token with read/write on all packages and 2FA bypass) and says
+# so with a warning; once all three are linked the secret can be deleted.
 #
 # "diagnose" needs the NPM_TOKEN secret and only reads: whoami, versions,
 # staged versions and trust links, so a stuck publish can be understood.
@@ -85,6 +88,7 @@ jobs:
         env:
           NAMES: ${{ steps.pkgs.outputs.names }}
           DRY_RUN: ${{ inputs.mode == 'dry-run' }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }} # fallback only, until each package is linked to Trusted Publishing
         run: |
           set -euo pipefail
           declare -A DIRS=(
@@ -103,12 +107,15 @@ jobs:
             elif [ "$DRY_RUN" = true ]; then
               (cd "$dir" && npm pack --dry-run)
             elif (cd "$dir" && npm publish --access public --ignore-scripts); then
-              echo "published $name@$version"
+              echo "published $name@$version (Trusted Publishing)"
+            elif [ -n "${NPM_TOKEN:-}" ] && (cd "$dir" && NODE_AUTH_TOKEN="$NPM_TOKEN" npm publish --access public --ignore-scripts); then
+              echo "published $name@$version with NPM_TOKEN"
+              echo "::warning::$name is not linked to Trusted Publishing, so this used the token, which npm retires in January 2027. A maintainer with 2FA links it once: npx npm@latest trust github $name --file publish-plugins.yml --repo integrallis/rankcli.dev --allow-publish (or npmjs.com -> $name -> Settings -> Trusted Publisher)."
             else
               failed=1
-              echo "::error::$name@$version was not published. If npm answered 404 or ENEEDAUTH, Trusted Publishing is not linked yet. A maintainer with 2FA runs:"
+              echo "::error::$name@$version was not published. Trusted Publishing is not linked and no working NPM_TOKEN exists. A maintainer with 2FA runs:"
               echo "::error::  npx npm@latest trust github $name --file publish-plugins.yml --repo integrallis/rankcli.dev --allow-publish"
-              echo "::error::or: npmjs.com -> $name -> Settings -> Trusted Publisher -> GitHub Actions (integrallis / rankcli.dev / publish-plugins.yml). If npm said the version is staged, approve or reject it first: npx npm@latest stage list $name"
+              echo "::error::or: npmjs.com -> $name -> Settings -> Trusted Publisher -> GitHub Actions (integrallis / rankcli.dev / publish-plugins.yml). If npm said the version is staged: npx npm@latest stage list $name"
             fi
             echo "::endgroup::"
           done
