@@ -6,15 +6,9 @@ Everything left in [GAPS.md](GAPS.md) needs an account only you hold: Google Clo
 
 Sign in to a paid account on rankcli.dev, open a project and press **Run deep audit**. It should finish in a few minutes, with results on the project page. The dispatch code behind it already runs every hour for scheduled audits.
 
-## 2. Analytics (gap 14) - two minutes
+## 2. Analytics (gap 14) - done
 
-1. Cloudflare dashboard -> **Analytics & Logs -> Web Analytics -> Add a site** -> `rankcli.dev`. Choose the **manual JavaScript snippet**, not automatic setup (automatic setup would count every visit twice).
-2. Copy the token from the snippet: `data-cf-beacon='{"token": "..."}'`.
-3. GitHub -> `integrallis/rankcli.dev` -> **Settings -> Secrets and variables -> Actions -> Variables** -> New repository variable `CF_BEACON_TOKEN` = the token. It is public in the page, so a variable, not a secret.
-4. Redeploy the frontend: Actions -> **Deploy SaaS** -> Run workflow (or any push that touches the site).
-5. Check: rankcli.dev's page source contains `static.cloudflareinsights.com/beacon.min.js`; visits appear in Cloudflare within minutes.
-
-Alternative: give the `CLOUDFLARE_API_TOKEN` secret the **Account Analytics: Edit** permission and run the **Cloudflare Web Analytics site** workflow, which finds or creates the site and prints the token for step 3. (Today's token is scoped to Pages deploys and is refused.)
+Live since 2026-09-28: `CF_BEACON_TOKEN` is a repository variable and rankcli.dev's page source loads `static.cloudflareinsights.com/beacon.min.js` (re-checked 2026-10-15). Referrers are only in the Cloudflare dashboard: **Analytics & Logs -> Web Analytics -> rankcli.dev -> Referrers**.
 
 ## 3. List the GitHub Action on the Marketplace (gap 12) - two minutes
 
