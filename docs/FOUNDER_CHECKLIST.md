@@ -6,6 +6,15 @@ Everything left in [GAPS.md](GAPS.md) needs an account only you hold: Google Clo
 
 Sign in to a paid account on rankcli.dev, open a project and press **Run deep audit**. It should finish in a few minutes, with results on the project page. The dispatch code behind it already runs every hour for scheduled audits.
 
+To see whether the button has ever been pressed (manual rows) as opposed to the hourly dispatch (scheduled rows), from the repo root:
+
+```bash
+SUPABASE_ACCESS_TOKEN=$(grep '^SUPABASE_ACCESS_TOKEN=' .env | cut -d= -f2- | tr -d '"')
+curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" \
+  -d '{"query":"select triggered_by, status, count(*) as n, max(created_at) as latest from audits where audit_type = '"'"'deep'"'"' group by 1,2 order by 4 desc"}' \
+  https://api.supabase.com/v1/projects/bspljbxwbjiqueeyzyat/database/query
+```
+
 ## 2. Analytics (gap 14) - done
 
 Live since 2026-09-28: `CF_BEACON_TOKEN` is a repository variable and rankcli.dev's page source loads `static.cloudflareinsights.com/beacon.min.js` (re-checked 2026-10-15). Referrers are only in the Cloudflare dashboard: **Analytics & Logs -> Web Analytics -> rankcli.dev -> Referrers**.
@@ -22,21 +31,30 @@ Today a user who signed up with email or Google must sign in with GitHub once be
 
 1. GitHub -> Settings -> Developer settings -> GitHub Apps -> **RankCLI** -> General.
 2. Tick **Request user authorization (OAuth) during installation**. The callback URL becomes the post-install redirect; set it to `https://rankcli.dev/dashboard/github-callback`.
-3. **Generate a new client secret**, and copy the App's **Client ID**.
-4. Supabase -> project `bspljbxwbjiqueeyzyat` -> **Edge Functions -> Secrets**: add `GITHUB_APP_CLIENT_ID` and `GITHUB_APP_CLIENT_SECRET`.
+3. No new client secret is needed: the App's client id and secret are already in `.env` as `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`, and GitHub accepted them on 2026-10-15.
+4. Set them on production under the names the function reads. Checked 2026-10-15: not set yet (production holds `GITHUB_CLIENT_ID` under the old name, which no function reads). From the repo root:
+
+   ```bash
+   SUPABASE_ACCESS_TOKEN=$(grep '^SUPABASE_ACCESS_TOKEN=' .env | cut -d= -f2- | tr -d '"') \
+   npx supabase secrets set --project-ref bspljbxwbjiqueeyzyat \
+     GITHUB_APP_CLIENT_ID="$(grep '^GITHUB_CLIENT_ID=' .env | cut -d= -f2- | tr -d '"')" \
+     GITHUB_APP_CLIENT_SECRET="$(grep '^GITHUB_CLIENT_SECRET=' .env | cut -d= -f2- | tr -d '"')"
+   ```
+
+   The dashboard page `/dashboard/github-callback` already passes the `code` GitHub appends after install, so nothing else changes.
 
 `connect-github-repo` already uses them when present: installing the App then identifies the installer, and GitHub confirms their write access.
 
 ## 5. Google Search Console (gap 10b) - thirty minutes, then Google's review
 
-1. Google Cloud Console (the project behind "Sign in with Google" is fine) -> **APIs & Services -> Library** -> enable **Google Search Console API**.
+1. Google Cloud Console, project number **432973813243** (the one whose OAuth client Supabase Auth uses for "Sign in with Google" today, read 2026-10-15) -> **APIs & Services -> Library** -> enable **Google Search Console API**.
 2. **OAuth consent screen** (Google Auth Platform):
    - App name RankCLI, support email, logo.
    - Home page `https://rankcli.dev`, privacy policy `https://rankcli.dev/privacy`, terms `https://rankcli.dev/terms`.
    - Authorized domains: `rankcli.dev` and `bspljbxwbjiqueeyzyat.supabase.co`.
    - Data access -> add scopes `https://www.googleapis.com/auth/webmasters.readonly` and `https://www.googleapis.com/auth/userinfo.email`.
 3. **Credentials -> OAuth client ID (Web application)**, or the existing sign-in client -> add the authorized redirect URI `https://bspljbxwbjiqueeyzyat.supabase.co/functions/v1/gsc-oauth/callback`.
-4. Supabase -> **Edge Functions -> Secrets**: add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`. The Search Console card then appears on project pages for Solo and up, and the daily sync starts.
+4. Supabase -> **Edge Functions -> Secrets**: add `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` (both absent on 2026-10-15; the same `npx supabase secrets set` form as item 4 works). Do this last: with the secrets set but no redirect URI registered, the card appears and the connect flow fails at Google. The Search Console card then appears on project pages for Solo and up, and the daily sync starts.
 5. **Verification.** `webmasters.readonly` is a sensitive scope. Until Google verifies the app, users see an "unverified app" warning and at most 100 can connect. Submit for verification with:
    - rankcli.dev verified in Search Console (you own it);
    - the privacy policy - it already has the required Limited Use statement;
