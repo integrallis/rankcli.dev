@@ -17,7 +17,9 @@ The numbered list below was written on 2026-09-30, before anything was measured.
 the measurement came in ([ACTIVITY-LOG.md, "Status on 2026-10-13"](./ACTIVITY-LOG.md#status-on-2026-10-13-measured-not-remembered)):
 the Show HN was dead on arrival, both Reddit posts were removed or filtered, Bluesky has 2
 followers, the Action is not on the GitHub Marketplace, and 17 accounts exist, 7 of them from
-the week of Oct 5 and none since.
+the week of Oct 5 and none since. On 2026-10-15 Cloudflare Web Analytics (`node
+scripts/cf-traffic.mjs`) showed where that week came from: a Bangladesh and Pakistan cohort with
+no referrer, days after the Facebook SEO-group posts, and nothing from any developer channel.
 
 **The current plan, in order, with the competitor evidence behind it, is
 [COMPETITION-AND-OUTREACH-2026-10.md](./COMPETITION-AND-OUTREACH-2026-10.md) §5.** Its first

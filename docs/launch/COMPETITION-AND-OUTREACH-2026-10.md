@@ -203,12 +203,15 @@ Each item says who can do it. "Founder" means it needs an account only you hold.
    never created (the pixel has been live since 2026-09-30 with no campaign behind it), at $20 to
    $50 a day for one week, measured by the pixel; the research expects 90 to 225 clicks and 10 to
    30 signups at that spend, not more.
-7. **Talk to the 17 users and the 7 free-audit emails** (founder, §6.4). Seven people signed up in
-   one week and stopped. The likeliest source, found in PR #12 on 2026-10-13: the founder's intro
-   post to 15 SEO/GEO Facebook groups on 2026-10-02, most of them held for admin approval, which
-   lands days later. If that is right it is the only channel that has produced signups, and it
-   is repeatable (`facebook-groups.md`). Cloudflare -> Web Analytics -> Referrers for Oct 5 to 11
-   confirms or refutes it in one click.
+7. **Talk to the 17 users and the 7 free-audit emails** (founder, §6.4; skipped on 2026-10-15 at
+   the founder's request). Seven people signed up in one week and stopped. Cloudflare Web
+   Analytics, read 2026-10-15 (`node scripts/cf-traffic.mjs 2026-10-04 2026-10-12`, details in
+   ACTIVITY-LOG), settles where they came from: a cohort from Bangladesh and Pakistan, Oct 4 to
+   8 only, no referrer, some through an in-app webview, two to six days after the founder's
+   intro post to 15 SEO/GEO Facebook groups on 2026-10-02. It is the only channel that has
+   produced signups and it is repeatable (`facebook-groups.md`), but it reaches SEO freelancers,
+   not the developers the product and the pricing are built for. Repeat it only if those users
+   are wanted; it will not bring the engineering-team customers this plan targets.
 8. **Cold outreach to agencies and dev shops, leading with their own audit** (founder sends,
    the audit and the email can be prepared here): 20 to 50 per batch, a personalised scan plus a
    45-second recording lifted one founder's reply rate from 2% to about 15%

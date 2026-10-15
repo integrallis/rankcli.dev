@@ -29,13 +29,22 @@ founder's test subscriptions are included in the user counts below.
 | growth-ops | Posts the weekly score to Bluesky and LinkedIn. Mastodon, Discord and X unconfigured; Dev.to disabled; Reddit API still gated |
 | Founder checklist | Google OAuth and GitHub App OAuth secrets still unset; 0 Search Console connections; deep audits run |
 | Reddit | Comments logged: 2 (2026-09-30). Posts: 0 since the removals. The Reddit Ads campaign was **never created** (founder, 2026-10-13); the pixel fires for nobody |
+| Traffic | 20 to 80 page loads a day, 0 to 20 session starts (Cloudflare Web Analytics, Sep 28 to Oct 14); Google search about 10 page loads a week; no HN, Reddit, Bluesky or Dev.to referrer in any week. `node scripts/cf-traffic.mjs` prints it |
 
-What drove the 7 signups and 31 free audits in the week of Oct 5 is not provable from here,
-but one thing happened right before it: on 2026-10-02 the founder posted an intro to 15 SEO/GEO
-Facebook groups (timeline below), most of them pending admin approval, which is when posts
-surface a few days later. Nothing else was published or pushed that week (only the weekly Bluesky post, 0 likes), and the
-Cloudflare Web Analytics referrer report is only in the dashboard. Check Cloudflare -> Web
-Analytics -> rankcli.dev -> Referrers for Oct 5 to Oct 11 before deciding what to repeat.
+What drove the 7 signups and 31 free audits in the week of Oct 5, from Cloudflare Web Analytics
+(read 2026-10-15 with `scripts/cf-traffic.mjs`; counts are samples rounded to tens): the site
+gets 20 to 80 page loads a day in total, 0 to 20 of them session starts, and a fair share of
+that is the founder (the referrers animerm.ai, kmpilot.dev and moobi.dev carry no RankCLI link).
+The signup-week cohort is unmistakable: 170 page loads from Bangladesh and Pakistan between
+Oct 4 and Oct 8, zero the week before and zero after Oct 10, arriving with no referrer at all
+(20 page loads that week came through an Android in-app webview), landing on `/`,
+`/free-audit`, `/login`, `/docs` and the dashboard. That is the audience of SEO Facebook
+groups, and the timing fits: two to six days after the founder's 2026-10-02 posts to 15 SEO/GEO
+groups, which is when held posts get approved. Ten sampled page loads from `l.facebook.com` in
+the week of the posts are the only direct trace. No HN, Reddit, Bluesky or Dev.to referrer
+appears in any week, and Google search sent about 10 page loads a week. So the one channel
+that produced signups reached SEO freelancers, which fits a $9 to $99 developer tool badly,
+and the developer channels have produced no measurable visit.
 
 ### 2026-10-15
 
@@ -48,6 +57,11 @@ Analytics -> rankcli.dev -> Referrers for Oct 5 to Oct 11 before deciding what t
   on the bypass token, stubs `0.0.0-stage` still present on all three packages, window closes
   2026-10-16. Marketplace slugs still 404. The `.env` test login no longer works on production.
   Open: items 1, 3, 5, 6, 7, 8, the tick in 4.
+- Cloudflare Analytics token and account id added to `.env`; `scripts/cf-traffic.mjs` written
+  (loads and visits by day, referrer, path, country, device for any date range). First read
+  answered the Oct 5 question above: a Bangladesh and Pakistan cohort with no referrer, days after
+  the Facebook group posts, and nothing from any developer channel. The founder chose not to
+  email the current users.
 
 ### 2026-10-13
 
