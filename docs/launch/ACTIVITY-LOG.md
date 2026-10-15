@@ -37,6 +37,18 @@ surface a few days later. Nothing else was published or pushed that week (only t
 Cloudflare Web Analytics referrer report is only in the dashboard. Check Cloudflare -> Web
 Analytics -> rankcli.dev -> Referrers for Oct 5 to Oct 11 before deciding what to repeat.
 
+### 2026-10-15
+
+- Founder checklist re-verified against production with a Supabase management token that now
+  reaches the project. Analytics (item 2) had been live since 2026-09-28 and is marked done.
+  `GITHUB_APP_CLIENT_ID` / `GITHUB_APP_CLIENT_SECRET` set on production from the App pair in
+  `.env` (GitHub accepted the pair first); item 4 now needs only the OAuth-at-install tick on
+  the App. `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` confirmed absent; the Google Cloud
+  project behind sign-in is 432973813243. Plugin workflow diagnose run: `npm trust list` is 403
+  on the bypass token, stubs `0.0.0-stage` still present on all three packages, window closes
+  2026-10-16. Marketplace slugs still 404. The `.env` test login no longer works on production.
+  Open: items 1, 3, 5, 6, 7, 8, the tick in 4.
+
 ### 2026-10-13
 
 - Local checkout was 113 commits behind `origin/main`; synced. Of the four audit-accuracy fixes
