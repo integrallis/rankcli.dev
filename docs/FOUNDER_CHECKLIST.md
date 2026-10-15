@@ -25,23 +25,14 @@ Still not listed on 2026-10-13 (the Marketplace slugs 404). The manifest has `br
 
 https://github.com/integrallis/rankcli-action/releases/tag/v1.0.0 -> **Edit** -> tick **Publish this Action to the GitHub Marketplace** -> accept the Marketplace developer agreement (first time only) -> category "Code quality" or "Continuous integration" -> Update release.
 
-## 4. Repo linking for email/Google sign-ups (gap 12b) - five minutes
+## 4. Repo linking for email/Google sign-ups (gap 12b) - one tick left
 
 Today a user who signed up with email or Google must sign in with GitHub once before linking a repository, because RankCLI has to prove they can write to it. To drop that step:
 
 1. GitHub -> Settings -> Developer settings -> GitHub Apps -> **RankCLI** -> General.
 2. Tick **Request user authorization (OAuth) during installation**. The callback URL becomes the post-install redirect; set it to `https://rankcli.dev/dashboard/github-callback`.
 3. No new client secret is needed: the App's client id and secret are already in `.env` as `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`, and GitHub accepted them on 2026-10-15.
-4. Set them on production under the names the function reads. Checked 2026-10-15: not set yet (production holds `GITHUB_CLIENT_ID` under the old name, which no function reads). From the repo root:
-
-   ```bash
-   SUPABASE_ACCESS_TOKEN=$(grep '^SUPABASE_ACCESS_TOKEN=' .env | cut -d= -f2- | tr -d '"') \
-   npx supabase secrets set --project-ref bspljbxwbjiqueeyzyat \
-     GITHUB_APP_CLIENT_ID="$(grep '^GITHUB_CLIENT_ID=' .env | cut -d= -f2- | tr -d '"')" \
-     GITHUB_APP_CLIENT_SECRET="$(grep '^GITHUB_CLIENT_SECRET=' .env | cut -d= -f2- | tr -d '"')"
-   ```
-
-   The dashboard page `/dashboard/github-callback` already passes the `code` GitHub appends after install, so nothing else changes.
+4. Done 2026-10-15: `GITHUB_APP_CLIENT_ID` and `GITHUB_APP_CLIENT_SECRET` are set on production (the older `GITHUB_CLIENT_ID` secret there is read by nothing and can stay). Edge functions pick new secrets up on their next invocation, and `/dashboard/github-callback` already passes the `code` GitHub appends after install, so step 2 is the only thing left on this item.
 
 `connect-github-repo` already uses them when present: installing the App then identifies the installer, and GitHub confirms their write access.
 
