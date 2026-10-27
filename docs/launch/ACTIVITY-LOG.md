@@ -26,7 +26,7 @@ founder's test subscriptions are included in the user counts below.
 | Dev.to `rankcli` | 5 articles. The Cloudflare/Googlebot one: 7 reactions, 2 comments. The other four: 0 reactions |
 | npm `@rankcli/cli` | 67 downloads last week; 0 to 6 a day outside release days. The spikes (1,382 on Sep 27) are release days, CI and mirrors, not users |
 | GitHub | `rankcli-mcp-server` 1 star, 2 views in 14 days; `rankcli-action` 0 stars, 0 views, **not on the GitHub Marketplace** (both slug guesses 404) |
-| growth-ops | Posts the weekly score to Bluesky and LinkedIn. Mastodon, Discord and X unconfigured; Dev.to disabled; Reddit API still gated |
+| growth-ops | Posts the weekly score to Bluesky. LinkedIn switched off 2026-10-27; Mastodon, Discord and X unconfigured; Dev.to disabled; Reddit API still gated |
 | Founder checklist | Google OAuth and GitHub App OAuth secrets still unset; 0 Search Console connections; deep audits run |
 | Reddit | Comments logged: 2 (2026-09-30). Posts: 0 since the removals. The Reddit Ads campaign was **never created** (founder, 2026-10-13); the pixel fires for nobody |
 | Traffic | 20 to 80 page loads a day, 0 to 20 session starts (Cloudflare Web Analytics, Sep 28 to Oct 14); Google search about 10 page loads a week; no HN, Reddit, Bluesky or Dev.to referrer in any week. `node scripts/cf-traffic.mjs` prints it |
@@ -45,6 +45,13 @@ the week of the posts are the only direct trace. No HN, Reddit, Bluesky or Dev.t
 appears in any week, and Google search sent about 10 page loads a week. So the one channel
 that produced signups reached SEO freelancers, which fits a $9 to $99 developer tool badly,
 and the developer channels have produced no measurable visit.
+
+### 2026-10-27
+
+- LinkedIn automatic posting switched off at the founder's request: `"enabled": false` on the
+  `linkedin` channel in `docs/launch/campaign-config.json` (the scheduler reports "disabled in
+  config"), and `release-announce` no longer defaults to LinkedIn; it still posts there if
+  `linkedin` is typed into its channels input. The secrets stay in place.
 
 ### 2026-10-15
 

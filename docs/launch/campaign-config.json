@@ -36,6 +36,8 @@
       ]
     },
     "linkedin": {
+      "enabled": false,
+      "_comment": "Off (2026-10-27, founder's call): the weekly dogfood score went to the founder's own profile every Monday. Remove \"enabled\": false to re-enable; the phases below are kept for that.",
       "phases": [
         {
           "start_week": 0,

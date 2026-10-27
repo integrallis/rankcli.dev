@@ -92,6 +92,8 @@ this automates.
 2. Repo secrets: `MASTODON_INSTANCE_URL`, `MASTODON_ACCESS_TOKEN`.
 
 ### LinkedIn (your own profile only)
+**Off since 2026-10-27** (`"enabled": false` in `campaign-config.json`, founder's call). The steps below still describe how it was wired; remove that flag to turn it back on.
+
 1. Create an app at linkedin.com/developers, request `w_member_social`
    (self-serve, no partner review for personal-profile posting).
 2. Complete the OAuth2 flow once for a long-lived token; get your member

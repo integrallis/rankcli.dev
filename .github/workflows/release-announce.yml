@@ -37,7 +37,7 @@ on:
       channels:
         description: 'Comma-separated channels to post to'
         required: false
-        default: 'bluesky,linkedin,discord'
+        default: 'bluesky,discord'
         type: string
 
 permissions:
