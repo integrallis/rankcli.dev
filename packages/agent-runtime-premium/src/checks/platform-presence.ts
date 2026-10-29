@@ -561,33 +561,9 @@ export function analyzePlatformPresence(
     });
   }
 
-  // No YouTube (critical for video SEO)
-  if (!metrics.hasYouTube && detectedPlatforms.length >= 2) {
-    issues.push({
-      code: 'NO_YOUTUBE_PRESENCE',
-      severity: 'notice',
-      category: 'social',
-      title: 'No YouTube channel linked',
-      description: 'Multiple social platforms linked but YouTube is missing.',
-      impact: 'YouTube is the second largest search engine. Video content ranks in both YouTube and Google.',
-      howToFix: 'Create a YouTube channel and link to it from your website.',
-      affectedUrls: [url],
-    });
-  }
-
-  // No embedded content
-  if (embeddedContent.length === 0 && detectedPlatforms.length > 0) {
-    issues.push({
-      code: 'NO_EMBEDDED_SOCIAL',
-      severity: 'notice',
-      category: 'social',
-      title: 'No embedded social content',
-      description: 'Social profiles linked but no embedded videos, tweets, or posts.',
-      impact: 'Embedded content increases engagement time and shows fresh, active social presence.',
-      howToFix: 'Embed relevant YouTube videos, Twitter feeds, or TikTok videos in your content.',
-      affectedUrls: [url],
-    });
-  }
+  // NO_YOUTUBE_PRESENCE and NO_EMBEDDED_SOCIAL are no longer findings: not having a YouTube
+  // channel, or not embedding tweets, is not an SEO defect, and both fired on every site with
+  // two social links. The platform and embed data below still reports what was found.
 
   return {
     issues,

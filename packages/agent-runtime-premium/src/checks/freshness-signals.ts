@@ -336,8 +336,13 @@ export function analyzeFreshnessSignals(
 
   // Generate issues
 
-  // No dateModified schema
-  if (!dateSignals.hasSchemaDateModified) {
+  // No dateModified schema. Only on dated content (an article, or a page that already
+  // publishes a datePublished): a homepage or a pricing page has no modification date to
+  // declare, and this fired on every one of them as a warning.
+  const isDatedContent = dateSignals.hasSchemaDatePublished ||
+    /"@type"\s*:\s*"(Article|BlogPosting|NewsArticle|TechArticle|ScholarlyArticle|Report)"/i.test(html) ||
+    $('meta[property="og:type"][content="article"]').length > 0;
+  if (isDatedContent && !dateSignals.hasSchemaDateModified) {
     issues.push({
       code: 'NO_DATE_MODIFIED_SCHEMA',
       severity: 'warning',

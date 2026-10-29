@@ -937,8 +937,13 @@ export function analyzeEEATSignals(
     });
   }
 
-  // No press/authority badges for commercial content
-  const isCommercial = /buy|price|shop|product|service/i.test(html);
+  // Commercial and review pages are recognised by what the page says about itself, not by
+  // any of "best", "review", "price" or "service" appearing anywhere in the HTML (which made
+  // REVIEW_NO_VIDEO fire on every site audited).
+  const $$ = cheerio.load(html);
+  const headline = `${$$('title').text()} ${$$('h1').text()}`.toLowerCase();
+  const bodyText = $$('body').text();
+  const isCommercial = /\b(add to cart|buy now|checkout|order now|pricing)\b/i.test(bodyText) || /[$€£]\s?\d/.test(bodyText);
   if (isCommercial && trustBadges.pressFeatures.length === 0 && trustBadges.certifications.length === 0) {
     issues.push({
       code: 'COMMERCIAL_NO_TRUST_BADGES',
@@ -953,7 +958,7 @@ export function analyzeEEATSignals(
   }
 
   // Video experience for product/review content
-  const isReviewContent = /review|comparison|best|top \d+/i.test(html);
+  const isReviewContent = /\b(review|reviews|reviewed|comparison|compared|vs\.?|best \w+|top \d+)\b/.test(headline);
   if (isReviewContent && !videoExperience.hasVideo) {
     issues.push({
       code: 'REVIEW_NO_VIDEO',

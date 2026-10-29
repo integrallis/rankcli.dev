@@ -458,7 +458,8 @@ export function analyzeConversionElements(
     if (!socialProof.hasTestimonials && !socialProof.hasReviews) {
       issues.push({
         code: 'NO_SOCIAL_PROOF',
-        severity: 'warning',
+        // A notice: a conversion-rate suggestion, not a search defect.
+        severity: 'notice',
         category: 'content',
         title: 'No testimonials or reviews found',
         description: 'Page lacks testimonials, reviews, or other social proof.',

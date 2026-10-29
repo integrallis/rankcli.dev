@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-10-14T00:34:27.268Z
+// Generated: 2026-10-29T19:15:23.990Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -8952,7 +8952,7 @@ var ISSUE_DEFINITIONS = {
     severity: "warning",
     category: "performance",
     title: "HTML document too large",
-    description: "HTML size exceeds 100KB.",
+    description: "HTML size exceeds 300KB.",
     impact: "Increases load time and memory usage.",
     howToFix: "Reduce inline CSS/JS, remove unnecessary HTML."
   },
@@ -11839,7 +11839,7 @@ async function analyzePerformance(url) {
         details: { ttfb: `${ttfbTime}ms` }
       });
     }
-    if (htmlSize > 100 * 1024) {
+    if (htmlSize > 300 * 1024) {
       issues.push({
         ...ISSUE_DEFINITIONS.HTML_TOO_LARGE,
         affectedUrls: [url],
@@ -13985,7 +13985,7 @@ function analyzeLocalSEO(html, url) {
   const detectedPhones = detectPhones(html);
   const detectedAddresses = detectAddresses(html);
   const socialProfiles = detectSocialProfiles(html);
-  if (!hasLocalBusiness) {
+  if (!hasLocalBusiness && (detectedPhones.length > 0 || detectedAddresses.length > 0)) {
     issues.push({
       ...ISSUE_DEFINITIONS.LOCAL_BUSINESS_SCHEMA_MISSING,
       affectedUrls: [url]
@@ -15052,7 +15052,19 @@ function analyzeKeywords(html, url) {
   const sortPhrases = (phrases, n) => {
     return Array.from(phrases).filter(([_, count]) => count >= 2).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([phrase, count]) => ({ phrase, count, wordCount: n }));
   };
-  const potentialStuffing = topKeywords.filter((k) => k.density > 3).map((k) => k.word);
+  const brandLabels = /* @__PURE__ */ new Set();
+  try {
+    const host = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+    for (const label of host.split(".").slice(0, -1))
+      brandLabels.add(label);
+  } catch {
+  }
+  for (const name of [$('meta[property="og:site_name"]').attr("content"), $('meta[name="application-name"]').attr("content")]) {
+    for (const token of tokenize(name || ""))
+      brandLabels.add(token);
+  }
+  const isBrandWord = (word) => [...brandLabels].some((label) => label.includes(word) || word.includes(label));
+  const potentialStuffing = totalWords >= 200 ? topKeywords.filter((k) => k.density > 4 && !isBrandWord(k.word)).map((k) => k.word) : [];
   if (potentialStuffing.length > 0) {
     issues.push({
       ...ISSUE_DEFINITIONS.KEYWORD_STUFFING,
@@ -15277,13 +15289,6 @@ function checkAMP(html, url) {
         ampValid: null
       }
     };
-  }
-  const isArticle = $("article").length > 0 || $('meta[property="og:type"][content="article"]').length > 0 || html.toLowerCase().includes("blog") || html.toLowerCase().includes("news");
-  if (isArticle) {
-    issues.push({
-      ...ISSUE_DEFINITIONS.AMP_MISSING,
-      affectedUrls: [url]
-    });
   }
   return {
     issues,
@@ -16006,13 +16011,13 @@ async function analyzeSiteMaturity(html, url) {
     contentToAuthorityRatio
   };
   const { strategy, recommendations } = determineStrategy(maturityLevel, authorityIndicators, contentMetrics);
-  if (maturityLevel === "new") {
+  if (maturityLevel === "new" && ageSource === "wayback" && estimatedAgeDays !== null) {
     issues.push({
       code: "NEW_SITE_STRATEGY",
       severity: "notice",
       category: "content",
       title: "New website detected - Authority-first strategy recommended",
-      description: "Your site appears to be new (<90 days). Standard SEO advice won't work well for new sites.",
+      description: `The Wayback Machine first saw this site ${estimatedAgeDays} days ago. Standard SEO advice won't work well for a site under 90 days old.`,
       impact: "Creating lots of content without authority is wasted effort. Content from new sites rarely ranks.",
       howToFix: "Focus on building 10+ quality backlinks to ONE great page before expanding content. See strategic recommendations.",
       affectedUrls: [url],
@@ -16023,24 +16028,7 @@ async function analyzeSiteMaturity(html, url) {
       }
     });
   }
-  if (contentToAuthorityRatio === "content-heavy") {
-    issues.push({
-      code: "CONTENT_AUTHORITY_IMBALANCE",
-      severity: "warning",
-      category: "content",
-      title: "Content-to-authority imbalance",
-      description: `Site has ~${indexedPages} pages but limited backlink signals. Content is unlikely to rank.`,
-      impact: "Most of your content may be invisible to search engines due to low domain authority.",
-      howToFix: "Stop publishing new content. Focus 100% on link building until you see ranking improvements.",
-      affectedUrls: [url],
-      details: {
-        indexedPages,
-        contentToAuthorityRatio,
-        maturityLevel
-      }
-    });
-  }
-  if (maturityLevel === "growing" && !htmlSignals.hasBlog) {
+  if (maturityLevel === "growing" && ageSource === "wayback" && !htmlSignals.hasBlog) {
     issues.push({
       code: "GROWING_SITE_NO_BLOG",
       severity: "notice",
@@ -16534,8 +16522,8 @@ function analyzeRendering(html) {
   const hasSemanticStructure = hasH1 && (hasMain || hasArticle);
   const title = $("title").text().trim();
   const h1Text = $("h1").first().text().trim();
-  const firstParagraph = $("p").first().text().trim();
-  const keyContentInHTML = title.length > 10 && h1Text.length > 5 && firstParagraph.length > 50;
+  const hasSubstantialParagraph = $("p").toArray().some((p) => $(p).text().trim().length > 50);
+  const keyContentInHTML = title.length > 0 && h1Text.length > 0 && hasSubstantialParagraph;
   const EXPECTED_MIN_CONTENT = 1e3;
   const htmlContentRatio = Math.min(100, mainContentCharCount / EXPECTED_MIN_CONTENT * 100);
   let aiReadableScore = 50;
@@ -16765,9 +16753,9 @@ function analyzeClientRendering(html, url) {
       howToFix: "Ensure the initial HTML contains: meaningful <title>, descriptive <h1>, and a substantial first paragraph with your key message.",
       affectedUrls: [url],
       details: {
-        hasTitle: $("title").text().trim().length > 10,
-        hasH1: $("h1").text().trim().length > 5,
-        hasFirstParagraph: $("p").first().text().trim().length > 50
+        hasTitle: $("title").text().trim().length > 0,
+        hasH1: $("h1").text().trim().length > 0,
+        hasSubstantialParagraph: $("p").toArray().some((p) => $(p).text().trim().length > 50)
       }
     });
   }
@@ -17480,7 +17468,9 @@ async function analyzeBingOptimization(html, url) {
     detectedIssues.push("No Bing site verification");
     issues.push({
       code: "BING_NOT_VERIFIED",
-      severity: "warning",
+      // A notice: verification done through Search Console import or a DNS record this run
+      // could not see leaves no trace in the HTML, so this cannot be a warning.
+      severity: "notice",
       category: "ai-readiness",
       title: verification.dnsChecked ? "Site not verified with Bing Webmaster Tools" : "Bing Webmaster Tools verification not visible in the HTML",
       description: verification.dnsChecked ? "No msvalidate.01 meta tag in the HTML, no MS= TXT record on the domain and no /BingSiteAuth.xml file. ChatGPT Search uses Bing's index. Verifying your site with Bing Webmaster Tools ensures proper indexing and access to Bing-specific SEO tools." : "No msvalidate.01 meta tag in the HTML and no /BingSiteAuth.xml file. The site may be verified through a DNS record instead, which this run could not check. ChatGPT Search uses Bing's index. Verifying your site with Bing Webmaster Tools ensures proper indexing and access to Bing-specific SEO tools.",
@@ -17531,7 +17521,7 @@ async function analyzeBingOptimization(html, url) {
     });
   }
   const hasLocalBusinessSchema = bingPlacesDetected;
-  const hasAddressOnPage = $("address").length > 0 || html.toLowerCase().includes("street") || /\d{5}(-\d{4})?/.test(html);
+  const hasAddressOnPage = $("address").text().trim().length > 0 || detectAddresses(html).length > 0;
   if (hasAddressOnPage && !hasLocalBusinessSchema) {
     detectedIssues.push("Local business may not be on Bing Places");
     issues.push({
@@ -19068,23 +19058,6 @@ function analyzeColorContrast(html, url) {
       });
     }
   }
-  if (cannotDetermine > elementsAnalyzed * 0.8) {
-    issues.push({
-      code: "A11Y_CONTRAST_UNDETERMINED",
-      severity: "notice",
-      category: "accessibility",
-      title: "Color contrast could not be fully analyzed",
-      description: "Most text colors are set via CSS stylesheets rather than inline styles. Full contrast checking requires browser rendering.",
-      impact: "Potential contrast issues may exist that were not detected.",
-      howToFix: "Use browser DevTools (Lighthouse accessibility audit) or dedicated tools like axe-core for comprehensive contrast checking.",
-      affectedUrls: [url],
-      details: {
-        elementsAnalyzed,
-        cannotDetermine,
-        recommendation: "Run Lighthouse accessibility audit for complete contrast analysis."
-      }
-    });
-  }
   return {
     issues,
     data: {
@@ -20432,7 +20405,8 @@ async function analyzeTrackingVerification(html, url) {
   if (!hasGa4 && !hasGtm && otherAnalytics.length === 0) {
     issues.push({
       code: "GA4_MISSING",
-      severity: "warning",
+      // A notice: which analytics a site runs is a choice, not an SEO defect.
+      severity: "notice",
       category: "on-page",
       title: "Google Analytics 4 not detected",
       description: "No GA4 tracking code found. GA4 is essential for measuring organic traffic and conversions.",
@@ -20445,7 +20419,8 @@ async function analyzeTrackingVerification(html, url) {
     const dnsChecked = verification.dnsChecked;
     issues.push({
       code: "GSC_VERIFICATION_MISSING",
-      severity: "warning",
+      // A notice: a site verified by DNS, Google Analytics or Tag Manager leaves no trace here.
+      severity: "notice",
       category: "on-page",
       title: dnsChecked ? "Google Search Console verification not found" : "Google Search Console verification not visible in the HTML",
       description: dnsChecked ? "No google-site-verification meta tag in the HTML and no google-site-verification TXT record on the domain. GSC provides essential data about your search performance." : "No google-site-verification meta tag in the HTML. The site may be verified through a DNS TXT record instead, which this run could not check. GSC provides essential data about your search performance.",
@@ -20520,6 +20495,122 @@ async function analyzeTrackingVerification(html, url) {
   return { issues, data };
 }
 
+// src/audit/meta-refresh.ts
+import * as cheerio37 from "https://esm.sh/cheerio@1.0.0";
+function metaRefreshTarget(html, pageUrl) {
+  if (!/http-equiv\s*=\s*["']?refresh/i.test(html))
+    return null;
+  const $ = cheerio37.load(html);
+  for (const el of $("meta[http-equiv]").toArray()) {
+    if (($(el).attr("http-equiv") || "").trim().toLowerCase() !== "refresh")
+      continue;
+    const content = $(el).attr("content") || "";
+    const match = content.match(/^\s*(\d+(?:\.\d+)?)\s*[;,]\s*(?:url\s*=\s*)?['"]?\s*([^'"\s>]+)/i);
+    if (!match)
+      continue;
+    if (Number(match[1]) > 5)
+      continue;
+    try {
+      const target = new URL(match[2], pageUrl);
+      if (target.protocol !== "http:" && target.protocol !== "https:")
+        continue;
+      const strip = (u) => u.origin + (u.pathname.replace(/\/+$/, "") || "/") + u.search;
+      if (strip(target) === strip(new URL(pageUrl)))
+        continue;
+      return target.toString();
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
+// src/audit/dedupe.ts
+var REDUNDANT_WHEN_PRESENT = [
+  // The same tag, reported by three checks.
+  { keep: "VIEWPORT_MISSING", drop: ["HTML_NO_VIEWPORT", "RESPONSIVE_NO_VIEWPORT"] },
+  { keep: "LANG_ATTR_MISSING", drop: ["HTML_NO_LANG"] },
+  { keep: "APPLE_TOUCH_ICON_MISSING", drop: ["HTML_NO_APPLE_TOUCH_ICON"] },
+  { keep: "LLMS_TXT_MISSING", drop: ["AI_NO_LLMS_TXT"] },
+  { keep: "INDEXNOW_NOT_IMPLEMENTED", drop: ["BING_NO_INDEXNOW"] },
+  { keep: "BING_VERIFICATION_MISSING", drop: ["BING_NOT_VERIFIED"] },
+  { keep: "SITEMAP_MISSING", drop: ["BING_SITEMAP_MISSING", "SITEMAP_NOT_IN_ROBOTS"] },
+  { keep: "ROBOTS_TXT_MISSING", drop: ["SITEMAP_NOT_IN_ROBOTS"] },
+  { keep: "IMAGES_MISSING_DIMENSIONS", drop: ["IMG_NO_DIMENSIONS"] },
+  { keep: "NO_MODERN_IMAGE_FORMATS", drop: ["IMAGE_NOT_WEBP_AVIF"] },
+  { keep: "SOCIAL_PROFILES_NOT_LINKED", drop: ["NO_SOCIAL_PROFILES"] },
+  { keep: "NO_EXPERIENCE_SIGNALS", drop: ["AI_NO_EXPERIENCE_SIGNALS"] },
+  // No structured data at all makes every "your schema lacks X" finding moot.
+  {
+    keep: "SCHEMA_MISSING",
+    drop: [
+      "SCHEMA_ORG_MISSING",
+      "NO_ORGANIZATION_SCHEMA",
+      "ORGANIZATION_SCHEMA_MISSING",
+      "NO_ENTITY_SCHEMA",
+      "NO_DATE_MODIFIED_SCHEMA",
+      "NO_MAIN_ENTITY_OF_PAGE",
+      "AUTHOR_NO_SCHEMA",
+      "AI_NO_REVIEW_SCHEMA",
+      "NO_SCHEMA_SAMEAS"
+    ]
+  },
+  { keep: "NO_ORGANIZATION_SCHEMA", drop: ["ORGANIZATION_SCHEMA_MISSING"] },
+  // No title, no H1: the findings about their wording are implied.
+  { keep: "TITLE_MISSING", drop: ["LOW_CTR_POTENTIAL", "NO_KEYWORDS_IN_TITLE", "TITLE_TOO_SHORT"] },
+  { keep: "META_DESC_MISSING", drop: ["LOW_CTR_POTENTIAL"] },
+  { keep: "H1_MISSING", drop: ["NO_VISIBLE_HEADLINE", "NO_KEYWORDS_IN_H1", "H1_MISSING_KEYWORD"] },
+  // Client-side rendering, diagnosed once. CLIENT_SIDE_RENDERING carries the per-framework fix.
+  {
+    keep: "CLIENT_SIDE_RENDERING",
+    drop: [
+      "REACT_CSR_DETECTED",
+      "VUE_CSR_DETECTED",
+      "ANGULAR_NO_UNIVERSAL",
+      "SPA_WITHOUT_SSR",
+      "EMPTY_BODY_CONTENT",
+      "HIGH_JS_RENDERING_RATIO",
+      "AI_LOW_HTML_READABILITY"
+    ]
+  },
+  // An empty body has no vocabulary to be undiverse.
+  { keep: "EMPTY_BODY_CONTENT", drop: ["THIN_CONTENT", "LOW_CONTENT_ENTROPY", "HIGH_CONTENT_REPETITION", "LOW_DWELL_TIME_CONTENT", "LOW_TEXT_HTML_RATIO"] },
+  { keep: "THIN_CONTENT", drop: ["LOW_DWELL_TIME_CONTENT"] },
+  { keep: "NO_INTERNAL_LINKS", drop: ["NO_CONTENT_INTERNAL_LINKS", "HIGH_ORPHAN_RISK", "LINKS_NO_INTERNAL"] },
+  // No testimonials on the page, said once instead of six times.
+  { keep: "NO_SOCIAL_PROOF", drop: ["BOFU_NO_SOCIAL_PROOF", "AI_NO_TESTIMONIALS", "AI_NO_REVIEW_INTEGRATION", "AI_NO_REVIEW_PLATFORMS", "AI_WEAK_REVIEW_ECOSYSTEM"] },
+  { keep: "AI_NO_TESTIMONIALS", drop: ["AI_NO_REVIEW_INTEGRATION", "AI_NO_REVIEW_PLATFORMS", "AI_WEAK_REVIEW_ECOSYSTEM"] },
+  // The brand-score composite restates the brand-definition finding it is built from.
+  { keep: "AI_NO_BRAND_DEFINITION", drop: ["AI_LOW_BRAND_SCORE", "NO_ENTITY_DEFINITION"] }
+];
+function dedupeIssues(issues) {
+  const present = new Set(issues.map((i) => i.code));
+  const redundant = /* @__PURE__ */ new Set();
+  for (const rule of REDUNDANT_WHEN_PRESENT) {
+    const fires = typeof rule.keep === "string" ? present.has(rule.keep) : [...present].some((code) => rule.keep.test(code));
+    if (!fires)
+      continue;
+    for (const code of rule.drop)
+      redundant.add(code);
+  }
+  const kept = /* @__PURE__ */ new Map();
+  const out = [];
+  for (const issue of issues) {
+    if (redundant.has(issue.code))
+      continue;
+    const earlier = kept.get(issue.code);
+    if (earlier) {
+      const urls = /* @__PURE__ */ new Set([...earlier.affectedUrls || [], ...issue.affectedUrls || []]);
+      earlier.affectedUrls = [...urls];
+      continue;
+    }
+    const copy = { ...issue };
+    kept.set(issue.code, copy);
+    out.push(copy);
+  }
+  return out;
+}
+
 // src/audit/engine.ts
 function sameUrl(a, b) {
   try {
@@ -20532,15 +20623,15 @@ function sameUrl(a, b) {
   }
 }
 async function runFullAudit(options) {
-  const { url, checkBrokenLinks = false, checkHreflangUrls = false, checkCanonicalChain = false, cruxApiKey, checksLimit = 280, premiumChecks } = options;
+  const { checkBrokenLinks = false, checkHreflangUrls = false, checkCanonicalChain = false, cruxApiKey, checksLimit = 280, premiumChecks } = options;
+  let url = options.url;
   const auditRoot = isSiteRoot(url) || sameUrl(url, options.auditRootUrl ?? url);
   const allIssues = [];
   const pages = [];
   const tier = checksLimit <= 50 ? "free" : checksLimit <= 100 ? "registered" : "paid";
   const runPremiumChecks = tier === "paid" && !!premiumChecks;
   const runExtendedChecks = tier !== "free";
-  const parsedUrl = new URL(url);
-  const domain = parsedUrl.hostname;
+  let domain = new URL(url).hostname;
   console.error(`
 \u{1F50D} Running comprehensive SEO audit on ${url}...
 `);
@@ -20567,7 +20658,9 @@ async function runFullAudit(options) {
       timeout: 3e4,
       validateStatus: () => true
     }).catch((err) => {
-      console.error("Main page fetch failed:", err instanceof Error ? { message: err.message, cause: err.cause } : err);
+      const cause = err instanceof Error ? err.cause : void 0;
+      const causeText = cause instanceof Error ? ` (${cause.code || cause.message})` : "";
+      console.error(`Main page fetch failed: ${err instanceof Error ? err.message : String(err)}${causeText}`);
       return { error: err, data: "", headers: {} };
     })
   ]);
@@ -20590,7 +20683,7 @@ async function runFullAudit(options) {
     });
     return createReport(url, domain, allIssues, pages, { kind: "unreachable" });
   }
-  const statusCode = fetchResult.status;
+  let statusCode = fetchResult.status;
   if (statusCode >= 400) {
     const blocked = statusCode === 401 || statusCode === 403 || statusCode === 429;
     allIssues.push({
@@ -20603,10 +20696,44 @@ async function runFullAudit(options) {
     pages.push({ url, statusCode, wordCount: 0, loadTime: 0, issues: allIssues.map((i) => i.code) });
     return createReport(url, domain, allIssues, pages, { kind: "http-error", statusCode });
   }
-  const body = typeof fetchResult.data === "string" ? fetchResult.data : JSON.stringify(fetchResult.data ?? "");
+  const asText = (data) => typeof data === "string" ? data : JSON.stringify(data ?? "");
+  let body = asText(fetchResult.data);
+  let headers = fetchResult.headers;
+  const requestedUrl = url;
+  const refreshHops = [];
+  for (let hop = 0; hop < 3; hop++) {
+    const target = metaRefreshTarget(body, url);
+    if (!target)
+      break;
+    try {
+      const next = await httpGet(target, { timeout: 3e4, validateStatus: () => true });
+      if (next.status >= 400)
+        break;
+      refreshHops.push(target);
+      url = target;
+      body = asText(next.data);
+      headers = next.headers;
+      statusCode = next.status;
+    } catch {
+      break;
+    }
+  }
+  if (refreshHops.length > 0) {
+    domain = new URL(url).hostname;
+    allIssues.push({
+      code: "META_REFRESH_REDIRECT",
+      severity: "notice",
+      category: "crawlability",
+      title: "Page redirects with a meta refresh",
+      description: `${requestedUrl} answers HTTP 200 with a <meta http-equiv="refresh"> to ${url}, so that page was audited. Search engines follow an instant meta refresh, but a server redirect is the documented way to move a URL and the only one every crawler and tool honours.`,
+      impact: "Some crawlers and link-checking tools stop at the stub; link signals to the original URL may not all pass to the target.",
+      howToFix: "Return a 301 (or 308) redirect from the server or CDN for this URL instead of a meta refresh.",
+      affectedUrls: [requestedUrl],
+      details: { from: requestedUrl, to: url, hops: refreshHops }
+    });
+  }
   const html = body.replace(/<\/?noscript[^>]*>/gi, "");
-  const headers = fetchResult.headers;
-  console.error(`\u{1F4DD} Phase 2: Running synchronous HTML checks (tier: ${tier}, limit: ${checksLimit})...`);
+  console.error("\u{1F4DD} Phase 2: Running HTML checks...");
   const onPageResult = analyzeOnPage(html, url, headers, { auditRoot });
   const structuredDataResult = analyzeStructuredData(html, url);
   const mobileResult = analyzeMobile(html, url);
@@ -20774,10 +20901,10 @@ async function runFullAudit(options) {
     if (cruxApiKey) {
       asyncChecks.push(safeAsyncIssues("Core Web Vitals", async () => {
         const cwv = await fetchCoreWebVitals(url, cruxApiKey);
-        const issues = [];
+        const issues2 = [];
         if (cwv) {
           if (cwv.lcp?.rating === "poor") {
-            issues.push({
+            issues2.push({
               code: "LCP_POOR",
               severity: "error",
               category: "performance",
@@ -20790,7 +20917,7 @@ async function runFullAudit(options) {
             });
           }
           if (cwv.cls?.rating === "poor") {
-            issues.push({
+            issues2.push({
               code: "CLS_POOR",
               severity: "error",
               category: "performance",
@@ -20803,14 +20930,15 @@ async function runFullAudit(options) {
             });
           }
         }
-        return issues;
+        return issues2;
       }));
     }
   }
   const asyncResults = await Promise.all(asyncChecks);
-  for (const issues of asyncResults) {
-    allIssues.push(...issues);
+  for (const issues2 of asyncResults) {
+    allIssues.push(...issues2);
   }
+  const issues = dedupeIssues(allIssues);
   pages.push({
     url,
     statusCode,
@@ -20820,10 +20948,10 @@ async function runFullAudit(options) {
     h1: onPageResult.data.h1s,
     wordCount: onPageResult.data.wordCount,
     loadTime: perfData.loadTime,
-    issues: allIssues.map((i) => i.code)
+    issues: issues.map((i) => i.code)
   });
   console.error("\n\u2705 Audit complete!\n");
-  return createReport(url, domain, allIssues, pages);
+  return createReport(url, domain, issues, pages);
 }
 function createReport(url, domain, issues, pages, pageFailure) {
   const healthScore = calculateHealthScore(issues);
@@ -20993,22 +21121,22 @@ function groupIssuesByCategory(issues) {
 }
 
 // ../agent-runtime-premium/src/checks/featured-snippet.ts
-import * as cheerio37 from "https://esm.sh/cheerio@1.0.0";
-
-// ../agent-runtime-premium/src/checks/internal-link-graph.ts
 import * as cheerio38 from "https://esm.sh/cheerio@1.0.0";
 
-// ../agent-runtime-premium/src/checks/eeat-signals.ts
+// ../agent-runtime-premium/src/checks/internal-link-graph.ts
 import * as cheerio39 from "https://esm.sh/cheerio@1.0.0";
 
-// ../agent-runtime-premium/src/checks/content-science.ts
+// ../agent-runtime-premium/src/checks/eeat-signals.ts
 import * as cheerio40 from "https://esm.sh/cheerio@1.0.0";
 
-// ../agent-runtime-premium/src/checks/keyword-cannibalization.ts
+// ../agent-runtime-premium/src/checks/content-science.ts
 import * as cheerio41 from "https://esm.sh/cheerio@1.0.0";
 
-// ../agent-runtime-premium/src/checks/conversion-elements.ts
+// ../agent-runtime-premium/src/checks/keyword-cannibalization.ts
 import * as cheerio42 from "https://esm.sh/cheerio@1.0.0";
+
+// ../agent-runtime-premium/src/checks/conversion-elements.ts
+import * as cheerio43 from "https://esm.sh/cheerio@1.0.0";
 var CTA_PATTERNS = [
   /get (started|quote|help|access|now)/i,
   /start (now|free|today|here)/i,
@@ -21056,14 +21184,14 @@ var CLIENT_LOGO_SELECTORS = [
   ".logo-carousel"
 ];
 function analyzeAboveFold(html) {
-  const $ = cheerio42.load(html);
+  const $ = cheerio43.load(html);
   const header = $("header").first();
   const hero = $('.hero, [class*="hero"], .banner, [class*="banner"], .jumbotron, [class*="landing"]').first();
   const firstSection = $("main > section, main > div, body > section").first();
   const headerHtml = header.html() || "";
   const heroOrSectionHtml = hero.length ? hero.html() || "" : firstSection.html() || "";
   const aboveFoldHtml = headerHtml + heroOrSectionHtml;
-  const $above = cheerio42.load(aboveFoldHtml);
+  const $above = cheerio43.load(aboveFoldHtml);
   const h1 = $("h1").first();
   const hasHeadline = h1.length > 0;
   const headlineText = h1.text().trim() || null;
@@ -21130,7 +21258,7 @@ function analyzeAboveFold(html) {
   };
 }
 function analyzeSocialProof(html) {
-  const $ = cheerio42.load(html);
+  const $ = cheerio43.load(html);
   const text = $("body").text().toLowerCase();
   let testimonialCount = 0;
   for (const selector of TESTIMONIAL_SELECTORS) {
@@ -21212,7 +21340,7 @@ function analyzeSocialProof(html) {
   };
 }
 function detectEngagementTriggers(html) {
-  const $ = cheerio42.load(html);
+  const $ = cheerio43.load(html);
   const htmlLower = html.toLowerCase();
   const calculatorTypes = [];
   const calcPatterns = [
@@ -21278,7 +21406,7 @@ function detectEngagementTriggers(html) {
   };
 }
 function detectPageType(html, url) {
-  const $ = cheerio42.load(html);
+  const $ = cheerio43.load(html);
   const text = $("body").text().toLowerCase();
   const urlLower = url.toLowerCase();
   let commercialSignals = 0;
@@ -21345,7 +21473,8 @@ function analyzeConversionElements(html, url) {
     if (!socialProof.hasTestimonials && !socialProof.hasReviews) {
       issues.push({
         code: "NO_SOCIAL_PROOF",
-        severity: "warning",
+        // A notice: a conversion-rate suggestion, not a search defect.
+        severity: "notice",
         category: "content",
         title: "No testimonials or reviews found",
         description: "Page lacks testimonials, reviews, or other social proof.",
@@ -21405,9 +21534,9 @@ function analyzeConversionElements(html, url) {
 }
 
 // ../agent-runtime-premium/src/checks/keyword-placement.ts
-import * as cheerio43 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio44 from "https://esm.sh/cheerio@1.0.0";
 function inferTargetKeywords(html, url) {
-  const $ = cheerio43.load(html);
+  const $ = cheerio44.load(html);
   const keywords = [];
   const title = $("title").text().trim();
   if (title) {
@@ -21478,7 +21607,7 @@ function analyzeUrlKeyword(url, keywords) {
   }
 }
 function analyzeTitleKeyword(html, keywords) {
-  const $ = cheerio43.load(html);
+  const $ = cheerio44.load(html);
   const title = $("title").text().trim().toLowerCase();
   if (!title) {
     return {
@@ -21526,7 +21655,7 @@ function analyzeTitleKeyword(html, keywords) {
   };
 }
 function analyzeH1Keyword(html, keywords) {
-  const $ = cheerio43.load(html);
+  const $ = cheerio44.load(html);
   const h1 = $("h1").first().text().trim();
   const h1Lower = h1.toLowerCase();
   let hasExactMatch = false;
@@ -21550,7 +21679,7 @@ function analyzeH1Keyword(html, keywords) {
   };
 }
 function analyzeFirstParagraph(html, keywords) {
-  const $ = cheerio43.load(html);
+  const $ = cheerio44.load(html);
   const paragraphs = $("main p, article p, .content p, #content p, body > div p").toArray();
   let firstParagraph = "";
   for (const p of paragraphs) {
@@ -21588,7 +21717,7 @@ function analyzeFirstParagraph(html, keywords) {
   };
 }
 function analyzeMetaDescription(html, keywords) {
-  const $ = cheerio43.load(html);
+  const $ = cheerio44.load(html);
   const metaDesc = $('meta[name="description"]').attr("content")?.trim().toLowerCase() || "";
   if (!metaDesc) {
     return { hasKeyword: false, position: "none" };
@@ -21739,7 +21868,7 @@ function analyzeKeywordPlacement(html, url) {
 }
 
 // ../agent-runtime-premium/src/checks/topical-clusters.ts
-import * as cheerio44 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio45 from "https://esm.sh/cheerio@1.0.0";
 function getLinkContext($, link) {
   const parents = link.parents().toArray();
   for (const parent of parents) {
@@ -21786,7 +21915,7 @@ function isDoFollow(rel) {
   return !relValues.includes("nofollow") && !relValues.includes("sponsored") && !relValues.includes("ugc");
 }
 function extractLinks(html, url) {
-  const $ = cheerio44.load(html);
+  const $ = cheerio45.load(html);
   const internalLinks = [];
   const externalLinks = [];
   const anchorLinks = [];
@@ -21862,7 +21991,7 @@ function calculateOrphanRisk(contentLinks, uniqueDestinations, clusterSignals) {
   return "high";
 }
 function analyzeTopicalClusters(html, url) {
-  const $ = cheerio44.load(html);
+  const $ = cheerio45.load(html);
   const issues = [];
   const { internalLinks, externalLinks, anchorLinks } = extractLinks(html, url);
   const contentInternalLinks = internalLinks.filter((l) => l.context === "content");
@@ -22016,7 +22145,7 @@ function analyzeTopicalClusters(html, url) {
 }
 
 // ../agent-runtime-premium/src/checks/platform-presence.ts
-import * as cheerio45 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio46 from "https://esm.sh/cheerio@1.0.0";
 var PLATFORM_PATTERNS = [
   {
     name: "YouTube",
@@ -22202,7 +22331,7 @@ function getLinkType(url, platform) {
   return "content";
 }
 function extractPlatformLinks(html) {
-  const $ = cheerio45.load(html);
+  const $ = cheerio46.load(html);
   const links = [];
   $("a[href]").each((_, element) => {
     const $el = $(element);
@@ -22220,7 +22349,7 @@ function extractPlatformLinks(html) {
   return links;
 }
 function detectEmbeddedContent(html) {
-  const $ = cheerio45.load(html);
+  const $ = cheerio46.load(html);
   const embeds = /* @__PURE__ */ new Map();
   $("iframe[src]").each((_, element) => {
     const src = $(element).attr("src") || "";
@@ -22245,7 +22374,7 @@ function detectEmbeddedContent(html) {
   return Array.from(embeds.entries()).map(([platform, count]) => ({ platform, count }));
 }
 function extractSchemaProfiles(html) {
-  const $ = cheerio45.load(html);
+  const $ = cheerio46.load(html);
   const sameAsUrls = [];
   let hasOrganizationSchema = false;
   let hasPersonSchema = false;
@@ -22402,30 +22531,6 @@ function analyzePlatformPresence(html, url) {
       }
     });
   }
-  if (!metrics.hasYouTube && detectedPlatforms.length >= 2) {
-    issues.push({
-      code: "NO_YOUTUBE_PRESENCE",
-      severity: "notice",
-      category: "social",
-      title: "No YouTube channel linked",
-      description: "Multiple social platforms linked but YouTube is missing.",
-      impact: "YouTube is the second largest search engine. Video content ranks in both YouTube and Google.",
-      howToFix: "Create a YouTube channel and link to it from your website.",
-      affectedUrls: [url]
-    });
-  }
-  if (embeddedContent.length === 0 && detectedPlatforms.length > 0) {
-    issues.push({
-      code: "NO_EMBEDDED_SOCIAL",
-      severity: "notice",
-      category: "social",
-      title: "No embedded social content",
-      description: "Social profiles linked but no embedded videos, tweets, or posts.",
-      impact: "Embedded content increases engagement time and shows fresh, active social presence.",
-      howToFix: "Embed relevant YouTube videos, Twitter feeds, or TikTok videos in your content.",
-      affectedUrls: [url]
-    });
-  }
   return {
     issues,
     data: {
@@ -22447,7 +22552,7 @@ function analyzePlatformPresence(html, url) {
 }
 
 // ../agent-runtime-premium/src/checks/interactive-tools.ts
-import * as cheerio46 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio47 from "https://esm.sh/cheerio@1.0.0";
 var CALCULATOR_PATTERNS = [
   /calculator/i,
   /estimator/i,
@@ -22682,7 +22787,7 @@ function calculateDwellTimeScore(data) {
   return Math.min(score, 100);
 }
 function analyzeInteractiveTools(html, url) {
-  const $ = cheerio46.load(html);
+  const $ = cheerio47.load(html);
   const issues = [];
   const calculators = detectCalculators($);
   const quizzes = detectQuizzes($);
@@ -22783,7 +22888,7 @@ function analyzeInteractiveTools(html, url) {
 }
 
 // ../agent-runtime-premium/src/checks/funnel-intent.ts
-import * as cheerio47 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio48 from "https://esm.sh/cheerio@1.0.0";
 var TOFU_PATTERNS = {
   url: [
     /\/blog\//i,
@@ -23011,7 +23116,7 @@ function calculateAIOverviewRisk(stage, pageType) {
   return "low";
 }
 function analyzeFunnelIntent(html, url) {
-  const $ = cheerio47.load(html);
+  const $ = cheerio48.load(html);
   const issues = [];
   const title = $("title").text().trim() + " " + $("h1").first().text().trim();
   const bodyText = $("body").text().toLowerCase();
@@ -23144,7 +23249,7 @@ function analyzeFunnelIntent(html, url) {
 }
 
 // ../agent-runtime-premium/src/checks/navboost-signals.ts
-import * as cheerio48 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio49 from "https://esm.sh/cheerio@1.0.0";
 function analyzeClickOptimization($) {
   const title = $("title").text().trim();
   const metaDesc = $('meta[name="description"]').attr("content")?.trim() || "";
@@ -23279,7 +23384,7 @@ function calculateNavBoostScore(click, engagement, bounce, dwell) {
   return Math.max(0, Math.min(100, score));
 }
 function analyzeNavBoostSignals(html, url) {
-  const $ = cheerio48.load(html);
+  const $ = cheerio49.load(html);
   const issues = [];
   const clickOptimization = analyzeClickOptimization($);
   const engagementSignals = analyzeEngagementSignals($, html);
@@ -23323,7 +23428,8 @@ function analyzeNavBoostSignals(html, url) {
   if (!bounceRiskFactors.hasAboveFoldContent || !bounceRiskFactors.hasImmediateValue) {
     issues.push({
       code: "HIGH_BOUNCE_RISK",
-      severity: "warning",
+      // A notice: a heuristic score, not a defect a crawler can see, and it fired on most sites.
+      severity: "notice",
       category: "content",
       title: "Page has high bounce risk signals",
       description: "The page lacks above-fold content or immediate value for visitors.",
@@ -23394,7 +23500,7 @@ function analyzeNavBoostSignals(html, url) {
 }
 
 // ../agent-runtime-premium/src/checks/entity-seo.ts
-import * as cheerio49 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio50 from "https://esm.sh/cheerio@1.0.0";
 function extractEntitySignals($, html) {
   let hasOrganizationSchema = false;
   let hasPersonSchema = false;
@@ -23552,7 +23658,7 @@ function calculateEntitySEOScore(signals, clarity, coverage, kpSignals) {
   return Math.min(score, 100);
 }
 function analyzeEntitySEO(html, url) {
-  const $ = cheerio49.load(html);
+  const $ = cheerio50.load(html);
   const issues = [];
   const entitySignals = extractEntitySignals($, html);
   const entityClarity = analyzeEntityClarity($, html);
@@ -23658,7 +23764,7 @@ function analyzeEntitySEO(html, url) {
 }
 
 // ../agent-runtime-premium/src/checks/freshness-signals.ts
-import * as cheerio50 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio51 from "https://esm.sh/cheerio@1.0.0";
 function extractDateSignals($, html) {
   const now = /* @__PURE__ */ new Date();
   let schemaDatePublished = null;
@@ -23851,7 +23957,7 @@ function calculateFreshnessScore(dateSignals, freshnessIndicators, aiOptimizatio
   return Math.max(0, Math.min(100, score));
 }
 function analyzeFreshnessSignals(html, url) {
-  const $ = cheerio50.load(html);
+  const $ = cheerio51.load(html);
   const issues = [];
   const dateSignals = extractDateSignals($, html);
   const freshnessIndicators = analyzeFreshnessIndicators($, html);
@@ -23872,7 +23978,8 @@ function analyzeFreshnessSignals(html, url) {
   if (!freshnessIndicators.hasCurrentYearMention && /\d{4}/.test($("title").text())) {
     recommendations.push("Update year references in title and content for freshness signals");
   }
-  if (!dateSignals.hasSchemaDateModified) {
+  const isDatedContent = dateSignals.hasSchemaDatePublished || /"@type"\s*:\s*"(Article|BlogPosting|NewsArticle|TechArticle|ScholarlyArticle|Report)"/i.test(html) || $('meta[property="og:type"][content="article"]').length > 0;
+  if (isDatedContent && !dateSignals.hasSchemaDateModified) {
     issues.push({
       code: "NO_DATE_MODIFIED_SCHEMA",
       severity: "warning",
@@ -23969,28 +24076,28 @@ function analyzeFreshnessSignals(html, url) {
 }
 
 // ../agent-runtime-premium/src/checks/ai-content-structure.ts
-import * as cheerio51 from "https://esm.sh/cheerio@1.0.0";
-
-// ../agent-runtime-premium/src/checks/rag-chunk-readiness.ts
 import * as cheerio52 from "https://esm.sh/cheerio@1.0.0";
 
-// ../agent-runtime-premium/src/checks/citation-quality.ts
+// ../agent-runtime-premium/src/checks/rag-chunk-readiness.ts
 import * as cheerio53 from "https://esm.sh/cheerio@1.0.0";
 
-// ../agent-runtime-premium/src/checks/answer-conciseness.ts
+// ../agent-runtime-premium/src/checks/citation-quality.ts
 import * as cheerio54 from "https://esm.sh/cheerio@1.0.0";
 
-// ../agent-runtime-premium/src/checks/brand-mention-optimization.ts
+// ../agent-runtime-premium/src/checks/answer-conciseness.ts
 import * as cheerio55 from "https://esm.sh/cheerio@1.0.0";
 
-// ../agent-runtime-premium/src/checks/ai-citation-worthiness.ts
+// ../agent-runtime-premium/src/checks/brand-mention-optimization.ts
 import * as cheerio56 from "https://esm.sh/cheerio@1.0.0";
 
-// ../agent-runtime-premium/src/checks/review-ecosystem.ts
+// ../agent-runtime-premium/src/checks/ai-citation-worthiness.ts
 import * as cheerio57 from "https://esm.sh/cheerio@1.0.0";
 
-// src/analyzers/geo-analyzer.ts
+// ../agent-runtime-premium/src/checks/review-ecosystem.ts
 import * as cheerio58 from "https://esm.sh/cheerio@1.0.0";
+
+// src/analyzers/geo-analyzer.ts
+import * as cheerio59 from "https://esm.sh/cheerio@1.0.0";
 function generateAIFriendlyRobotsTxt(siteUrl) {
   return `# AI-Optimized robots.txt
 # Generated by RankCLI - https://rankcli.dev

@@ -201,7 +201,8 @@ export function analyzeAnswerConciseness(
   if (questionHeadings > 0 && headingsWithDirectAnswers < questionHeadings * 0.5) {
     issues.push({
       code: 'AI_INDIRECT_ANSWERS',
-      severity: 'warning',
+      // A notice: a heuristic score, not a defect a crawler can see, and it fired on most sites.
+      severity: 'notice',
       category: 'ai-readiness',
       title: 'Questions lack direct, quotable answers',
       description: `${questionHeadings} question headings found but only ${headingsWithDirectAnswers} have direct answers. AI prefers content that answers questions immediately.`,

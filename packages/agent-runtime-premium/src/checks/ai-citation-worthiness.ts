@@ -348,7 +348,8 @@ export function analyzeAICitationWorthiness(
   if (citationWorthinessScore < 40) {
     issues.push({
       code: 'AI_LOW_CITATION_WORTHINESS',
-      severity: 'warning',
+      // A notice: a heuristic score, not a defect a crawler can see, and it fired on most sites.
+      severity: 'notice',
       category: 'ai-readiness',
       title: 'Content lacks AI-proof originality signals',
       description: `Citation worthiness score: ${citationWorthinessScore}/100. Content appears generic and could be easily replicated by AI.`,
