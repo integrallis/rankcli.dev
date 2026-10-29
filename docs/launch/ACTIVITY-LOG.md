@@ -46,6 +46,22 @@ appears in any week, and Google search sent about 10 page loads a week. So the o
 that produced signups reached SEO freelancers, which fits a $9 to $99 developer tool badly,
 and the developer channels have produced no measurable visit.
 
+### 2026-10-29
+
+- Deep research delivered: "RankCLI product gaps and positioning" (`reports/`, 147 citations,
+  with the researchers' notes under `research_notes/`). Its finding: the adoption gap is trust and
+  CI plumbing, not check coverage; the pre-deploy gate position is unowned; the first steps are
+  publishing the CLI source and repairing the first run.
+- v0.0.51 shipped the first-run repair (release notes have the full list): the console prints
+  every issue instead of a top 10; `audit`, `fix` and `apply` run one audit and give one score;
+  the three "coming soon" commands are gone; `rankcli.config.json`'s url is used when `--url` is
+  omitted; one condition is one finding (a missing viewport was three findings, no testimonials
+  six, a client-rendered shell five); meta refresh is followed (docs.astro.build scored 57 on an
+  80-byte stub, 78 on the real page); AMP, "no YouTube channel", "content-to-authority
+  imbalance" and the colour-contrast disclaimer are no longer findings; a brand's own name is
+  not keyword stuffing; the npm README matches the site. Homepage 85 to 90 and 50 to 33 issues
+  on the local build; re-verified on the npm package in VERIFIED-NUMBERS.md.
+
 ### 2026-10-27
 
 - LinkedIn automatic posting switched off at the founder's request: `"enabled": false` on the
