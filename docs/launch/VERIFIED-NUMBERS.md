@@ -13,12 +13,20 @@ like a regression when nothing has changed:
 
 | Measurement | Score | What it is |
 |---|---|---|
-| `--max-pages 1` | **85** on `@rankcli/cli@0.0.50` (80 on 0.0.49 the same day; 75 until 2026-10-14) | The homepage. **This is the number all launch copy cites.** |
+| `--max-pages 1` | **90** on `@rankcli/cli@0.0.51` (85 on 0.0.50 until 2026-10-29; 80 on 0.0.49; 75 until 2026-10-14) | The homepage. **This is the number all launch copy cites.** |
 | default crawl (5 pages) | 72 before 2026-10-14; 8 pages score 80 after | Averages in weaker inner pages |
 | SEO gate CI run | 81 (last checked 2026-10-02) | The published Action's own scope |
 
-**Re-verified 2026-10-14 on `@rankcli/cli@0.0.50`: homepage 85/100, 0 errors, 13 warnings, 37
-notices, AI Readiness 67**, React. The six warnings that left between 0.0.49 and 0.0.50 were the
+**Re-verified 2026-10-29 on the published `@rankcli/cli@0.0.51`, from an empty directory:
+homepage 90/100, 0 errors, 2 warnings, 31 notices, AI Readiness 89**, React. The move from 85
+is the checker's, not the site's: 0.0.51 reports one finding per condition (the same missing
+thing was counted under two to six codes), retires checks that fired on every site (AMP, "no
+YouTube channel", "content-to-authority imbalance", the colour-contrast disclaimer) and
+downgrades heuristic composites to notices. `rankcli fix` and `rankcli apply` print the same 90;
+before 0.0.51 they printed 100 and 93 for the same URL. The 5-page crawl is not re-measured.
+
+Before that, 2026-10-14 on `@rankcli/cli@0.0.50`: homepage 85/100, 0 errors, 13 warnings, 37
+notices, AI Readiness 67, React. The six warnings that left between 0.0.49 and 0.0.50 were the
 checker's own false positives (GA4, GTM and Search Console verification, empty anchor, brand
 definition, two YMYL), not site changes. On 0.0.49 the same day, after the site fixes: 80/100, 0
 errors, 19 warnings, 37 notices. The 8-page crawl scores 80
@@ -41,6 +49,12 @@ Before that (2026-10-02 and 2026-09-30, same CLI): homepage **75/100, 0 errors, 
 
 Other sites, same run, for comparison claims: stripe.com 70 (AI 71), vercel.com 67 (AI 69),
 cloudflare.com 68 (AI 63), docs.astro.build 57 (AI 52).
+
+**Do not cite the docs.astro.build 57.** Its root answers HTTP 200 with an 80-byte
+`<meta http-equiv="refresh">` stub, and every CLI before 0.0.51 scored the stub (seven errors:
+no title, no H1, no viewport, no content). 0.0.51 follows the refresh and scores the real page
+**78 (AI 85), 0 errors, Astro detected** (2026-10-29). The stripe, vercel and cloudflare figures
+are from 0.0.46 and have not been re-run on 0.0.51; re-run before using them.
 
 ## Product facts that do not move weekly
 
