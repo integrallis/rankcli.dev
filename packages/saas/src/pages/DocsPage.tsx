@@ -813,7 +813,7 @@ rankcli whoami              Show current logged in user`}
       <section id="audit">
         <h3 className="text-xl font-semibold mb-4">rankcli audit</h3>
         <p className="text-muted-foreground mb-4">
-          Run a comprehensive SEO audit on a URL or local project.
+          Run the full audit on a URL (or on the url in rankcli.config.json when --url is omitted). The console report lists every issue with its code; -o json adds the fix for each.
         </p>
         <CodeBlock
           code={`rankcli audit [options]
