@@ -80,6 +80,15 @@ and the developer channels have produced no measurable visit.
   wrapper are deleted from the CLI, the workflows and the dev container. A contributor needs Node
   and pnpm only. Verified identical to the published 0.0.51 on rankcli.dev (90, 33 issues, same
   codes); runtime 751 tests, CLI 167, site 115.
+- The public source repo exists: `github.com/integrallis/rankcli`, created private so the founder
+  flips visibility. It holds cli, agent-runtime, mcp-server, github-action and the astro/next/vite
+  plugins with their history (250 commits since January, exported with `git filter-repo`; gitleaks
+  found only the public Supabase anon key), plus a README, CONTRIBUTING, MIT LICENSE, CI for every
+  package and the release workflows (npm Trusted Publishing, binaries, Homebrew/Scoop, .mcpb, plugin
+  publisher). All seven packages build and pass their suites there on their own. Every package's
+  npm `repository` field points at it. Waiting on the founder: npm trust links (or an NPM_TOKEN
+  secret), the `PACKAGES_PUBLISH_TOKEN` secret, the visibility flip, then `v0.0.52` from there.
+  After that first release the monorepo drops the seven packages and takes the engine from npm.
 
 ### 2026-10-27
 
