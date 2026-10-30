@@ -71,6 +71,15 @@ and the developer channels have produced no measurable visit.
   (the ncc bundle audits a build directory). rankcli.dev at one page is unchanged at 90 and 33
   issues; the default five pages now come from the sitemap (/, /pricing, /docs, /blog, /about).
   Versions on the branch: cli 0.0.53, agent-runtime 0.0.41, mcp-server 0.0.26.
+- License decided before the flip: the founder asked whether going public would let anyone
+  duplicate the service, and chose the Functional Source License (FSL-1.1-MIT, Sentry's license)
+  for the engine, the CLI, the MCP server and the Action; the three framework plugins stay MIT.
+  Free to read, run, change, redistribute and embed; not to build a competing product or service;
+  each version becomes MIT two years after release. Versions already on npm stay MIT. Committed
+  on the public repo's main (LICENSE files, package.json fields, Homebrew, Scoop and .mcpb
+  manifests, READMEs, CONTRIBUTING) and the release notes draft now says "the source is
+  published" rather than "open source". AGPL was considered and set aside: it only obliges a
+  hosted clone to publish its modifications, it does not forbid the clone.
 - Still to do when it ships: the docs page on the site still documents `--fail-on <level>` and
   `fail-on-errors: true` (update with 0.0.53), and the Action needs a v1.2.0 release staged from
   the merged `action.yml` and bundle. Founder clicks from 2026-10-29 are all still open.
