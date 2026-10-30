@@ -50,11 +50,6 @@ playwright-report/
 packages/saas/vite.config.js
 packages/saas/vite.config.d.ts
 
-# Rust
-**/target/
-Cargo.lock
-!packages/cli/native/Cargo.lock
-
 # Python
 __pycache__/
 *.py[cod]
@@ -96,9 +91,6 @@ pat.txt
 
 # Local Cloudflare wrangler state
 .wrangler/
-
-# Built by `pnpm build:wasm` (packages/cli); never committed - a stale copy once shipped for months.
-packages/cli/wasm/
 
 # Claude Desktop extension build output (built in CI, attached to the release)
 packages/mcp-server/mcpb-build/

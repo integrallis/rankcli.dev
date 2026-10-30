@@ -3,7 +3,7 @@
 // Includes: definition format, list format, table format, Q&A structure
 
 import * as cheerio from 'cheerio';
-import type { AuditIssue } from '@rankcli/agent-runtime';
+import type { AuditIssue } from '../types.js';
 
 export interface SnippetOpportunity {
   type: 'definition' | 'list' | 'table' | 'paragraph' | 'qa';

@@ -3,7 +3,7 @@
 // Based on advanced SEO research
 
 import * as cheerio from 'cheerio';
-import type { AuditIssue } from '@rankcli/agent-runtime';
+import type { AuditIssue } from '../types.js';
 
 export interface InternalLink {
   source: string;

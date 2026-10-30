@@ -7,7 +7,7 @@
  */
 
 import * as cheerio from 'cheerio';
-import type { AuditIssue } from '@rankcli/agent-runtime';
+import type { AuditIssue } from '../types.js';
 
 // Reputable source domains by category
 const REPUTABLE_SOURCES = {

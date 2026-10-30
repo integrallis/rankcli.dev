@@ -4,7 +4,7 @@
 // "97% of consumers look at reviews, testimonials can increase conversions by 34%"
 
 import * as cheerio from 'cheerio';
-import type { AuditIssue } from '@rankcli/agent-runtime';
+import type { AuditIssue } from '../types.js';
 
 export interface AboveFoldAnalysis {
   hasHeadline: boolean;

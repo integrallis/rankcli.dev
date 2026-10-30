@@ -1,15 +1,14 @@
 # =============================================================================
-# CLI Build Workflow - WASM-Protected npm Package
+# CLI Build Workflow - npm packages
 # =============================================================================
-# Builds the rankcli npm package with WASM-protected SEO checks.
+# Builds and tests @rankcli/agent-runtime, @rankcli/mcp-server and @rankcli/cli, and
+# publishes them on a release. Plain TypeScript: until 2026-10 the CLI carried a Rust/WASM
+# binary with 21 encrypted checks; those checks are ordinary engine code now.
 #
 # Triggers:
 # - Push to main (build only)
 # - Release created (build + publish to npm)
 # - Manual trigger with optional publish
-#
-# Required secrets:
-# - RANKCLI_BUILD_KEY: AES-256 encryption key (base64, 32 bytes)
 #
 # Publishing to npm uses OIDC (Trusted Publishing) via the publish job's
 # id-token: write permission - no npm token stored as a secret. Each of
@@ -40,11 +39,10 @@ on:
 env:
   NODE_VERSION: '20'
   PNPM_VERSION: '8'
-  RUST_VERSION: 'stable'
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Build WASM-protected CLI package
+  # Build and test the CLI package
   # ---------------------------------------------------------------------------
   build:
     name: Build CLI Package
@@ -65,19 +63,6 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: packages/cli/native
-
-      - name: Install wasm-pack
-        run: cargo install wasm-pack --locked
 
       - name: Install dependencies
         run: pnpm install
@@ -100,70 +85,33 @@ jobs:
           sed -i "s|\"version\": \"[^\"]*\"|\"version\": \"$VERSION\"|" package.json
           echo "Version set to: $(node -p "require('./package.json').version")"
 
-      # Step 1a: Build agent-runtime's regular dist/ (index.js + index.d.ts)
-      # so packages/cli's own TypeScript build - specifically wasm-engine.ts,
-      # which imports agent-runtime's AuditIssue type - can resolve it. This
-      # was missing here even though the publish job runs it separately;
-      # nothing surfaced it until wasm-engine.ts started importing a type
-      # from agent-runtime instead of redeclaring its own copy.
+      # Step 1: Build agent-runtime's dist/ (the CLI bundle externalizes it and its types).
       - name: Build agent-runtime
         working-directory: packages/agent-runtime
         run: pnpm build
 
-      # Step 1b: Build agent-runtime WASM bundle (JS → IIFE)
-      - name: Build agent-runtime WASM bundle
-        working-directory: packages/agent-runtime
-        run: pnpm build:wasm
-
-      # Step 2: Build Rust/WASM binary (encrypts JS, embeds in WASM)
-      - name: Build CLI WASM binary
-        working-directory: packages/cli
-        env:
-          RANKCLI_BUILD_KEY: ${{ secrets.RANKCLI_BUILD_KEY }}
-        run: |
-          # build:wasm ends with scripts/verify-wasm.js: the WASM must decrypt with the key,
-          # contain the premium checks, and embed exactly the bundle built above.
-          if [ -z "$RANKCLI_BUILD_KEY" ]; then
-            echo "⚠️ RANKCLI_BUILD_KEY not set, using dev key"
-            pnpm build:wasm:dev && node scripts/verify-wasm.js
-          else
-            echo "✓ Using production encryption key"
-            pnpm build:wasm
-          fi
-
-      # Step 3: Build TypeScript
+      # Step 2: Build TypeScript
       - name: Build CLI TypeScript
         working-directory: packages/cli
         run: pnpm build:js
 
-      # Step 3b: Unit tests, including the spawned-CLI exit-code tests
+      # Step 3: Unit tests, including the spawned-CLI exit-code tests
       # (src/__tests__/exit-codes.test.ts) that CI pipelines depend on - a
       # release must not ship a `rankcli audit` that can't fail a build.
       - name: Run CLI tests
         working-directory: packages/cli
         run: pnpm test
 
-      # Step 4: The built CLI decrypts and runs the premium checks: an audit of a local page
-      # with the key must report premium checks that one without it can't. (This used to check
-      # only that init_engine existed, and a stale WASM from February shipped for months.)
-      - name: Verify premium checks run
+      # Step 4: The built CLI reports the codes of the 21 checks that used to be encrypted
+      # (a stale WASM once shipped for months with none of them).
+      - name: Verify every check runs
         working-directory: packages/cli
-        env:
-          RANKCLI_BUILD_KEY: ${{ secrets.RANKCLI_BUILD_KEY }}
-        run: |
-          if [ -z "$RANKCLI_BUILD_KEY" ]; then pnpm test:wasm; fi
-          node scripts/verify-premium-audit.js
+        run: node scripts/verify-premium-audit.js
 
       # Step 5: Verify package contents
       - name: Verify package
         working-directory: packages/cli
-        run: |
-          echo "📦 Package contents:"
-          npm pack --dry-run
-
-          echo ""
-          echo "📊 WASM binary size:"
-          ls -lh wasm/rankcli_audit_engine_bg.wasm
+        run: npm pack --dry-run
 
       # Step 6: Upload artifact
       - name: Upload build artifact
@@ -172,7 +120,6 @@ jobs:
           name: rankcli-package
           path: |
             packages/cli/dist/
-            packages/cli/wasm/
             packages/cli/package.json
           retention-days: 7
 
@@ -200,11 +147,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          # OIDC/Trusted Publishing needs npm >=11.5.1; pinned separately from
-          # the build job's NODE_VERSION (20) so the native WASM build stays
-          # untouched. Node 20 can't run `npm install -g npm@latest` (that
-          # command itself now requires Node >=22 - the exact issue fixed in
-          # .devcontainer/Dockerfile earlier this session), hence 22 here.
+          # OIDC/Trusted Publishing needs npm >=11.5.1, and `npm install -g npm@latest`
+          # itself requires Node >=22, hence 22 here.
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
@@ -312,10 +256,6 @@ jobs:
           RANKCLI_SUPABASE_URL: ${{ secrets.RANKCLI_SUPABASE_URL }}
           RANKCLI_SUPABASE_ANON_KEY: ${{ secrets.RANKCLI_SUPABASE_ANON_KEY }}
           RANKCLI_WEB_URL: https://rankcli.dev
-          # Same key native/build.rs used to encrypt the WASM-embedded
-          # premium checks - needed here so the published CLI can decrypt
-          # them for entitled (paid apiKey) users. See wasm-engine.ts.
-          RANKCLI_BUILD_KEY: ${{ secrets.RANKCLI_BUILD_KEY }}
         run: node scripts/inject-config.js
 
       - name: Final workspace dependency fix

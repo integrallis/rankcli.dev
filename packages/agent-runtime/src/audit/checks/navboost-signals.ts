@@ -5,7 +5,7 @@
 // Bounce rate >70% + session <30 seconds = quality signal problem
 
 import * as cheerio from 'cheerio';
-import type { AuditIssue } from '@rankcli/agent-runtime';
+import type { AuditIssue } from '../types.js';
 
 export interface NavBoostSignalsData {
   clickOptimization: {

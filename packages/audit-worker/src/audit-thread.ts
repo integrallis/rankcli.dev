@@ -4,7 +4,6 @@
 
 import { parentPort } from 'node:worker_threads';
 import { runFullAudit } from '@rankcli/agent-runtime';
-import { premiumChecks } from '@rankcli/agent-runtime-premium';
 import { installOutboundGuard, hostPort } from './url-guard.js';
 
 // Each thread has its own `net` module, so the main thread's SSRF guard doesn't cover the
@@ -15,7 +14,7 @@ type AuditOptions = Parameters<typeof runFullAudit>[0];
 
 parentPort!.on('message', async (message: { id: number; options: AuditOptions }) => {
   try {
-    const report = await runFullAudit({ ...message.options, premiumChecks } as AuditOptions);
+    const report = await runFullAudit(message.options);
     parentPort!.postMessage({ id: message.id, report });
   } catch (error) {
     parentPort!.postMessage({ id: message.id, error: error instanceof Error ? error.message : String(error) });

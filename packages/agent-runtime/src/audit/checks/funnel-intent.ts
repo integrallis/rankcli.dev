@@ -5,7 +5,7 @@
 // "AI overviews answer informational queries - focus on money keywords"
 
 import * as cheerio from 'cheerio';
-import type { AuditIssue } from '@rankcli/agent-runtime';
+import type { AuditIssue } from '../types.js';
 
 export type FunnelStage = 'tofu' | 'mofu' | 'bofu' | 'mixed';
 

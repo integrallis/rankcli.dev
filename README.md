@@ -148,7 +148,6 @@ Founding members get Pro for $19/mo (locked in for as long as you stay subscribe
 /packages
   /cli                    # @rankcli/cli - CLI tool
   /agent-runtime          # @rankcli/agent-runtime - Core audit engine (public checks)
-  /agent-runtime-premium  # Paid-tier checks (never published; encrypted into the CLI's WASM binary)
   /mcp-server             # @rankcli/mcp-server - free, local MCP server
   /saas                   # Web dashboard (rankcli.dev)
   /audit-worker           # Deep-audit worker (Fly.io)

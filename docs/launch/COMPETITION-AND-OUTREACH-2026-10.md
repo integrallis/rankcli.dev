@@ -85,6 +85,8 @@ far HN, YouTube and the skill directories can carry it.
 
 ### 3.1 What opening it would reveal, and why it is still closed (checked 2026-10-13)
 
+**Decided 2026-10-29: open everything.** The founder chose to publish cli, agent-runtime (with the 21 formerly encrypted checks folded in), mcp-server, the Action and the plugins, and to delete the WASM encryption. The section below is the analysis that led there.
+
 Measured against the packages on npm today (`@rankcli/cli@0.0.49`, `@rankcli/agent-runtime@0.0.37`):
 
 | What is in the public tarballs already | Measured |

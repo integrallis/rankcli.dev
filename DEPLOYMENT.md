@@ -67,7 +67,7 @@ gh workflow run deploy.yml
 ├──────────────────────────────┼──────────────────────────────────┤
 │  Payments (Stripe)           │  Subscriptions + LTD             │
 ├──────────────────────────────┼──────────────────────────────────┤
-│  CLI (rankcli npm)           │  WASM-protected audit engine     │
+│  CLI (rankcli npm)           │  audit engine (@rankcli/agent-runtime) │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -190,10 +190,6 @@ Save the token as `FLY_API_TOKEN`.
 # Audit worker secret (for secure communication)
 openssl rand -hex 32
 # Save as AUDIT_WORKER_SECRET
-
-# CLI build key (for WASM encryption)
-openssl rand -base64 32
-# Save as RANKCLI_BUILD_KEY
 ```
 
 ---
@@ -234,7 +230,6 @@ gh secret set OPENAI_API_KEY --body "sk-proj-..."
 
 # Generated secrets
 gh secret set AUDIT_WORKER_SECRET --body "$(openssl rand -hex 32)"
-gh secret set RANKCLI_BUILD_KEY --body "$(openssl rand -base64 32)"
 
 # Optional: Search APIs for keyword research
 gh secret set BRAVE_API_KEY --body "your-key"
@@ -702,40 +697,19 @@ When a refund is processed in Stripe:
 
 ## CLI Package Build
 
-For building the WASM-protected CLI package.
-
-### Prerequisites
-
-```bash
-# Install Rust
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-# Add WASM target
-rustup target add wasm32-unknown-unknown
-
-# Install wasm-pack
-cargo install wasm-pack
-```
-
-### Development Build
+Plain TypeScript; Node and pnpm are the only prerequisites. (Until 2026-10 the CLI carried a
+Rust/WASM binary with 21 encrypted checks and needed a build key. Those checks are ordinary
+engine code now.)
 
 ```bash
-cd packages/cli
-
-# Build with dev key
-pnpm build:wasm:dev
-pnpm build:js
-
-# Test
-pnpm test:wasm
+cd packages/agent-runtime && pnpm build   # the CLI bundle externalizes the runtime
+cd ../cli && pnpm build:js
+pnpm test
+node scripts/verify-premium-audit.js      # the built CLI reports the 21 checks' codes
 ```
 
-### Production Build
-
-```bash
-export RANKCLI_BUILD_KEY=$(cat /path/to/production-key)
-pnpm build
-```
+The published package also gets `pnpm inject-config` (Supabase URL and anon key), which
+build-cli.yml runs before `npm publish`.
 
 ---
 

@@ -95,16 +95,6 @@ ENV PATH=$PATH:/usr/local/share/npm-global/bin
 # is incompatible with the Node 20 installed above via NodeSource.
 RUN npm install -g pnpm@8.15.0
 
-# Install Rust toolchain and wasm-pack for the CLI package's native WASM build
-# (packages/cli/native). Must run as the vscode user, not root: rustup installs
-# into $HOME/.cargo, remoteUser is "vscode" (devcontainer.json), and root's
-# home directory isn't readable by vscode — installing this earlier as root
-# left cargo/wasm-pack unreachable (and unbuildable) for the actual dev user.
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
-  . "$HOME/.cargo/env" && \
-  curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-ENV PATH=$PATH:/home/vscode/.cargo/bin
-
 # Install global Node.js tools
 RUN npm install -g \
   @anthropic-ai/claude-code \

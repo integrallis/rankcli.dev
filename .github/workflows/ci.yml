@@ -27,7 +27,6 @@ jobs:
       cli: ${{ steps.filter.outputs.cli }}
       agent: ${{ steps.filter.outputs.agent }}
       plugins: ${{ steps.filter.outputs.plugins }}
-      native: ${{ steps.filter.outputs.native }}
       action: ${{ steps.filter.outputs.action }}
       mcp: ${{ steps.filter.outputs.mcp }}
     steps:
@@ -48,8 +47,6 @@ jobs:
               - 'packages/next-plugin/**'
               - 'packages/astro-plugin/**'
               - 'packages/vscode-extension/**'
-            native:
-              - 'packages/cli/native/**'
             action:
               - 'packages/github-action/**'
             mcp:
@@ -135,13 +132,13 @@ jobs:
         run: pnpm test
 
   # ---------------------------------------------------------------------------
-  # CLI Tests (includes WASM build)
+  # CLI Tests
   # ---------------------------------------------------------------------------
   cli-tests:
     name: CLI Tests
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.cli == 'true' || needs.changes.outputs.agent == 'true' || needs.changes.outputs.native == 'true' || github.event_name == 'push'
+    if: needs.changes.outputs.cli == 'true' || needs.changes.outputs.agent == 'true' || github.event_name == 'push'
 
     steps:
       - uses: actions/checkout@v4
@@ -157,19 +154,6 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: packages/cli/native
-
-      - name: Install wasm-pack
-        run: cargo install wasm-pack --locked
-
       - name: Install dependencies
         run: pnpm install
 
@@ -177,26 +161,15 @@ jobs:
         working-directory: packages/agent-runtime
         run: pnpm build
 
-      - name: Build agent-runtime WASM bundle
-        working-directory: packages/agent-runtime
-        run: pnpm build:wasm
-
-      - name: Build CLI (with WASM)
+      - name: Build CLI
         working-directory: packages/cli
-        run: |
-          pnpm build:wasm:dev
-          pnpm build:js
+        run: pnpm build:js
 
-      - name: Run WASM integration tests
+      # The built CLI reports the codes of the 21 checks that used to be encrypted into a
+      # WASM binary (a stale binary once shipped for months with none of them).
+      - name: Verify every check runs
         working-directory: packages/cli
-        run: pnpm test:wasm
-
-      # The WASM embeds exactly the premium bundle built above, and the CLI runs those checks.
-      - name: Verify premium checks (dev key)
-        working-directory: packages/cli
-        run: |
-          node scripts/verify-wasm.js
-          node scripts/verify-premium-audit.js
+        run: node scripts/verify-premium-audit.js
 
       - name: Run unit tests
         working-directory: packages/cli

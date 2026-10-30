@@ -34,11 +34,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Build first. agent-runtime-premium imports @rankcli/agent-runtime,
-      # which resolves to this package's dist/ - so type-checking
-      # wasm-adapter.ts/deno-entry.ts (which import premium) before a build
-      # fails on the missing dist types. So does packaging.test.ts, which
-      # inspects the built bundle. Running tsc first made most runs red.
+      # Build first: packaging.test.ts inspects the built bundle.
       - name: Build
         working-directory: packages/agent-runtime
         run: pnpm build

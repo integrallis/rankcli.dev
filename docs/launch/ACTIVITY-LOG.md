@@ -61,6 +61,25 @@ and the developer channels have produced no measurable visit.
   imbalance" and the colour-contrast disclaimer are no longer findings; a brand's own name is
   not keyword stuffing; the npm README matches the site. Homepage 85 to 90 and 50 to 33 issues
   on the local build; re-verified on the npm package in VERIFIED-NUMBERS.md.
+- Decisions, item by item, on the report's plan (all approved by the founder): publish the
+  source as a new public repo; align the AI checks with the citation evidence (bot classes with a
+  live fetch, soft-404 llms.txt, freshness, answer-first, JS-off link graph, a scoring note);
+  the CI plumbing (config with ignores and budgets, `--baseline` and `rankcli diff`, per-category
+  gates, SARIF and JUnit, `--header`/`--cookie`, sitemap-seeded crawl, `--dir`, an Action that
+  posts one check-run and one updated PR comment on regressions only); task-named skills,
+  `--format llm`, hosted MCP parity, honest plugin descriptions, Astro first; Marketplace listing;
+  the skill directories (web-quality-skills PR, marketingskills partner slot) and a Vercel
+  integration; Astro then Nuxt modules; a nightly corpus dataset with drafted posts; weekly dated
+  releases; a G2 listing; the first-run leftovers (JSON timestamp, version, per-page breakdown,
+  passed checks; silent login tip under `-o json`/gates; exit codes on the docs page) in 0.0.52.
+  Order: source repo first, then the rest in the report's order.
+- Open everything: the founder chose to open the 21 formerly "premium" checks too (the passphrase
+  that decrypted them shipped in the npm tarball, so they protected nothing). They moved from the
+  private `agent-runtime-premium` package into `agent-runtime/src/audit/checks/`, `runFullAudit`
+  runs them by default, and the Rust/WASM crate, the build key, wasm-pack and the `wasm-engine`
+  wrapper are deleted from the CLI, the workflows and the dev container. A contributor needs Node
+  and pnpm only. Verified identical to the published 0.0.51 on rankcli.dev (90, 33 issues, same
+  codes); runtime 751 tests, CLI 167, site 115.
 
 ### 2026-10-27
 

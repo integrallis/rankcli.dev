@@ -13,7 +13,6 @@
   },
   "dependencies": {
     "@rankcli/agent-runtime": "workspace:*",
-    "@rankcli/agent-runtime-premium": "workspace:*",
     "@rankcli/mcp-server": "workspace:*",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@supabase/supabase-js": "^2.39.0",

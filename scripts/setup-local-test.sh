@@ -1,6 +1,7 @@
 #!/bin/bash
 # RankCLI Local Testing Setup
-# This script prepares the system for local development and testing
+# Prepares the system for local development and testing: Node and pnpm are the only
+# prerequisites (the Rust/WASM build the CLI used to need is gone).
 
 set -e
 
@@ -11,7 +12,6 @@ echo "=================================="
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Check if we're in the project root
@@ -47,74 +47,26 @@ else
     exit 1
 fi
 
-# Check Rust (optional for WASM builds)
-if command_exists rustc; then
-    RUST_VERSION=$(rustc --version)
-    echo -e "${GREEN}✓${NC} Rust: $RUST_VERSION"
-    RUST_AVAILABLE=true
-else
-    echo -e "${YELLOW}!${NC} Rust not found (optional, needed for WASM builds)"
-    RUST_AVAILABLE=false
-fi
-
-# Check wasm-pack (optional)
-if command_exists wasm-pack; then
-    WASM_PACK_VERSION=$(wasm-pack --version)
-    echo -e "${GREEN}✓${NC} wasm-pack: $WASM_PACK_VERSION"
-    WASM_PACK_AVAILABLE=true
-else
-    echo -e "${YELLOW}!${NC} wasm-pack not found (optional, needed for WASM builds)"
-    WASM_PACK_AVAILABLE=false
-fi
-
 echo ""
 echo "Step 2: Installing dependencies..."
 echo "----------------------------------"
 pnpm install
 
 echo ""
-echo "Step 3: Building agent-runtime (core)..."
-echo "-----------------------------------------"
+echo "Step 3: Building agent-runtime..."
+echo "---------------------------------"
 cd packages/agent-runtime
-# Build core only (skip Deno build which has separate dependencies)
-pnpm exec tsup src/index.ts --format cjs,esm --dts 2>/dev/null || echo "Core build done"
-echo -e "${GREEN}✓${NC} agent-runtime core built"
-
-# Build WASM bundle for CLI
-echo ""
-echo "Step 4: Building WASM bundle..."
-echo "--------------------------------"
-pnpm build:wasm
-echo -e "${GREEN}✓${NC} WASM bundle built (dist/wasm/wasm-adapter.global.js)"
+pnpm build
+echo -e "${GREEN}✓${NC} agent-runtime built"
 cd ../..
 
-# Build CLI WASM if Rust is available
-if [ "$RUST_AVAILABLE" = true ] && [ "$WASM_PACK_AVAILABLE" = true ]; then
-    echo ""
-    echo "Step 5: Building CLI WASM binary..."
-    echo "------------------------------------"
-
-    # Check if WASM target is installed
-    if ! rustup target list | grep -q "wasm32-unknown-unknown (installed)"; then
-        echo "Installing wasm32-unknown-unknown target..."
-        rustup target add wasm32-unknown-unknown
-    fi
-
-    cd packages/cli
-    pnpm build:wasm:dev
-    echo -e "${GREEN}✓${NC} CLI WASM built"
-
-    # Build TypeScript
-    echo ""
-    echo "Step 6: Building CLI TypeScript..."
-    echo "-----------------------------------"
-    pnpm build:js
-    echo -e "${GREEN}✓${NC} CLI TypeScript built"
-    cd ../..
-else
-    echo ""
-    echo -e "${YELLOW}Skipping CLI WASM build (Rust/wasm-pack not available)${NC}"
-fi
+echo ""
+echo "Step 4: Building the CLI..."
+echo "---------------------------"
+cd packages/cli
+pnpm build:js
+echo -e "${GREEN}✓${NC} CLI built"
+cd ../..
 
 echo ""
 echo "=================================="
@@ -123,18 +75,15 @@ echo "=================================="
 echo ""
 echo "Available commands:"
 echo ""
-echo "  ${GREEN}Test WASM decryption:${NC}"
-echo "  cd packages/cli && node -e \"const w = require('./wasm/rankcli_audit_engine.js'); w.init_engine('dev'); console.log('OK:', w.get_decrypted_code().length, 'chars');\""
+echo "  ${GREEN}Audit a site with the local build:${NC}"
+echo "  node packages/cli/dist/index.js audit --url https://example.com"
 echo ""
-echo "  ${GREEN}Test full audit (requires build:js first):${NC}"
-echo "  cd packages/cli && node -e \"const{initEngine,runAudit}=require('./dist/wasm-engine.js');(async()=>{await initEngine('dev');const r=await runAudit('https://example.com','<html><head><title>Test</title></head></html>');console.log('Score:',r.score,'Issues:',r.issues.length);})();\""
+echo "  ${GREEN}Check the 21 formerly encrypted checks run end to end:${NC}"
+echo "  cd packages/cli && node scripts/verify-premium-audit.js"
 echo ""
 echo "  ${GREEN}Start SaaS dev server:${NC}"
 echo "  cd packages/saas && pnpm dev"
 echo ""
 echo "  ${GREEN}Run all tests:${NC}"
 echo "  pnpm test"
-echo ""
-echo "  ${GREEN}Build CLI for npm:${NC}"
-echo "  cd packages/cli && pnpm build"
 echo ""

@@ -4,7 +4,7 @@
 // Three pillars: Precision, Coverage, Connectivity
 
 import * as cheerio from 'cheerio';
-import type { AuditIssue } from '@rankcli/agent-runtime';
+import type { AuditIssue } from '../types.js';
 
 export interface EntitySEOData {
   entitySignals: {

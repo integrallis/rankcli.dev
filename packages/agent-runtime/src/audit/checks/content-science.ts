@@ -3,7 +3,7 @@
 // These techniques differentiate RankCLI from competitors like Ahrefs/SEMrush
 
 import * as cheerio from 'cheerio';
-import type { AuditIssue } from '@rankcli/agent-runtime';
+import type { AuditIssue } from '../types.js';
 
 // ==================== ZIPF'S LAW ANALYSIS ====================
 // Natural language follows Zipf's law: frequency ∝ 1/rank^α (α ≈ 1)

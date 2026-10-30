@@ -17,10 +17,9 @@
 # itself: ModelJars compiles a true native binary via GraalVM (Java),
 # this bundles the CLI's TypeScript source into a single file via esbuild
 # and injects it into a copy of the Node runtime via Node's SEA feature
-# (scripts/build-sea.sh has the full story, including two real bugs that
-# only show up in a true single-file build: config injection and the
-# WASM premium-check loader both assumed sibling files on disk that a
-# SEA binary doesn't have).
+# (scripts/build-sea.sh has the full story, including a real bug that
+# only shows up in a true single-file build: config injection assumed
+# sibling files on disk that a SEA binary doesn't have).
 #
 # Triggers:
 # - release: published (uses the release's own tag)
@@ -231,19 +230,6 @@ jobs:
           node-version: '22'
           cache: 'pnpm'
 
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-
-      - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: packages/cli/native
-
-      - name: Install wasm-pack
-        run: cargo install wasm-pack --locked
-
       - name: Install dependencies
         run: pnpm install
 
@@ -261,22 +247,6 @@ jobs:
         working-directory: packages/agent-runtime
         run: pnpm build
 
-      - name: Build agent-runtime WASM bundle
-        working-directory: packages/agent-runtime
-        run: pnpm build:wasm
-
-      - name: Build CLI WASM binary (encrypts premium checks, embeds in WASM)
-        shell: bash
-        working-directory: packages/cli
-        env:
-          RANKCLI_BUILD_KEY: ${{ secrets.RANKCLI_BUILD_KEY }}
-        run: |
-          if [ -z "$RANKCLI_BUILD_KEY" ]; then
-            echo "::error::RANKCLI_BUILD_KEY not set - native binaries need it to embed decryptable premium checks"
-            exit 1
-          fi
-          pnpm build:wasm
-
       - name: Build SEA binary
         shell: bash
         working-directory: packages/cli
@@ -284,7 +254,6 @@ jobs:
           RANKCLI_SUPABASE_URL: ${{ secrets.RANKCLI_SUPABASE_URL }}
           RANKCLI_SUPABASE_ANON_KEY: ${{ secrets.RANKCLI_SUPABASE_ANON_KEY }}
           RANKCLI_WEB_URL: https://rankcli.dev
-          RANKCLI_BUILD_KEY: ${{ secrets.RANKCLI_BUILD_KEY }}
         run: bash scripts/build-sea.sh "${{ matrix.label }}" "dist-native/${{ matrix.binary }}"
 
       - name: Smoke-test binary

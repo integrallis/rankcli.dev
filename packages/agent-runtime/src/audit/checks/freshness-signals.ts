@@ -4,7 +4,7 @@
 // dateModified in schema boosts AI citation odds by ~18%
 
 import * as cheerio from 'cheerio';
-import type { AuditIssue } from '@rankcli/agent-runtime';
+import type { AuditIssue } from '../types.js';
 
 export interface FreshnessSignalsData {
   dateSignals: {
