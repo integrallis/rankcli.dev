@@ -834,6 +834,16 @@ Options:
   --ai-model <model>        Override the provider's default model
   --ai-base-url <url>       Any OpenAI-compatible server (implies --ai-provider custom)`}
         />
+        <p className="text-muted-foreground mt-4 mb-2">Exit codes, so a pipeline can tell a failed gate from a site that was down:</p>
+        <ul className="list-disc list-inside text-muted-foreground mb-4 space-y-1">
+          <li><code>0</code>: the audit completed and no --fail-on or --min-score gate tripped</li>
+          <li><code>1</code>: a --fail-on or --min-score gate tripped</li>
+          <li><code>2</code>: bad invocation (missing or invalid --url, invalid flag value)</li>
+          <li><code>3</code>: no real audit: the site was unreachable, answered 4xx/5xx, or no page could be analyzed</li>
+        </ul>
+        <p className="text-muted-foreground mb-4">
+          The gates are opt-in: without them a completed audit exits 0 however many issues it finds. With -o json, stdout is always one JSON document (on failure too) carrying exitCode, timestamp, cliVersion, a per-page breakdown and, when gates are set, a gate object with the reasons.
+        </p>
         <h4 className="font-medium mt-6 mb-2">Examples</h4>
         <CodeBlock code="# Basic audit" />
         <CodeBlock code="rankcli audit --url https://example.com" />
