@@ -46,7 +46,6 @@ permissions:
   contents: write
 
 env:
-  PNPM_VERSION: '8'
   PUBLIC_REPO: integrallis/rankcli-cli
 
 jobs:
@@ -112,17 +111,15 @@ jobs:
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref != '' && inputs.ref || steps.release.outputs.tag }}
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -213,17 +210,15 @@ jobs:
           echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref != '' && inputs.ref || steps.release.outputs.tag }}
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: ${{ env.PNPM_VERSION }}
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           # >=20 for SEA support; 22 matches what build-cli.yml's publish
           # job already uses elsewhere in this repo.
@@ -316,7 +311,7 @@ jobs:
 
       - name: Checkout packaging templates
         if: steps.context.outputs.ready == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download binaries and calculate checksums
         if: steps.context.outputs.ready == 'true'

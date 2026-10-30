@@ -38,10 +38,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
 
@@ -75,7 +75,7 @@ jobs:
 
       
       - name: Create/Update Issue
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const title = 'SEO Report - ' + new Date().toISOString().split('T')[0];
@@ -144,7 +144,7 @@ jobs:
 
       - name: Create PR with Fixes
         if: steps.autofix.outputs.fixes_made == 'true'
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: 'fix(seo): automated SEO improvements'
@@ -169,7 +169,7 @@ jobs:
       
 
       - name: Save Report Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: seo-report-${{ github.run_number }}
           path: |

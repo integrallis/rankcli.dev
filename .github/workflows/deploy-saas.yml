@@ -78,9 +78,9 @@ jobs:
       migrations: ${{ steps.filter.outputs.migrations }}
       pricing: ${{ steps.filter.outputs.pricing }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: dorny/paths-filter@v3
+      - uses: dorny/paths-filter@v4
         id: filter
         with:
           filters: |
@@ -111,18 +111,16 @@ jobs:
     needs: [preflight, changes]
     if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           # Full history: the sitemap dates each page by its last commit.
           fetch-depth: 0
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+        uses: pnpm/action-setup@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: 'pnpm'
@@ -172,7 +170,7 @@ jobs:
       needs.changes.outputs.functions == 'true' ||
       github.event.inputs.deploy_functions == 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Before anything deploys: a function that doesn't type-check stops the job.
       - name: Setup Deno
@@ -320,17 +318,15 @@ jobs:
       needs.preflight.result == 'success' &&
       (needs.changes.outputs.pricing == 'true' || github.event.inputs.sync_stripe_pricing == 'true')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
+        uses: pnpm/action-setup@v6
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
