@@ -40,8 +40,6 @@ on:
           - diagnose
         default: publish
 
-env:
-
 jobs:
   plugins:
     name: ${{ inputs.mode }} ${{ inputs.package }}
