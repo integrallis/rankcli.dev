@@ -80,6 +80,15 @@ and the developer channels have produced no measurable visit.
   manifests, READMEs, CONTRIBUTING) and the release notes draft now says "the source is
   published" rather than "open source". AGPL was considered and set aside: it only obliges a
   hosted clone to publish its modifications, it does not forbid the clone.
+- Every CI run in both repos warned that `actions/checkout@v4`, `actions/setup-node@v4` and
+  `pnpm/action-setup@v2` target Node 20 and are forced onto Node 24. Both repos now pin the
+  Node 24 majors (checkout v7, setup-node v7, pnpm/action-setup v6, upload-artifact v7,
+  download-artifact v8, github-script v9, create-pull-request v8, paths-filter v4), and pnpm's
+  version comes from `packageManager` alone, because pnpm/action-setup v4+ refuses a `version`
+  input that differs from it (the monorepo said 8 and once 9 against 8.15.0). The generated
+  workflow and the README examples use the same majors. One slip on the way: removing the only
+  key under `env:` in `publish-plugins.yml` left an empty mapping that GitHub rejects (a failed
+  run named after the file, no jobs, nothing published); fixed in both repos.
 - Still to do when it ships: the docs page on the site still documents `--fail-on <level>` and
   `fail-on-errors: true` (update with 0.0.53), and the Action needs a v1.2.0 release staged from
   the merged `action.yml` and bundle. Founder clicks from 2026-10-29 are all still open.
