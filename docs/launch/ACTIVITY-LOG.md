@@ -46,6 +46,35 @@ appears in any week, and Google search sent about 10 page loads a week. So the o
 that produced signups reached SEO freelancers, which fits a $9 to $99 developer tool badly,
 and the developer channels have produced no measurable visit.
 
+### 2026-10-30
+
+- The CI plumbing (item 4 of the plan) is built in the public repo on branch `ci-plumbing`,
+  PR #1 (`github.com/integrallis/rankcli/pull/1`), waiting for the v0.0.52 release and a merge.
+  One implementation in the engine (`audit/ci/`) serves the CLI and the Action: gate rules in
+  one syntax (`error | warning | notice`, `score<80`, `score:aiReadiness<70`), a baseline (a
+  saved report; a finding is its code plus the page's path, so only new findings fail the
+  build and an existing site can adopt the gate before fixing every old finding), ignore rules
+  by code and page glob (what is ignored is reported, never dropped silently), SARIF 2.1.0 for
+  Code Scanning, JUnit for test reporters, headers and cookies for protected previews (sent to
+  the audited site only), sitemap-seeded page discovery as the default, and build-directory
+  audits (`--dir dist --url https://site`: served locally, audited as the real origin, host-only
+  checks skipped, SARIF locations pointing at the files). `rankcli.config.json` carries all of
+  it and an invalid file is an error. New CLI command `rankcli diff before.json after.json`.
+- The Action takes the same gate (`fail-on`), a `baseline`, a `dir`, `headers`, reads
+  `rankcli.config.json` from the checkout, annotates the run with the findings, and keeps one PR
+  comment updated in place, posted only on regressions by default (the Dependabot lesson: a bot
+  that comments on every deploy gets switched off). It audits the sitemap's five pages where it
+  used to audit one URL. `rankcli setup --github-action` now writes a workflow that uses the
+  published Action instead of `npm install -g`.
+- Verified: runtime 792 tests, CLI 186 (the spawned binary covers `--header`, `--dir` with
+  sitemap discovery, `--baseline` plus `diff`, the config file, SARIF and JUnit), Action 42
+  (the ncc bundle audits a build directory). rankcli.dev at one page is unchanged at 90 and 33
+  issues; the default five pages now come from the sitemap (/, /pricing, /docs, /blog, /about).
+  Versions on the branch: cli 0.0.53, agent-runtime 0.0.41, mcp-server 0.0.26.
+- Still to do when it ships: the docs page on the site still documents `--fail-on <level>` and
+  `fail-on-errors: true` (update with 0.0.53), and the Action needs a v1.2.0 release staged from
+  the merged `action.yml` and bundle. Founder clicks from 2026-10-29 are all still open.
+
 ### 2026-10-29
 
 - Deep research delivered: "RankCLI product gaps and positioning" (`reports/`, 147 citations,
