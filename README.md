@@ -187,7 +187,7 @@ pnpm --filter @rankcli/saas dev
 - **Website**: [rankcli.dev](https://rankcli.dev)
 - **Docs**: [rankcli.dev/docs](https://rankcli.dev/docs)
 - **npm**: [@rankcli/cli](https://www.npmjs.com/package/@rankcli/cli)
-- **Binaries (Homebrew/Scoop)**: [github.com/integrallis/rankcli-cli](https://github.com/integrallis/rankcli-cli)
+- **Binaries (Homebrew/Scoop)**: [github.com/integrallis/rankcli](https://github.com/integrallis/rankcli)
 
 ## License
 

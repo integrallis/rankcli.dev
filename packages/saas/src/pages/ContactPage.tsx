@@ -50,12 +50,12 @@ export function ContactPage() {
             </CardHeader>
             <CardContent>
               <a
-                href="https://github.com/integrallis/rankcli-cli/issues"
+                href="https://github.com/integrallis/rankcli/issues"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-primary hover:underline"
               >
-                github.com/integrallis/rankcli-cli/issues
+                github.com/integrallis/rankcli/issues
               </a>
             </CardContent>
           </Card>

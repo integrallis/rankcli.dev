@@ -56,7 +56,7 @@ export function AboutPage() {
 
         <div className="flex gap-4 mt-10 pt-8 border-t">
           <a
-            href="https://github.com/integrallis/rankcli-cli"
+            href="https://github.com/integrallis/rankcli"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"

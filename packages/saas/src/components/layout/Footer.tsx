@@ -46,7 +46,7 @@ export function Footer() {
             </p>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <a
-                href="https://github.com/integrallis/rankcli-cli"
+                href="https://github.com/integrallis/rankcli"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="RankCLI on GitHub"

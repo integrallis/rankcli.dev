@@ -58,7 +58,7 @@ export function ChangelogPage() {
         <p className="text-muted-foreground mb-10">
           Recent highlights below. For the full, version-by-version history, see{' '}
           <a
-            href="https://github.com/integrallis/rankcli-cli/releases"
+            href="https://github.com/integrallis/rankcli/releases"
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary hover:underline inline-flex items-center gap-1"

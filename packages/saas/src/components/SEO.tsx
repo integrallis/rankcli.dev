@@ -9,7 +9,7 @@ export const DEFAULT_DESCRIPTION =
 
 /** Public profiles, in the footer and in the Organization schema's sameAs. */
 export const SOCIAL_PROFILES = [
-  { label: 'GitHub', href: 'https://github.com/integrallis/rankcli-cli' },
+  { label: 'GitHub', href: 'https://github.com/integrallis/rankcli' },
   { label: 'npm', href: 'https://www.npmjs.com/package/@rankcli/cli' },
   { label: 'Bluesky', href: 'https://bsky.app/profile/rankclidev.bsky.social' },
   { label: 'Dev.to', href: 'https://dev.to/rankcli' },

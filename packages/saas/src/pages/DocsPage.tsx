@@ -659,7 +659,7 @@ function MCPServerSection() {
         <p className="text-sm text-muted-foreground mb-2">
           Download the latest{' '}
           <a
-            href="https://github.com/integrallis/rankcli-cli/releases/latest"
+            href="https://github.com/integrallis/rankcli/releases/latest"
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary underline"

@@ -152,7 +152,7 @@ Files RankCLI owns from a template (\`robots.txt\`, \`sitemap.xml\`, \`llms.txt\
 
 The MCP server is the lowest-friction thing we ship: no signup, no API key, nothing leaves your machine. Every path we documented for it involved hand-editing a JSON config file, which is a strange way to introduce the easy option.
 
-**Claude Desktop** now has a downloadable extension bundle. Grab the \`.mcpb\` from the [latest release](https://github.com/integrallis/rankcli-cli/releases/latest) and double-click it.
+**Claude Desktop** now has a downloadable extension bundle. Grab the \`.mcpb\` from the [latest release](https://github.com/integrallis/rankcli/releases/latest) and double-click it.
 
 **Claude Code** is one line:
 

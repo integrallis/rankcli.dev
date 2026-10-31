@@ -44,7 +44,7 @@ export function Hero() {
               </Button>
             </Link>
             <a
-              href="https://github.com/integrallis/rankcli-cli"
+              href="https://github.com/integrallis/rankcli"
               target="_blank"
               rel="noopener noreferrer"
             >

@@ -18,7 +18,7 @@
         },
         {
           "aspect": "Licence and source",
-          "rankcli": "Free npm packages under the Functional Source License, FSL-1.1-MIT (@rankcli/cli 0.0.52, @rankcli/agent-runtime 0.0.40, @rankcli/mcp-server 0.0.25): read, run, change and embed it freely; building a competing product with it is the one thing it forbids, and each version becomes MIT two years after release. Earlier versions are MIT. The GitHub Action and MCP server repositories are public; the full source repository is not public yet.",
+          "rankcli": "Free npm packages under the Functional Source License, FSL-1.1-MIT (@rankcli/cli 0.0.52, @rankcli/agent-runtime 0.0.40, @rankcli/mcp-server 0.0.25): read, run, change and embed it freely; building a competing product with it is the one thing it forbids, and each version becomes MIT two years after release. Earlier versions are MIT. Source at github.com/integrallis/rankcli (CLI, engine, MCP server, Action and plugins); the Action also has its own public repository.",
           "rival": "Apache-2.0, by Google. 7,110 GitHub stars; v0.15.1 is the latest release.",
           "source": "https://github.com/GoogleChrome/lighthouse-ci"
         },
@@ -142,7 +142,7 @@
         },
         {
           "aspect": "Licence and source",
-          "rankcli": "Free npm packages under the Functional Source License, FSL-1.1-MIT (@rankcli/cli 0.0.52, @rankcli/agent-runtime 0.0.40, @rankcli/mcp-server 0.0.25): read, run, change and embed it freely; building a competing product with it is the one thing it forbids, and each version becomes MIT two years after release. Earlier versions are MIT. The GitHub Action and MCP server repositories are public; the full source repository is not public yet.",
+          "rankcli": "Free npm packages under the Functional Source License, FSL-1.1-MIT (@rankcli/cli 0.0.52, @rankcli/agent-runtime 0.0.40, @rankcli/mcp-server 0.0.25): read, run, change and embed it freely; building a competing product with it is the one thing it forbids, and each version becomes MIT two years after release. Earlier versions are MIT. Source at github.com/integrallis/rankcli (CLI, engine, MCP server, Action and plugins); the Action also has its own public repository.",
           "rival": "MIT for the CLI and repository (names and logos trademarked). 274 GitHub stars; repository created 2026-01-02; v0.0.112 released 2026-10-13.",
           "source": "https://github.com/squirrelscan/squirrelscan"
         },
@@ -271,7 +271,7 @@
         },
         {
           "aspect": "Licence and source",
-          "rankcli": "Free npm packages under the Functional Source License, FSL-1.1-MIT (@rankcli/cli 0.0.52, @rankcli/agent-runtime 0.0.40, @rankcli/mcp-server 0.0.25): read, run, change and embed it freely; building a competing product with it is the one thing it forbids, and each version becomes MIT two years after release. Earlier versions are MIT. The GitHub Action and MCP server repositories are public; the full source repository is not public yet.",
+          "rankcli": "Free npm packages under the Functional Source License, FSL-1.1-MIT (@rankcli/cli 0.0.52, @rankcli/agent-runtime 0.0.40, @rankcli/mcp-server 0.0.25): read, run, change and embed it freely; building a competing product with it is the one thing it forbids, and each version becomes MIT two years after release. Earlier versions are MIT. Source at github.com/integrallis/rankcli (CLI, engine, MCP server, Action and plugins); the Action also has its own public repository.",
           "rival": "MIT, by Auriti Labs. 1,061 GitHub stars; v4.19.0 released 2026-10-09; repository created 2026-02-18. Python 3.9 or newer.",
           "source": "https://github.com/Auriti-Labs/geo-optimizer-skill"
         },
@@ -384,7 +384,7 @@
         },
         {
           "aspect": "Licence and source",
-          "rankcli": "Free npm packages under the Functional Source License, FSL-1.1-MIT (@rankcli/cli 0.0.52, @rankcli/agent-runtime 0.0.40, @rankcli/mcp-server 0.0.25): read, run, change and embed it freely; building a competing product with it is the one thing it forbids, and each version becomes MIT two years after release. Earlier versions are MIT. The GitHub Action and MCP server repositories are public; the full source repository is not public yet.",
+          "rankcli": "Free npm packages under the Functional Source License, FSL-1.1-MIT (@rankcli/cli 0.0.52, @rankcli/agent-runtime 0.0.40, @rankcli/mcp-server 0.0.25): read, run, change and embed it freely; building a competing product with it is the one thing it forbids, and each version becomes MIT two years after release. Earlier versions are MIT. Source at github.com/integrallis/rankcli (CLI, engine, MCP server, Action and plugins); the Action also has its own public repository.",
           "rival": "Proprietary desktop software for Windows, macOS, Ubuntu and Fedora; no source repository. Current version 24.3.",
           "source": "https://www.screamingfrog.co.uk/seo-spider/pricing/"
         },
