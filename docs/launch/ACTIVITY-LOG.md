@@ -46,6 +46,20 @@ appears in any week, and Google search sent about 10 page loads a week. So the o
 that produced signups reached SEO freelancers, which fits a $9 to $99 developer tool badly,
 and the developer channels have produced no measurable visit.
 
+### 2026-10-31
+
+- **Action v1.1.2 is out and the taps are still on 0.0.51.** The founder pushed the prepared
+  Action release at 23:28 UTC: rankcli-action main `fbec8c9`, tags `v1` and `v1.1.2` on it,
+  release "v1.1.2: the license is FSL-1.1-MIT", and the Marketplace listing shows v1.1.2 with
+  the FSL license section. The founder also set `PACKAGES_PUBLISH_TOKEN` on integrallis/rankcli
+  and re-ran `native-release.yml` for v0.0.52 (run 41252621846, all build jobs green), but the
+  publish job logged "PACKAGES_PUBLISH_TOKEN is absent; skipping Homebrew and Scoop": the
+  secret was set through the `!` runner with no value on stdin, so it exists and is empty.
+  Our fault for handing over a bare `gh secret set` for a non-interactive runner. Fix is the
+  same command with `--body`, then the same re-run. Homebrew and Scoop still install 0.0.51
+  from integrallis/rankcli-cli, which therefore stays unarchived. PR #1 (CI plumbing) is clean
+  and mergeable, not merged.
+
 ### 2026-10-30
 
 - The CI plumbing (item 4 of the plan) is built in the public repo on branch `ci-plumbing`,
