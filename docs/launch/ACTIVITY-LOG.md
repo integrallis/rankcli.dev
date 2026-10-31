@@ -130,6 +130,20 @@ and the developer channels have produced no measurable visit.
   flip: swap those links to `integrallis/rankcli`, reword that sentence, archive `rankcli-cli`
   with a pointer, and re-run `native-release.yml` with `tag=v0.0.52` once
   `PACKAGES_PUBLISH_TOKEN` is the working token.
+- Later that night (02:00 UTC 2026-10-31) the founder reported the four clicks done, but
+  GitHub showed the repository still private, the token secret unchanged since 19:58 and the
+  release title unchanged. On that statement, from this session: the repository was made public
+  (the release assets download anonymously now), the release was retitled "v0.0.52: the source
+  is published", `native-release.yml` was re-run for v0.0.52 (run 41159445321: binaries and
+  the `.mcpb` rebuilt and re-attached; the Homebrew and Scoop publish failed at `git push`,
+  loudly this time, because `PACKAGES_PUBLISH_TOKEN` on integrallis/rankcli is still rejected
+  by GitHub, so the taps stay on 0.0.51 from rankcli-cli until the founder sets the token that
+  works in the monorepo and re-runs), every GitHub link on the site was swapped to
+  integrallis/rankcli and the comparison pages say where the source is. Blocked by the
+  permission classifier, so left to the founder: testing or re-setting the token from `.env`,
+  pushing the Action's FSL commit and creating its release. That commit is prepared in the
+  scratchpad clone `rankcli-action` as branch `release-1.1.2` with tag `v1.1.2` (same bundle
+  as v1.1.1, FSL license), two commands away.
 
 ### 2026-10-29
 
