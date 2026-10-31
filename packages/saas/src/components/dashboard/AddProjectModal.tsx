@@ -197,7 +197,7 @@ export function AddProjectModal({ open, onOpenChange, onSubmit }: AddProjectModa
                   onChange={(e) => setGithubUrl(e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Connect to enable automatic fix PRs (Pro plan required for auto-fix)
+                  Connect to enable automatic fix PRs (3 a month on Free, no monthly cap on paid plans)
                 </p>
               </div>
 

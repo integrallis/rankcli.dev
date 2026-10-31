@@ -44,7 +44,7 @@ export const faqs = [
   {
     question: 'Is there a free tier?',
     answer:
-      'Yes! Run a free audit on any URL with no signup at all, or create a free account to monitor one site with audit history. Paid plans add more sites, scheduled audits, GitHub auto-fix PRs and more - upgrade or cancel anytime, no long-term commitment.',
+      'Yes. Run a free audit on any URL with no signup, or create a free account to monitor one site weekly with audit history, a README badge and 3 auto-fix PRs a month. Paid plans add more sites, daily audits and audits on every push (Pro and Agency), unlimited auto-fix PRs, Slack and Discord alerts and API access. Upgrade or cancel anytime, no long-term commitment.',
   },
   {
     question: 'How do I cancel my subscription?',

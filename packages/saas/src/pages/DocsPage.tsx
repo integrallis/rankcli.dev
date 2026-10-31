@@ -216,13 +216,13 @@ function GettingStartedSection() {
           Authentication
         </h3>
         <p className="text-muted-foreground mb-4">
-          Link your CLI to your RankCLI account to unlock full features:
+          Every audit, fix and check runs without an account. Log in to sync results to your dashboard:
         </p>
         <CodeBlock code="rankcli login" />
         <p className="text-muted-foreground mt-4">
-          This will prompt for email and password. You can also use browser-based login:
+          This opens your browser. To log in with email and password in the terminal instead:
         </p>
-        <CodeBlock code="rankcli login --browser" />
+        <CodeBlock code="rankcli login --no-browser" />
         <p className="text-muted-foreground mt-4">
           Or provide your email directly:
         </p>
@@ -249,9 +249,9 @@ function GettingStartedSection() {
         <div className="mt-4 p-4 bg-muted/50 rounded-lg">
           <h4 className="font-medium mb-2">Without Authentication</h4>
           <p className="text-sm text-muted-foreground">
-            You can still run basic audits without logging in, but you'll be limited
-            to 50 checks and won't have access to cloud features like audit history,
-            issue tracking, and automatic PR creation.
+            Everything local runs without logging in: all 280+ checks, rankcli fix, the MCP
+            server and the GitHub Action, with no limit. An account adds the cloud: audit
+            history, scheduled audits, issue tracking and auto-fix pull requests.
           </p>
         </div>
 
@@ -270,8 +270,8 @@ function GettingStartedSection() {
             <tbody className="text-muted-foreground">
               <tr className="border-b">
                 <td className="py-2 pr-4">SEO Checks</td>
-                <td className="text-center py-2 px-4">50</td>
-                <td className="text-center py-2 px-4">100</td>
+                <td className="text-center py-2 px-4">280+</td>
+                <td className="text-center py-2 px-4">280+</td>
                 <td className="text-center py-2 px-4">280+</td>
                 <td className="text-center py-2 px-4">280+</td>
               </tr>
@@ -283,18 +283,32 @@ function GettingStartedSection() {
                 <td className="text-center py-2 px-4"><CheckCircle className="h-4 w-4 text-green-500 inline" /></td>
               </tr>
               <tr className="border-b">
+                <td className="py-2 pr-4">Scheduled Audits</td>
+                <td className="text-center py-2 px-4">-</td>
+                <td className="text-center py-2 px-4">Weekly</td>
+                <td className="text-center py-2 px-4">Weekly</td>
+                <td className="text-center py-2 px-4">Daily + every push</td>
+              </tr>
+              <tr className="border-b">
                 <td className="py-2 pr-4">GitHub Connect</td>
                 <td className="text-center py-2 px-4">-</td>
-                <td className="text-center py-2 px-4">-</td>
-                <td className="text-center py-2 px-4">-</td>
+                <td className="text-center py-2 px-4"><CheckCircle className="h-4 w-4 text-green-500 inline" /></td>
+                <td className="text-center py-2 px-4"><CheckCircle className="h-4 w-4 text-green-500 inline" /></td>
                 <td className="text-center py-2 px-4"><CheckCircle className="h-4 w-4 text-green-500 inline" /></td>
               </tr>
               <tr className="border-b">
                 <td className="py-2 pr-4">Auto-Fix PRs</td>
                 <td className="text-center py-2 px-4">-</td>
+                <td className="text-center py-2 px-4">3 a month</td>
+                <td className="text-center py-2 px-4">Unlimited, 1 open per site</td>
+                <td className="text-center py-2 px-4">Unlimited, 3 open per site (10 on Agency)</td>
+              </tr>
+              <tr className="border-b">
+                <td className="py-2 pr-4">REST API</td>
                 <td className="text-center py-2 px-4">-</td>
                 <td className="text-center py-2 px-4">-</td>
-                <td className="text-center py-2 px-4"><CheckCircle className="h-4 w-4 text-green-500 inline" /></td>
+                <td className="text-center py-2 px-4">100/day</td>
+                <td className="text-center py-2 px-4">1K/day (10K on Agency)</td>
               </tr>
             </tbody>
           </table>
@@ -792,8 +806,8 @@ function CLIReferenceSection() {
           code={`rankcli login [options]
 
 Options:
-  -e, --email <email>    Email address for login
-  -b, --browser          Open browser for OAuth login
+  -e, --email <email>    Log in with email and password instead of the browser
+  --no-browser           Skip the browser and log in with email and password in the terminal
   -t, --token <apiKey>   API key for non-interactive auth (CI/CD)`}
         />
         <CodeBlock
@@ -801,7 +815,7 @@ Options:
 rankcli whoami              Show current logged in user`}
         />
         <h4 className="font-medium mt-6 mb-2">Examples</h4>
-        <CodeBlock code="# Interactive login (email/password)" />
+        <CodeBlock code="# Interactive login (opens your browser)" />
         <CodeBlock code="rankcli login" />
         <CodeBlock code="# Login with API key (CI/CD)" />
         <CodeBlock code="rankcli login --token rankcli_your_api_key_here" />
@@ -1049,7 +1063,10 @@ Arguments:
 Options:
   --ga4 <id>        Google Analytics 4 Measurement ID (G-XXXXXXXXXX)
   --gsc <code>      Google Search Console verification code
-  --github-action   Set up automated GitHub Action
+  --github-action   Write a GitHub Actions workflow that audits your site on a schedule
+  --url <url>       Site URL the workflow audits
+  --sync            Sync the workflow's audits to your dashboard and open auto-fix PRs
+                    (needs a RANKCLI_API_KEY secret)
   --schedule <freq> GitHub Action schedule (daily, weekly, monthly)
   --all             Interactive setup wizard`}
         />
@@ -1194,7 +1211,7 @@ function DashboardSection() {
             <h5 className="font-medium text-sm">Create Fix PR</h5>
             <p className="text-xs text-muted-foreground mt-1">
               Generate a GitHub pull request with AI-generated fixes for selected issues.
-              Requires GitHub connection (Pro plan).
+              Requires a connected GitHub repository; every plan has it (3 PRs a month on Free).
             </p>
           </div>
           <div className="p-3 border rounded-lg">
@@ -1447,10 +1464,11 @@ function GitHubSection() {
         </ul>
 
         <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
-          <h4 className="font-medium text-yellow-600 dark:text-yellow-400 mb-2">Pro Plan Required</h4>
+          <h4 className="font-medium text-yellow-600 dark:text-yellow-400 mb-2">Limits by plan</h4>
           <p className="text-sm text-muted-foreground">
-            Automatic PR creation requires the Pro plan or higher.
-            Solo users can use the CLI to generate fixes locally.
+            Free accounts get 3 auto-fix PRs a month, 1 open at a time. Paid plans have no monthly cap:
+            1 open PR per site on Solo, 3 on Pro and 10 on Agency (3, 5 and 10 per report).
+            rankcli fix applies the same fixes locally on every plan, with or without an account.
           </p>
         </div>
       </section>
@@ -1684,7 +1702,7 @@ function WorkflowsSection() {
       <section id="local-workflow">
         <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Upload className="h-5 w-5" />
-          Local Workflow (Solo Plan)
+          Local Workflow (no GitHub access)
         </h3>
         <p className="text-muted-foreground mb-4">
           Keep full control over your repository. No GitHub access required.
@@ -1746,7 +1764,7 @@ function WorkflowsSection() {
       <section id="github-workflow">
         <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <GitPullRequest className="h-5 w-5" />
-          GitHub Workflow (Pro Plan)
+          GitHub Workflow (auto-fix PRs)
         </h3>
         <p className="text-muted-foreground mb-4">
           Full automation with GitHub integration. PRs created automatically from the dashboard or CLI.
@@ -1816,23 +1834,13 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
       - name: Install RankCLI
         run: npm install -g @rankcli/cli
 
       - name: Run SEO Audit
-        run: rankcli audit --url \${{ secrets.SITE_URL }} -o json > audit.json
+        run: rankcli audit --url \${{ secrets.SITE_URL }} --fail-on error --min-score 80
         env:
-          RANKCLI_API_KEY: \${{ secrets.RANKCLI_API_KEY }}
-
-      - name: Check for critical issues
-        run: |
-          errors=$(jq '.issues | map(select(.severity == "error")) | length' audit.json)
-          if [ "$errors" -gt 0 ]; then
-            echo "::error::Found $errors critical SEO issues"
-            exit 1
-          fi`}
+          RANKCLI_API_KEY: \${{ secrets.RANKCLI_API_KEY }}`}
         />
 
         <h4 className="font-medium mt-6 mb-2">Using the GitHub Action</h4>
@@ -1857,7 +1865,7 @@ function APISection() {
       <div>
         <h2 className="text-3xl font-bold mb-4">API Reference</h2>
         <p className="text-muted-foreground text-lg">
-          REST API for programmatic access (Agency plan only).
+          REST API for programmatic access on the Solo, Pro and Agency plans (100, 1,000 and 10,000 requests a day).
         </p>
       </div>
 

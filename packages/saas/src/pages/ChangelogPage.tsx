@@ -7,6 +7,11 @@ import frameworks from '@/config/frameworks.json';
 
 const highlights = [
   {
+    title: 'v0.0.52: every check, everywhere',
+    description:
+      'The 21 checks that used to ship encrypted in the CLI are ordinary engine code, so rankcli audit, the MCP server and the GitHub Action (v1.1.1) run the same 280+ checks and give the same score. The JSON report carries the timestamp, the CLI version, the checks run and passed, and one entry per page. The CLI, the engine, the MCP server and the Action are published under the Functional Source License (FSL-1.1-MIT): free to read, run, change and embed; each version becomes MIT two years after its release.',
+  },
+  {
     title: 'Agentic Auto-Fix',
     description:
       'rankcli fix --auto --commit --push detects issues, applies fixes, commits with conventional messages, and pushes - full automation.',
@@ -43,7 +48,7 @@ export function ChangelogPage() {
     <div className="min-h-screen bg-background">
       <SEO
         title="Changelog"
-        description="What's new in RankCLI: agentic auto-fix, keyword rank tracking, GEO checks for AI search, the MCP server for AI assistants, and framework-specific fix recipes."
+        description="What's new in RankCLI: v0.0.52 runs every check in the CLI, the MCP server and the GitHub Action under the FSL-1.1-MIT license; agentic auto-fix, keyword rank tracking, GEO checks for AI search, the MCP server for AI assistants, and framework-specific fix recipes."
         path="/changelog"
       />
       <Navbar />

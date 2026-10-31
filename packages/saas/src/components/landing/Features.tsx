@@ -90,7 +90,7 @@ const features = [
   },
   {
     icon: Globe,
-    title: 'Open-Source GitHub Action',
+    title: 'GitHub Action',
     description:
       '`uses: integrallis/rankcli-action@v1` audits every deploy, comments on the pull request, and fails the build when SEO regresses.',
   },

@@ -13,9 +13,15 @@ like a regression when nothing has changed:
 
 | Measurement | Score | What it is |
 |---|---|---|
-| `--max-pages 1` | **90** on `@rankcli/cli@0.0.51` (85 on 0.0.50 until 2026-10-29; 80 on 0.0.49; 75 until 2026-10-14) | The homepage. **This is the number all launch copy cites.** |
+| `--max-pages 1` | **90** on `@rankcli/cli@0.0.52` and 0.0.51 (85 on 0.0.50 until 2026-10-29; 80 on 0.0.49; 75 until 2026-10-14) | The homepage. **This is the number all launch copy cites.** |
 | default crawl (5 pages) | 72 before 2026-10-14; 8 pages score 80 after | Averages in weaker inner pages |
 | SEO gate CI run | 81 (last checked 2026-10-02) | The published Action's own scope |
+
+**Re-verified 2026-10-30 on the published `@rankcli/cli@0.0.52`, from an empty directory:
+homepage 90/100, 0 errors, 2 warnings, 31 notices, AI Readiness 89, React; 310 checks run, 308
+passed.** 0.0.52 changed what ships (the 21 formerly encrypted checks run in the CLI, the MCP
+server and the Action alike; the JSON report gained timestamp, cliVersion, checksRun,
+checksPassed and pages), not the score.
 
 **Re-verified 2026-10-29 on the published `@rankcli/cli@0.0.51`, from an empty directory:
 homepage 90/100, 0 errors, 2 warnings, 31 notices, AI Readiness 89**, React. The move from 85

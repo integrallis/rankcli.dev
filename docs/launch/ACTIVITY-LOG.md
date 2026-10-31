@@ -91,7 +91,45 @@ and the developer channels have produced no measurable visit.
   run named after the file, no jobs, nothing published); fixed in both repos.
 - Still to do when it ships: the docs page on the site still documents `--fail-on <level>` and
   `fail-on-errors: true` (update with 0.0.53), and the Action needs a v1.2.0 release staged from
-  the merged `action.yml` and bundle. Founder clicks from 2026-10-29 are all still open.
+  the merged `action.yml` and bundle. Founder clicks from 2026-10-29: the release and the
+  Action are cut (next bullets); the visibility flip, the Homebrew/Scoop token and the Action's
+  FSL commit are open.
+- The founder cut both releases while the repository was still private: `v0.0.52` on
+  `integrallis/rankcli` (npm now has `@rankcli/cli` 0.0.52, `@rankcli/agent-runtime` 0.0.40
+  and `@rankcli/mcp-server` 0.0.25, all `FSL-1.1-MIT`; the binaries and the 0.0.25 `.mcpb`
+  are attached to the private release, so nobody outside can download them yet) and the
+  Action's `v1.1.1`, created from the v1.1.0 commit that was already pushed, so the Action
+  repository still carries the MIT license and the MIT-built bundle; the staged FSL commit in
+  the scratchpad clone was not pushed. The Marketplace lists it as "RankCLI SEO Audit". The
+  release's title still says "open source" while its body says "the source is published".
+- Homebrew and Scoop did not move: the "Publish Homebrew and Scoop" job reported success
+  while GitHub rejected the push ("Invalid username or token"), because the step treated a
+  failed push as "no formula change". The token on the new repository is not the one that
+  pushed 0.0.51 from the monorepo on 2026-10-29. Fixed on the public repo's main (`3a16c62`):
+  commit and push are separate steps and a failed push fails the job; and the job skips both
+  while the release assets cannot be downloaded without credentials, because a formula that
+  points at a private release breaks `brew install` for everyone. The taps still install
+  0.0.51 from `integrallis/rankcli-cli`, which is right until the flip.
+- The site now says what ships. Found and fixed: the docs claimed anonymous audits run 50
+  checks and free accounts 100 (every tier runs all 280+, in the CLI's own `TIER_LIMITS` and
+  in `pricing-tiers.json`); GitHub connect and auto-fix PRs were "Pro+" in three places of
+  the docs and in the dashboard's project form (Free has 3 a month, Solo unlimited with 1
+  open; the backend's `tier.ts` enforces exactly that); the REST API was "Agency only" (Solo
+  100, Pro 1,000, Agency 10,000 a day); `rankcli login` was documented as email/password by
+  default with a `--browser` flag (the browser is the default, `--no-browser` is the flag);
+  `rankcli setup` lacked `--url` and `--sync`; the CI example parsed JSON with jq instead of
+  `--fail-on error --min-score 80`; the landing page called the Action "Open-Source"; the
+  four comparison pages said MIT and "Marketplace listing pending"; the FAQ said paid plans
+  add scheduled audits and auto-fix PRs (Free has both). The changelog page leads with
+  v0.0.52 (every check everywhere, the JSON report fields, the FSL license). VERIFIED-NUMBERS
+  re-verified on the published 0.0.52: 90, 0/2/31, AI Readiness 89, 310 checks run.
+- Left as is on purpose until the repository is public: every GitHub link on the site (Hero,
+  Footer, About, Contact, SEO, Changelog, the `.mcpb` links in the docs and the blog) points
+  at `integrallis/rankcli-cli`, the public binaries repository whose latest release is
+  v0.0.51, and the comparison pages say the full source repository is not public yet. At the
+  flip: swap those links to `integrallis/rankcli`, reword that sentence, archive `rankcli-cli`
+  with a pointer, and re-run `native-release.yml` with `tag=v0.0.52` once
+  `PACKAGES_PUBLISH_TOKEN` is the working token.
 
 ### 2026-10-29
 
