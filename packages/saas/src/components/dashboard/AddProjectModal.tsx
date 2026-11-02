@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2, Globe, Github, ExternalLink } from 'lucide-react';
 import {
   Dialog,
@@ -18,9 +18,11 @@ interface AddProjectModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: { name: string; url: string; github_repo_url?: string }) => Promise<void>;
+  /** The site just audited on /free-audit, carried through signup. */
+  initialUrl?: string | null;
 }
 
-export function AddProjectModal({ open, onOpenChange, onSubmit }: AddProjectModalProps) {
+export function AddProjectModal({ open, onOpenChange, onSubmit, initialUrl }: AddProjectModalProps) {
   const [step, setStep] = useState<1 | 2>(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +31,17 @@ export function AddProjectModal({ open, onOpenChange, onSubmit }: AddProjectModa
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [githubUrl, setGithubUrl] = useState('');
+
+  useEffect(() => {
+    if (!open || !initialUrl) return;
+    setUrl(initialUrl);
+    try {
+      const domain = new URL(initialUrl).hostname.replace('www.', '');
+      setName(domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1));
+    } catch {
+      // Leave the name for the user.
+    }
+  }, [open, initialUrl]);
 
   const resetForm = () => {
     setStep(1);

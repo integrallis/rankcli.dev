@@ -376,16 +376,17 @@ export function FreeAuditPage() {
               <Card className="bg-primary/5 border-primary/20">
                 <CardContent className="py-8 text-center">
                   <h3 className="text-xl font-semibold mb-2">
-                    Want to Fix These Issues Automatically?
+                    Get these fixed in a pull request
                   </h3>
                   <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-                    RankCLI can automatically fix SEO issues and create pull requests.
-                    Track improvements over time and get alerts when new issues appear.
+                    Create a free account and connect the site's GitHub repository. RankCLI
+                    opens a pull request with the fixes; you review it and merge what you want.
+                    The first one runs on us, no AI key needed.
                   </p>
                   <div className="flex justify-center gap-4">
-                    <Link to="/signup">
+                    <Link to={`/signup?site=${encodeURIComponent(url)}`}>
                       <Button className="gap-2">
-                        Sign Up Free
+                        Fix this site in a PR
                         <ArrowRight className="h-4 w-4" />
                       </Button>
                     </Link>
