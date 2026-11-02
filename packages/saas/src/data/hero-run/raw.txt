@@ -1,0 +1,90 @@
+- Discovering pages...
+✔ Discovered 1 page to audit (React)
+- Auditing 1 page...
+
+🔍 Running comprehensive SEO audit on https://rankcli.dev...
+
+📋 Phase 1: Crawlability checks + page fetch (parallel)...
+📝 Phase 2: Running HTML checks...
+🔗 Phase 3: Running async checks (parallel)...
+
+✅ Audit complete!
+
+✔ Audited 1/1 page in 3512ms
+
+════════════════════════════════════════════════════════════
+  SEO AUDIT REPORT: https://rankcli.dev
+════════════════════════════════════════════════════════════
+
+  Score: 89/100
+  Pages audited: 1
+  Issues found: 35
+  Time: 4017ms
+  Framework: React
+
+  Health Scores:
+    Crawlability:  ███████████████████░ 95%
+    On-Page:       █████████████████░░░ 85%
+    Content:       ██████████████░░░░░░ 70%
+    Performance:   ███████████░░░░░░░░░ 56%
+    Security:      ███████████████████░ 95%
+    Local SEO:     ███████████████████░ 96%
+    AI Readiness:  ██████████████████░░ 89%
+
+  Issues by Severity:
+    ● Errors:   0
+    ● Warnings: 3
+    ● Notices:  32
+
+  Warnings (3):
+    ! Render-blocking resources detected  RENDER_BLOCKING_RESOURCES
+    ! Missing preconnect hints for third-party origins  MISSING_PRECONNECT
+    ! Statistics without source citations  AI_UNCITED_STATISTICS
+
+  Notices (32):
+    i Low text-to-HTML ratio  LOW_TEXT_HTML_RATIO
+    i Meta description will be truncated in SERP  META_DESC_TRUNCATED_SERP
+    i No business address detected  ADDRESS_NOT_DETECTED
+    i No phone number detected  PHONE_NOT_DETECTED
+    i Top keywords not in H1  NO_KEYWORDS_IN_H1
+    i Content not structured for featured snippets  INVERTED_PYRAMID_MISSING
+    i Hero image not preloaded  HERO_IMAGE_NOT_PRELOADED
+    i No first-hand experience signals detected  NO_EXPERIENCE_SIGNALS
+    i Commercial content without trust signals  COMMERCIAL_NO_TRUST_BADGES
+    i Above-fold images have lazy loading  HERO_IMAGE_LAZY
+    i No testimonials or reviews found  NO_SOCIAL_PROOF
+    i No breadcrumb navigation detected  NO_BREADCRUMBS
+    i No related content section  NO_RELATED_CONTENT
+    i Page lacks dwell time optimization  LOW_DWELL_TIME_SIGNALS
+    i Page has high bounce risk signals  HIGH_BOUNCE_RISK
+    i Missing entity definition in content  NO_ENTITY_DEFINITION
+    i Low AI citation readiness for fresh content  LOW_AI_CITATION_READINESS
+    i Comparison content without table format  AI_NO_COMPARISON_TABLE
+    i Most sections are poorly sized for AI retrieval chunking  RAG_CHUNK_SIZE_MISMATCH
+    i No dedicated references section  AI_NO_REFERENCES_SECTION
+    i Content citation quality needs improvement  AI_LOW_CITATION_QUALITY
+    i Questions lack direct, quotable answers  AI_INDIRECT_ANSWERS
+    i No original data or research signals  AI_NO_ORIGINAL_DATA
+    i Content lacks AI-proof originality signals  AI_LOW_CITATION_WORTHINESS
+    i Consider using CSS aspect-ratio for images  IMAGES_NO_ASPECT_RATIO
+    i Bing Webmaster Tools verification not found  BING_VERIFICATION_MISSING
+    i Missing Content-Security-Policy header  CSP_MISSING
+    i Static assets have short cache duration  CACHING_STATIC_SHORT_TTL
+      affects 2 pages
+    i Missing cache validators (ETag/Last-Modified)  CACHING_NO_VALIDATORS
+    i No agent-facing discovery surface found  NO_AGENT_EXPERIENCE_SURFACE
+    i No Last-Modified header  NO_LAST_MODIFIED
+    i IndexNow not implemented  INDEXNOW_NOT_IMPLEMENTED
+
+  Description, impact and fix for each issue: rankcli audit -u https://rankcli.dev -o json
+
+════════════════════════════════════════════════════════════
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🚀 Keep this site audited, free
+  A free account audits one site weekly, keeps the history and
+  emails you a weekly report.
+
+  → rankcli login
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
