@@ -253,3 +253,8 @@ day, broke `supabase db push` in Deploy SaaS. The CLI is pinned to 2.122.1 in a 
 that has not been pushed. Until it is pushed and Deploy SaaS runs with functions, the
 dashboard already counts PRs the new way while the server still counts the old way, so a Free
 user who closed a PR can see an allowance the server will refuse.
+
+**Fixed, 2026-11-02 22:49 UTC.** The pin was pushed (`074deda`) and Deploy SaaS run
+41540174917, dispatched with functions and migrations, succeeded: the remote database was
+already up to date, and create-seo-pr and the other 41 edge functions were deployed. 3.1 and
+1.1 are live, and the dashboard and server count PRs the same way again.
