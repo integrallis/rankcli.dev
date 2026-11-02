@@ -75,7 +75,11 @@ export function analyzeImage($: cheerio.CheerioAPI, img: any, index: number): Im
   // Estimate if above fold (very rough - based on element order)
   // Images in first 3 <img> tags or in header/hero are likely above fold
   const isInHeader = $img.closest('header, [class*="hero"], [class*="banner"], [class*="jumbotron"]').length > 0;
-  const isAboveFold = index < 3 || isInHeader;
+  // A footer image is never above the fold, however few images precede it. On a page with
+  // one or two images the "first 3" rule otherwise reads a footer badge as the hero: it did
+  // on rankcli.dev on 2026-11-02 (HERO_IMAGE_LAZY on the ProgrammerNeeds footer badge).
+  const isInFooter = $img.closest('footer, [role="contentinfo"]').length > 0;
+  const isAboveFold = !isInFooter && (index < 3 || isInHeader);
 
   // Generate issues
   if (!hasExplicitDimensions) {

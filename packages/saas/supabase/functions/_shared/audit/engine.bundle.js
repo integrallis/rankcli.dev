@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-10-30T02:06:53.860Z
+// Generated: 2026-11-02T21:15:41.751Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -23297,7 +23297,8 @@ function analyzeImage($, img, index) {
   const srcLower = src.toLowerCase();
   const usesModernFormat = MODERN_FORMATS2.some((fmt) => srcLower.includes(fmt));
   const isInHeader = $img.closest('header, [class*="hero"], [class*="banner"], [class*="jumbotron"]').length > 0;
-  const isAboveFold = index < 3 || isInHeader;
+  const isInFooter = $img.closest('footer, [role="contentinfo"]').length > 0;
+  const isAboveFold = !isInFooter && (index < 3 || isInHeader);
   if (!hasExplicitDimensions) {
     issues.push("Missing width/height attributes (causes CLS)");
   }

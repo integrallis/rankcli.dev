@@ -36,4 +36,16 @@ describe('responsive images', () => {
     const found = await codes(`<html><body>${img(6, 'width="80" height="60"')}</body></html>`);
     expect(found.map((f) => f.code)).not.toContain('IMAGES_MISSING_DIMENSIONS');
   });
+
+  // rankcli.dev, 2026-11-02: a lazily loaded badge in the footer was the page's only <img>, so
+  // the "first 3 images" rule called it the hero and raised HERO_IMAGE_LAZY.
+  it('does not treat a lazy footer image as the hero', async () => {
+    const page = `<html><body><main><h1>Hi</h1></main><footer><img src="/badge.svg" alt="badge" width="220" height="54" loading="lazy"></footer></body></html>`;
+    expect((await codes(page)).map((f) => f.code)).not.toContain('HERO_IMAGE_LAZY');
+  });
+
+  it('still flags a lazy hero image', async () => {
+    const page = `<html><body><main><img src="/hero.png" alt="hero" width="800" height="400" loading="lazy"></main><footer></footer></body></html>`;
+    expect((await codes(page)).map((f) => f.code)).toContain('HERO_IMAGE_LAZY');
+  });
 });
