@@ -138,10 +138,24 @@ export function Footer() {
         </div>
 
         {/* Bottom */}
-        <div className="mt-12 pt-8 border-t border-border/40">
-          <p className="text-sm text-muted-foreground text-center">
+        <div className="mt-12 pt-8 border-t border-border/40 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground text-center md:text-left">
             &copy; {new Date().getFullYear()} Integrallis Software, LLC. All rights reserved.
           </p>
+          <a
+            href="https://programmerneeds.com/tools/rankcli?utm_source=maker-site&utm_medium=badge&utm_campaign=rankcli"
+            target="_blank"
+            rel="noopener"
+            className="opacity-70 hover:opacity-100 transition-opacity"
+          >
+            <img
+              src="https://programmerneeds.com/api/badge/rankcli?v=10"
+              alt="Find RankCLI on ProgrammerNeeds"
+              width={220}
+              height={54}
+              loading="lazy"
+            />
+          </a>
         </div>
       </ScrollReveal>
     </footer>

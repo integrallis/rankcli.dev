@@ -75,6 +75,21 @@ and the developer channels have produced no measurable visit.
   Action with its release. Note for the record: `!`-prefixed commands typed into this session
   never reached GitHub, so those go through a normal terminal.
 
+
+### 2026-11-01
+
+- **ProgrammerNeeds listing assets made**, in `ad-assets/programmerneeds-2026-11-01/`. The form
+  (programmerneeds.com/submit) takes a logo (PNG/JPEG/WebP, 2 MB), up to five screenshots (5 MB
+  each) and a demo video as a YouTube or Loom link, so the video has to be uploaded by the
+  founder and the link pasted. Everything is from a real run: `rankcli audit -u
+  https://rankcli.dev --max-pages 1` on the published `@rankcli/cli@0.0.52` from a clean
+  install, recorded with asciinema, **90/100, 0 errors, 2 warnings, 31 notices, AI Readiness
+  89, React**, the same figures as VERIFIED-NUMBERS. Screenshots: the terminal report, the
+  dashboard project page for that run, the auto-fix PR `integrallis-test/rankcli-e2e-smoketest#1`
+  (conversation and diff), and the homepage. Video: 22 s, 1920x1080, the command, the live
+  audit, a scroll back to the score, then the dashboard. The 2026-09-28 creatives in
+  `ad-assets/` still show 75/100 and were not touched.
+
 ### 2026-10-31
 
 - **Action v1.1.2 is out and the taps are still on 0.0.51.** The founder pushed the prepared
