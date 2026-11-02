@@ -245,3 +245,11 @@ Done the same day, second pass:
 **Next reading:** re-run the 0.1 report after the carry-through has been live for two weeks.
 The question is whether accounts with an audit start connecting GitHub.
 
+
+**Deploy status, 2026-11-02.** The website changes are live (hero recording, copy, the
+free-audit carry-through). The edge-function changes are not: 3.1 (rejected PRs given back)
+and 1.1 (no invented business facts) failed to deploy because Supabase CLI v3, released that
+day, broke `supabase db push` in Deploy SaaS. The CLI is pinned to 2.122.1 in a local commit
+that has not been pushed. Until it is pushed and Deploy SaaS runs with functions, the
+dashboard already counts PRs the new way while the server still counts the old way, so a Free
+user who closed a PR can see an allowance the server will refuse.
