@@ -3,7 +3,7 @@
 # =============================================================================
 # Deploys frontend to Cloudflare Pages, audit worker to Fly.io,
 # and runs Supabase migrations
-# Triggered on release creation or manual dispatch
+# Triggered by a push to main that touches the audit worker, or by manual dispatch
 #
 # Required Secrets (set in GitHub repo Settings > Secrets):
 # - CLOUDFLARE_API_TOKEN
@@ -27,8 +27,11 @@
 name: Deploy
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [main]
+    paths:
+      - 'packages/audit-worker/**'
+      - '.github/workflows/deploy.yml'
   workflow_dispatch:
     inputs:
       deploy_frontend:
@@ -126,7 +129,7 @@ jobs:
         id: filter
         with:
           # push events (if this workflow ever gets one) have a real
-          # before-SHA to diff against; release/workflow_dispatch don't, so
+          # before-SHA to diff against; workflow_dispatch doesn't, so
           # fall back to just the most recent commit - an honest "did the
           # last change touch this path", not a guess at some undefined
           # "since last deploy" window this repo doesn't track anywhere.
@@ -142,7 +145,6 @@ jobs:
               - 'packages/saas/src/config/pricing-tiers.json'
             worker:
               - 'packages/audit-worker/**'
-              - 'packages/agent-runtime/**'
 
   # ---------------------------------------------------------------------------
   # Deploy Frontend to Cloudflare Pages
@@ -154,7 +156,6 @@ jobs:
     if: |
       needs.preflight.outputs.ready == 'true' && (
         github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_frontend == 'true' ||
-        github.event_name == 'release' ||
         needs.changes.outputs.frontend == 'true'
       )
 
@@ -219,7 +220,6 @@ jobs:
     if: |
       needs.preflight.outputs.ready == 'true' && (
         github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_worker == 'true' ||
-        github.event_name == 'release' ||
         needs.changes.outputs.worker == 'true'
       )
 
@@ -327,7 +327,6 @@ jobs:
     if: |
       needs.preflight.outputs.ready == 'true' && (
         github.event_name == 'workflow_dispatch' && (github.event.inputs.run_migrations == 'true' || github.event.inputs.deploy_edge_functions == 'true') ||
-        github.event_name == 'release' ||
         needs.changes.outputs.migrations == 'true' ||
         needs.changes.outputs.functions == 'true'
       )
@@ -342,12 +341,12 @@ jobs:
       - name: Determine deploy scope
         id: scope
         run: |
-          if [ "${{ github.event_name == 'release' || needs.changes.outputs.migrations == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.run_migrations == 'true') }}" = "true" ]; then
+          if [ "${{ needs.changes.outputs.migrations == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.run_migrations == 'true') }}" = "true" ]; then
             echo "migrations=true" >> "$GITHUB_OUTPUT"
           else
             echo "migrations=false" >> "$GITHUB_OUTPUT"
           fi
-          if [ "${{ github.event_name == 'release' || needs.changes.outputs.functions == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_edge_functions == 'true') }}" = "true" ]; then
+          if [ "${{ needs.changes.outputs.functions == 'true' || (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_edge_functions == 'true') }}" = "true" ]; then
             echo "functions=true" >> "$GITHUB_OUTPUT"
           else
             echo "functions=false" >> "$GITHUB_OUTPUT"

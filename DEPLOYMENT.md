@@ -695,21 +695,15 @@ When a refund is processed in Stripe:
 
 ---
 
-## CLI Package Build
+## CLI, engine, MCP server, Action and plugins
 
-Plain TypeScript; Node and pnpm are the only prerequisites. (Until 2026-10 the CLI carried a
-Rust/WASM binary with 21 encrypted checks and needed a build key. Those checks are ordinary
-engine code now.)
-
-```bash
-cd packages/agent-runtime && pnpm build   # the CLI bundle externalizes the runtime
-cd ../cli && pnpm build:js
-pnpm test
-node scripts/verify-premium-audit.js      # the built CLI reports the 21 checks' codes
-```
-
-The published package also gets `pnpm inject-config` (Supabase URL and anon key), which
-build-cli.yml runs before `npm publish`.
+They are built, tested and released from https://github.com/integrallis/rankcli (npm,
+binaries, Homebrew, Scoop, the `.mcpb`, the Marketplace Action). This repository consumes
+the engine as a package: the edge functions import a tracked copy of the published Deno
+bundle (`pnpm --filter @rankcli/saas sync:engine` refreshes it after bumping
+`@rankcli/agent-runtime` in `packages/saas/package.json`), and the audit worker depends on
+`@rankcli/agent-runtime` and `@rankcli/mcp-server` from npm. A worker bump deploys on push
+to main (`deploy.yml`).
 
 ---
 
