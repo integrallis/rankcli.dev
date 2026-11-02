@@ -1486,7 +1486,8 @@ function GitHubSection() {
         <div className="mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg">
           <h4 className="font-medium text-yellow-600 dark:text-yellow-400 mb-2">Limits by plan</h4>
           <p className="text-sm text-muted-foreground">
-            Free accounts get 3 auto-fix PRs a month, 1 open at a time. Paid plans have no monthly cap:
+            Free accounts get 3 auto-fix PRs a month, 1 open at a time, and a PR you close without
+            merging is given back. Paid plans have no monthly cap:
             1 open PR per site on Solo, 3 on Pro and 10 on Agency (3, 5 and 10 per report).
             rankcli fix applies the same fixes locally on every plan, with or without an account.
           </p>

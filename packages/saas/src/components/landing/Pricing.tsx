@@ -55,7 +55,7 @@ const freeTier = {
   highlights: [
     'Unlimited CLI / MCP / GitHub Action audits (your own AI key)',
     `1 site audited weekly, all ${pricingConfig.free_registered.checks_limit}+ checks`,
-    `${pricingConfig.free_registered.auto_fix_prs_per_month} auto-fix PRs a month`,
+    `${pricingConfig.free_registered.auto_fix_prs_per_month} auto-fix PRs a month (a PR you close unmerged is given back)`,
     'Local fixes with rankcli fix',
     'README score badge & weekly email report',
   ],

@@ -545,7 +545,11 @@ serve(async (req) => {
 
     // Monthly allowance. null = unlimited. Only auto-fix PRs count: a CI-setup PR is a
     // one-off template commit and charging quota for the thing that gets SEO into CI
-    // would be taxing the on-ramp.
+    // would be taxing the on-ramp. A PR closed unmerged doesn't count either: the user
+    // rejected the fix, its issues are handed back for a retry (see the issue release
+    // below), and charging for a fix nobody wanted would bill for our failure. Merged and
+    // still-open PRs count. The open-PR and per-report caps still bound how fast a user
+    // can cycle PRs.
     const monthlyAllowance = limits.autoFixPrsPerMonth;
     let prsThisMonth = 0;
     if (monthlyAllowance !== null) {
@@ -557,6 +561,7 @@ serve(async (req) => {
         .select('id, projects!inner(user_id)', { count: 'exact', head: true })
         .eq('projects.user_id', project.user_id)
         .eq('kind', 'auto_fix')
+        .neq('pr_state', 'closed')
         .gte('created_at', monthStart.toISOString());
       prsThisMonth = count ?? 0;
       if (prsThisMonth >= monthlyAllowance) {

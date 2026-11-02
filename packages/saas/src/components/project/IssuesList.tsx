@@ -278,7 +278,7 @@ export function IssuesList({
         : `All ${openPrsAllowed} of this project's fix PRs are open - merge or close one first.`
       : prsExhausted
         ? monthIsTheLimit
-          ? `Your ${planName ?? 'current'} plan includes ${prsAllowedThisMonth} auto-fix PRs a month, and this month's are used. Upgrade for unlimited.`
+          ? `Your ${planName ?? 'current'} plan includes ${prsAllowedThisMonth} auto-fix PRs a month, and this month's are used. PRs closed unmerged don't count. Upgrade for unlimited.`
           : `This report has opened its ${prsAllowedForReport} PRs. Run a new audit to open more.`
       : monthIsTheLimit && monthRemaining !== null
         ? `${monthRemaining} of ${prsAllowedThisMonth} auto-fix PRs left this month on ${planName ?? 'your plan'}`
