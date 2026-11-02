@@ -827,18 +827,23 @@ rankcli whoami              Show current logged in user`}
       <section id="audit">
         <h3 className="text-xl font-semibold mb-4">rankcli audit</h3>
         <p className="text-muted-foreground mb-4">
-          Run the full audit on a URL (or on the url in rankcli.config.json when --url is omitted). The console report lists every issue with its code; -o json adds the fix for each.
+          Run the full audit on a URL, or on a build directory with --dir (the url in rankcli.config.json fills in when --url is omitted). The console report lists every issue with its code; -o json adds the fix for each, and -o sarif and -o junit feed Code Scanning and test reporters.
         </p>
         <CodeBlock
           code={`rankcli audit [options]
 
 Options:
-  -u, --url <url>           URL to audit
-  -o, --output <format>     Output format (json, console) (default: console)
-  --max-pages <n>           Max pages to crawl (default: 5)
+  -u, --url <url>           URL to audit (or the url in rankcli.config.json)
+  --dir <path>              Audit a build directory (dist, out, build) served locally; --url names the site it is built for
+  -o, --output <format>     Output: console (default), json, sarif, junit
+  --max-pages <n>           Pages to audit, the sitemap first (default: 5)
   --check-links             Check for broken internal/external links (slower)
-  --fail-on <level>         CI gate: exit 1 on any issue at or above error, warning or notice
-  --min-score <n>           CI gate: exit 1 if the score is below n
+  --fail-on <rules>         CI gate: error | warning | notice, score<80, score:aiReadiness<70 (comma-separated or repeated)
+  --min-score <n>           CI gate: the same as --fail-on score<n
+  --baseline <file>         A saved JSON report; --fail-on then counts only issues that are not in it
+  --header <header>         "Name: value" sent with every request to the site (repeatable)
+  --cookie <cookie>         "name=value" sent with every request to the site (repeatable)
+  --config <file>           Config file (default: rankcli.config.json in the current directory)
   --ai                      AI analysis on your own provider (Apple Intelligence on a
                             Mac that has it; otherwise your key or a local model)
   --ai-provider <provider>  apple, openrouter, openai, anthropic, groq, gemini, deepseek,
@@ -851,12 +856,21 @@ Options:
         <p className="text-muted-foreground mt-4 mb-2">Exit codes, so a pipeline can tell a failed gate from a site that was down:</p>
         <ul className="list-disc list-inside text-muted-foreground mb-4 space-y-1">
           <li><code>0</code>: the audit completed and no --fail-on or --min-score gate tripped</li>
-          <li><code>1</code>: a --fail-on or --min-score gate tripped</li>
-          <li><code>2</code>: bad invocation (missing or invalid --url, invalid flag value)</li>
+          <li><code>1</code>: a gate tripped: --fail-on, --min-score or a budget in rankcli.config.json</li>
+          <li><code>2</code>: bad invocation: missing or invalid --url or --dir, invalid flag value, invalid config or baseline file</li>
           <li><code>3</code>: no real audit: the site was unreachable, answered 4xx/5xx, or no page could be analyzed</li>
         </ul>
         <p className="text-muted-foreground mb-4">
-          The gates are opt-in: without them a completed audit exits 0 however many issues it finds. With -o json, stdout is always one JSON document (on failure too) carrying exitCode, timestamp, cliVersion, a per-page breakdown and, when gates are set, a gate object with the reasons.
+          The gates are opt-in: without them a completed audit exits 0 however many issues it finds. With -o json, stdout is always one JSON document (on failure too) carrying exitCode, timestamp, cliVersion, a per-page breakdown, where each page came from, the ignored findings and, when gates are set, a gate object with the reasons. -o sarif writes SARIF 2.1.0 for GitHub Code Scanning and -o junit JUnit XML for test reporters, each one document on stdout, on failure too.
+        </p>
+        <h4 className="font-medium mt-6 mb-2">CI gates and baselines</h4>
+        <p className="text-muted-foreground mb-4">
+          One rule syntax, in --fail-on, in rankcli.config.json and in the GitHub Action: error, warning or notice fails on any issue at or above that severity, score&lt;80 on the overall score, score:aiReadiness&lt;70 on a category. Rules combine. To adopt the gate on an existing site, save a report once and commit it: with --baseline, the severity rule counts only findings that are not in it, and the report lists what is new, fixed and unchanged. rankcli diff compares any two saved reports.
+        </p>
+        <CodeBlock code="rankcli audit -o json > .rankcli/baseline.json" />
+        <CodeBlock code="rankcli audit --fail-on error,score<80 --baseline .rankcli/baseline.json" />
+        <p className="text-muted-foreground mt-4 mb-4">
+          rankcli.config.json holds the same settings for the project: url, maxPages, failOn, minScore, budgets (minimum category scores), baseline, ignore rules by code or page, headers for protected previews (values may use env vars) and dir. Flags win over the file, and an invalid file is exit 2, never ignored.
         </p>
         <h4 className="font-medium mt-6 mb-2">Examples</h4>
         <CodeBlock code="# Basic audit" />
@@ -865,6 +879,12 @@ Options:
         <CodeBlock code="rankcli audit --url https://example.com --max-pages 10 -o json > report.json" />
         <CodeBlock code="# AI-enhanced audit" />
         <CodeBlock code="rankcli audit --url https://example.com --ai" />
+        <CodeBlock code="# Audit the build before deploying" />
+        <CodeBlock code="rankcli audit --dir dist --url https://example.com --fail-on error" />
+        <CodeBlock code="# A protected preview" />
+        <CodeBlock code="rankcli audit --url https://preview.example.com --header &quot;x-vercel-protection-bypass: $BYPASS&quot;" />
+        <CodeBlock code="# SARIF for GitHub Code Scanning" />
+        <CodeBlock code="rankcli audit --url https://example.com -o sarif > rankcli.sarif" />
       </section>
 
       {/* rankcli fix */}
@@ -1820,7 +1840,7 @@ function WorkflowsSection() {
           CI/CD Integration
         </h3>
         <p className="text-muted-foreground mb-4">
-          Run SEO audits as part of your CI/CD pipeline to catch issues before deployment.
+          Run the audit in CI and fail the build on regressions. One rule syntax in the CLI, in rankcli.config.json and in the GitHub Action, and a committed baseline so an existing site adopts the gate without first fixing every old finding.
         </p>
         <h4 className="font-medium mb-2">GitHub Actions</h4>
         <CodeBlock
@@ -1834,25 +1854,41 @@ jobs:
   audit:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v7          # for rankcli.config.json and the baseline
+
       - name: Install RankCLI
         run: npm install -g @rankcli/cli
 
       - name: Run SEO Audit
-        run: rankcli audit --url \${{ secrets.SITE_URL }} --fail-on error --min-score 80
-        env:
-          RANKCLI_API_KEY: \${{ secrets.RANKCLI_API_KEY }}`}
+        run: rankcli audit --url \${{ secrets.SITE_URL }} --fail-on error,score<80 --baseline .rankcli/baseline.json`}
         />
 
         <h4 className="font-medium mt-6 mb-2">Using the GitHub Action</h4>
         <p className="text-muted-foreground mb-4">
-          Alternatively, use our official GitHub Action:
+          The GitHub Action runs the same audit, annotates the run with the findings and keeps one pull request comment up to date, posted on regressions only. No API key is needed.
         </p>
         <CodeBlock
-          code={`- uses: integrallis/rankcli-action@v1
+          code={`- uses: actions/checkout@v7
+- uses: integrallis/rankcli-action@v1
   with:
-    url: \${{ secrets.SITE_URL }}
-    api-key: \${{ secrets.RANKCLI_API_KEY }}
-    fail-on-errors: true`}
+    url: https://your-site.com          # or a preview URL from your deploy step
+    fail-on: error,score<80
+    baseline: .rankcli/baseline.json    # optional: only new findings fail the build`}
+        />
+        <p className="text-muted-foreground mt-4 mb-4">
+          Audit the build output before it is deployed, and send the findings to Code Scanning:
+        </p>
+        <CodeBlock
+          code={`- run: npm ci && npm run build
+- uses: integrallis/rankcli-action@v1
+  with:
+    dir: dist
+    url: https://your-site.com
+    fail-on: error
+- run: npx @rankcli/cli audit --dir dist --url https://your-site.com -o sarif > rankcli.sarif
+- uses: github/codeql-action/upload-sarif@v3
+  with:
+    sarif_file: rankcli.sarif`}
         />
       </section>
     </div>

@@ -48,7 +48,7 @@
         },
         {
           "aspect": "CI gating",
-          "rankcli": "--fail-on error|warning|notice and --min-score N; exit 0 pass, 1 gate failed, 2 bad invocation, 3 site unreachable, so a down site never passes. The Action posts a PR comment and can alert Slack or Discord. README badge on the hosted Free plan. No SARIF output.",
+          "rankcli": "--fail-on error|warning|notice, score<N and score:category<N, the same rules in rankcli.config.json and in the Action; a committed baseline so only new findings fail the build; -o sarif for the GitHub Security tab and -o junit for test reporters; ignore rules by code or page. Exit 0 pass, 1 gate failed, 2 bad invocation, 3 site unreachable, so a down site never passes. The Action annotates the run, keeps one PR comment updated in place (posted on regressions only) and can alert Slack or Discord. README badge on the hosted Free plan.",
           "rival": "Assertions at off, warn or error with minScore, maxLength and maxNumericValue, presets, and budget files; error exits non-zero. GitHub status checks through the LHCI GitHub App or a token. No PR comments, SARIF or badges stated.",
           "source": "https://github.com/GoogleChrome/lighthouse-ci/blob/main/docs/configuration.md"
         },
@@ -172,7 +172,7 @@
         },
         {
           "aspect": "CI gating",
-          "rankcli": "--fail-on error|warning|notice and --min-score N; exit 0 pass, 1 gate failed, 2 bad invocation, 3 site unreachable, so a down site never passes. The Action posts a PR comment and can alert Slack or Discord. README badge on the hosted Free plan. No SARIF output.",
+          "rankcli": "--fail-on error|warning|notice, score<N and score:category<N, the same rules in rankcli.config.json and in the Action; a committed baseline so only new findings fail the build; -o sarif for the GitHub Security tab and -o junit for test reporters; ignore rules by code or page. Exit 0 pass, 1 gate failed, 2 bad invocation, 3 site unreachable, so a down site never passes. The Action annotates the run, keeps one PR comment updated in place (posted on regressions only) and can alert Slack or Discord. README badge on the hosted Free plan.",
           "rival": "--fail-on with score<N, per-category scores, severity>=error, errors>0, warnings>0; exit 2 when a threshold trips. The Action posts a PR summary comment. Badges on every plan from a published report. SARIF not stated.",
           "source": "https://docs.squirrelscan.com/guides/ci"
         },
@@ -301,7 +301,7 @@
         },
         {
           "aspect": "CI gating",
-          "rankcli": "--fail-on error|warning|notice and --min-score N; exit 0 pass, 1 gate failed, 2 bad invocation, 3 site unreachable, so a down site never passes. The Action posts a PR comment and can alert Slack or Discord. README badge on the hosted Free plan. No SARIF output.",
+          "rankcli": "--fail-on error|warning|notice, score<N and score:category<N, the same rules in rankcli.config.json and in the Action; a committed baseline so only new findings fail the build; -o sarif for the GitHub Security tab and -o junit for test reporters; ignore rules by code or page. Exit 0 pass, 1 gate failed, 2 bad invocation, 3 site unreachable, so a down site never passes. The Action annotates the run, keeps one PR comment updated in place (posted on regressions only) and can alert Slack or Discord. README badge on the hosted Free plan.",
           "rival": "geo audit --threshold 70 exits 1 below 70; the Action fails below min-score; SARIF output for the GitHub Security tab; JUnit and GitHub formats. A public badge re-audited hourly, no account needed. PR comments not stated.",
           "source": "https://github.com/Auriti-Labs/geo-optimizer-skill"
         },
@@ -338,7 +338,6 @@
       ],
       "pickRival": [
         "You only want the AI-search angle, scored 0 to 100, from Python.",
-        "You need SARIF in the GitHub Security tab or a JUnit report.",
         "You want a public badge with no account at all.",
         "You want citation tracking across many AI engines with your own keys."
       ],
@@ -414,7 +413,7 @@
         },
         {
           "aspect": "CI gating",
-          "rankcli": "--fail-on error|warning|notice and --min-score N; exit 0 pass, 1 gate failed, 2 bad invocation, 3 site unreachable, so a down site never passes. The Action posts a PR comment and can alert Slack or Discord. README badge on the hosted Free plan. No SARIF output.",
+          "rankcli": "--fail-on error|warning|notice, score<N and score:category<N, the same rules in rankcli.config.json and in the Action; a committed baseline so only new findings fail the build; -o sarif for the GitHub Security tab and -o junit for test reporters; ignore rules by code or page. Exit 0 pass, 1 gate failed, 2 bad invocation, 3 site unreachable, so a down site never passes. The Action annotates the run, keeps one PR comment updated in place (posted on regressions only) and can alert Slack or Discord. README badge on the hosted Free plan.",
           "rival": "None stated: the CLI exports tabs and reports; no threshold exit codes, PR comments, SARIF or badges are documented.",
           "source": "https://www.screamingfrog.co.uk/seo-spider/user-guide/general/"
         },
