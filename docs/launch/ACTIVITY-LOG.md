@@ -74,6 +74,22 @@ and the developer channels have produced no measurable visit.
   integrallis/rankcli (it publishes npm, binaries, the .mcpb and the taps) and push the staged
   Action with its release. Note for the record: `!`-prefixed commands typed into this session
   never reached GitHub, so those go through a normal terminal.
+- **v0.0.53 and Action v1.2.0 shipped.** The founder created the v0.0.53 release at 19:48 UTC
+  and pushed the staged Action at 19:49. `release.yml` published `@rankcli/agent-runtime`
+  0.0.41, `@rankcli/mcp-server` 0.0.26 and `@rankcli/cli` 0.0.53 (both pin ^0.0.41) under
+  FSL-1.1-MIT; `native-release.yml` attached the five binaries and `rankcli-0.0.26.mcpb` and
+  pushed Homebrew and Scoop to 0.0.53. rankcli-action main `e676d35`, tags `v1` and `v1.2.0`
+  on it, release "v1.2.0: the audit as a CI gate", Marketplace shows v1.2.0; the repo
+  description now matches action.yml. The 0.0.53 docs branch merged to main and deployed
+  (run 41514873898); /docs shows "CI gates and baselines", /compare/geoready the new CI row,
+  /changelog the v0.0.53 highlight. Re-verified from an empty directory on the published
+  0.0.53: rankcli.dev homepage 89, 0 errors, 3 warnings, 32 notices, AI Readiness 89, 310
+  checks run, 307 passed; `--fail-on score<95` exits 1 with the reasons in the JSON; `-o sarif`
+  is valid SARIF 2.1.0. The point lost since 2026-10-30 is the site, not the CLI: 0.0.52 gives
+  the same 89 the same minute, and `rankcli diff` on the two reports shows 0 new, 0 fixed. The
+  two new findings come from the ProgrammerNeeds badge another session added to the footer
+  today (`MISSING_PRECONNECT` warning, `HERO_IMAGE_LAZY` notice; performance 72 to 56). The
+  notice is an engine false positive to fix: a footer image is not above the fold.
 
 
 ### 2026-11-01
