@@ -46,6 +46,20 @@ appears in any week, and Google search sent about 10 page loads a week. So the o
 that produced signups reached SEO freelancers, which fits a $9 to $99 developer tool badly,
 and the developer channels have produced no measurable visit.
 
+### 2026-11-02
+
+- **Homebrew and Scoop install 0.0.52 from integrallis/rankcli.** The publish needed three
+  tries at `PACKAGES_PUBLISH_TOKEN` on the public repo: the first value was the npm token
+  (rejected "Invalid username or token"), the second was empty (a bare `gh secret set` through
+  the `!` runner reads nothing from stdin), the third was the classic PAT from `.env`, piped in
+  without passing through chat, which GitHub accepted but which had no scopes, so the tap push
+  got 403 (run 41364251716). The founder added `public_repo` to that PAT at
+  github.com/settings/tokens (both taps are public; the secret value stays the same), and run
+  41493122480 then pushed `homebrew-tap` `b1ccb04` and `scoop-bucket` `36206f7`: version
+  0.0.52, license FSL-1.1-MIT, URLs on integrallis/rankcli, all five sha256 values equal to
+  the release assets' digests. Still open: archive integrallis/rankcli-cli (nothing points at
+  it now except old formula revisions) and merge PR #1.
+
 ### 2026-10-31
 
 - **Action v1.1.2 is out and the taps are still on 0.0.51.** The founder pushed the prepared
