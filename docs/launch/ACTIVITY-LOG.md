@@ -59,6 +59,21 @@ and the developer channels have produced no measurable visit.
   0.0.52, license FSL-1.1-MIT, URLs on integrallis/rankcli, all five sha256 values equal to
   the release assets' digests. Still open: archive integrallis/rankcli-cli (nothing points at
   it now except old formula revisions) and merge PR #1.
+- **PR #1 merged, rankcli-cli archived, 0.0.53 and Action v1.2.0 staged.** The founder merged
+  the CI-plumbing PR (public main `7989a11`, CI green on all seven jobs) and archived
+  integrallis/rankcli-cli. From the session: release notes for v0.0.53 (one rule syntax for
+  the gate, baselines and `rankcli diff`, SARIF and JUnit, `--dir`, `--header`/`--cookie`,
+  `rankcli.config.json`, Action v1.2.0) and for the Action; Action v1.2.0 built and staged
+  with the package's own `publish-action.sh` in the scratchpad clone (branch `release-1.2.0`,
+  commit `e676d35`, tags `v1.2.0` and `v1`, 42 tests incl. the bundle tests pass, README and
+  LICENSE say FSL); the site docs for 0.0.53 on the monorepo branch `docs-0.0.53` (`50246db`:
+  audit options, exit codes, a gates-and-baselines block, CI examples with `fail-on`,
+  `baseline`, `dir` and a SARIF upload, the comparison pages' CI row and the "you need SARIF"
+  reason to pick geoready gone, a changelog highlight), typechecked and tested, to merge once
+  0.0.53 is on npm. Two founder clicks remain: create the v0.0.53 release on
+  integrallis/rankcli (it publishes npm, binaries, the .mcpb and the taps) and push the staged
+  Action with its release. Note for the record: `!`-prefixed commands typed into this session
+  never reached GitHub, so those go through a normal terminal.
 
 ### 2026-10-31
 
