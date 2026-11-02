@@ -234,9 +234,6 @@ gh secret set AUDIT_WORKER_SECRET --body "$(openssl rand -hex 32)"
 # Optional: Search APIs for keyword research
 gh secret set BRAVE_API_KEY --body "your-key"
 gh secret set SERPER_API_KEY --body "your-key"
-
-# npm (for CLI publishing)
-gh secret set NPM_TOKEN --body "your-npm-token"
 ```
 
 ### Required Variables
@@ -260,8 +257,7 @@ All deployment is handled by GitHub Actions workflows.
 |----------|---------|---------|
 | `initial-setup-saas.yml` | Manual | First-time infrastructure setup |
 | `setup-custom-domain.yml` | Manual | Add custom domain to Cloudflare |
-| `deploy.yml` | Push/Release/Manual | Deploy changes |
-| `build-cli.yml` | Release/Manual | Build and publish CLI |
+| `deploy.yml` | Push (audit worker)/Manual | Deploy changes |
 
 ### Initial Setup (First Time Only)
 
@@ -328,15 +324,17 @@ gh run list --workflow=deploy.yml --limit 5
 | Audit Worker | Fly.io | If changed |
 | Stripe Pricing | Stripe | If changed |
 
-### CLI Publishing
+### CLI, engine, MCP server, Action and plugins
+
+Released from https://github.com/integrallis/rankcli, not from here:
 
 ```bash
-# Automatic: create a release
-gh release create v1.0.0 --title "Release 1.0.0"
-
-# Manual trigger
-gh workflow run build-cli.yml -f publish=true
+gh release create v0.0.54 --repo integrallis/rankcli --target main --title "v0.0.54: ..." --notes-file notes.md
 ```
+
+That release publishes npm, the binaries, the `.mcpb`, Homebrew and Scoop. The section
+"CLI, engine, MCP server, Action and plugins" further down says how this repository then
+picks up the new engine.
 
 ---
 
@@ -833,7 +831,6 @@ host -t NS yourdomain.com
 | `.github/workflows/initial-setup-saas.yml` | First-time infrastructure setup |
 | `.github/workflows/setup-custom-domain.yml` | Custom domain automation |
 | `.github/workflows/deploy.yml` | Regular deployments |
-| `.github/workflows/build-cli.yml` | CLI package builds |
 | `scripts/setup-cloudflare-domain.sh` | Local domain setup script |
 
 ### Key Lessons Learned
