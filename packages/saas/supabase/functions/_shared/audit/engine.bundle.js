@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-11-02T21:15:41.751Z
+// Generated: 2026-11-02T21:23:59.144Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -27776,6 +27776,62 @@ var PLACEHOLDERS = [
   { pattern: /\blorem ipsum\b/i, what: "lorem ipsum" },
   { pattern: /\bXXX-XXX-XXXX\b/i, what: "an unfilled phone template" }
 ];
+var BUSINESS_FACT_KEYS = /* @__PURE__ */ new Set([
+  "telephone",
+  "faxNumber",
+  "email",
+  "streetAddress",
+  "postalCode",
+  "addressLocality",
+  "addressRegion",
+  "postOfficeBoxNumber",
+  "latitude",
+  "longitude",
+  "openingHours",
+  "priceRange",
+  "foundingDate",
+  "numberOfEmployees",
+  "ratingValue",
+  "reviewCount",
+  "ratingCount",
+  "sameAs",
+  "vatID",
+  "taxID",
+  "legalName",
+  "founder"
+]);
+function businessFacts(text) {
+  const facts = /* @__PURE__ */ new Set();
+  const visit3 = (node, key) => {
+    if (Array.isArray(node))
+      return node.forEach((v) => visit3(v, key));
+    if (node && typeof node === "object") {
+      for (const [k, v] of Object.entries(node))
+        visit3(v, k);
+      return;
+    }
+    if (key && BUSINESS_FACT_KEYS.has(key) && (typeof node === "string" || typeof node === "number")) {
+      const value = String(node).trim();
+      if (value)
+        facts.add(`${key}: ${value}`);
+    }
+  };
+  for (const m of text.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
+    try {
+      visit3(JSON.parse(m[1]));
+    } catch {
+    }
+  }
+  for (const m of text.matchAll(/href=["'](tel|mailto):([^"'?]+)/gi))
+    facts.add(`${m[1].toLowerCase()}: ${m[2].trim()}`);
+  return facts;
+}
+function inventedFacts(original, replacement) {
+  return [...businessFacts(replacement)].filter((fact) => {
+    const value = fact.slice(fact.indexOf(": ") + 2);
+    return !(original && original.includes(value));
+  });
+}
 function isSharedShell(html) {
   return /<div[^>]+id=["'](root|app|__next|__nuxt)["']/i.test(html);
 }
@@ -27787,6 +27843,9 @@ function assessReplacement(path, original, replacement) {
     if (hit && !(original && pattern.test(original))) {
       add("placeholder_content", `contains ${what} (${hit[0]})`);
     }
+  }
+  for (const fact of inventedFacts(original, replacement)) {
+    add("invented_business_fact", `adds ${fact}, which the original does not contain`);
   }
   if (/\.html?$/i.test(path) && isSharedShell(replacement)) {
     const addsCanonical = /<link[^>]+rel=["']canonical["']/i.test(replacement) && !(original && /<link[^>]+rel=["']canonical["']/i.test(original));
