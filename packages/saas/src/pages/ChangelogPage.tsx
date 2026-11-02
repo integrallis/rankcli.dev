@@ -7,6 +7,11 @@ import frameworks from '@/config/frameworks.json';
 
 const highlights = [
   {
+    title: 'v0.0.53: the audit as a CI gate',
+    description:
+      'One rule syntax for the gate in the CLI, in rankcli.config.json and in the GitHub Action (v1.2.0): error, warning or notice, score<80, score:aiReadiness<70. A committed baseline makes the severity rule count only new findings, so an existing site adopts the gate without first fixing every old finding; rankcli diff compares two saved reports. -o sarif feeds GitHub Code Scanning and -o junit test reporters. --dir audits the build directory before it is deployed, --header and --cookie reach protected previews, and the config file carries ignore rules and category budgets.',
+  },
+  {
     title: 'v0.0.52: every check, everywhere',
     description:
       'The 21 checks that used to ship encrypted in the CLI are ordinary engine code, so rankcli audit, the MCP server and the GitHub Action (v1.1.1) run the same 280+ checks and give the same score. The JSON report carries the timestamp, the CLI version, the checks run and passed, and one entry per page. The CLI, the engine, the MCP server and the Action are published under the Functional Source License (FSL-1.1-MIT): free to read, run, change and embed; each version becomes MIT two years after its release.',
@@ -48,7 +53,7 @@ export function ChangelogPage() {
     <div className="min-h-screen bg-background">
       <SEO
         title="Changelog"
-        description="What's new in RankCLI: v0.0.52 runs every check in the CLI, the MCP server and the GitHub Action under the FSL-1.1-MIT license; agentic auto-fix, keyword rank tracking, GEO checks for AI search, the MCP server for AI assistants, and framework-specific fix recipes."
+        description="What's new in RankCLI: v0.0.53 turns the audit into a CI gate with one rule syntax, baselines, SARIF and JUnit output and a config file; v0.0.52 runs every check in the CLI, the MCP server and the GitHub Action under the FSL-1.1-MIT license; agentic auto-fix, keyword rank tracking, GEO checks for AI search, the MCP server for AI assistants, and framework-specific fix recipes."
         path="/changelog"
       />
       <Navbar />
