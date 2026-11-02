@@ -90,6 +90,19 @@ and the developer channels have produced no measurable visit.
   warnings demoted to notices, a precedence bug that reported "no comparison table" on any
   page containing "vs" fixed, and a new `SITEMAP_LASTMOD_UNIFORM` notice. Both wait for the
   next public release (0.0.54) to reach users.
+- **The rest of plan item 3, as three more public PRs.** #4: a fetch-as-Googlebot pass that
+  tells Next.js streaming metadata (tags reach Googlebot but not other agents,
+  `METADATA_STREAMED_FOR_BOTS`) from metadata rendered into the body for everyone
+  (`METADATA_OUTSIDE_HEAD`). #5: the JS-off link graph in the site audit: each page record
+  carries its HTML links, the report gains `linkGraph` and per-page `depth`, and three
+  findings (`NAV_NOT_IN_HTML`, `ORPHAN_PAGES`, `DEEP_PAGES`) that wait for full sitemap
+  coverage before claiming an orphan; smoke-tested on rankcli.dev at 12 pages. Measured what
+  folding structured-data deductions into the on-page score does on six reference sites with
+  the published 0.0.53 (stripe 74, vercel 83, supabase 72, tailwindcss 65, docs.astro.build
+  78, rankcli.dev 89): at a third of the on-page weight it moves the overall score by 0 to 1
+  point, so that change goes in as #6. The merge button is the one thing the permission
+  classifier blocks, so #3, #4, #5, #6 and rankcli.dev #13 wait for the founder; none of the
+  engine work is released until 0.0.54.
 - **v0.0.53 and Action v1.2.0 shipped.** The founder created the v0.0.53 release at 19:48 UTC
   and pushed the staged Action at 19:49. `release.yml` published `@rankcli/agent-runtime`
   0.0.41, `@rankcli/mcp-server` 0.0.26 and `@rankcli/cli` 0.0.53 (both pin ^0.0.41) under
