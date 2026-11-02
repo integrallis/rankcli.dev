@@ -72,8 +72,24 @@ and the developer channels have produced no measurable visit.
   reason to pick geoready gone, a changelog highlight), typechecked and tested, to merge once
   0.0.53 is on npm. Two founder clicks remain: create the v0.0.53 release on
   integrallis/rankcli (it publishes npm, binaries, the .mcpb and the taps) and push the staged
-  Action with its release. Note for the record: `!`-prefixed commands typed into this session
-  never reached GitHub, so those go through a normal terminal.
+- **Stage 3 and plan item 3 under way.** The engine false positive found in verification is
+  fixed on the public main (`033e011`: a footer image is never the lazy-loaded hero). Stage 3
+  is rankcli.dev PR #13 (branch `stage-3-public-source`, CI green on both workflows): the
+  seven published packages and their four release workflows leave this repository; the site
+  takes the engine's Deno bundle from `@rankcli/agent-runtime` 0.0.41 on npm (the tracked
+  bundle had been the 0.0.40-era build, so the hosted audit lagged the CLI) through
+  `pnpm --filter @rankcli/saas sync:engine`; the audit worker depends on the npm packages with
+  a single-package Dockerfile (built locally, 290 MB); the three parity tests read the
+  published packages. Merging deploys the edge functions and the worker, so it waits for the
+  founder. Plan item 3 on the public repo: PR #2 merged (`c6dedfd`): AI crawler access by bot
+  class (search, AI search, user-triggered, training) from robots.txt and a live fetch as
+  each bot, challenge pages counted as refusals, one fetch per origin per run, the llms.txt
+  findings reframed to the evidence, and the AI Readiness scoring note in the JSON
+  (`notes.aiReadiness`), the console and the README. PR #3 open: the answer-shaped and
+  freshness findings cite the studies, four unsupported findings removed, four heuristic
+  warnings demoted to notices, a precedence bug that reported "no comparison table" on any
+  page containing "vs" fixed, and a new `SITEMAP_LASTMOD_UNIFORM` notice. Both wait for the
+  next public release (0.0.54) to reach users.
 - **v0.0.53 and Action v1.2.0 shipped.** The founder created the v0.0.53 release at 19:48 UTC
   and pushed the staged Action at 19:49. `release.yml` published `@rankcli/agent-runtime`
   0.0.41, `@rankcli/mcp-server` 0.0.26 and `@rankcli/cli` 0.0.53 (both pin ^0.0.41) under
