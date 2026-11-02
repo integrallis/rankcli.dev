@@ -196,3 +196,52 @@ pricing card, docs and limit message say so), 1.4 (footer images are no longer r
 the fold), and the hero integrity fix (the landing terminal replays a recorded 0.0.53 run, its
 lines selected from committed stdout at build time, with a test that every line is verbatim).
 
+**Baseline, 2026-11-02**, from the first run of the 0.1 report (e2e-check-auth-config run
+41527017360):
+
+| | Internal | External |
+|---|---|---|
+| Auto-fix PRs opened, all time | 5 | 0 |
+| Merged / closed unmerged / open | 1 / 3 / 1 | none |
+| Opened in the last 30 days | 0 | 0 |
+
+| External accounts | |
+|---|---|
+| Accounts (founder's personal account included) | 17 |
+| With an audit | 13 |
+| With the GitHub App connected | 1 |
+| With an auto-fix PR | 0 |
+
+0.3: Google and GitHub sign-in are both enabled, so the activation blocker from 2026-10-13 is
+gone.
+
+**What the decision rules say.** No external merged PR exists, so the outcome angle is not
+supportable: Phase 4 item 2 (lead with the outcome) and items 4 to 5 (proof, creative) wait,
+and no copy claims PRs get merged. The funnel breaks between an audit and connecting GitHub,
+before any PR is possible, so Phase 2 comes before Phase 1's larger items.
+
+**Phase 1, read by hand (0.2).** The internal sample is all from 2026-09-27, before the
+current safety checks. integrallis/integrallis #1 and #2 were closed without review and
+superseded the same day by #3, which was merged. integrallis/rankcli.dev#11 was closed for a
+shared-shell canonical and invented contact details. Both causes are now refused by
+`assessReplacement`. There is no rejection evidence yet for 1.2 (themed PRs) or 1.3 (proving
+fixes on the branch), so they wait for real rejections rather than being built blind.
+
+Done the same day, second pass:
+
+- **1.1** Business-fact findings (address, phone, LocalBusiness schema, social profiles,
+  trust badges, uncited statistics, references) are never sent to the model. A new
+  `invented_business_fact` safety concern refuses any phone, email, address, coordinates,
+  hours, rating or social profile that a generated file adds and the original lacked. The PR
+  body says both.
+- **2.1** The free-audit result leads to the pull request ("Fix this site in a PR") and
+  carries the audited site through signup, email confirmation and OAuth. The dashboard opens
+  Add Project already filled in, which puts the GitHub step one click away. Before, the user
+  typed the URL again first.
+- **4.1 and 4.3** The hero's definition paragraph names what RankCLI replaces (the audit you
+  would pay a contractor for, or skip) and the coding-agent path. The Agency plan's tagline
+  names the hand-written client audit. No savings figure is printed, because none is sourced.
+
+**Next reading:** re-run the 0.1 report after the carry-through has been live for two weeks.
+The question is whether accounts with an audit start connecting GitHub.
+
