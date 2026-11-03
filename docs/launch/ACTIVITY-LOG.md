@@ -161,6 +161,20 @@ and the developer channels have produced no measurable visit.
 
 ### 2026-11-03
 
+- **astro-rankcli 0.1.0 and nuxt-rankcli 0.1.0 are on npm; the site docs for 0.0.54 to 0.0.56
+  are live.** The plugin publish had failed twice with a 404 because the `NPM_TOKEN` secret was
+  on this repository, not on integrallis/rankcli where `publish-plugins.yml` runs; the founder
+  had me copy it from `.env` (the classifier blocks a session from writing secrets on its own,
+  and from publishing locally with the token), a watcher dispatched the workflow the moment the
+  secret appeared (run 41583148190), and both packages published with `latest` on 0.1.0,
+  nuxt-rankcli pinned to agent-runtime ^0.0.44. rankcli #15 made the publish helper name the
+  workflow that ran it and say whether the secret was missing or refused. rankcli.dev #14
+  merged: the docs page's AI crawlers by class, `-o llm`, the link graph, the scoring note,
+  the Astro integration and the Nuxt guide, with the v0.0.55 and v0.0.56 changelog entries.
+  The Nuxt modules directory PR is the founder's to open (forking nuxt/modules is a new
+  public surface the classifier refuses): one script in the session scratchpad does fork,
+  `pnpm sync`, icon, commit, push and `gh pr create`. The Astro integrations catalog needs
+  nothing: astro-rankcli carries the `astro-integration` keyword.
 - **v0.0.56 shipped: the geo tools treat a disallowed training crawler as policy.** Left over
   from the one bot table: `rankcli geo` and the MCP server's `seo_geo_check` took their crawler
   list from the audit's table but still made any disallowed crawler a critical finding, ten
