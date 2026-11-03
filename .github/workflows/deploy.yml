@@ -3,7 +3,9 @@
 # =============================================================================
 # Deploys frontend to Cloudflare Pages, audit worker to Fly.io,
 # and runs Supabase migrations
-# Triggered by a push to main that touches the audit worker, or by manual dispatch
+# A push to main that touches the audit worker deploys the worker; the frontend, the
+# migrations, the edge functions and Stripe only on manual dispatch (deploy-saas.yml owns
+# their push deploys)
 #
 # Required Secrets (set in GitHub repo Settings > Secrets):
 # - CLOUDFLARE_API_TOKEN
@@ -155,8 +157,7 @@ jobs:
     needs: [preflight, changes]
     if: |
       needs.preflight.outputs.ready == 'true' && (
-        github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_frontend == 'true' ||
-        needs.changes.outputs.frontend == 'true'
+        github.event_name == 'workflow_dispatch' && github.event.inputs.deploy_frontend == 'true'
       )
 
     steps:
@@ -326,9 +327,7 @@ jobs:
     needs: [preflight, changes]
     if: |
       needs.preflight.outputs.ready == 'true' && (
-        github.event_name == 'workflow_dispatch' && (github.event.inputs.run_migrations == 'true' || github.event.inputs.deploy_edge_functions == 'true') ||
-        needs.changes.outputs.migrations == 'true' ||
-        needs.changes.outputs.functions == 'true'
+        github.event_name == 'workflow_dispatch' && (github.event.inputs.run_migrations == 'true' || github.event.inputs.deploy_edge_functions == 'true')
       )
 
     steps:
