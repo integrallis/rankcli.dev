@@ -161,6 +161,17 @@ and the developer channels have produced no measurable visit.
 
 ### 2026-11-03
 
+- **v0.0.56 shipped: the geo tools treat a disallowed training crawler as policy.** Left over
+  from the one bot table: `rankcli geo` and the MCP server's `seo_geo_check` took their crawler
+  list from the audit's table but still made any disallowed crawler a critical finding, ten
+  GEO points each, with a fix that told the site to allow `Claude-Web`; rankcli.dev, which
+  disallows the training crawlers, lost fifty GEO points for a policy OpenAI and Anthropic
+  document as costing nothing. rankcli #14: critical only for a disallowed search or AI search
+  crawler, a warning for a user-triggered fetcher, training listed with "no visibility cost";
+  `aiCrawlerAccess.byClass` in the JSON. Released as cli 0.0.56, agent-runtime 0.0.44,
+  mcp-server 0.0.29 (npm, binaries, `.mcpb`, taps all green); the audit itself is unchanged,
+  so the 92 stands. Hosted product (this PR): pins to 0.0.44/0.0.29 and the edge bundle
+  re-synced so the hosted geo tool gives the same answer.
 - **v0.0.55 shipped: the always-on findings are gone, and there is one bot table.** rankcli
   #12 merged once its two guards were fixed: the CLI's end-to-end check had asked for half of
   the formerly encrypted checks' codes to survive dedupe, and the removed defaults were most
