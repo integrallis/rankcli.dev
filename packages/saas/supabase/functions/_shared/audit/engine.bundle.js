@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-11-02T19:51:55.802Z
+// Generated: 2026-11-03T02:18:57.482Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -5367,15 +5367,15 @@ var LineCounter = class {
 };
 
 // ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/parse/parser.js
-function includesToken(list, type) {
-  for (let i = 0; i < list.length; ++i)
-    if (list[i].type === type)
+function includesToken(list2, type) {
+  for (let i = 0; i < list2.length; ++i)
+    if (list2[i].type === type)
       return true;
   return false;
 }
-function findNonEmptyIndex(list) {
-  for (let i = 0; i < list.length; ++i) {
-    switch (list[i].type) {
+function findNonEmptyIndex(list2) {
+  for (let i = 0; i < list2.length; ++i) {
+    switch (list2[i].type) {
       case "space":
       case "comment":
       case "newline":
@@ -8592,6 +8592,15 @@ var ISSUE_DEFINITIONS = {
     impact: "Search engines may ignore lastmod entirely for this sitemap once they detect invalid values, losing the freshness signal for every URL in it.",
     howToFix: "Use a real, valid ISO 8601 date (e.g. 2026-01-15 or 2026-01-15T10:00:00Z) reflecting the actual last-changed time - never a placeholder or future date."
   },
+  SITEMAP_LASTMOD_UNIFORM: {
+    code: "SITEMAP_LASTMOD_UNIFORM",
+    severity: "notice",
+    category: "crawlability",
+    title: "Every sitemap lastmod is the same date",
+    description: "Every <url> in the sitemap carries the same <lastmod>. That is the build time, not when each page last changed.",
+    impact: "Google uses lastmod only while it proves consistently accurate and ignores it once it does not; Bing pairs an accurate lastmod with IndexNow so AI systems reference the current version of a page. A uniform value gives up the freshness signal for every URL.",
+    howToFix: "Emit each page\u2019s real last-changed date (the content\u2019s updated date, or the file\u2019s last commit), or omit <lastmod> rather than stamping the build time."
+  },
   REDIRECT_CHAIN: {
     code: "REDIRECT_CHAIN",
     severity: "warning",
@@ -9384,64 +9393,73 @@ var ISSUE_DEFINITIONS = {
     code: "LLMS_TXT_MISSING",
     severity: "notice",
     category: "ai-readiness",
-    title: "Missing llms.txt file",
-    description: "No llms.txt file found at the root of the domain.",
-    impact: "AI crawlers like ChatGPT and Claude may not understand how to best use your content.",
-    howToFix: "Create an llms.txt file at your domain root with guidance for AI systems. See llmstxt.org for format."
+    title: "No llms.txt",
+    description: "No /llms.txt. It is a convention for coding agents and documentation sites (Lighthouse 13.3 audits it; Anthropic, OpenAI, Stripe, Vercel and Supabase publish one for their docs). No search engine or answer engine reads it: Google says it neither helps nor harms, and in a 137,000-domain study 97 percent of the files received no request in a month.",
+    impact: "None on search or AI answers. A documentation site gains a curated index for the agents that look for one.",
+    howToFix: "For a documentation site, publish /llms.txt: an H1 with the project name, a one-line blockquote description, then markdown links with a short description each (the Lighthouse criteria). For a marketing site, ignore this notice."
   },
   LLMS_TXT_INVALID: {
     code: "LLMS_TXT_INVALID",
-    severity: "warning",
+    severity: "notice",
     category: "ai-readiness",
-    title: "Invalid llms.txt format",
-    description: "The llms.txt file exists but has invalid format or syntax.",
-    impact: "AI crawlers may not be able to parse your AI guidance properly.",
-    howToFix: "Validate your llms.txt file format against the specification at llmstxt.org."
+    title: "llms.txt does not follow the convention",
+    description: "The file exists but does not follow the llms.txt convention (an H1, a blockquote description, markdown links).",
+    impact: "The agents that read llms.txt (coding agents, Lighthouse\u2019s agentic audit) get less than intended; search and answer engines are unaffected either way.",
+    howToFix: 'Start the file with "# Project name", follow with "> one-line description", then sections of "- [Title](url): description" links. See https://llmstxt.org/.'
   },
   AI_BOT_BLOCKED_ALL: {
     code: "AI_BOT_BLOCKED_ALL",
-    severity: "notice",
+    severity: "warning",
     category: "ai-readiness",
-    title: "All AI bots blocked in robots.txt",
-    description: "robots.txt blocks all major AI crawlers (GPTBot, Claude-Web, PerplexityBot, etc.).",
-    impact: "Your content will not appear in AI-powered search and assistants.",
-    howToFix: "Consider allowing some AI bots if you want visibility in AI-generated responses."
+    title: "robots.txt disallows every AI crawler, the search ones included",
+    description: "Every AI crawler is disallowed: the search crawlers (OAI-SearchBot, Claude-SearchBot, PerplexityBot), the user-triggered fetchers (ChatGPT-User, Claude-User, Perplexity-User) and the training crawlers (GPTBot, ClaudeBot, CCBot, Google-Extended).",
+    impact: "The site is out of ChatGPT search, Claude search and Perplexity answers, and assistants cannot read a page a user pastes. Disallowing the training crawlers alone would have cost none of that.",
+    howToFix: `Keep the training crawlers disallowed if that is the policy, and allow the rest explicitly:
+
+User-agent: OAI-SearchBot
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+User-agent: ChatGPT-User
+User-agent: Claude-User
+User-agent: Perplexity-User
+Allow: /`
   },
-  AI_BOT_GPTBOT_BLOCKED: {
-    code: "AI_BOT_GPTBOT_BLOCKED",
-    severity: "notice",
+  AI_SEARCH_BOTS_DISALLOWED: {
+    code: "AI_SEARCH_BOTS_DISALLOWED",
+    severity: "warning",
     category: "ai-readiness",
-    title: "GPTBot blocked in robots.txt",
-    description: "robots.txt blocks OpenAI's GPTBot crawler.",
-    impact: "Your content will not be used to train or cited by ChatGPT.",
-    howToFix: 'Remove "User-agent: GPTBot Disallow: /" if you want ChatGPT visibility.'
+    title: "robots.txt opts the site out of AI search answers",
+    description: 'These are the crawlers that build the index each assistant answers from. OpenAI: "Sites that are opted out of OAI-SearchBot will not be shown in ChatGPT search answers"; Anthropic documents the same for Claude-SearchBot; PerplexityBot is how Perplexity reads the web.',
+    impact: "The site is absent from those answers. This is independent of training: GPTBot and ClaudeBot can stay disallowed without this cost.",
+    howToFix: `Allow the search crawlers explicitly (an Allow in their own group wins over a wildcard Disallow):
+
+User-agent: OAI-SearchBot
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+Allow: /`
   },
-  AI_BOT_CLAUDEBOT_BLOCKED: {
-    code: "AI_BOT_CLAUDEBOT_BLOCKED",
-    severity: "notice",
+  AI_USER_FETCH_DISALLOWED: {
+    code: "AI_USER_FETCH_DISALLOWED",
+    severity: "warning",
     category: "ai-readiness",
-    title: "ClaudeBot blocked in robots.txt",
-    description: "robots.txt blocks Anthropic's ClaudeBot crawler.",
-    impact: "Your content will not be used by Claude AI.",
-    howToFix: 'Remove "User-agent: ClaudeBot Disallow: /" if you want Claude visibility.'
+    title: "robots.txt disallows the agents that fetch a page when a user asks",
+    description: "These agents retrieve one page because a user pasted its link or asked about it; they are not crawlers and visit nothing on their own.",
+    impact: "A user who asks ChatGPT, Claude or Perplexity about a page on this site gets an error instead of its content.",
+    howToFix: `Allow them explicitly:
+
+User-agent: ChatGPT-User
+User-agent: Claude-User
+User-agent: Perplexity-User
+Allow: /`
   },
-  AI_BOT_PERPLEXITY_BLOCKED: {
-    code: "AI_BOT_PERPLEXITY_BLOCKED",
+  AI_TRAINING_BOTS_DISALLOWED: {
+    code: "AI_TRAINING_BOTS_DISALLOWED",
     severity: "notice",
     category: "ai-readiness",
-    title: "PerplexityBot blocked in robots.txt",
-    description: "robots.txt blocks Perplexity AI's crawler.",
-    impact: "Your content will not appear in Perplexity AI search results.",
-    howToFix: 'Remove "User-agent: PerplexityBot Disallow: /" if you want Perplexity visibility.'
-  },
-  AI_BOT_GOOGLE_EXTENDED_BLOCKED: {
-    code: "AI_BOT_GOOGLE_EXTENDED_BLOCKED",
-    severity: "notice",
-    category: "ai-readiness",
-    title: "Google-Extended blocked in robots.txt",
-    description: "robots.txt blocks Google's AI training crawler (Google-Extended).",
-    impact: "Your content will not be used for Bard/Gemini AI training (regular search unaffected).",
-    howToFix: 'Remove "User-agent: Google-Extended Disallow: /" if you want Google AI visibility.'
+    title: "robots.txt disallows AI training crawlers",
+    description: "These crawlers collect model-training data only. OpenAI and Anthropic both document the training crawler (GPTBot, ClaudeBot) and the search crawler (OAI-SearchBot, Claude-SearchBot) as separate bots with separate consequences.",
+    impact: "None on search or AI answers. Reported so the choice is visible, not to change it.",
+    howToFix: "Nothing, if that is the policy. To allow training on the content, remove the Disallow for the crawler\u2019s group."
   },
   CLOUDFLARE_AI_CRAWLER_GATE_AMBIGUOUS: {
     code: "CLOUDFLARE_AI_CRAWLER_GATE_AMBIGUOUS",
@@ -9450,7 +9468,7 @@ var ISSUE_DEFINITIONS = {
     title: "No explicit AI crawler rules on a Cloudflare-fronted site",
     description: 'This site appears to be served through Cloudflare but robots.txt has no explicit Allow/Disallow rules for AI crawlers. Cloudflare blocks "mixed-use" AI crawlers by default on ad-hosting zones starting September 15, 2026, and is rolling out Pay Per Crawl / Pay Per Use gating beyond that.',
     impact: "Without an explicit rule, whether AI crawlers (and future citation opportunities in ChatGPT, Claude, Perplexity, etc.) can reach this site now depends on Cloudflare account-level bot-management defaults, not on this codebase \u2014 a silent, invisible-to-git failure mode.",
-    howToFix: `Two ways to make your stance explicit, either works: (1) add a Content-Signal line to robots.txt - e.g. "Content-Signal: search=yes,ai-train=no,use=reference" - the format Cloudflare's AI Crawl Control update actually reads, or (2) add explicit User-agent rules for GPTBot, Claude-Web/ClaudeBot, PerplexityBot, and Google-Extended. Either way, confirm the matching allow/block posture in the Cloudflare dashboard under Bot Management \u2192 AI Crawl Control. If you'd rather charge than block, Cloudflare's Pay Per Crawl (AI Crawl Control \u2192 Payments tab) lets you set a per-crawl price instead of a flat allow/deny \u2014 worth a look if you get meaningful AI-crawler traffic.`
+    howToFix: `Two ways to make your stance explicit, either works: (1) add a Content-Signal line to robots.txt - e.g. "Content-Signal: search=yes,ai-train=no,use=reference" - the format Cloudflare's AI Crawl Control update actually reads, or (2) add explicit User-agent rules for the search crawlers (OAI-SearchBot, Claude-SearchBot, PerplexityBot) and, separately, the training crawlers (GPTBot, ClaudeBot, CCBot, Google-Extended). Either way, confirm the matching allow/block posture in the Cloudflare dashboard under Bot Management \u2192 AI Crawl Control. If you'd rather charge than block, Cloudflare's Pay Per Crawl (AI Crawl Control \u2192 Payments tab) lets you set a per-crawl price instead of a flat allow/deny \u2014 worth a look if you get meaningful AI-crawler traffic.`
   },
   NO_AGENT_EXPERIENCE_SURFACE: {
     code: "NO_AGENT_EXPERIENCE_SURFACE",
@@ -10067,7 +10085,7 @@ var ISSUE_DEFINITIONS = {
     category: "crawlability",
     title: "IndexNow not implemented",
     description: "Site does not appear to have IndexNow instant indexing set up.",
-    impact: "Content changes may take longer to appear in Bing, Yandex, and other search engines.",
+    impact: "Content changes reach Bing, Yandex and the engines that read Bing\u2019s index later. Bing tells publishers to pair an accurate sitemap lastmod with IndexNow so AI systems reference the current version of a page.",
     howToFix: "Create a key at indexnow.org and implement the IndexNow protocol."
   },
   INDEXNOW_INVALID_KEY: {
@@ -10826,11 +10844,11 @@ function analyzeFeaturedSnippet(html, url) {
     });
   }
   if (lists.found) {
-    for (const list of lists.lists) {
-      if (!list.context.toLowerCase().match(/^\d+|^(how|steps|tips|ways)/)) {
+    for (const list2 of lists.lists) {
+      if (!list2.context.toLowerCase().match(/^\d+|^(how|steps|tips|ways)/)) {
         opportunities.push({
           type: "list",
-          heading: list.context,
+          heading: list2.context,
           score: 70,
           issues: ["List heading could be more snippet-friendly"],
           suggestions: [
@@ -15064,7 +15082,7 @@ function analyzeFreshnessSignals(html, url) {
       category: "structured-data",
       title: "Missing dateModified in schema",
       description: "Schema markup lacks dateModified property.",
-      impact: "dateModified signals content freshness to search engines and AI assistants, boosting citation odds by ~18%.",
+      impact: "Freshness is one of the few levers the citation evidence supports: cited URLs are 25.7 percent newer than organic results (Ahrefs), and pages updated within three months averaged 6.0 ChatGPT citations against 3.6 for stale ones (SE Ranking). dateModified is how a page states its date to a crawler.",
       howToFix: "Add dateModified property to your Article/WebPage schema with ISO 8601 format.",
       affectedUrls: [url],
       details: {
@@ -15079,7 +15097,7 @@ function analyzeFreshnessSignals(html, url) {
       category: "content",
       title: "Time-sensitive content may be stale",
       description: `Content was last modified ${dateSignals.daysSinceModified} days ago on a topic that benefits from freshness.`,
-      impact: "Query Deserves Freshness (QDF) prioritizes fresh content for this topic type.",
+      impact: "Query Deserves Freshness (QDF) prioritizes fresh content for this topic type, and AI citations decay with a half-life of about 4.5 weeks, so a page that is not refreshed drops out of answers.",
       howToFix: `Update this content ${qdfRelevance.updateFrequencyRecommendation}. Add new data, stats, or insights.`,
       affectedUrls: [url],
       details: {
@@ -15115,7 +15133,7 @@ function analyzeFreshnessSignals(html, url) {
       category: "content",
       title: "No visible publish/update date",
       description: "Content page lacks a visible date for users.",
-      impact: "Users prefer seeing when content was published/updated for credibility.",
+      impact: "Readers and assistants both judge freshness from a visible date; cited pages are 25.7 percent newer than organic results (Ahrefs).",
       howToFix: "Display publish date and last updated date on the page.",
       affectedUrls: [url]
     });
@@ -15260,19 +15278,20 @@ function analyzeAIContentStructure(html, url) {
     structureScore -= 5;
   }
   structureScore = Math.max(0, Math.min(100, structureScore));
-  if (!hasComparisonTable && bodyText.includes("compar") || bodyText.includes("vs") || bodyText.includes("versus")) {
+  const comparesThings = /\b(compar(e|es|ed|ing|ison|isons)|versus|vs\.?)\b/.test(bodyText);
+  if (!hasComparisonTable && comparesThings) {
     issues.push({
       code: "AI_NO_COMPARISON_TABLE",
       severity: "notice",
       category: "ai-readiness",
-      title: "Comparison content without table format",
-      description: "Your content mentions comparisons but doesn't use a table format. AI systems can easily parse and quote table data.",
-      impact: "AI may not accurately extract comparison data, reducing chances of being cited in AI-generated comparisons.",
-      howToFix: "Convert comparison content to HTML tables with clear headers. Example: Feature | Option A | Option B",
+      title: "Comparison content without a table",
+      description: "The page compares things in prose. In a 193,507-answer study of AI assistants, pages with tables had 69 percent higher odds of being cited; a table is also the unit an assistant can quote whole.",
+      impact: "A comparison in prose gets paraphrased or skipped; one in a table gets quoted.",
+      howToFix: "Put the comparison in an HTML table with header cells: one row per option, one column per criterion.",
       affectedUrls: [url]
     });
   }
-  if (!hasStepByStep && (bodyText.includes("step") || bodyText.includes("how to") || bodyText.includes("guide"))) {
+  if (!hasStepByStep && /\b(steps?|how to|guide|tutorial|walkthrough)\b/.test(bodyText)) {
     issues.push({
       code: "AI_NO_NUMBERED_STEPS",
       severity: "notice",
@@ -15284,59 +15303,16 @@ function analyzeAIContentStructure(html, url) {
       affectedUrls: [url]
     });
   }
-  if (!hasExplicitQA && questionCount === 0) {
-    issues.push({
-      code: "AI_NO_QA_FORMAT",
-      severity: "notice",
-      category: "ai-readiness",
-      title: "No question-and-answer format detected",
-      description: "Content lacks explicit Q&A structure. AI systems often look for clear question-answer pairs to provide direct responses.",
-      impact: "Lower chance of being featured in AI direct answers or FAQ-style responses.",
-      howToFix: "Add FAQ section with common questions as headings (H2/H3) followed by concise answers. Implement FAQ schema markup.",
-      affectedUrls: [url],
-      details: {
-        suggestions: [
-          "Use question words in headings (What, How, Why, etc.)",
-          "Follow questions with short, direct answer paragraphs",
-          "Add FAQ schema markup for structured data",
-          "Consider using <details>/<summary> for expandable Q&A"
-        ]
-      }
-    });
-  }
-  if (questionCount >= 2 && !hasDirectAnswers) {
-    issues.push({
-      code: "AI_QUESTIONS_NO_DIRECT_ANSWERS",
-      severity: "notice",
-      category: "ai-readiness",
-      title: "Questions in headings lack direct answers",
-      description: `Found ${questionCount} question-style headings but answers are too long or not immediately following. AI prefers concise answers right after questions.`,
-      impact: "AI may struggle to extract clear answers, reducing citation likelihood.",
-      howToFix: "Start each answer section with a 1-2 sentence direct answer, then expand with details. First sentence should standalone as a complete answer.",
-      affectedUrls: [url]
-    });
-  }
-  if (!hasDefinitions && (bodyText.includes("what is") || bodyText.includes("definition"))) {
-    issues.push({
-      code: "AI_NO_DEFINITIONS",
-      severity: "notice",
-      category: "ai-readiness",
-      title: "Missing clear definitions",
-      description: 'Content discusses concepts but lacks Wikipedia-style definitions. AI loves clear "X is a..." statements.',
-      impact: "Less likely to be cited for definitional queries in AI search.",
-      howToFix: 'Add clear definitions early in content: "[Term] is a [category] that [distinguishing features]." Make first paragraph a complete definition.',
-      affectedUrls: [url]
-    });
-  }
   if (structureScore < 50) {
     issues.push({
       code: "AI_LOW_STRUCTURE_SCORE",
-      severity: "warning",
+      // A heuristic score, not a defect a crawler can see: never a failed build.
+      severity: "notice",
       category: "ai-readiness",
       title: "Content structure not optimized for AI parsing",
       description: `AI structure score: ${structureScore}/100. Content lacks structured elements that AI can easily parse and quote.`,
       impact: "Lower likelihood of being cited in AI-generated answers due to poor content structure.",
-      howToFix: "Improve content structure: add tables for data, numbered lists for steps, bullet points for features, Q&A sections for common questions.",
+      howToFix: "Give the assistant something to quote whole: a table for data or comparisons, a numbered list for steps, and a short paragraph that answers each question heading.",
       affectedUrls: [url],
       details: {
         structureScore,
@@ -15676,7 +15652,8 @@ function analyzeCitationQuality(html, url) {
   if (totalReputable === 0 && externalLinks > 0) {
     issues.push({
       code: "AI_NO_REPUTABLE_CITATIONS",
-      severity: "warning",
+      // "Reputable" is a curated domain list, so this is a hint, never a failed build.
+      severity: "notice",
       category: "ai-readiness",
       title: "No reputable sources cited",
       description: "Content has external links but none to recognized authoritative sources. AI prioritizes content that cites reputable sources.",
@@ -15697,7 +15674,8 @@ function analyzeCitationQuality(html, url) {
   if (externalLinks === 0 && totalLinks > 0) {
     issues.push({
       code: "AI_NO_EXTERNAL_CITATIONS",
-      severity: "warning",
+      // A product or landing page with no outbound links is normal; a hint, never a failed build.
+      severity: "notice",
       category: "ai-readiness",
       title: "No external sources linked",
       description: "Content has no external links. AI values content that references and links to authoritative sources.",
@@ -15712,9 +15690,9 @@ function analyzeCitationQuality(html, url) {
       severity: "warning",
       category: "ai-readiness",
       title: "Statistics without source citations",
-      description: `Found ${statisticsWithoutSources} statistic(s) without linked sources. AI is trained to prefer claims backed by citations.`,
-      impact: "Uncited statistics reduce content credibility and E-E-A-T signals.",
-      howToFix: 'Add source links or citations for all statistics. Include the source name and year when possible (e.g., "according to [Source, 2024]").',
+      description: `Found ${statisticsWithoutSources} statistic(s) with no linked source. In the Princeton GEO experiments, adding statistics with sources raised a page's visibility in generated answers by 29 percent and adding quotations by 40 percent, while keyword stuffing lowered it by 9 percent.`,
+      impact: "An uncited number is a claim the assistant cannot verify and will not repeat with attribution.",
+      howToFix: 'Link each statistic to its source and name it in the sentence ("according to Ahrefs, 2026"), or drop the number.',
       affectedUrls: [url],
       details: {
         statisticsWithSources,
@@ -15877,8 +15855,8 @@ function analyzeAnswerConciseness(html, url) {
       severity: "notice",
       category: "ai-readiness",
       title: "Questions lack direct, quotable answers",
-      description: `${questionHeadings} question headings found but only ${headingsWithDirectAnswers} have direct answers. AI prefers content that answers questions immediately.`,
-      impact: "AI may skip your content for sources with clearer, more direct answers.",
+      description: `${questionHeadings} question headings, ${headingsWithDirectAnswers} answered in the paragraph right after. In a 193,507-answer study, 23 percent of the pages assistants cited opened with a direct answer, against 14 percent of pages retrieved but not cited.`,
+      impact: "The assistant quotes the page that answers first and paraphrases the one that builds up to it.",
       howToFix: 'Start answer paragraphs with a direct 1-2 sentence answer. Avoid filler words like "Well," "So," "Basically." Lead with the answer, then explain.',
       affectedUrls: [url],
       details: {
@@ -15936,7 +15914,8 @@ function analyzeAnswerConciseness(html, url) {
   if (concisenessScore < 50) {
     issues.push({
       code: "AI_LOW_CONCISENESS",
-      severity: "warning",
+      // A heuristic score, not a defect a crawler can see: never a failed build.
+      severity: "notice",
       category: "ai-readiness",
       title: "Content lacks concise, quotable answers",
       description: `Conciseness score: ${concisenessScore}/100. AI prefers content with clear, succinct answers it can quote directly.`,
@@ -16437,22 +16416,6 @@ function analyzeAICitationWorthiness(html, url) {
       impact: "AI may prefer sources that demonstrate real-world experience over generic explanations.",
       howToFix: `Add personal experience: "In my experience...", "When we tested...", "Here's what happened when...". Include specific scenarios you've encountered.`,
       affectedUrls: [url]
-    });
-  }
-  if (stockImageCount > 0 && stockImageCount >= totalImages * 0.5) {
-    issues.push({
-      code: "AI_STOCK_IMAGE_HEAVY",
-      severity: "notice",
-      category: "ai-readiness",
-      title: "Heavy use of stock images",
-      description: `${stockImageCount} of ${totalImages} images appear to be from stock photo sites. Original visuals signal authenticity.`,
-      impact: "Stock-heavy content appears less authentic and expert to both users and AI.",
-      howToFix: "Replace stock photos with original screenshots, diagrams, photos, or custom graphics that AI cannot easily replicate.",
-      affectedUrls: [url],
-      details: {
-        stockImageCount,
-        totalImages
-      }
     });
   }
   if (!hasAuthorByline && !hasAuthorCredentials) {
@@ -17328,14 +17291,19 @@ function validateLastmodValues(content) {
   const matches = content.match(/<lastmod>([^<]*)<\/lastmod>/g) || [];
   let invalidCount = 0;
   const now = Date.now();
+  const days = /* @__PURE__ */ new Set();
+  let sample;
   for (const match of matches) {
     const value = match.replace(/<\/?lastmod>/g, "").trim();
     const parsed = LASTMOD_PATTERN.test(value) ? new Date(value) : null;
     if (!parsed || isNaN(parsed.getTime()) || parsed.getTime() > now) {
       invalidCount++;
     }
+    days.add(value.slice(0, 10));
+    sample ??= value;
   }
-  return { count: matches.length, invalidCount };
+  const uniform = matches.length >= 10 && days.size === 1;
+  return { count: matches.length, invalidCount, uniform, sample };
 }
 async function checkRobotsTxt(baseUrl) {
   const issues = [];
@@ -17449,7 +17417,7 @@ async function checkSitemap(baseUrl, robotsData) {
             affectedUrls: [sitemapUrl]
           });
         }
-        const { count: lastmodCount, invalidCount: invalidLastmodCount } = validateLastmodValues(content);
+        const { count: lastmodCount, invalidCount: invalidLastmodCount, uniform: uniformLastmod, sample } = validateLastmodValues(content);
         if (lastmodCount === 0) {
           issues.push({
             ...ISSUE_DEFINITIONS.SITEMAP_LASTMOD_MISSING,
@@ -17461,10 +17429,16 @@ async function checkSitemap(baseUrl, robotsData) {
             affectedUrls: [sitemapUrl],
             details: { invalidCount: invalidLastmodCount, totalCount: lastmodCount }
           });
+        } else if (uniformLastmod) {
+          issues.push({
+            ...ISSUE_DEFINITIONS.SITEMAP_LASTMOD_UNIFORM,
+            affectedUrls: [sitemapUrl],
+            details: { lastmod: sample, urlCount: lastmodCount }
+          });
         }
         return {
           issues,
-          data: { exists: true, url: sitemapUrl, urlCount, errors: [], lastmodCount, invalidLastmodCount }
+          data: { exists: true, url: sitemapUrl, urlCount, errors: [], lastmodCount, invalidLastmodCount, uniformLastmod }
         };
       }
     } catch {
@@ -19414,44 +19388,123 @@ async function analyzeRedirects(url, maxHops = 10) {
   return { issues, data };
 }
 
-// src/audit/checks/crawler-access.ts
-var CRAWLERS = [
+// src/audit/checks/ai-bots.ts
+var KNOWN_BOTS = [
+  // Classic search indexes. 88 percent of ChatGPT citations come from the general search index
+  // (Ahrefs, 2026), so these matter for AI answers as much as for organic traffic.
   {
     name: "Googlebot",
+    class: "search",
+    robotsTokens: ["googlebot"],
     userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
-    matters: "Google Search indexing",
-    critical: true
+    loses: "Google Search and AI Overviews"
   },
   {
     name: "bingbot",
+    class: "search",
+    robotsTokens: ["bingbot"],
     userAgent: "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
-    matters: "Bing indexing, and Copilot answers",
-    critical: true
+    loses: "Bing and Copilot"
+  },
+  // AI search crawlers: the index each assistant answers from.
+  {
+    name: "OAI-SearchBot",
+    class: "ai-search",
+    robotsTokens: ["oai-searchbot"],
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot",
+    loses: "ChatGPT search answers"
   },
   {
-    name: "GPTBot",
-    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.1; +https://openai.com/gptbot)",
-    matters: "ChatGPT being able to read and cite the page",
-    critical: false
-  },
-  {
-    name: "ClaudeBot",
-    userAgent: "Mozilla/5.0 (compatible; ClaudeBot/1.0; +claudebot@anthropic.com)",
-    matters: "Claude being able to read and cite the page",
-    critical: false
+    name: "Claude-SearchBot",
+    class: "ai-search",
+    robotsTokens: ["claude-searchbot"],
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-SearchBot/1.0; +Claude-SearchBot@anthropic.com)",
+    loses: "Claude search results"
   },
   {
     name: "PerplexityBot",
-    userAgent: "Mozilla/5.0 (compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)",
-    matters: "Perplexity being able to read and cite the page",
-    critical: false
+    class: "ai-search",
+    robotsTokens: ["perplexitybot"],
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)",
+    loses: "Perplexity answers"
+  },
+  // User-triggered fetchers: retrieve one page because a user pasted its link or asked about it.
+  {
+    name: "ChatGPT-User",
+    class: "user",
+    robotsTokens: ["chatgpt-user"],
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot",
+    loses: "ChatGPT reading a page a user asks about"
+  },
+  {
+    name: "Claude-User",
+    class: "user",
+    robotsTokens: ["claude-user"],
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-User/1.0; +Claude-User@anthropic.com)",
+    loses: "Claude reading a page a user asks about"
+  },
+  {
+    name: "Perplexity-User",
+    class: "user",
+    robotsTokens: ["perplexity-user"],
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Perplexity-User/1.0; +https://perplexity.ai/perplexity-user)",
+    loses: "Perplexity reading a page a user asks about"
+  },
+  // Training crawlers: model-training data, nothing a user sees. Both OpenAI and Anthropic
+  // document that disallowing these has no effect on search answers.
+  {
+    name: "GPTBot",
+    class: "training",
+    robotsTokens: ["gptbot"],
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; GPTBot/1.2; +https://openai.com/gptbot",
+    loses: "OpenAI's training corpus"
+  },
+  {
+    name: "ClaudeBot",
+    class: "training",
+    // Claude-Web and anthropic-ai are the older tokens still found in robots.txt files.
+    robotsTokens: ["claudebot", "claude-web", "anthropic-ai"],
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0; +claudebot@anthropic.com)",
+    loses: "Anthropic's training corpus"
+  },
+  {
+    name: "CCBot",
+    class: "training",
+    robotsTokens: ["ccbot"],
+    userAgent: "CCBot/2.0 (https://commoncrawl.org/faq/)",
+    loses: "Common Crawl, which several models train on"
+  },
+  {
+    name: "Google-Extended",
+    class: "training",
+    robotsTokens: ["google-extended"],
+    userAgent: null,
+    loses: "Gemini's training data (Search is unaffected)"
+  },
+  {
+    name: "Bytespider",
+    class: "training",
+    robotsTokens: ["bytespider"],
+    userAgent: null,
+    loses: "ByteDance's training corpus"
   }
 ];
+
+// src/audit/checks/crawler-access.ts
 var BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 function isRefusal(status) {
   return status === 401 || status === 403 || status === 429 || status === 503;
 }
-async function statusFor(url, userAgent) {
+function isChallengePage(headers, body) {
+  const mitigated = headers["cf-mitigated"] ?? headers["CF-Mitigated"];
+  if (mitigated && /challenge/i.test(mitigated))
+    return true;
+  if (typeof body !== "string")
+    return false;
+  const head = body.slice(0, 4e3);
+  return /cdn-cgi\/challenge-platform|<title>Just a moment\.\.\.<\/title>|_cf_chl_opt/.test(head);
+}
+async function probe(url, userAgent) {
   try {
     const response = await httpGet(url, {
       headers: { "User-Agent": userAgent },
@@ -19459,78 +19512,229 @@ async function statusFor(url, userAgent) {
       // We want the status itself, not an exception on 4xx/5xx.
       validateStatus: () => true
     });
-    return response.status;
+    return { status: response.status, challenge: isChallengePage(response.headers ?? {}, response.data) };
   } catch {
-    return null;
+    return { status: null, challenge: false };
   }
 }
+var refused = (p) => p.challenge || p.status !== null && isRefusal(p.status);
+async function mapLimit(items, limit, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) {
+        const i = next++;
+        out[i] = await fn(items[i]);
+      }
+    })
+  );
+  return out;
+}
+var MEMO_TTL_MS = 10 * 60 * 1e3;
+var memo = /* @__PURE__ */ new Map();
 async function analyzeCrawlerAccess(url) {
+  const origin = new URL(url).origin;
+  const hit = memo.get(origin);
+  if (hit && Date.now() - hit.at < MEMO_TTL_MS)
+    return hit.result;
+  const result = run(url);
+  memo.set(origin, { at: Date.now(), result });
+  return result;
+}
+function statusText(p) {
+  if (p.challenge)
+    return p.status === null ? "a challenge page" : `a challenge page (${p.status})`;
+  return String(p.status);
+}
+function describe(outcomes) {
+  return {
+    names: outcomes.map(({ bot }) => bot.name).join(", "),
+    statuses: outcomes.map(({ probe: probe2 }) => statusText(probe2)).join(", "),
+    loses: outcomes.map(({ bot }) => bot.loses).join(", ")
+  };
+}
+async function run(url) {
   const issues = [];
-  const baselineStatus = await statusFor(url, BROWSER_UA);
-  const data = { baselineStatus, crawlers: [] };
-  if (baselineStatus === null || baselineStatus >= 400) {
+  const data = { baselineStatus: null, rateLimited: false, crawlers: [] };
+  const baseline = await probe(url, BROWSER_UA);
+  data.baselineStatus = baseline.status;
+  if (baseline.status === null || baseline.status >= 400 || baseline.challenge) {
     return { issues, data };
   }
-  const results = await Promise.all(
-    CRAWLERS.map(async (crawler) => ({
-      crawler,
-      status: await statusFor(url, crawler.userAgent)
-    }))
-  );
-  const blocked = results.filter(({ status }) => status !== null && isRefusal(status));
-  data.crawlers = results.map(({ crawler, status }) => ({
-    name: crawler.name,
-    status,
-    blocked: status !== null && isRefusal(status)
+  const live = KNOWN_BOTS.filter((bot) => bot.userAgent !== null);
+  const outcomes = await mapLimit(live, 3, async (bot) => ({ bot, probe: await probe(url, bot.userAgent) }));
+  data.crawlers = outcomes.map(({ bot, probe: probe2 }) => ({
+    name: bot.name,
+    class: bot.class,
+    status: probe2.status,
+    challenge: probe2.challenge,
+    blocked: refused(probe2)
   }));
+  const blocked = outcomes.filter(({ probe: probe2 }) => refused(probe2));
   if (blocked.length === 0)
     return { issues, data };
-  const search = blocked.filter(({ crawler }) => crawler.critical);
-  const ai = blocked.filter(({ crawler }) => !crawler.critical);
+  if (blocked.length === live.length && blocked.every(({ probe: probe2 }) => probe2.status === 429 && !probe2.challenge)) {
+    data.rateLimited = true;
+    return { issues, data };
+  }
+  const ofClass = (cls) => blocked.filter(({ bot }) => bot.class === cls);
+  const observed = "Observed with the crawler\u2019s user-agent. Real crawlers are also verified by IP, so a site may treat them differently.";
+  const blockedDetail = (outcomes2) => outcomes2.map(({ bot, probe: probe2 }) => ({ crawler: bot.name, status: probe2.status, challenge: probe2.challenge }));
+  const search = ofClass("search");
   if (search.length > 0) {
-    const names = search.map(({ crawler }) => crawler.name).join(", ");
+    const { names, statuses } = describe(search);
     issues.push({
       code: "SEARCH_CRAWLER_BLOCKED_AT_EDGE",
       severity: "error",
       category: "crawlability",
       title: `${names} refused at the edge, not by robots.txt`,
-      description: `A browser request to this URL returned ${baselineStatus}, but ${names} received ${search.map(({ status }) => status).join(", ")}. Something in front of the origin - a CDN, WAF or bot rule - is turning the crawler away, and robots.txt cannot show you this.`,
-      impact: "Pages a search crawler cannot fetch fall out of the index. This is the failure mode behind Cloudflare\u2019s 2026-09-15 default, where blocking AI training also blocked Googlebot because it is classed as a mixed-use crawler.",
+      description: `A browser request to this URL returned ${baseline.status}, but ${names} received ${statuses}. Something in front of the origin - a CDN, WAF or bot rule - is turning the crawler away, and robots.txt cannot show you this.`,
+      impact: "Pages a search crawler cannot fetch fall out of the index, and 88 percent of ChatGPT citations come from that index. This is the failure mode behind Cloudflare\u2019s 2026-09-15 default, where blocking AI training also blocked Googlebot because it is classed as a mixed-use crawler.",
       howToFix: `Check your CDN or WAF bot rules rather than robots.txt.
 
 On Cloudflare: the zone's Security > Bots settings, and any "Block AI Bots" or AI Crawler Control toggle. Because Googlebot crawls for both Search and AI training, blocking Training applies to all of its functions on ad-supported pages - allow Search crawlers explicitly, or opt out of the default.
 
 Confirm with Search Console's URL Inspection, which fetches as the verified Googlebot.`,
       affectedUrls: [url],
-      details: {
-        baselineStatus,
-        blocked: search.map(({ crawler, status }) => ({ crawler: crawler.name, status })),
-        note: "Observed with the crawler\u2019s user-agent. Real crawlers are also verified by IP, so a site may treat them differently."
-      }
+      details: { baselineStatus: baseline.status, blocked: blockedDetail(search), note: observed }
     });
   }
-  if (ai.length > 0) {
-    const names = ai.map(({ crawler }) => crawler.name).join(", ");
+  const aiSearch = ofClass("ai-search");
+  if (aiSearch.length > 0) {
+    const { names, statuses, loses } = describe(aiSearch);
     issues.push({
-      code: "AI_CRAWLER_BLOCKED_AT_EDGE",
+      code: "AI_SEARCH_CRAWLER_BLOCKED_AT_EDGE",
       severity: "warning",
       category: "ai-readiness",
-      title: `${names} refused at the edge, not by robots.txt`,
-      description: `A browser request returned ${baselineStatus}, but ${names} received ${ai.map(({ status }) => status).join(", ")}. The block is in front of the origin, so allowing these agents in robots.txt will not change it.`,
-      impact: "An assistant that cannot fetch the page cannot quote it. This is invisible to a robots.txt check, which is where most AI-visibility tools stop.",
-      howToFix: `If blocking them is deliberate, nothing to do. If not, the rule is in your CDN or WAF, not robots.txt - on Cloudflare see Security > Bots and any AI Crawler Control setting.`,
+      title: `${names} refused at the edge: the site is out of ${loses}`,
+      description: `A browser request returned ${baseline.status}, but ${names} received ${statuses}. These crawlers build the index each assistant answers from: OpenAI documents that a site opted out of OAI-SearchBot is not shown in ChatGPT search answers, and Anthropic says the same of Claude-SearchBot. The block is in front of the origin, so robots.txt cannot show it and allowing the bot there will not lift it.`,
+      impact: "The site is absent from those assistants\u2019 answers whatever robots.txt says. Refusing the training crawlers (GPTBot, ClaudeBot) does not have this effect; refusing the search crawlers does.",
+      howToFix: `If the refusal is deliberate, nothing to do. Otherwise the rule is in the CDN or WAF, not robots.txt: on Cloudflare, Security > Bots (AI Crawl Control) lists Search crawlers separately from Training crawlers - allow the Search class and keep Training blocked if that is the policy. Then fetch the page as the bot again; assume you are blocked until that says otherwise.`,
       affectedUrls: [url],
-      details: {
-        baselineStatus,
-        blocked: ai.map(({ crawler, status }) => ({ crawler: crawler.name, status }))
-      }
+      details: { baselineStatus: baseline.status, blocked: blockedDetail(aiSearch), note: observed }
+    });
+  }
+  const user = ofClass("user");
+  if (user.length > 0) {
+    const { names, statuses } = describe(user);
+    issues.push({
+      code: "AI_USER_FETCH_BLOCKED_AT_EDGE",
+      severity: "warning",
+      category: "ai-readiness",
+      title: `${names} refused at the edge: assistants cannot read this page when a user asks`,
+      description: `A browser request returned ${baseline.status}, but ${names} received ${statuses}. These agents fetch one page because a user pasted its link or asked about it; they are not crawlers and visit nothing on their own.`,
+      impact: "A user who asks ChatGPT, Claude or Perplexity about this page gets an error instead of its content.",
+      howToFix: "Allow the user-triggered agents (ChatGPT-User, Claude-User, Perplexity-User) in the CDN or WAF rule, even where the training crawlers stay blocked; Cloudflare\u2019s AI Crawl Control lists them as their own category.",
+      affectedUrls: [url],
+      details: { baselineStatus: baseline.status, blocked: blockedDetail(user), note: observed }
+    });
+  }
+  const training = ofClass("training");
+  if (training.length > 0) {
+    const { names, statuses } = describe(training);
+    issues.push({
+      code: "AI_TRAINING_CRAWLER_BLOCKED_AT_EDGE",
+      severity: "notice",
+      category: "ai-readiness",
+      title: `${names} refused at the edge (training crawlers)`,
+      description: `A browser request returned ${baseline.status}, but ${names} received ${statuses}. These crawlers collect model-training data only; OpenAI and Anthropic both document that refusing them has no effect on search answers.`,
+      impact: "None on visibility. Listed so the block is a decision rather than a default you did not know about: Cloudflare has blocked known AI crawlers on new zones since 2025-07-01 and on ad-bearing pages since 2026-09-15.",
+      howToFix: "Nothing, if that is the intent. To let these crawlers in, change the CDN or WAF rule; robots.txt cannot override an edge block.",
+      affectedUrls: [url],
+      details: { baselineStatus: baseline.status, blocked: blockedDetail(training), note: observed }
+    });
+  }
+  return { issues, data };
+}
+
+// src/audit/checks/metadata-placement.ts
+import * as cheerio34 from "https://esm.sh/cheerio@1.0.0";
+var TAGS = [
+  { label: "<title>", select: "title" },
+  { label: "the meta description", select: 'meta[name="description"]' },
+  { label: "the canonical link", select: 'link[rel="canonical"]' },
+  { label: "the robots meta", select: 'meta[name="robots"]' }
+];
+function metadataPlacement(html) {
+  const $ = cheerio34.load(html);
+  const inHead = [];
+  const inBody = [];
+  for (const tag of TAGS) {
+    const inHeadCount = $(`head ${tag.select}`).length;
+    if (inHeadCount > 0)
+      inHead.push(tag.label);
+    const bodyMatches = $(`body ${tag.select}`).filter((_, el) => $(el).closest("svg").length === 0);
+    if (inHeadCount === 0 && bodyMatches.length > 0)
+      inBody.push(tag.label);
+  }
+  return { inHead, inBody };
+}
+var GOOGLEBOT_UA = KNOWN_BOTS.find((bot) => bot.name === "Googlebot").userAgent;
+async function fetchAs(url, userAgent) {
+  try {
+    const response = await httpGet(url, {
+      headers: { "User-Agent": userAgent },
+      timeout: 8e3,
+      validateStatus: () => true
+    });
+    return response.status === 200 && typeof response.data === "string" ? response.data : null;
+  } catch {
+    return null;
+  }
+}
+function list(labels) {
+  if (labels.length <= 1)
+    return labels.join("");
+  return `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}`;
+}
+async function analyzeMetadataPlacement(html, url, options = {}) {
+  const page = metadataPlacement(html);
+  const data = { page, streamed: [] };
+  const issues = [];
+  const essential = TAGS.slice(0, 3).map((t) => t.label);
+  const suspicious = essential.some((label) => !page.inHead.includes(label)) || page.inBody.length > 0;
+  if (options.compareAsGooglebot !== false && suspicious) {
+    const asGooglebot = await fetchAs(url, GOOGLEBOT_UA);
+    if (asGooglebot) {
+      data.googlebot = metadataPlacement(asGooglebot);
+      data.streamed = data.googlebot.inHead.filter((label) => !page.inHead.includes(label));
+    }
+  }
+  if (data.streamed.length > 0) {
+    const labels = list(data.streamed);
+    const inBody = data.streamed.filter((label) => page.inBody.includes(label));
+    const where = inBody.length === data.streamed.length ? "they arrive later, inside <body>" : inBody.length > 0 ? "some arrive later inside <body> and the rest not at all" : "they are absent";
+    issues.push({
+      code: "METADATA_STREAMED_FOR_BOTS",
+      severity: "warning",
+      category: "indexability",
+      title: `${labels} reach Googlebot but not other agents`,
+      description: `Fetched as Googlebot, this page has ${labels} in <head>. Fetched as this audit, which is on no framework's bot list, ${where}. Next.js app router streams metadata this way: it waits for it only for user agents it recognises, so OAI-SearchBot, Claude-SearchBot, PerplexityBot, link previews and any crawler it does not list read the page without it.`,
+      impact: 'Google may still index the page correctly; every other reader gets it without a canonical or a description. That is the "Duplicate without user-selected canonical" and zero-impressions failure in the Next.js reports, and for AI search a page with nothing to cite.',
+      howToFix: "Serve the metadata in the initial HTML to everyone. Next.js: list the AI crawlers in `htmlLimitedBots` in next.config (OAI-SearchBot, Claude-SearchBot, PerplexityBot, ChatGPT-User, Claude-User), or make the route\u2019s metadata synchronous so nothing is streamed. Other frameworks: emit <title>, the description and the canonical before any body content.",
+      affectedUrls: [url],
+      details: { streamed: data.streamed, page, googlebot: data.googlebot }
+    });
+  } else if (page.inBody.length > 0) {
+    const labels = list(page.inBody);
+    issues.push({
+      code: "METADATA_OUTSIDE_HEAD",
+      severity: "warning",
+      category: "indexability",
+      title: `${labels} sit inside <body>, where crawlers do not read them`,
+      description: `${labels} appear after the first body content. The HTML parser closes <head> at that point, so they land in <body>; Google documents that a canonical outside <head> is ignored, and a description there is not used as a snippet.`,
+      impact: "The page can be indexed under a URL you did not choose and shown without its description.",
+      howToFix: "Emit the metadata before any body content: from the server-rendered <head>, not from a component that renders late or a script that injects tags after load.",
+      affectedUrls: [url],
+      details: { inBody: page.inBody, inHead: page.inHead }
     });
   }
   return { issues, data };
 }
 
 // src/audit/checks/ai-readiness.ts
-import * as cheerio34 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio35 from "https://esm.sh/cheerio@1.0.0";
 
 // src/audit/checks/agent-experience.ts
 var SIGNAL_PATHS = [
@@ -19590,18 +19794,6 @@ async function checkAgentExperience(baseUrl) {
 }
 
 // src/audit/checks/ai-readiness.ts
-var AI_BOTS = {
-  GPTBot: "GPTBot",
-  "ChatGPT-User": "ChatGPT-User",
-  "OAI-SearchBot": "OAI-SearchBot",
-  ClaudeBot: "ClaudeBot",
-  "Claude-Web": "Claude-Web",
-  "anthropic-ai": "anthropic-ai",
-  PerplexityBot: "PerplexityBot",
-  "Google-Extended": "Google-Extended",
-  Bytespider: "Bytespider",
-  CCBot: "CCBot"
-};
 async function checkLlmsTxt(baseUrl) {
   const issues = [];
   const url = new URL("/llms.txt", baseUrl).href;
@@ -19675,130 +19867,130 @@ function parseContentSignal(robotsTxtContent) {
   }
   return null;
 }
+function parseRobotsGroups(content) {
+  const groups = /* @__PURE__ */ new Map();
+  let current = [];
+  let lastWasAgent = false;
+  for (const raw of content.split("\n")) {
+    const line = raw.replace(/#.*$/, "").trim();
+    if (!line)
+      continue;
+    const colon = line.indexOf(":");
+    if (colon === -1)
+      continue;
+    const directive = line.slice(0, colon).trim().toLowerCase();
+    const value = line.slice(colon + 1).trim();
+    if (directive === "user-agent") {
+      if (!lastWasAgent)
+        current = [];
+      current.push(value.toLowerCase());
+      lastWasAgent = true;
+      for (const token of current)
+        if (!groups.has(token))
+          groups.set(token, { disallowAll: false, allowRoot: false });
+      continue;
+    }
+    lastWasAgent = false;
+    if (directive === "disallow" && (value === "/" || value === "/*")) {
+      for (const token of current)
+        groups.get(token).disallowAll = true;
+    } else if (directive === "allow" && (value === "/" || value === "/*")) {
+      for (const token of current)
+        groups.get(token).allowRoot = true;
+    }
+  }
+  return groups;
+}
+function isDisallowed(bot, groups) {
+  const own = bot.robotsTokens.map((token) => groups.get(token)).filter((g) => !!g);
+  if (own.length > 0)
+    return own.some((g) => g.disallowAll) && !own.some((g) => g.allowRoot);
+  const star = groups.get("*");
+  return !!star?.disallowAll;
+}
+function emptyClasses() {
+  return {
+    search: { allowed: [], disallowed: [] },
+    "ai-search": { allowed: [], disallowed: [] },
+    user: { allowed: [], disallowed: [] },
+    training: { allowed: [], disallowed: [] }
+  };
+}
+function allAllowed(robotsExists) {
+  const classes = emptyClasses();
+  for (const bot of KNOWN_BOTS)
+    classes[bot.class].allowed.push(bot.name);
+  return { robotsExists, blockedBots: [], allowedBots: KNOWN_BOTS.map((b) => b.name), allBlocked: false, contentSignal: null, classes };
+}
 async function checkAIBotBlocking(baseUrl) {
   const issues = [];
   const url = new URL("/robots.txt", baseUrl).href;
+  let content;
+  try {
+    const response = await httpGet(url, { timeout: 1e4, validateStatus: () => true });
+    if (response.status >= 400 || looksLikeHtmlFallback(response.data, response.headers?.["content-type"])) {
+      return { issues, data: allAllowed(false) };
+    }
+    content = response.data;
+  } catch {
+    return { issues, data: allAllowed(false) };
+  }
+  const groups = parseRobotsGroups(content);
+  const classes = emptyClasses();
   const blockedBots = [];
   const allowedBots = [];
-  try {
-    const response = await httpGet(url, {
-      timeout: 1e4,
-      validateStatus: () => true
-    });
-    if (response.status === 404 || response.status >= 400) {
-      return {
-        issues,
-        data: {
-          robotsExists: false,
-          blockedBots: [],
-          allowedBots: Object.keys(AI_BOTS),
-          allBlocked: false,
-          contentSignal: null
-        }
-      };
-    }
-    const content = response.data;
-    const lines = content.split("\n");
-    const contentSignal = parseContentSignal(content);
-    let currentUserAgent = "";
-    const botRules = {};
-    for (const line of lines) {
-      const trimmed = line.trim().toLowerCase();
-      if (trimmed.startsWith("content-signal:")) {
-        continue;
-      } else if (trimmed.startsWith("user-agent:")) {
-        currentUserAgent = trimmed.split(":")[1].trim();
-      } else if (trimmed.startsWith("disallow:")) {
-        const path = trimmed.split(":")[1]?.trim() || "";
-        for (const [botKey, botName] of Object.entries(AI_BOTS)) {
-          if (currentUserAgent === "*" || currentUserAgent === botKey.toLowerCase() || currentUserAgent === botName.toLowerCase()) {
-            if (path === "/" || path === "/*") {
-              if (!botRules[botKey]) {
-                botRules[botKey] = { allowed: false, disallowAll: false };
-              }
-              if (currentUserAgent !== "*" || currentUserAgent === "*" && !botRules[botKey].allowed) {
-                botRules[botKey].disallowAll = true;
-              }
-            }
-          }
-        }
-      } else if (trimmed.startsWith("allow:")) {
-        for (const [botKey] of Object.entries(AI_BOTS)) {
-          if (currentUserAgent === botKey.toLowerCase()) {
-            if (!botRules[botKey]) {
-              botRules[botKey] = { allowed: true, disallowAll: false };
-            }
-            botRules[botKey].allowed = true;
-          }
-        }
-      }
-    }
-    for (const [botKey] of Object.entries(AI_BOTS)) {
-      const rules = botRules[botKey];
-      if (rules?.disallowAll && !rules?.allowed) {
-        blockedBots.push(botKey);
-      } else {
-        allowedBots.push(botKey);
-      }
-    }
-    if (blockedBots.length === Object.keys(AI_BOTS).length) {
-      issues.push({
-        ...ISSUE_DEFINITIONS.AI_BOT_BLOCKED_ALL,
-        affectedUrls: [url],
-        details: { blockedBots }
-      });
+  for (const bot of KNOWN_BOTS) {
+    if (isDisallowed(bot, groups)) {
+      classes[bot.class].disallowed.push(bot.name);
+      blockedBots.push(bot.name);
     } else {
-      if (blockedBots.includes("GPTBot") || blockedBots.includes("ChatGPT-User")) {
-        issues.push({
-          ...ISSUE_DEFINITIONS.AI_BOT_GPTBOT_BLOCKED,
-          affectedUrls: [url]
-        });
-      }
-      if (blockedBots.includes("ClaudeBot") || blockedBots.includes("Claude-Web") || blockedBots.includes("anthropic-ai")) {
-        issues.push({
-          ...ISSUE_DEFINITIONS.AI_BOT_CLAUDEBOT_BLOCKED,
-          affectedUrls: [url]
-        });
-      }
-      if (blockedBots.includes("PerplexityBot")) {
-        issues.push({
-          ...ISSUE_DEFINITIONS.AI_BOT_PERPLEXITY_BLOCKED,
-          affectedUrls: [url]
-        });
-      }
-      if (blockedBots.includes("Google-Extended")) {
-        issues.push({
-          ...ISSUE_DEFINITIONS.AI_BOT_GOOGLE_EXTENDED_BLOCKED,
-          affectedUrls: [url]
-        });
-      }
+      classes[bot.class].allowed.push(bot.name);
+      allowedBots.push(bot.name);
     }
-    return {
-      issues,
-      data: {
-        robotsExists: true,
-        blockedBots,
-        allowedBots,
-        allBlocked: blockedBots.length === Object.keys(AI_BOTS).length,
-        contentSignal
-      }
-    };
-  } catch (error) {
-    return {
-      issues,
-      data: {
-        robotsExists: false,
-        blockedBots: [],
-        allowedBots: Object.keys(AI_BOTS),
-        allBlocked: false,
-        contentSignal: null
-      }
-    };
   }
+  const aiBots = KNOWN_BOTS.filter((bot) => bot.class !== "search");
+  const allBlocked = aiBots.every((bot) => blockedBots.includes(bot.name));
+  const names = (cls) => classes[cls].disallowed.join(", ");
+  if (allBlocked) {
+    issues.push({
+      ...ISSUE_DEFINITIONS.AI_BOT_BLOCKED_ALL,
+      affectedUrls: [url],
+      details: { blockedBots, classes }
+    });
+  } else {
+    if (classes["ai-search"].disallowed.length > 0) {
+      issues.push({
+        ...ISSUE_DEFINITIONS.AI_SEARCH_BOTS_DISALLOWED,
+        description: `robots.txt disallows ${names("ai-search")}. ${ISSUE_DEFINITIONS.AI_SEARCH_BOTS_DISALLOWED.description}`,
+        affectedUrls: [url],
+        details: { disallowed: classes["ai-search"].disallowed }
+      });
+    }
+    if (classes.user.disallowed.length > 0) {
+      issues.push({
+        ...ISSUE_DEFINITIONS.AI_USER_FETCH_DISALLOWED,
+        description: `robots.txt disallows ${names("user")}. ${ISSUE_DEFINITIONS.AI_USER_FETCH_DISALLOWED.description}`,
+        affectedUrls: [url],
+        details: { disallowed: classes.user.disallowed }
+      });
+    }
+    if (classes.training.disallowed.length > 0) {
+      issues.push({
+        ...ISSUE_DEFINITIONS.AI_TRAINING_BOTS_DISALLOWED,
+        description: `robots.txt disallows ${names("training")}. ${ISSUE_DEFINITIONS.AI_TRAINING_BOTS_DISALLOWED.description}`,
+        affectedUrls: [url],
+        details: { disallowed: classes.training.disallowed }
+      });
+    }
+  }
+  return {
+    issues,
+    data: { robotsExists: true, blockedBots, allowedBots, allBlocked, contentSignal: parseContentSignal(content), classes }
+  };
 }
 function checkJSRenderingRatio(html, url) {
   const issues = [];
-  const $ = cheerio34.load(html);
+  const $ = cheerio35.load(html);
   $("script, style, noscript").remove();
   const staticText = $("body").text().replace(/\s+/g, " ").trim();
   const staticWordCount = staticText.split(/\s+/).filter((word) => word.length > 0).length;
@@ -19883,7 +20075,7 @@ async function runAIReadinessChecks(baseUrl, html) {
 }
 
 // src/audit/checks/serp-preview.ts
-import * as cheerio35 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio36 from "https://esm.sh/cheerio@1.0.0";
 var CHAR_WIDTHS = {
   // Lowercase letters
   a: 9,
@@ -20016,7 +20208,7 @@ function formatSERPUrl(url) {
 }
 function analyzeSERPPreview(html, url) {
   const issues = [];
-  const $ = cheerio35.load(html);
+  const $ = cheerio36.load(html);
   const rawTitle = $("title").text().trim() || "";
   const titlePixels = calculatePixelWidth(rawTitle);
   const titleTruncated = truncateToPixels(rawTitle, TITLE_MAX_PIXELS);
@@ -20121,7 +20313,7 @@ function wrapText(text, maxWidth) {
 }
 
 // src/audit/checks/local-seo.ts
-import * as cheerio36 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio37 from "https://esm.sh/cheerio@1.0.0";
 var PHONE_PATTERNS = [
   /\+?1?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}/g,
   // US/Canada
@@ -20136,7 +20328,7 @@ var ADDRESS_PATTERNS = [
   // Generic US address
 ];
 function extractSchema(html) {
-  const $ = cheerio36.load(html);
+  const $ = cheerio37.load(html);
   let hasLocalBusiness = false;
   let hasOrganization = false;
   let schemaData = null;
@@ -20203,7 +20395,7 @@ function formatAddress(address) {
   return void 0;
 }
 function detectPhones(html) {
-  const $ = cheerio36.load(html);
+  const $ = cheerio37.load(html);
   const text = $("body").text();
   const phones = /* @__PURE__ */ new Set();
   $('a[href^="tel:"]').each((_, el) => {
@@ -20224,7 +20416,7 @@ function detectPhones(html) {
   });
 }
 function detectAddresses(html) {
-  const $ = cheerio36.load(html);
+  const $ = cheerio37.load(html);
   const text = $("body").text();
   const addresses = /* @__PURE__ */ new Set();
   for (const pattern of ADDRESS_PATTERNS) {
@@ -20241,7 +20433,7 @@ function detectAddresses(html) {
   return Array.from(addresses);
 }
 function detectSocialProfiles(html) {
-  const $ = cheerio36.load(html);
+  const $ = cheerio37.load(html);
   const profiles = [];
   const socialDomains = [
     "facebook.com",
@@ -20291,7 +20483,7 @@ function analyzeLocalSEO(html, url) {
       affectedUrls: [url]
     });
   }
-  const $ = cheerio36.load(html);
+  const $ = cheerio37.load(html);
   const isBusinessPage = $('a[href^="tel:"]').length > 0 || $('a[href^="mailto:"]').length > 0 || html.toLowerCase().includes("contact") || html.toLowerCase().includes("about us");
   if (isBusinessPage) {
     if (detectedAddresses.length === 0 && !schemaData?.address) {
@@ -20455,7 +20647,7 @@ async function analyzeSecurityHeaders(url) {
 }
 
 // src/audit/checks/content-freshness.ts
-import * as cheerio37 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio38 from "https://esm.sh/cheerio@1.0.0";
 var ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1e3;
 function parseDate(dateStr) {
   if (!dateStr)
@@ -20477,7 +20669,7 @@ function calculateAgeInDays(date) {
   return Math.floor(diff / (24 * 60 * 60 * 1e3));
 }
 function extractDatesFromHtml(html) {
-  const $ = cheerio37.load(html);
+  const $ = cheerio38.load(html);
   const articleModifiedTime = parseDate(
     $('meta[property="article:modified_time"]').attr("content") || $('meta[name="article:modified_time"]').attr("content")
   );
@@ -20537,7 +20729,7 @@ async function analyzeContentFreshness(url, html) {
       }
     });
   }
-  const $ = cheerio37.load(html);
+  const $ = cheerio38.load(html);
   const isArticle = $("article").length > 0 || $('meta[property="og:type"][content="article"]').length > 0 || $('meta[property="article:published_time"]').length > 0;
   if (isArticle && !htmlDates.articleModifiedTime && !htmlDates.ogUpdatedTime) {
     issues.push({
@@ -20560,7 +20752,7 @@ async function analyzeContentFreshness(url, html) {
 }
 
 // src/audit/checks/dom-analysis.ts
-import * as cheerio38 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio39 from "https://esm.sh/cheerio@1.0.0";
 var DOM_SIZE_WARNING = 1500;
 var DOM_SIZE_ERROR = 3e3;
 var DOM_DEPTH_WARNING = 32;
@@ -20626,7 +20818,7 @@ function findRenderBlockingResources($) {
 }
 function analyzeDOMStructure(html, url) {
   const issues = [];
-  const $ = cheerio38.load(html);
+  const $ = cheerio39.load(html);
   const nodeCount = countNodes($);
   const maxDepth = calculateMaxDepth($);
   const renderBlockingResources = findRenderBlockingResources($);
@@ -20689,7 +20881,7 @@ function analyzeDOMStructure(html, url) {
 }
 
 // src/audit/checks/modern-images.ts
-import * as cheerio39 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio40 from "https://esm.sh/cheerio@1.0.0";
 var MODERN_FORMATS = [".webp", ".avif"];
 var LEGACY_FORMATS = [".jpg", ".jpeg", ".png", ".gif", ".bmp"];
 function getImageFormat(url) {
@@ -20785,7 +20977,7 @@ function extractImages($, baseUrl) {
 }
 function analyzeModernImages(html, url) {
   const issues = [];
-  const $ = cheerio39.load(html);
+  const $ = cheerio40.load(html);
   const images = extractImages($, url);
   const uniqueImages = images.filter((img, idx, arr) => arr.findIndex((i) => i.src === img.src) === idx);
   const modernFormatCount = uniqueImages.filter((img) => img.isModernFormat).length;
@@ -20836,11 +21028,11 @@ function analyzeModernImages(html, url) {
 }
 
 // src/audit/checks/tech-detection.ts
-import * as cheerio40 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio41 from "https://esm.sh/cheerio@1.0.0";
 var VULNERABLE_JQUERY = ["1.", "2.0", "2.1", "2.2", "3.0", "3.1", "3.2", "3.3", "3.4"];
 function detectTechnologies(html, url, headers) {
   const issues = [];
-  const $ = cheerio40.load(html);
+  const $ = cheerio41.load(html);
   const technologies = [];
   detectCMS($, technologies);
   detectFrameworks($, html, technologies);
@@ -21172,7 +21364,7 @@ function detectCDN(headers, technologies) {
 }
 
 // src/audit/checks/keyword-analysis.ts
-import * as cheerio41 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio42 from "https://esm.sh/cheerio@1.0.0";
 var STOP_WORDS = /* @__PURE__ */ new Set([
   "a",
   "an",
@@ -21311,7 +21503,7 @@ function extractNGrams(words, n) {
 }
 function analyzeKeywords(html, url) {
   const issues = [];
-  const $ = cheerio41.load(html);
+  const $ = cheerio42.load(html);
   const title = extractText($, "title");
   const h1 = extractText($, "h1");
   const h2 = extractText($, "h2");
@@ -21420,7 +21612,7 @@ function analyzeKeywords(html, url) {
 }
 
 // src/audit/checks/additional-checks.ts
-import * as cheerio42 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio43 from "https://esm.sh/cheerio@1.0.0";
 async function resolveTxtDoH(domain) {
   const url = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=TXT`;
   const response = await fetch(url, {
@@ -21560,7 +21752,7 @@ async function checkSPF(domain) {
 }
 function checkAMP(html, url) {
   const issues = [];
-  const $ = cheerio42.load(html);
+  const $ = cheerio43.load(html);
   const ampLink = $('link[rel="amphtml"]').attr("href");
   if (ampLink) {
     return {
@@ -21595,7 +21787,7 @@ function checkAMP(html, url) {
 }
 function checkPlaintextEmails(html, url) {
   const issues = [];
-  const $ = cheerio42.load(html);
+  const $ = cheerio43.load(html);
   $("script, style").remove();
   const text = $("body").text();
   const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
@@ -21619,7 +21811,7 @@ function checkPlaintextEmails(html, url) {
 }
 function checkAppleTouchIcon(html, url) {
   const issues = [];
-  const $ = cheerio42.load(html);
+  const $ = cheerio43.load(html);
   const hasAppleTouchIcon = $('link[rel="apple-touch-icon"]').length > 0 || $('link[rel="apple-touch-icon-precomposed"]').length > 0;
   if (!hasAppleTouchIcon) {
     issues.push({
@@ -21631,7 +21823,7 @@ function checkAppleTouchIcon(html, url) {
 }
 function checkFaviconFormat(html, url) {
   const issues = [];
-  const $ = cheerio42.load(html);
+  const $ = cheerio43.load(html);
   const faviconLink = $('link[rel="icon"]').attr("href") || $('link[rel="shortcut icon"]').attr("href") || null;
   if (!faviconLink) {
     return { issues, format: null };
@@ -21684,9 +21876,9 @@ async function runAdditionalChecks(url, html) {
 }
 
 // src/audit/checks/resource-hints.ts
-import * as cheerio43 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio44 from "https://esm.sh/cheerio@1.0.0";
 function extractResourceHints(html) {
-  const $ = cheerio43.load(html);
+  const $ = cheerio44.load(html);
   const hints = [];
   $('link[rel="dns-prefetch"]').each((_, el) => {
     const href = $(el).attr("href");
@@ -21734,7 +21926,7 @@ function extractResourceHints(html) {
   return hints;
 }
 function detectThirdPartyDomains(html, pageUrl) {
-  const $ = cheerio43.load(html);
+  const $ = cheerio44.load(html);
   const baseDomain = new URL(pageUrl).hostname;
   const domains = /* @__PURE__ */ new Set();
   $("script[src]").each((_, el) => {
@@ -21860,7 +22052,7 @@ function analyzeResourceHints(html, url) {
       affectedUrls: [url]
     });
   }
-  const $ = cheerio43.load(html);
+  const $ = cheerio44.load(html);
   const hasHeroImage = $("img").first().length > 0;
   const hasImagePreload = preload.some((p) => p.as === "image");
   if (hasHeroImage && !hasImagePreload) {
@@ -21931,7 +22123,7 @@ function analyzeResourceHints(html, url) {
 }
 
 // src/audit/checks/indexnow.ts
-import * as cheerio44 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio45 from "https://esm.sh/cheerio@1.0.0";
 async function checkRobotsTxtForIndexNow(baseUrl) {
   try {
     const response = await httpGet(`${new URL(baseUrl).origin}/robots.txt`, {
@@ -21989,12 +22181,12 @@ async function findIndexNowKeyFile(baseUrl, possibleKeys) {
   return { found: false, url: null, key: null };
 }
 function checkIndexNowLinkTag(html) {
-  const $ = cheerio44.load(html);
+  const $ = cheerio45.load(html);
   const indexNowLink = $('link[rel="indexnow"]').attr("href") || $('link[rel="index-now"]').attr("href") || $('meta[name="indexnow-key"]').attr("content") || null;
   return { found: !!indexNowLink, href: indexNowLink };
 }
 function detectIndexNowCMSSupport(html, headers) {
-  const $ = cheerio44.load(html);
+  const $ = cheerio45.load(html);
   const isWordPress = html.includes("wp-content") || html.includes("wp-includes") || $('meta[name="generator"][content*="WordPress"]').length > 0;
   if (isWordPress) {
     if (html.includes("yoast-seo") || html.includes("wordpress-seo")) {
@@ -22065,7 +22257,7 @@ async function analyzeIndexNow(html, url, headers = {}) {
 }
 
 // src/audit/checks/site-maturity.ts
-import * as cheerio45 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio46 from "https://esm.sh/cheerio@1.0.0";
 async function getSSLCertificateAge(url) {
   let https;
   try {
@@ -22143,7 +22335,7 @@ async function estimateIndexedPages(url) {
           validateStatus: () => true
         });
         if (response.status === 200) {
-          const $ = cheerio45.load(response.data, { xmlMode: true });
+          const $ = cheerio46.load(response.data, { xmlMode: true });
           const sitemaps = $("sitemap").length;
           if (sitemaps > 0) {
             return sitemaps * 500;
@@ -22162,7 +22354,7 @@ async function estimateIndexedPages(url) {
   }
 }
 function analyzeHTMLMaturitySignals(html, url) {
-  const $ = cheerio45.load(html);
+  const $ = cheerio46.load(html);
   const text = $("body").text().toLowerCase();
   const htmlLower = html.toLowerCase();
   const hasBlog = $('a[href*="/blog"]').length > 0 || $('a[href*="/posts"]').length > 0 || $('a[href*="/articles"]').length > 0 || htmlLower.includes("/blog") || $('[class*="blog"]').length > 0;
@@ -22352,7 +22544,7 @@ async function analyzeSiteMaturity(html, url) {
 }
 
 // src/audit/checks/tracker-bloat.ts
-import * as cheerio46 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio47 from "https://esm.sh/cheerio@1.0.0";
 var KNOWN_TRACKERS = [
   // Analytics
   { name: "Google Analytics (GA4)", domain: "googletagmanager.com", type: "analytics", impact: "medium" },
@@ -22422,7 +22614,7 @@ var KNOWN_TRACKERS = [
   { name: "Google Optimize", domain: "googleoptimize.com", type: "other", impact: "medium" }
 ];
 function detectTrackers(html) {
-  const $ = cheerio46.load(html);
+  const $ = cheerio47.load(html);
   const trackers = [];
   const scripts = $("script");
   scripts.each((_, el) => {
@@ -22691,7 +22883,7 @@ function analyzeTrackerBloat(html, url) {
 }
 
 // src/audit/checks/client-rendering.ts
-import * as cheerio47 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio48 from "https://esm.sh/cheerio@1.0.0";
 var FRAMEWORK_PATTERNS = {
   "Next.js": [/__NEXT_DATA__/, /next\//, /_next\//],
   "Nuxt": [/__NUXT__/, /nuxt/, /_nuxt\//],
@@ -22760,7 +22952,7 @@ function detectFramework2(html) {
   return null;
 }
 function analyzeRendering(html) {
-  const $ = cheerio47.load(html);
+  const $ = cheerio48.load(html);
   const signals = [];
   const frameworkDetected = detectFramework2(html);
   let csrScore = 0;
@@ -22931,7 +23123,7 @@ function generateRecommendations2(renderingMethod, hasContentInHTML, charCount, 
   return recommendations;
 }
 function analyzeClientRendering(html, url) {
-  const $ = cheerio47.load(html);
+  const $ = cheerio48.load(html);
   const issues = [];
   const analysis = analyzeRendering(html);
   if (analysis.renderingMethod === "csr" && analysis.confidence !== "low") {
@@ -23321,7 +23513,7 @@ async function analyzeRedirectChain(url) {
 }
 
 // src/audit/checks/responsive-images.ts
-import * as cheerio48 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio49 from "https://esm.sh/cheerio@1.0.0";
 var MODERN_FORMATS2 = [".webp", ".avif"];
 function analyzeImage($, img, index) {
   const $img = $(img);
@@ -23339,7 +23531,8 @@ function analyzeImage($, img, index) {
   const srcLower = src.toLowerCase();
   const usesModernFormat = MODERN_FORMATS2.some((fmt) => srcLower.includes(fmt));
   const isInHeader = $img.closest('header, [class*="hero"], [class*="banner"], [class*="jumbotron"]').length > 0;
-  const isAboveFold = index < 3 || isInHeader;
+  const isInFooter = $img.closest('footer, [class*="footer"]').length > 0;
+  const isAboveFold = !isInFooter && (index < 3 || isInHeader);
   if (!hasExplicitDimensions) {
     issues.push("Missing width/height attributes (causes CLS)");
   }
@@ -23431,7 +23624,7 @@ function detectImageCDN(html) {
   };
 }
 function analyzeResponsiveImages(html, url) {
-  const $ = cheerio48.load(html);
+  const $ = cheerio49.load(html);
   const issues = [];
   const images = [];
   const imgElements = $("img");
@@ -23595,7 +23788,7 @@ function analyzeResponsiveImages(html, url) {
 }
 
 // src/audit/checks/bing-optimization.ts
-import * as cheerio49 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio50 from "https://esm.sh/cheerio@1.0.0";
 
 // src/audit/checks/site-verification.ts
 var UNCHECKED = {
@@ -23702,7 +23895,7 @@ async function fetchBingSiteAuth(origin) {
 // src/audit/checks/bing-optimization.ts
 async function analyzeBingOptimization(html, url) {
   const issues = [];
-  const $ = cheerio49.load(html);
+  const $ = cheerio50.load(html);
   const parsedUrl = new URL(url);
   const baseUrl = `${parsedUrl.protocol}//${parsedUrl.hostname}`;
   const detectedIssues = [];
@@ -24204,10 +24397,10 @@ async function analyzeLlmsTxt(url) {
       code: "AI_NO_LLMS_TXT",
       severity: "notice",
       category: "ai-readiness",
-      title: "No llms.txt file found",
-      description: "llms.txt is a proposed standard for providing context to LLMs about your website. Having one helps AI systems better understand and represent your site.",
-      impact: "AI systems may have less context about your site, potentially leading to less accurate representations.",
-      howToFix: "Create an /llms.txt file with a Markdown description of your site. Include: site name, brief description, and links to key pages. See https://llmstxt.org/ for the specification.",
+      title: "No llms.txt",
+      description: "No /llms.txt. It is a convention for coding agents and documentation sites (Lighthouse 13.3 audits it; Anthropic, OpenAI, Stripe, Vercel and Supabase publish one for their docs). No search engine or answer engine reads it: Google says it neither helps nor harms, and in a 137,000-domain study 97 percent of the files received no request in a month.",
+      impact: "None on search or AI answers. A documentation site gains a curated index for the agents that look for one.",
+      howToFix: "For a documentation site, publish /llms.txt: an H1 with the project name, a one-line blockquote description, then markdown links with a short description each (the Lighthouse criteria). For a marketing site, ignore this notice. See https://llmstxt.org/.",
       affectedUrls: [llmsTxtUrl],
       details: {
         specification: "https://llmstxt.org/",
@@ -24337,11 +24530,154 @@ function analyzeStructure(content) {
   };
 }
 
+// src/audit/discovery/link-crawler.ts
+var HIGH_PRIORITY_PATTERNS = [
+  /^\/(pricing|about|features|contact|demo|signup|login|blog)\/?$/i,
+  /^\/(products?|services?|solutions?|plans?)\/?$/i,
+  /^\/(docs?|documentation|help|support|faq)\/?$/i,
+  /^\/(careers?|jobs?|team|company)\/?$/i
+];
+var MEDIUM_PRIORITY_PATTERNS = [
+  /^\/(privacy|terms|legal|security)\/?$/i,
+  /^\/[a-z0-9-]+\/?$/i
+  // Top-level pages
+];
+var EXCLUDE_PATTERNS = [
+  /\.(png|jpg|jpeg|gif|svg|webp|ico|pdf|zip|tar|gz)$/i,
+  // Images & archives
+  /\.(json|xml|txt|webmanifest|rss|atom)$/i,
+  // Data files (not HTML)
+  /^(mailto:|tel:|javascript:|#)/i,
+  // Non-HTTP
+  /\/(api|_next|static|assets|cdn)\//i,
+  // Technical paths
+  /[?&](utm_|ref=|source=)/i
+  // Tracking params
+];
+function extractLinks2(html, baseUrl) {
+  const base = new URL(baseUrl);
+  const links = /* @__PURE__ */ new Set();
+  const hrefRegex = /href=["']([^"']+)["']/gi;
+  let match;
+  while ((match = hrefRegex.exec(html)) !== null) {
+    try {
+      const href = match[1];
+      if (EXCLUDE_PATTERNS.some((pattern) => pattern.test(href))) {
+        continue;
+      }
+      let url;
+      if (href.startsWith("http://") || href.startsWith("https://")) {
+        url = new URL(href);
+      } else if (href.startsWith("/")) {
+        url = new URL(href, base);
+      } else {
+        continue;
+      }
+      if (url.hostname !== base.hostname) {
+        continue;
+      }
+      const normalized = normalizeUrl3(url);
+      if (normalized) {
+        links.add(normalized);
+      }
+    } catch {
+    }
+  }
+  return Array.from(links);
+}
+var extractInternalLinks2 = extractLinks2;
+function normalizeUrl3(url) {
+  url.hash = "";
+  const paramsToRemove = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "ref", "source"];
+  for (const param of paramsToRemove) {
+    url.searchParams.delete(param);
+  }
+  let pathname = url.pathname;
+  if (pathname.length > 1 && pathname.endsWith("/")) {
+    pathname = pathname.slice(0, -1);
+  }
+  if (pathname === "" || pathname === "/") {
+    return null;
+  }
+  return `${url.protocol}//${url.hostname}${pathname}${url.search}`;
+}
+function calculatePriority(url) {
+  try {
+    const pathname = new URL(url).pathname;
+    for (const pattern of HIGH_PRIORITY_PATTERNS) {
+      if (pattern.test(pathname)) {
+        return 9;
+      }
+    }
+    for (const pattern of MEDIUM_PRIORITY_PATTERNS) {
+      if (pattern.test(pathname)) {
+        return 6;
+      }
+    }
+    const depth = (pathname.match(/\//g) || []).length;
+    if (depth >= 3) {
+      return 2;
+    }
+    if (depth === 2) {
+      return 4;
+    }
+    return 5;
+  } catch {
+    return 1;
+  }
+}
+function discoverPagesFromLinks(baseUrl, html, maxPages = 5) {
+  const links = extractLinks2(html, baseUrl);
+  const pages = links.map((url) => ({
+    url,
+    source: "internal-link",
+    priority: calculatePriority(url)
+  }));
+  pages.sort((a, b) => b.priority - a.priority);
+  return pages.slice(0, maxPages);
+}
+function parseSitemap(xml, baseUrl) {
+  const pages = [];
+  const base = new URL(baseUrl);
+  const locRegex = /<loc>([^<]+)<\/loc>/gi;
+  let match;
+  while ((match = locRegex.exec(xml)) !== null) {
+    try {
+      const url = new URL(match[1]);
+      if (url.hostname !== base.hostname) {
+        continue;
+      }
+      if (EXCLUDE_PATTERNS.some((pattern) => pattern.test(url.pathname))) {
+        continue;
+      }
+      pages.push({
+        url: url.href,
+        source: "sitemap",
+        priority: calculatePriority(url.href)
+      });
+    } catch {
+    }
+  }
+  return pages;
+}
+function mergePages(...pageSets) {
+  const seen = /* @__PURE__ */ new Map();
+  for (const pages of pageSets) {
+    for (const page of pages) {
+      const existing = seen.get(page.url);
+      if (!existing || page.priority > existing.priority) {
+        seen.set(page.url, page);
+      }
+    }
+  }
+  return Array.from(seen.values()).sort((a, b) => b.priority - a.priority);
+}
+
 // src/audit/checks/html-compliance.ts
-import * as cheerio50 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio51 from "https://esm.sh/cheerio@1.0.0";
 async function analyzeHtmlCompliance(html, url, headers) {
   const issues = [];
-  const $ = cheerio50.load(html);
+  const $ = cheerio51.load(html);
   const parsedUrl = new URL(url);
   const doctypeMatch = html.match(/<!DOCTYPE\s+([^>]+)>/i);
   const hasDoctype = doctypeMatch !== null;
@@ -24913,7 +25249,7 @@ function getAssetType(url) {
 }
 
 // src/audit/checks/dom-size.ts
-import * as cheerio51 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio52 from "https://esm.sh/cheerio@1.0.0";
 var THRESHOLDS = {
   totalElements: {
     warning: 1500,
@@ -24930,7 +25266,7 @@ var THRESHOLDS = {
 };
 function analyzeDomSize(html, url) {
   const issues = [];
-  const $ = cheerio51.load(html);
+  const $ = cheerio52.load(html);
   const allElements = $("*");
   const totalElements = allElements.length;
   let maxDepth = 0;
@@ -25086,10 +25422,10 @@ function getDomReductionSuggestions(breakdown) {
 }
 
 // src/audit/checks/image-dimensions.ts
-import * as cheerio52 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio53 from "https://esm.sh/cheerio@1.0.0";
 function analyzeImageDimensions(html, url) {
   const issues = [];
-  const $ = cheerio52.load(html);
+  const $ = cheerio53.load(html);
   const images = $("img");
   const totalImages = images.length;
   let withDimensions = 0;
@@ -25200,7 +25536,7 @@ function truncateSrc(src) {
 }
 
 // src/audit/checks/color-contrast.ts
-import * as cheerio53 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio54 from "https://esm.sh/cheerio@1.0.0";
 var KNOWN_LOW_CONTRAST_PAIRS = [
   { fg: "#999999", bg: "#ffffff", ratio: 2.85 },
   { fg: "#888888", bg: "#ffffff", ratio: 3.54 },
@@ -25249,7 +25585,7 @@ function inheritedBackground($el) {
 }
 function analyzeColorContrast(html, url) {
   const issues = [];
-  const $ = cheerio53.load(html);
+  const $ = cheerio54.load(html);
   const potentialIssues = [];
   let elementsAnalyzed = 0;
   let passedChecks = 0;
@@ -25439,7 +25775,7 @@ function calculateContrastRatio(fg, bg) {
 }
 
 // src/audit/checks/asset-minification.ts
-import * as cheerio54 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio55 from "https://esm.sh/cheerio@1.0.0";
 function isMinified(content, type) {
   const lines = content.split("\n");
   const totalLines = lines.length;
@@ -25467,7 +25803,7 @@ function isMinified(content, type) {
   };
 }
 function extractAssetUrls(html, baseUrl) {
-  const $ = cheerio54.load(html);
+  const $ = cheerio55.load(html);
   const base = new URL(baseUrl);
   const css = [];
   const js = [];
@@ -25613,10 +25949,10 @@ async function analyzeAssetMinification(html, url) {
 }
 
 // src/audit/checks/page-resources.ts
-import * as cheerio55 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio56 from "https://esm.sh/cheerio@1.0.0";
 function analyzePageResources(html, url) {
   const issues = [];
-  const $ = cheerio55.load(html);
+  const $ = cheerio56.load(html);
   const baseUrl = new URL(url);
   const baseHostname = baseUrl.hostname;
   const stylesheets = [];
@@ -25816,7 +26152,7 @@ function analyzePageResources(html, url) {
 }
 
 // src/audit/checks/responsive-css.ts
-import * as cheerio56 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio57 from "https://esm.sh/cheerio@1.0.0";
 var MAX_STYLESHEETS = 3;
 var MAX_STYLESHEET_BYTES = 1024 * 1024;
 var STYLESHEET_TIMEOUT_MS = 3e3;
@@ -25865,7 +26201,7 @@ function classifyBreakpoints(mediaQueries) {
 }
 async function analyzeResponsiveCss(html, url) {
   const issues = [];
-  const $ = cheerio56.load(html);
+  const $ = cheerio57.load(html);
   const baseUrl = new URL(url);
   const viewportMeta = $('meta[name="viewport"]').attr("content");
   const hasViewport = !!viewportMeta;
@@ -26631,7 +26967,7 @@ var urlSafetyDatabase = {
 };
 
 // src/audit/checks/tracking-verification.ts
-import * as cheerio57 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio58 from "https://esm.sh/cheerio@1.0.0";
 var OTHER_ANALYTICS = [
   { name: "Cloudflare Web Analytics", pattern: /cloudflareinsights\.com\/beacon(?:\.min)?\.js/i },
   { name: "Plausible", pattern: /plausible\.io\/js\/|<script[^>]*data-domain=[^>]*plausible|<script[^>]*plausible[^>]*data-domain=/i },
@@ -26649,7 +26985,7 @@ function detectOtherAnalytics(html) {
 }
 async function analyzeTrackingVerification(html, url) {
   const issues = [];
-  const $ = cheerio57.load(html);
+  const $ = cheerio58.load(html);
   const ga4Match = html.match(/gtag\s*\(\s*['"]config['"]\s*,\s*['"](G-[A-Z0-9]+)['"]/i) || html.match(/googletagmanager\.com\/gtag\/js\?id=(G-[A-Z0-9]+)/i);
   const hasGa4 = !!ga4Match;
   const ga4MeasurementId = ga4Match ? ga4Match[1] : void 0;
@@ -26790,11 +27126,11 @@ async function analyzeTrackingVerification(html, url) {
 }
 
 // src/audit/meta-refresh.ts
-import * as cheerio58 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio59 from "https://esm.sh/cheerio@1.0.0";
 function metaRefreshTarget(html, pageUrl) {
   if (!/http-equiv\s*=\s*["']?refresh/i.test(html))
     return null;
-  const $ = cheerio58.load(html);
+  const $ = cheerio59.load(html);
   for (const el of $("meta[http-equiv]").toArray()) {
     if (($(el).attr("http-equiv") || "").trim().toLowerCase() !== "refresh")
       continue;
@@ -26864,7 +27200,8 @@ var REDUNDANT_WHEN_PRESENT = [
       "SPA_WITHOUT_SSR",
       "EMPTY_BODY_CONTENT",
       "HIGH_JS_RENDERING_RATIO",
-      "AI_LOW_HTML_READABILITY"
+      "AI_LOW_HTML_READABILITY",
+      "NAV_NOT_IN_HTML"
     ]
   },
   // An empty body has no vocabulary to be undiverse.
@@ -27170,6 +27507,7 @@ async function runFullAudit(options) {
     asyncChecks.push(safeAsyncIssues("Crawler Access", async () => (await analyzeCrawlerAccess(url)).issues));
     asyncChecks.push(safeAsync("Canonical Domain", () => analyzeCanonicalDomain(url)));
   }
+  asyncChecks.push(safeAsync("Metadata Placement", () => analyzeMetadataPlacement(html, url, { compareAsGooglebot: !staticBuild })));
   asyncChecks.push(safeAsyncIssues("Framework Detection", async () => {
     const frameworkInfo = detectFramework({ html, headers });
     if (frameworkInfo.framework === "unknown")
@@ -27249,7 +27587,8 @@ async function runFullAudit(options) {
     h1: onPageResult.data.h1s,
     wordCount: onPageResult.data.wordCount,
     loadTime: perfData.loadTime,
-    issues: issues.map((i) => i.code)
+    issues: issues.map((i) => i.code),
+    internalLinks: extractInternalLinks2(html, url)
   });
   console.error("\n\u2705 Audit complete!\n");
   return createReport(url, domain, issues, pages);
@@ -27314,7 +27653,7 @@ function calculateHealthScore(issues) {
   }
   const crawlability = Math.max(0, 100 - categoryDeductions.crawlability * 5);
   const indexability = Math.max(0, 100 - categoryDeductions.indexability * 5);
-  const onPage = Math.max(0, 100 - categoryDeductions["on-page"] * 3);
+  const onPage = Math.max(0, 100 - (categoryDeductions["on-page"] * 3 + categoryDeductions["structured-data"]));
   const content = Math.max(0, 100 - categoryDeductions.content * 3);
   const links = Math.max(0, 100 - categoryDeductions.links * 3);
   const performance = Math.max(0, 100 - categoryDeductions.performance * 4);
@@ -27364,7 +27703,7 @@ function formatReport(report) {
   lines.push(`    Links:         ${report.healthScore.links}/100`);
   lines.push(`    Performance:   ${report.healthScore.performance}/100`);
   lines.push(`    Security:      ${report.healthScore.security}/100`);
-  lines.push(`    AI Readiness:  ${report.healthScore.aiReadiness}/100`);
+  lines.push(`    AI Readiness:  ${report.healthScore.aiReadiness}/100  (hygiene on evidence-backed levers; not a citation predictor)`);
   lines.push(`    Social:        ${report.healthScore.social}/100`);
   lines.push(`    Local SEO:     ${report.healthScore.localSeo}/100`);
   lines.push(`    Accessibility: ${report.healthScore.accessibility}/100`);
@@ -27422,7 +27761,7 @@ function groupIssuesByCategory(issues) {
 }
 
 // src/analyzers/geo-analyzer.ts
-import * as cheerio59 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio60 from "https://esm.sh/cheerio@1.0.0";
 function generateAIFriendlyRobotsTxt(siteUrl) {
   return `# AI-Optimized robots.txt
 # Generated by RankCLI - https://rankcli.dev
@@ -27824,6 +28163,62 @@ var PLACEHOLDERS = [
   { pattern: /\blorem ipsum\b/i, what: "lorem ipsum" },
   { pattern: /\bXXX-XXX-XXXX\b/i, what: "an unfilled phone template" }
 ];
+var BUSINESS_FACT_KEYS = /* @__PURE__ */ new Set([
+  "telephone",
+  "faxNumber",
+  "email",
+  "streetAddress",
+  "postalCode",
+  "addressLocality",
+  "addressRegion",
+  "postOfficeBoxNumber",
+  "latitude",
+  "longitude",
+  "openingHours",
+  "priceRange",
+  "foundingDate",
+  "numberOfEmployees",
+  "ratingValue",
+  "reviewCount",
+  "ratingCount",
+  "sameAs",
+  "vatID",
+  "taxID",
+  "legalName",
+  "founder"
+]);
+function businessFacts(text) {
+  const facts = /* @__PURE__ */ new Set();
+  const visit3 = (node, key) => {
+    if (Array.isArray(node))
+      return node.forEach((v) => visit3(v, key));
+    if (node && typeof node === "object") {
+      for (const [k, v] of Object.entries(node))
+        visit3(v, k);
+      return;
+    }
+    if (key && BUSINESS_FACT_KEYS.has(key) && (typeof node === "string" || typeof node === "number")) {
+      const value = String(node).trim();
+      if (value)
+        facts.add(`${key}: ${value}`);
+    }
+  };
+  for (const m of text.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
+    try {
+      visit3(JSON.parse(m[1]));
+    } catch {
+    }
+  }
+  for (const m of text.matchAll(/href=["'](tel|mailto):([^"'?]+)/gi))
+    facts.add(`${m[1].toLowerCase()}: ${m[2].trim()}`);
+  return facts;
+}
+function inventedFacts(original, replacement) {
+  return [...businessFacts(replacement)].filter((fact) => {
+    const value = fact.slice(fact.indexOf(": ") + 2);
+    return !(original && original.includes(value));
+  });
+}
 function isSharedShell(html) {
   return /<div[^>]+id=["'](root|app|__next|__nuxt)["']/i.test(html);
 }
@@ -27835,6 +28230,9 @@ function assessReplacement(path, original, replacement) {
     if (hit && !(original && pattern.test(original))) {
       add("placeholder_content", `contains ${what} (${hit[0]})`);
     }
+  }
+  for (const fact of inventedFacts(original, replacement)) {
+    add("invented_business_fact", `adds ${fact}, which the original does not contain`);
   }
   if (/\.html?$/i.test(path) && isSharedShell(replacement)) {
     const addsCanonical = /<link[^>]+rel=["']canonical["']/i.test(replacement) && !(original && /<link[^>]+rel=["']canonical["']/i.test(original));
@@ -28220,8 +28618,8 @@ var EMPTY_GATE = { budgets: [] };
 var RULE_HELP = `${FAIL_ON_LEVELS.join(", ")}, score<N or score:<category><N`;
 function parseFailOn(rules) {
   const spec = { budgets: [] };
-  const list = (Array.isArray(rules) ? rules : rules ? [rules] : []).flatMap((r) => String(r).split(",")).map((r) => r.trim()).filter(Boolean);
-  for (const rule of list) {
+  const list2 = (Array.isArray(rules) ? rules : rules ? [rules] : []).flatMap((r) => String(r).split(",")).map((r) => r.trim()).filter(Boolean);
+  for (const rule of list2) {
     const lower = rule.toLowerCase();
     if (FAIL_ON_LEVELS.includes(lower)) {
       const level = lower;
@@ -28661,148 +29059,6 @@ function fetchWithDefaults(input, init) {
   return passthrough(target, { ...init, headers });
 }
 
-// src/audit/discovery/link-crawler.ts
-var HIGH_PRIORITY_PATTERNS = [
-  /^\/(pricing|about|features|contact|demo|signup|login|blog)\/?$/i,
-  /^\/(products?|services?|solutions?|plans?)\/?$/i,
-  /^\/(docs?|documentation|help|support|faq)\/?$/i,
-  /^\/(careers?|jobs?|team|company)\/?$/i
-];
-var MEDIUM_PRIORITY_PATTERNS = [
-  /^\/(privacy|terms|legal|security)\/?$/i,
-  /^\/[a-z0-9-]+\/?$/i
-  // Top-level pages
-];
-var EXCLUDE_PATTERNS = [
-  /\.(png|jpg|jpeg|gif|svg|webp|ico|pdf|zip|tar|gz)$/i,
-  // Images & archives
-  /\.(json|xml|txt|webmanifest|rss|atom)$/i,
-  // Data files (not HTML)
-  /^(mailto:|tel:|javascript:|#)/i,
-  // Non-HTTP
-  /\/(api|_next|static|assets|cdn)\//i,
-  // Technical paths
-  /[?&](utm_|ref=|source=)/i
-  // Tracking params
-];
-function extractLinks2(html, baseUrl) {
-  const base = new URL(baseUrl);
-  const links = /* @__PURE__ */ new Set();
-  const hrefRegex = /href=["']([^"']+)["']/gi;
-  let match;
-  while ((match = hrefRegex.exec(html)) !== null) {
-    try {
-      const href = match[1];
-      if (EXCLUDE_PATTERNS.some((pattern) => pattern.test(href))) {
-        continue;
-      }
-      let url;
-      if (href.startsWith("http://") || href.startsWith("https://")) {
-        url = new URL(href);
-      } else if (href.startsWith("/")) {
-        url = new URL(href, base);
-      } else {
-        continue;
-      }
-      if (url.hostname !== base.hostname) {
-        continue;
-      }
-      const normalized = normalizeUrl3(url);
-      if (normalized) {
-        links.add(normalized);
-      }
-    } catch {
-    }
-  }
-  return Array.from(links);
-}
-function normalizeUrl3(url) {
-  url.hash = "";
-  const paramsToRemove = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "ref", "source"];
-  for (const param of paramsToRemove) {
-    url.searchParams.delete(param);
-  }
-  let pathname = url.pathname;
-  if (pathname.length > 1 && pathname.endsWith("/")) {
-    pathname = pathname.slice(0, -1);
-  }
-  if (pathname === "" || pathname === "/") {
-    return null;
-  }
-  return `${url.protocol}//${url.hostname}${pathname}${url.search}`;
-}
-function calculatePriority(url) {
-  try {
-    const pathname = new URL(url).pathname;
-    for (const pattern of HIGH_PRIORITY_PATTERNS) {
-      if (pattern.test(pathname)) {
-        return 9;
-      }
-    }
-    for (const pattern of MEDIUM_PRIORITY_PATTERNS) {
-      if (pattern.test(pathname)) {
-        return 6;
-      }
-    }
-    const depth = (pathname.match(/\//g) || []).length;
-    if (depth >= 3) {
-      return 2;
-    }
-    if (depth === 2) {
-      return 4;
-    }
-    return 5;
-  } catch {
-    return 1;
-  }
-}
-function discoverPagesFromLinks(baseUrl, html, maxPages = 5) {
-  const links = extractLinks2(html, baseUrl);
-  const pages = links.map((url) => ({
-    url,
-    source: "internal-link",
-    priority: calculatePriority(url)
-  }));
-  pages.sort((a, b) => b.priority - a.priority);
-  return pages.slice(0, maxPages);
-}
-function parseSitemap(xml, baseUrl) {
-  const pages = [];
-  const base = new URL(baseUrl);
-  const locRegex = /<loc>([^<]+)<\/loc>/gi;
-  let match;
-  while ((match = locRegex.exec(xml)) !== null) {
-    try {
-      const url = new URL(match[1]);
-      if (url.hostname !== base.hostname) {
-        continue;
-      }
-      if (EXCLUDE_PATTERNS.some((pattern) => pattern.test(url.pathname))) {
-        continue;
-      }
-      pages.push({
-        url: url.href,
-        source: "sitemap",
-        priority: calculatePriority(url.href)
-      });
-    } catch {
-    }
-  }
-  return pages;
-}
-function mergePages(...pageSets) {
-  const seen = /* @__PURE__ */ new Map();
-  for (const pages of pageSets) {
-    for (const page of pages) {
-      const existing = seen.get(page.url);
-      if (!existing || page.priority > existing.priority) {
-        seen.set(page.url, page);
-      }
-    }
-  }
-  return Array.from(seen.values()).sort((a, b) => b.priority - a.priority);
-}
-
 // src/audit/discovery/sitemap.ts
 var MAX_CHILD_SITEMAPS = 5;
 var MAX_SITEMAP_BYTES = 2 * 1024 * 1024;
@@ -28845,7 +29101,7 @@ function childSitemaps(xml) {
 }
 var isSitemapXml = (xml) => /<urlset|<sitemapindex/i.test(xml);
 async function discoverPagesFromSitemap(baseUrl, maxPages, options = {}) {
-  const result = { pages: [], sitemapsRead: 0 };
+  const result = { pages: [], sitemapsRead: 0, urls: [], complete: false };
   if (maxPages <= 0)
     return result;
   const timeout = options.timeout ?? 1e4;
@@ -28858,6 +29114,7 @@ async function discoverPagesFromSitemap(baseUrl, maxPages, options = {}) {
   ];
   const seen = /* @__PURE__ */ new Set();
   let pages = [];
+  let truncated = false;
   for (const candidate of candidates) {
     if (seen.has(candidate))
       continue;
@@ -28868,7 +29125,10 @@ async function discoverPagesFromSitemap(baseUrl, maxPages, options = {}) {
     result.sitemapsRead++;
     result.sitemapUrl ??= candidate;
     if (/<sitemapindex/i.test(xml)) {
-      for (const child of childSitemaps(xml).slice(0, MAX_CHILD_SITEMAPS)) {
+      const children = childSitemaps(xml);
+      if (children.length > MAX_CHILD_SITEMAPS)
+        truncated = true;
+      for (const child of children.slice(0, MAX_CHILD_SITEMAPS)) {
         if (seen.has(child))
           continue;
         seen.add(child);
@@ -28877,14 +29137,18 @@ async function discoverPagesFromSitemap(baseUrl, maxPages, options = {}) {
           continue;
         result.sitemapsRead++;
         pages = mergePages(pages, parseSitemap(childXml, baseUrl));
-        if (pages.length >= maxPages)
+        if (pages.length >= maxPages) {
+          truncated = true;
           break;
+        }
       }
     } else {
       pages = mergePages(pages, parseSitemap(xml, baseUrl));
     }
-    if (pages.length >= maxPages)
+    if (pages.length >= maxPages) {
+      truncated = true;
       break;
+    }
   }
   const pathOf = (url) => {
     try {
@@ -28895,7 +29159,10 @@ async function discoverPagesFromSitemap(baseUrl, maxPages, options = {}) {
     }
   };
   const root = pathOf(baseUrl);
-  result.pages = pages.filter((p) => pathOf(p.url) !== root).slice(0, maxPages);
+  const own = pages.filter((p) => pathOf(p.url) !== root);
+  result.pages = own.slice(0, maxPages);
+  result.urls = own.map((p) => p.url);
+  result.complete = result.sitemapsRead > 0 && !truncated;
   return result;
 }
 
