@@ -70,7 +70,7 @@ jobs:
         if: steps.generate.outputs.changed == 'true'
         uses: supabase/setup-cli@v1
         with:
-          version: 2.122.1  # v3 (2026-11-02) targets the local stack by default and needs --yes for hosted changes; migrate deliberately
+          version: 3.0.0  # v3: db push needs --remote; hosted changes need --yes
 
       - name: Deploy to Supabase
         if: steps.generate.outputs.changed == 'true'
@@ -84,7 +84,7 @@ jobs:
           supabase link --project-ref $SUPABASE_PROJECT_ID
 
           # Run only the threat hashes seed migration
-          supabase db push --include-seed
+          supabase db push --remote --yes --include-seed
 
           echo "✅ Threat hashes deployed to Supabase"
 

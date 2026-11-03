@@ -159,7 +159,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: 2.122.1  # v3 (2026-11-02) targets the local stack by default and needs --yes for hosted changes; migrate deliberately
+          version: 3.0.0  # v3: db push needs --remote; hosted changes need --yes
 
       - name: Link Supabase Project
         run: |
@@ -169,7 +169,7 @@ jobs:
       - name: Run Initial Migrations
         run: |
           echo "📦 Running database migrations..."
-          supabase db push
+          supabase db push --remote --yes
         working-directory: packages/saas
 
       - name: Verify Tables Created
@@ -227,7 +227,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: 2.122.1  # v3 (2026-11-02) targets the local stack by default and needs --yes for hosted changes; migrate deliberately
+          version: 3.0.0  # v3: db push needs --remote; hosted changes need --yes
 
       - name: Link Supabase Project
         run: |
@@ -236,7 +236,7 @@ jobs:
 
       - name: Set Edge Function Secrets
         run: |
-          supabase secrets set \
+          supabase secrets set --yes \
             STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
             STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
             OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
@@ -247,11 +247,11 @@ jobs:
 
       - name: Deploy Edge Functions
         run: |
-          supabase functions deploy create-checkout --no-verify-jwt
-          supabase functions deploy stripe-webhook --no-verify-jwt
-          supabase functions deploy create-portal --no-verify-jwt
-          supabase functions deploy free-audit --no-verify-jwt
-          supabase functions deploy ai-keywords --no-verify-jwt
+          supabase functions deploy create-checkout --no-verify-jwt --yes
+          supabase functions deploy stripe-webhook --no-verify-jwt --yes
+          supabase functions deploy create-portal --no-verify-jwt --yes
+          supabase functions deploy free-audit --no-verify-jwt --yes
+          supabase functions deploy ai-keywords --no-verify-jwt --yes
         working-directory: packages/saas
 
   # ============================================

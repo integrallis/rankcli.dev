@@ -186,7 +186,7 @@ jobs:
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
         with:
-          version: 2.122.1  # v3 (2026-11-02) targets the local stack by default and needs --yes for hosted changes; migrate deliberately
+          version: 3.0.0  # v3: db push needs --remote; hosted changes need --yes
 
       - name: Link Supabase Project
         run: |
@@ -199,29 +199,29 @@ jobs:
           needs.changes.outputs.functions == 'true' ||
           github.event.inputs.run_migrations == 'true'
         run: |
-          supabase db push
+          supabase db push --remote --yes
         working-directory: packages/saas
 
       - name: Set Edge Function Secrets
         run: |
           # Required secrets
-          supabase secrets set \
+          supabase secrets set --yes \
             STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
             STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
             APP_URL="${{ vars.APP_URL }}"
           
           # Optional API keys - only set if present
           if [ -n "${{ secrets.OPENAI_API_KEY }}" ]; then
-            supabase secrets set OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
+            supabase secrets set --yes OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}"
           fi
           if [ -n "${{ secrets.ANTHROPIC_API_KEY }}" ]; then
-            supabase secrets set ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}"
+            supabase secrets set --yes ANTHROPIC_API_KEY="${{ secrets.ANTHROPIC_API_KEY }}"
           fi
           if [ -n "${{ secrets.GOOGLE_API_KEY }}" ]; then
-            supabase secrets set GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}"
+            supabase secrets set --yes GOOGLE_API_KEY="${{ secrets.GOOGLE_API_KEY }}"
           fi
           if [ -n "${{ secrets.PERPLEXITY_API_KEY }}" ]; then
-            supabase secrets set PERPLEXITY_API_KEY="${{ secrets.PERPLEXITY_API_KEY }}"
+            supabase secrets set --yes PERPLEXITY_API_KEY="${{ secrets.PERPLEXITY_API_KEY }}"
           fi
 
           # Everything below here mirrors deploy.yml's optional-secrets block.
@@ -232,52 +232,52 @@ jobs:
           # run would silently vanish from live functions the next time a
           # plain push re-deploys via this workflow instead.
           if [ -n "${{ secrets.RESEND_API_KEY }}" ]; then
-            supabase secrets set RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}"
+            supabase secrets set --yes RESEND_API_KEY="${{ secrets.RESEND_API_KEY }}"
           fi
           if [ -n "${{ secrets.BRAVE_API_KEY }}" ]; then
-            supabase secrets set BRAVE_API_KEY="${{ secrets.BRAVE_API_KEY }}"
+            supabase secrets set --yes BRAVE_API_KEY="${{ secrets.BRAVE_API_KEY }}"
           fi
           if [ -n "${{ secrets.SERPER_API_KEY }}" ]; then
-            supabase secrets set SERPER_API_KEY="${{ secrets.SERPER_API_KEY }}"
+            supabase secrets set --yes SERPER_API_KEY="${{ secrets.SERPER_API_KEY }}"
           fi
           if [ -n "${{ secrets.GITHUB_TOKEN_SEARCH }}" ]; then
-            supabase secrets set GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN_SEARCH }}"
+            supabase secrets set --yes GITHUB_TOKEN="${{ secrets.GITHUB_TOKEN_SEARCH }}"
           fi
           if [ -n "${{ secrets.RANKCLI_GITHUB_APP_ID }}" ]; then
-            supabase secrets set GITHUB_APP_ID="${{ secrets.RANKCLI_GITHUB_APP_ID }}"
+            supabase secrets set --yes GITHUB_APP_ID="${{ secrets.RANKCLI_GITHUB_APP_ID }}"
           fi
           if [ -n "${{ secrets.RANKCLI_GITHUB_APP_PRIVATE_KEY }}" ]; then
-            supabase secrets set GITHUB_PRIVATE_KEY="${{ secrets.RANKCLI_GITHUB_APP_PRIVATE_KEY }}"
+            supabase secrets set --yes GITHUB_PRIVATE_KEY="${{ secrets.RANKCLI_GITHUB_APP_PRIVATE_KEY }}"
           fi
           if [ -n "${{ secrets.RANKCLI_GITHUB_APP_WEBHOOK_SECRET }}" ]; then
-            supabase secrets set GITHUB_WEBHOOK_SECRET="${{ secrets.RANKCLI_GITHUB_APP_WEBHOOK_SECRET }}"
+            supabase secrets set --yes GITHUB_WEBHOOK_SECRET="${{ secrets.RANKCLI_GITHUB_APP_WEBHOOK_SECRET }}"
           fi
           # RankCLI's own OpenRouter key, used only for each account's one gifted auto-fix
           # PR (see _shared/resolve-ai-config.ts). Unset means no gifts are offered and
           # keyless accounts get the template fixes - the feature is off, not broken.
           if [ -n "${{ secrets.OPEN_ROUTER_API_KEY }}" ]; then
-            supabase secrets set OPENROUTER_GIFT_KEY="${{ secrets.OPEN_ROUTER_API_KEY }}"
+            supabase secrets set --yes OPENROUTER_GIFT_KEY="${{ secrets.OPEN_ROUTER_API_KEY }}"
           fi
           if [ -n "${{ vars.OPENROUTER_GIFT_MODEL }}" ]; then
-            supabase secrets set OPENROUTER_GIFT_MODEL="${{ vars.OPENROUTER_GIFT_MODEL }}"
+            supabase secrets set --yes OPENROUTER_GIFT_MODEL="${{ vars.OPENROUTER_GIFT_MODEL }}"
           fi
           if [ -n "${{ secrets.AI_KEY_ENCRYPTION_SECRET }}" ]; then
-            supabase secrets set AI_KEY_ENCRYPTION_SECRET="${{ secrets.AI_KEY_ENCRYPTION_SECRET }}"
+            supabase secrets set --yes AI_KEY_ENCRYPTION_SECRET="${{ secrets.AI_KEY_ENCRYPTION_SECRET }}"
           fi
           if [ -n "${{ secrets.CRON_SECRET }}" ]; then
-            supabase secrets set CRON_SECRET="${{ secrets.CRON_SECRET }}"
+            supabase secrets set --yes CRON_SECRET="${{ secrets.CRON_SECRET }}"
           fi
           if [ -n "${{ secrets.SLACK_WEBHOOK_URL }}" ]; then
-            supabase secrets set SLACK_WEBHOOK_URL="${{ secrets.SLACK_WEBHOOK_URL }}"
+            supabase secrets set --yes SLACK_WEBHOOK_URL="${{ secrets.SLACK_WEBHOOK_URL }}"
           fi
           if [ -n "${{ secrets.INTERNAL_WEBHOOK_SECRET }}" ]; then
-            supabase secrets set INTERNAL_WEBHOOK_SECRET="${{ secrets.INTERNAL_WEBHOOK_SECRET }}"
+            supabase secrets set --yes INTERNAL_WEBHOOK_SECRET="${{ secrets.INTERNAL_WEBHOOK_SECRET }}"
           fi
           if [ -n "${{ secrets.SLACK_SIGNING_SECRET }}" ]; then
-            supabase secrets set SLACK_SIGNING_SECRET="${{ secrets.SLACK_SIGNING_SECRET }}"
+            supabase secrets set --yes SLACK_SIGNING_SECRET="${{ secrets.SLACK_SIGNING_SECRET }}"
           fi
           if [ -n "${{ secrets.AUDIT_WORKER_SECRET }}" ]; then
-            supabase secrets set AUDIT_WORKER_SECRET="${{ secrets.AUDIT_WORKER_SECRET }}"
+            supabase secrets set --yes AUDIT_WORKER_SECRET="${{ secrets.AUDIT_WORKER_SECRET }}"
           fi
         working-directory: packages/saas
 
@@ -301,7 +301,7 @@ jobs:
             # Skip shared folder
             if [ "$fn_name" != "_shared" ]; then
               echo "Deploying function: $fn_name"
-              supabase functions deploy "$fn_name" --no-verify-jwt
+              supabase functions deploy "$fn_name" --no-verify-jwt --yes
             fi
           done
         working-directory: packages/saas
