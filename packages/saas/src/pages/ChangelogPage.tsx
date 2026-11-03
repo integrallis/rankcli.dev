@@ -7,6 +7,11 @@ import frameworks from '@/config/frameworks.json';
 
 const highlights = [
   {
+    title: 'v0.0.55: a finding that fires on nearly every site is a default, not a finding',
+    description:
+      'The first run of the npm corpus (367 of the 400 most popular packages\' homepages, published at /data/npm-sites) counted 56 codes per site, 30 of them on 60 percent or more of sites. 25 always-on findings are gone: not using Google\'s tag manager or Bing\'s webmaster tools is a choice, and the brand, entity, experience, engagement, snippet and dwell-time heuristics had no evidence behind them. NO_BREADCRUMBS never fires on the homepage; INDEXNOW_NOT_IMPLEMENTED is dropped when the site has no sitemap. One bot table: rankcli geo, the MCP robots tools and the robots.txt the auto-fix writes derive from the same crawler classes as the audit, so the generated robots.txt has one group per class and no tool calls Anthropic\'s crawler Claude-Web.',
+  },
+  {
     title: 'v0.0.54: the AI checks say what the evidence says',
     description:
       'AI crawler access by bot class (search, AI search, user-triggered, training), read from robots.txt and fetched live as each bot, each finding worded for what blocking that class costs. A fetch as Googlebot catches Next.js streaming metadata that other agents never get. The site audit draws the link graph without JavaScript: clicks from the homepage, orphans, navigation missing from the HTML. The answer-shaped and freshness findings cite their studies; unsupported ones are gone. rankcli audit -o llm prints the report as an agent reads it. The AI Readiness score is stated for what it is: hygiene on evidence-backed levers, not a citation predictor.',
@@ -58,7 +63,7 @@ export function ChangelogPage() {
     <div className="min-h-screen bg-background">
       <SEO
         title="Changelog"
-        description="What's new in RankCLI: v0.0.54 reads AI crawler access by bot class, catches streaming metadata and draws the link graph without JavaScript; v0.0.53 turns the audit into a CI gate with one rule syntax, baselines, SARIF and JUnit output and a config file; v0.0.52 runs every check in the CLI, the MCP server and the GitHub Action under the FSL-1.1-MIT license; agentic auto-fix, keyword rank tracking, GEO checks for AI search, the MCP server for AI assistants, and framework-specific fix recipes."
+        description="What's new in RankCLI: v0.0.55 removes the 25 findings the npm corpus showed firing on nearly every site; v0.0.54 reads AI crawler access by bot class, catches streaming metadata and draws the link graph without JavaScript; v0.0.53 turns the audit into a CI gate with one rule syntax, baselines, SARIF and JUnit output and a config file; v0.0.52 runs every check in the CLI, the MCP server and the GitHub Action under the FSL-1.1-MIT license; agentic auto-fix, keyword rank tracking, GEO checks for AI search, the MCP server for AI assistants, and framework-specific fix recipes."
         path="/changelog"
       />
       <Navbar />
