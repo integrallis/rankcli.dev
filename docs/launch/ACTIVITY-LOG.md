@@ -117,6 +117,20 @@ and the developer channels have produced no measurable visit.
   README pointing at the right release page; to merge after 0.0.54 ships, since the bot-class
   codes are 0.0.54 names. Verified on the way: the free hosted MCP endpoint serves the same
   thirteen analysis tools as the local server, so the parity item needed no code.
+- **Plan item 6 begins: the corpus.** rankcli #9: the homepages of the 400 most popular npm
+  packages (npm's search API over fifteen keywords, ranked by npm's popularity order,
+  homepages that are sites of their own), audited one page each by a weekly workflow with the
+  CLI built from main, results published on a `corpus-data` branch, the small per-site record
+  keeping only scores, codes and the facts the headlines need. Pilot on the first 40 with a
+  CLI built from main plus every open engine branch (102 s, 39 audited, median 69): 54 percent
+  publish an llms.txt, 44 percent have no sitemap, 8 percent stamp one date on every sitemap
+  URL, one site refuses bingbot, PerplexityBot, GPTBot and ClaudeBot at the edge, one
+  disallows the AI search crawlers, none streams metadata only to Googlebot, none has an
+  IndexNow key. The full 400 run is in progress locally; the first scheduled run should follow
+  the engine merges, since the headline counts depend on the bot-class and metadata checks.
+  Also: rankcli.dev #14 holds the site docs for 0.0.54; rankcli #5 was made independent of #4
+  (both added an import on the same line); the plugin publish now pins astro-rankcli's
+  workspace dependency and refuses to run before the runtime version is on npm.
 - **v0.0.53 and Action v1.2.0 shipped.** The founder created the v0.0.53 release at 19:48 UTC
   and pushed the staged Action at 19:49. `release.yml` published `@rankcli/agent-runtime`
   0.0.41, `@rankcli/mcp-server` 0.0.26 and `@rankcli/cli` 0.0.53 (both pin ^0.0.41) under
