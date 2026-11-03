@@ -4,6 +4,7 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { DefaultSEO, SEO } from './components/SEO';
 import { endFirstRender } from './lib/prerender';
 import { publicRoutes, protectedRoutes, NotFoundPage, type AppRoute } from './routes';
+import { captureSignupSource } from '@/hooks/useSignupSource';
 
 // App screens are noindex. Everything behind sign-in is, even without a title.
 function routeElement({ page: Page, appTitle }: AppRoute, isProtected: boolean) {
@@ -17,6 +18,10 @@ function routeElement({ page: Page, appTitle }: AppRoute, isProtected: boolean) 
 }
 
 function App() {
+  useEffect(() => {
+    captureSignupSource();
+  }, []);
+
   useEffect(() => {
     endFirstRender();
   }, []);

@@ -89,6 +89,28 @@ jobs:
           echo "--- AI visibility checks per week ---"
           query "SELECT date_trunc('week', created_at)::date AS week, COUNT(*) AS checks FROM ai_visibility_checks GROUP BY 1 ORDER BY 1"
 
+      # docs/OUTCOME_PLAN_2026-11.md, item 4.6: an ad is judged on GitHub App installs, not on
+      # clicks, so installs are counted by the source the account recorded at its first visit
+      # (profiles.signup_source, written once by the site). Aggregates only.
+      - name: Accounts and GitHub App installs by source (aggregates only, no personal data)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          PROJECT_REF="bspljbxwbjiqueeyzyat"
+          query() {
+            node -e 'process.stdout.write(JSON.stringify({ query: process.argv[1] }))' "$1" \
+              | curl -s "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+                  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  --data-binary @-
+            echo
+          }
+          echo "--- accounts, audits and GitHub App installs by source (accounts created in the last 90 days) ---"
+          query "WITH acc AS (SELECT pr.id, pr.created_at, COALESCE(pr.signup_source->>'utm_source', CASE WHEN pr.signup_source->>'referrer' IS NOT NULL THEN 'ref:' || (pr.signup_source->>'referrer') ELSE 'direct/unknown' END) AS source, COALESCE(pr.signup_source->>'utm_campaign', '') AS campaign, COALESCE(pr.signup_source->>'landing_path', '') AS landing FROM profiles pr WHERE pr.created_at > now() - interval '90 days'), au AS (SELECT DISTINCT p.user_id FROM audits a JOIN projects p ON p.id = a.project_id), gh AS (SELECT DISTINCT user_id FROM projects WHERE github_installation_id IS NOT NULL), fp AS (SELECT DISTINCT p.user_id FROM github_prs g JOIN projects p ON p.id = g.project_id WHERE g.kind = 'auto_fix') SELECT acc.source, acc.campaign, COUNT(*) AS accounts, COUNT(au.user_id) AS with_audit, COUNT(gh.user_id) AS with_github_app, COUNT(fp.user_id) AS with_auto_fix_pr FROM acc LEFT JOIN au ON au.user_id = acc.id LEFT JOIN gh ON gh.user_id = acc.id LEFT JOIN fp ON fp.user_id = acc.id GROUP BY 1, 2 ORDER BY 3 DESC, 1"
+          echo "--- landing paths of accounts with a recorded source ---"
+          query "SELECT COALESCE(signup_source->>'landing_path', '') AS landing, COUNT(*) AS accounts FROM profiles WHERE signup_source IS NOT NULL GROUP BY 1 ORDER BY 2 DESC LIMIT 20"
+
       - name: Billing integrity (aggregates only, no personal data)
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
