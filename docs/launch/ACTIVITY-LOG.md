@@ -161,6 +161,16 @@ and the developer channels have produced no measurable visit.
 
 ### 2026-11-03
 
+- **The npm trust links are in; the publish that proves them is staged.** The founder ran
+  the four `npx npm@latest trust github` commands (the token still cannot read the result:
+  `npm trust list` answers 403 to a 2FA-bypass token, so the proof is a publish). Public main
+  `f461954` bumps astro-rankcli and nuxt-rankcli to 0.1.1 and vite-plugin-rankcli and
+  next-rankcli to 0.0.2, the first versions to carry a provenance attestation, and adds
+  nuxt-rankcli to the workflow's dispatch choices. Dispatching the publish was refused to the
+  session this time (it was allowed at 05:18); the command is in START-HERE.md. The kmpilot
+  side of the day: PR kmpilot-dev/kmpilot.dev#81 fills the eight legal facts from the
+  founder's #64 answers and the defaults services like it use; all six checks green, left for
+  that repository's owner to merge.
 - **The open issues, worked: v0.0.58 shipped, two product issues closed.** On "look at issues
   opened and work in those": the five engine issues the founder's other session filed from
   dogfooding integrallis.com (#19 render-blocking counted the inline style it recommended,

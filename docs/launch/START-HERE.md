@@ -11,23 +11,24 @@ For what has actually been done, with outcomes, see
 
 ---
 
-## 2026-11-03: one founder command left, everything else shipped
+## 2026-11-03: the trust links are in; one dispatch proves them
 
 v0.0.55 to v0.0.57 shipped (35 always-on findings gone on corpus evidence, one bot table,
 the geo tools by crawler class), the hosted product follows each release, the plugins are on
 npm at 0.1.0, the Action is at v1.3.0, the corpus write-up is a blog post. The Nuxt modules directory PR is open (nuxt/modules #1719) and the write-up is on dev.to with its
-canonical on rankcli.dev. The one thing a session cannot do, because npm refuses it to a token
-that bypasses 2FA, in a terminal logged in to npm as `integrallis` with 2FA:
+canonical on rankcli.dev. The founder linked the four plugins to npm Trusted Publishing on 2026-11-03 (rankcli issue #17).
+What proves the links is a publish that goes through them: the public main carries
+astro-rankcli and nuxt-rankcli 0.1.1 and vite-plugin-rankcli and next-rankcli 0.0.2 (commit
+`f461954`, the first versions that will carry a provenance attestation). Dispatching that
+publish was refused to the session, so one command from a terminal:
 
 ```bash
-# npm Trusted Publishing for the four plugins (needs the integrallis npm login and 2FA; rankcli issue #17)
-for p in astro-rankcli nuxt-rankcli vite-plugin-rankcli next-rankcli; do
-  npx npm@latest trust github $p --file publish-plugins.yml --repo integrallis/rankcli --allow-publish
-done
-
+gh workflow run publish-plugins.yml --repo integrallis/rankcli -f mode=publish -f package=all
 ```
 
-After linking, the `NPM_TOKEN` secret on integrallis/rankcli can be deleted; the publish workflow tries Trusted Publishing first.
+When the run's log says "published … (Trusted Publishing)" for each package, close #17 and
+delete the `NPM_TOKEN` secret on integrallis/rankcli; the workflow tries Trusted Publishing
+first and only falls back to the token.
 
 ---
 
