@@ -183,6 +183,14 @@ and the developer channels have produced no measurable visit.
   warning with its code, gates on `failOn`; a server build gets a one-line pointer to the
   deploy command instead; ten tests; registered in CI and the plugin publish. A Nuxt modules
   directory listing and a `/seo/nuxt` page follow the first publish.
+- **The first published corpus dataset.** Run 41566518506 with the CLI built from main
+  (0.0.54): 367 of 400 sites in 841 seconds, published on the `corpus-data` branch
+  (`9231d73`), which `/data/npm-sites` reads. Headlines: llms.txt 174 (47 percent), no sitemap
+  150 (41 percent), one lastmod for every sitemap URL 32 (9 percent), client-rendered homepage
+  20 (5 percent), edge refuses a training crawler 11, an AI search crawler 5, a user-triggered
+  fetcher 3, a search crawler 3; robots.txt disallows the AI search crawlers 3, the training
+  crawlers 11; metadata streamed only to Googlebot 2; IndexNow 0; median score 70. nuxt-rankcli
+  merged (rankcli #11, CI green with its own plugin job).
 - **v0.0.53 and Action v1.2.0 shipped.** The founder created the v0.0.53 release at 19:48 UTC
   and pushed the staged Action at 19:49. `release.yml` published `@rankcli/agent-runtime`
   0.0.41, `@rankcli/mcp-server` 0.0.26 and `@rankcli/cli` 0.0.53 (both pin ^0.0.41) under
