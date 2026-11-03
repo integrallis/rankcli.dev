@@ -57,21 +57,15 @@ const line = (label, list, col) => {
 };
 
 console.log(`Beta numbers ${start} to ${end} (UTC)\n`);
-let profiles, projects, audits, apiRequests, prs, installs, freeAudits;
-try {
-  [profiles, projects, audits, apiRequests, prs, installs, freeAudits] = await Promise.all([
-    rows('profiles', 'id,github_username,created_at', 'created_at'),
-    rows('projects', 'id,user_id,url,github_installation_id,created_at', 'created_at'),
-    rows('audits', 'id,project_id,triggered_by,triggered_by_user,status,score,started_at', 'started_at'),
-    rows('api_requests', 'id,user_id,endpoint,created_at', 'created_at'),
-    rows('github_prs', 'id,project_id,pr_state,created_at', 'created_at'),
-    rows('github_installations', 'id,user_id,account_login,status,installed_at', 'installed_at'),
-    rows('free_audits', 'id,converted_to_signup,created_at', 'created_at'),
-  ]);
-} catch (e) {
-  console.error(`could not read the hosted tables: ${e.cause?.message ?? e.message}`);
-  process.exit(1);
-}
+const [profiles, projects, audits, apiRequests, prs, installs, freeAudits] = await Promise.all([
+  rows('profiles', 'id,github_username,created_at', 'created_at'),
+  rows('projects', 'id,user_id,url,github_installation_id,created_at', 'created_at'),
+  rows('audits', 'id,project_id,triggered_by,triggered_by_user,status,score,started_at', 'started_at'),
+  rows('api_requests', 'id,user_id,endpoint,created_at', 'created_at'),
+  rows('github_prs', 'id,project_id,pr_state,created_at', 'created_at'),
+  rows('github_installations', 'id,user_id,account_login,status,installed_at', 'installed_at'),
+  rows('free_audits', 'id,converted_to_signup,created_at', 'created_at'),
+]);
 console.log('Hosted product (per day)');
 line('signups', profiles, 'created_at');
 line('  with GitHub login', profiles.filter((p) => p.github_username), 'created_at');
