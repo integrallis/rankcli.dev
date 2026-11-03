@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-11-03T16:23:38.468Z
+// Generated: 2026-11-03T19:05:50.455Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -9837,7 +9837,7 @@ Allow: /`
     title: "Email addresses in plain text",
     description: "Email addresses found in page HTML without obfuscation.",
     impact: "Email addresses can be harvested by spam bots.",
-    howToFix: "Use contact forms or obfuscate emails (e.g., name[at]domain.com)."
+    howToFix: 'Keep the mailto: link and give it descriptive link text ("Email us") instead of the address itself; a contact form is the other option. Obfuscation such as name[at]domain.com breaks the link for readers and screen readers and only belongs where an address must appear as text.'
   },
   DIRECTORY_LISTING_ENABLED: {
     code: "DIRECTORY_LISTING_ENABLED",
@@ -9875,7 +9875,7 @@ Allow: /`
     title: "FAQ content without FAQPage schema",
     description: "Question-format headings found but no FAQPage schema markup.",
     impact: "Missing out on FAQ rich results and PAA box opportunities.",
-    howToFix: "Add FAQPage structured data for your Q&A content."
+    howToFix: "If these headings introduce real question-and-answer content, add FAQPage structured data for those pairs. If they are headings that merely end in a question mark (research questions, section titles), no markup is appropriate: Google restricts FAQPage to genuine FAQ content and misuse risks a manual action."
   },
   // Internal Link Graph
   NO_CONTEXTUAL_INTERNAL_LINKS: {
@@ -10836,10 +10836,10 @@ function analyzeFeaturedSnippet(html, url) {
         code: "FAQ_SCHEMA_MISSING",
         severity: "warning",
         category: "structured-data",
-        title: "FAQ content without FAQPage schema",
-        description: `Found ${qa.qaCount} question-format headings but no FAQPage schema markup.`,
-        impact: "Missing out on FAQ rich results and PAA box opportunities.",
-        howToFix: "Add FAQPage structured data for your Q&A content.",
+        title: "Question headings without FAQPage schema",
+        description: `Found ${qa.qaCount} headings phrased as questions and no FAQPage schema. A question mark is not evidence of a FAQ; this only applies if each heading is followed by its answer.`,
+        impact: "Genuine FAQ content without the markup misses FAQ rich results and People Also Ask placements.",
+        howToFix: "If these headings introduce real question-and-answer content, add FAQPage structured data for those pairs. If they are headings that merely end in a question mark (research questions, section titles), no markup is appropriate: Google restricts FAQPage to genuine FAQ content and misuse risks a manual action.",
         affectedUrls: [url],
         details: { questions: qa.questions.slice(0, 5) }
       });
@@ -17283,6 +17283,25 @@ function analyzeOnPage(html, url, headers, options = {}) {
 
 // src/audit/checks/links.ts
 import * as cheerio23 from "https://esm.sh/cheerio@1.0.0";
+var INDETERMINATE = /* @__PURE__ */ new Set([401, 403, 405, 429]);
+var BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36";
+async function isDefinitelyBroken(href) {
+  const head = await httpHead(href, { timeout: 5e3, maxRedirects: 5, validateStatus: () => true });
+  if (head.status < 400)
+    return false;
+  if (!INDETERMINATE.has(head.status))
+    return true;
+  const get = await httpGet(href, {
+    timeout: 5e3,
+    maxRedirects: 5,
+    validateStatus: () => true,
+    maxBytes: 2048,
+    headers: { "User-Agent": BROWSER_UA, Accept: "text/html,*/*;q=0.8", Range: "bytes=0-1023" }
+  });
+  if (get.status < 400)
+    return false;
+  return !INDETERMINATE.has(get.status);
+}
 async function analyzeLinks(html, baseUrl, checkBroken = false) {
   const issues = [];
   const $ = cheerio23.load(html);
@@ -17443,14 +17462,8 @@ async function analyzeLinks(html, baseUrl, checkBroken = false) {
     const externalToCheck = external.slice(0, 5);
     for (const link of externalToCheck) {
       try {
-        const response = await httpHead(link.href, {
-          timeout: 5e3,
-          maxRedirects: 5,
-          validateStatus: () => true
-        });
-        if (response.status >= 400) {
+        if (await isDefinitelyBroken(link.href))
           brokenExternal.push(link.href);
-        }
       } catch {
       }
     }
@@ -19093,7 +19106,7 @@ var BOT_CLASS_LABEL = {
 };
 
 // src/audit/checks/crawler-access.ts
-var BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+var BROWSER_UA2 = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 function isRefusal(status) {
   return status === 401 || status === 403 || status === 429 || status === 503;
 }
@@ -19159,7 +19172,7 @@ function describe(outcomes) {
 async function run(url) {
   const issues = [];
   const data = { baselineStatus: null, rateLimited: false, crawlers: [] };
-  const baseline = await probe(url, BROWSER_UA);
+  const baseline = await probe(url, BROWSER_UA2);
   data.baselineStatus = baseline.status;
   if (baseline.status === null || baseline.status >= 400 || baseline.challenge) {
     return { issues, data };
@@ -20391,12 +20404,6 @@ function findRenderBlockingResources($) {
       css.push(href);
     }
   });
-  $("head style").each((_, el) => {
-    const content = $(el).html();
-    if (content && content.trim().length > 100) {
-      css.push("[inline-style]");
-    }
-  });
   $("head script[src]").each((_, el) => {
     const src = $(el).attr("src");
     const async = $(el).attr("async");
@@ -20458,7 +20465,7 @@ function analyzeDOMStructure(html, url) {
         cssFiles: renderBlockingResources.css,
         jsFiles: renderBlockingResources.js,
         totalCount: criticalPathLength,
-        recommendation: criticalPathLength > 3 ? "Inline critical CSS and defer non-critical resources" : "Consider using async/defer for scripts"
+        recommendation: renderBlockingResources.css.length > 0 ? 'Inline the critical CSS and load the rest with media="print" onload, or preload it; add async or defer to the scripts' : "Add async or defer to the scripts"
       }
     });
   }
@@ -21544,7 +21551,7 @@ function detectThirdPartyDomains(html, pageUrl) {
     } catch {
     }
   });
-  $("img[src]").each((_, el) => {
+  $("img[src]").not('[loading="lazy"], [fetchpriority="low"]').each((_, el) => {
     try {
       const src = $(el).attr("src");
       const url = new URL(src, pageUrl);

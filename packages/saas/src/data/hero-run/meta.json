@@ -1,7 +1,7 @@
 {
   "command": "rankcli audit -u https://rankcli.dev --max-pages 1",
   "cliPackage": "@rankcli/cli",
-  "cliVersion": "0.0.55",
+  "cliVersion": "0.0.58",
   "recordedAt": "2026-11-03",
   "exitCode": 0,
   "recordedBy": "scripts/record-hero-run.ts, empty HOME, NO_COLOR=1"

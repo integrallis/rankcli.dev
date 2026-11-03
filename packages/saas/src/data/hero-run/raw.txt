@@ -3,33 +3,32 @@
   SEO AUDIT REPORT: https://rankcli.dev
 ════════════════════════════════════════════════════════════
 
-  Score: 92/100
+  Score: 93/100
   Pages audited: 1
-  Issues found: 22
-  Time: 1881ms
+  Issues found: 19
+  Time: 1565ms
   Framework: React
 
   Health Scores:
     Crawlability:  ███████████████████░ 95%
     On-Page:       ███████████████████░ 94%
-    Content:       █████████████████░░░ 85%
-    Performance:   ████████████░░░░░░░░ 60%
+    Content:       ██████████████████░░ 88%
+    Performance:   ██████████████░░░░░░ 72%
     Security:      ███████████████████░ 95%
     Local SEO:     ███████████████████░ 96%
-    AI Readiness:  ███████████████████░ 93%
+    AI Readiness:  ███████████████████░ 94%
                    hygiene on evidence-backed levers; not a citation predictor
 
   Issues by Severity:
     ● Errors:   0
-    ● Warnings: 3
-    ● Notices:  19
+    ● Warnings: 2
+    ● Notices:  17
 
-  Warnings (3):
+  Warnings (2):
     ! Render-blocking resources detected  RENDER_BLOCKING_RESOURCES
-    ! Missing preconnect hints for third-party origins  MISSING_PRECONNECT
     ! Statistics without source citations  AI_UNCITED_STATISTICS
 
-  Notices (19):
+  Notices (17):
     i Low text-to-HTML ratio  LOW_TEXT_HTML_RATIO
     i Meta description will be truncated in SERP  META_DESC_TRUNCATED_SERP
     i No business address detected  ADDRESS_NOT_DETECTED
@@ -38,7 +37,6 @@
     i Hero image not preloaded  HERO_IMAGE_NOT_PRELOADED
     i Commercial content without trust signals  COMMERCIAL_NO_TRUST_BADGES
     i No testimonials or reviews found  NO_SOCIAL_PROOF
-    i Low AI citation readiness for fresh content  LOW_AI_CITATION_READINESS
     i No dedicated references section  AI_NO_REFERENCES_SECTION
     i Questions lack direct, quotable answers  AI_INDIRECT_ANSWERS
     i Consider using CSS aspect-ratio for images  IMAGES_NO_ASPECT_RATIO
@@ -47,7 +45,6 @@
       affects 2 pages
     i Missing cache validators (ETag/Last-Modified)  CACHING_NO_VALIDATORS
     i robots.txt disallows AI training crawlers  AI_TRAINING_BOTS_DISALLOWED
-    i No agent-facing discovery surface found  NO_AGENT_EXPERIENCE_SURFACE
     i No Last-Modified header  NO_LAST_MODIFIED
     i IndexNow not implemented  INDEXNOW_NOT_IMPLEMENTED
 

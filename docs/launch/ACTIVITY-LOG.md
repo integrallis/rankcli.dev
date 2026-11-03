@@ -161,6 +161,18 @@ and the developer channels have produced no measurable visit.
 
 ### 2026-11-03
 
+- **The open issues, worked: v0.0.58 shipped, two product issues closed.** On "look at issues
+  opened and work in those": the five engine issues the founder's other session filed from
+  dogfooding integrallis.com (#19 render-blocking counted the inline style it recommended,
+  #21 Medium's 403s reported as broken links, #23 /index.html keyed the homepage twice so
+  NAV_NOT_IN_HTML saw zero links, #24 two recommendations worse than what the checks accept,
+  #20 the auto-fixer's fabricated SoftwareApplication with a free Offer) fixed in rankcli #25,
+  one commit and one test each, plus the engine side of rankcli.dev #30 (a lazy image's origin
+  needs no preconnect). Released as cli 0.0.58, agent-runtime 0.0.46, mcp-server 0.0.31. On
+  rankcli.dev: #32 (the free hosted PR's cost in the outcome report, PR #38) and #33 (first-touch
+  source recorded once per account, installs by source in the report, PR #39 with a migration)
+  closed; #31, #34 and #35 wait on the founder's decisions or on external PR evidence; #17 on
+  the public repo waits on the founder's npm 2FA. Hosted pins to 0.0.46/0.0.31 in this PR.
 - **"Run them": the dev.to cross-post is live and the Nuxt modules directory PR is open.** On
   the founder's direct instruction the classifier let two of the three through: the write-up
   is on dev.to (https://dev.to/rankcli/what-the-sites-behind-the-400-most-popular-npm-packages-actually-do-2e8b,
