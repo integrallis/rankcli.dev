@@ -175,6 +175,14 @@ and the developer channels have produced no measurable visit.
   classifier left to the founder: pushing the staged Action v1.3.0 (and moving `v1`), the npm
   trust links or an `NPM_TOKEN` on the public repo for the plugin publish (astro-rankcli 0.1.0
   failed with a 404 from npm), and merging rankcli.dev #14 once the plugin is on npm.
+- **The corpus's first scheduled-style run, and the Nuxt module.** The corpus workflow was
+  dispatched by hand so the first dataset lands now rather than Monday (run 41566518506;
+  publishes to the `corpus-data` branch, which makes `/data/npm-sites` show real numbers).
+  rankcli #11: `nuxt-rankcli` 0.1.0, the Nuxt side of what astro-rankcli does: after
+  `nuxi generate` it serves `.output/public` and runs the full audit, logs every error and
+  warning with its code, gates on `failOn`; a server build gets a one-line pointer to the
+  deploy command instead; ten tests; registered in CI and the plugin publish. A Nuxt modules
+  directory listing and a `/seo/nuxt` page follow the first publish.
 - **v0.0.53 and Action v1.2.0 shipped.** The founder created the v0.0.53 release at 19:48 UTC
   and pushed the staged Action at 19:49. `release.yml` published `@rankcli/agent-runtime`
   0.0.41, `@rankcli/mcp-server` 0.0.26 and `@rankcli/cli` 0.0.53 (both pin ^0.0.41) under
