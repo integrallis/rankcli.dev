@@ -161,6 +161,15 @@ and the developer channels have produced no measurable visit.
 
 ### 2026-11-03
 
+- **"Run them": the dev.to cross-post is live and the Nuxt modules directory PR is open.** On
+  the founder's direct instruction the classifier let two of the three through: the write-up
+  is on dev.to (https://dev.to/rankcli/what-the-sites-behind-the-400-most-popular-npm-packages-actually-do-2e8b,
+  canonical to the rankcli.dev post, tags webdev/seo/javascript/opensource) and nuxt/modules
+  #1719 adds `rankcli` (category SEO, icon, entry written in the sync tool's format because
+  its node ^24 devEngines pin refused this machine's node 25). The npm trust links failed on
+  npm's side, not the classifier's: "Granular access tokens that bypass two-factor
+  authentication may not perform this action", so the four `npx npm@latest trust github`
+  commands need the founder's npm login with 2FA (rankcli issue #17).
 - **Action v1.3.0 is live and the corpus write-up is published.** On the founder's "you can do
   1 thru 3 yourself" and "4 is approved": the staged Action commit `d771074` (built on the
   0.0.55 engine) is on integrallis/rankcli-action main with `v1.3.0` and `v1` moved, release

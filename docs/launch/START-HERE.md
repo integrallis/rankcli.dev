@@ -11,32 +11,23 @@ For what has actually been done, with outcomes, see
 
 ---
 
-## 2026-11-03: three founder commands, everything else shipped
+## 2026-11-03: one founder command left, everything else shipped
 
 v0.0.55 to v0.0.57 shipped (35 always-on findings gone on corpus evidence, one bot table,
 the geo tools by crawler class), the hosted product follows each release, the plugins are on
-npm at 0.1.0, the Action is at v1.3.0, the corpus write-up is a blog post. What a session
-cannot do, in a normal terminal:
+npm at 0.1.0, the Action is at v1.3.0, the corpus write-up is a blog post. The Nuxt modules directory PR is open (nuxt/modules #1719) and the write-up is on dev.to with its
+canonical on rankcli.dev. The one thing a session cannot do, because npm refuses it to a token
+that bypasses 2FA, in a terminal logged in to npm as `integrallis` with 2FA:
 
 ```bash
-# 1. The Nuxt modules directory PR (forks nuxt/modules, runs its sync tool, opens the PR)
-/tmp/claude-1000/-home-bsb-Code-products-rankcli-dev/fda27b37-e636-4809-a5e6-96a1f408fcce/scratchpad/nuxt-modules-pr.sh
-
-# 2. npm Trusted Publishing for the four plugins (needs the integrallis npm login and 2FA; rankcli issue #17)
+# npm Trusted Publishing for the four plugins (needs the integrallis npm login and 2FA; rankcli issue #17)
 for p in astro-rankcli nuxt-rankcli vite-plugin-rankcli next-rankcli; do
   npx npm@latest trust github $p --file publish-plugins.yml --repo integrallis/rankcli --allow-publish
 done
 
-# 3. The dev.to cross-post of the write-up, canonical to the rankcli.dev post
-cd /home/bsb/Code/products/rankcli.dev
-curl -s -X POST https://dev.to/api/articles -H "api-key: $(grep '^DEVTO_API_KEY=' .env | cut -d= -f2-)" \
-  -H "Content-Type: application/json" \
-  --data-binary @/tmp/claude-1000/-home-bsb-Code-products-rankcli-dev/fda27b37-e636-4809-a5e6-96a1f408fcce/scratchpad/devto-corpus-article.json
 ```
 
-The scratchpad paths live as long as the session's machine keeps them; the write-up itself is
-`corpus-writeup-2026-11-03.md` here and the directory entry format is in nuxt/modules
-`modules/sitemap.yml`.
+After linking, the `NPM_TOKEN` secret on integrallis/rankcli can be deleted; the publish workflow tries Trusted Publishing first.
 
 ---
 
