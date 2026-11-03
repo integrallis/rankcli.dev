@@ -302,8 +302,9 @@ export function ProjectPage() {
     };
   }, [project?.id]);
 
-  // Monthly usage. Only auto-fix PRs count - a CI-setup PR is not quota'd. RLS scopes the
-  // count to the caller's own projects.
+  // Monthly usage, counted exactly as create-seo-pr enforces it: auto-fix PRs only (a CI-setup
+  // PR is not quota'd), and a PR closed unmerged is given back. RLS scopes the count to the
+  // caller's own projects.
   useEffect(() => {
     let active = true;
     (async () => {
@@ -315,6 +316,7 @@ export function ProjectPage() {
           .from('github_prs')
           .select('id', { count: 'exact', head: true })
           .eq('kind', 'auto_fix')
+          .neq('pr_state', 'closed')
           .gte('created_at', monthStart.toISOString());
         if (active && !error) setPrsThisMonth(count ?? 0);
       } catch {

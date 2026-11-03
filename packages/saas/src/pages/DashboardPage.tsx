@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Search, Globe, AlertTriangle, CheckCircle, Clock, Loader2 } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { consumePendingSite } from '@/hooks/usePendingSite';
 import { AddProjectModal } from '@/components/dashboard/AddProjectModal';
 import { UpgradeLimitModal } from '@/components/dashboard/UpgradeLimitModal';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,6 +24,27 @@ export function DashboardPage() {
 
   const sitesLimit = getLimit('sites');
   const hasReachedLimit = projects.length >= sitesLimit;
+
+  // A site audited on /free-audit before signup: open Add Project with it filled in, unless
+  // it is already a project or the plan has no room. Read once, after projects load.
+  const [pendingSite, setPendingSiteUrl] = useState<string | null>(null);
+  useEffect(() => {
+    if (isLoading) return;
+    const site = consumePendingSite();
+    if (!site) return;
+    const host = new URL(site).hostname.replace(/^www\./, '');
+    const known = projects.some((p) => {
+      try {
+        return new URL(p.url).hostname.replace(/^www\./, '') === host;
+      } catch {
+        return false;
+      }
+    });
+    if (known || hasReachedLimit) return;
+    setPendingSiteUrl(site);
+    setIsAddModalOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
 
   const handleAddProject = () => {
     if (hasReachedLimit) {
@@ -277,8 +299,12 @@ export function DashboardPage() {
       {/* Add Project Modal */}
       <AddProjectModal
         open={isAddModalOpen}
-        onOpenChange={setIsAddModalOpen}
+        onOpenChange={(open) => {
+          setIsAddModalOpen(open);
+          if (!open) setPendingSiteUrl(null);
+        }}
         onSubmit={handleCreateProject}
+        initialUrl={pendingSite}
       />
 
       {/* Upgrade Limit Modal */}

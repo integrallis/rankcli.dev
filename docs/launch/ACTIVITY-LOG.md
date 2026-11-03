@@ -72,8 +72,77 @@ and the developer channels have produced no measurable visit.
   reason to pick geoready gone, a changelog highlight), typechecked and tested, to merge once
   0.0.53 is on npm. Two founder clicks remain: create the v0.0.53 release on
   integrallis/rankcli (it publishes npm, binaries, the .mcpb and the taps) and push the staged
-  Action with its release. Note for the record: `!`-prefixed commands typed into this session
-  never reached GitHub, so those go through a normal terminal.
+- **Stage 3 and plan item 3 under way.** The engine false positive found in verification is
+  fixed on the public main (`033e011`: a footer image is never the lazy-loaded hero). Stage 3
+  is rankcli.dev PR #13 (branch `stage-3-public-source`, CI green on both workflows): the
+  seven published packages and their four release workflows leave this repository; the site
+  takes the engine's Deno bundle from `@rankcli/agent-runtime` 0.0.41 on npm (the tracked
+  bundle had been the 0.0.40-era build, so the hosted audit lagged the CLI) through
+  `pnpm --filter @rankcli/saas sync:engine`; the audit worker depends on the npm packages with
+  a single-package Dockerfile (built locally, 290 MB); the three parity tests read the
+  published packages. Merging deploys the edge functions and the worker, so it waits for the
+  founder. Plan item 3 on the public repo: PR #2 merged (`c6dedfd`): AI crawler access by bot
+  class (search, AI search, user-triggered, training) from robots.txt and a live fetch as
+  each bot, challenge pages counted as refusals, one fetch per origin per run, the llms.txt
+  findings reframed to the evidence, and the AI Readiness scoring note in the JSON
+  (`notes.aiReadiness`), the console and the README. PR #3 open: the answer-shaped and
+  freshness findings cite the studies, four unsupported findings removed, four heuristic
+  warnings demoted to notices, a precedence bug that reported "no comparison table" on any
+  page containing "vs" fixed, and a new `SITEMAP_LASTMOD_UNIFORM` notice. Both wait for the
+  next public release (0.0.54) to reach users.
+- **The rest of plan item 3, as three more public PRs.** #4: a fetch-as-Googlebot pass that
+  tells Next.js streaming metadata (tags reach Googlebot but not other agents,
+  `METADATA_STREAMED_FOR_BOTS`) from metadata rendered into the body for everyone
+  (`METADATA_OUTSIDE_HEAD`). #5: the JS-off link graph in the site audit: each page record
+  carries its HTML links, the report gains `linkGraph` and per-page `depth`, and three
+  findings (`NAV_NOT_IN_HTML`, `ORPHAN_PAGES`, `DEEP_PAGES`) that wait for full sitemap
+  coverage before claiming an orphan; smoke-tested on rankcli.dev at 12 pages. Measured what
+  folding structured-data deductions into the on-page score does on six reference sites with
+  the published 0.0.53 (stripe 74, vercel 83, supabase 72, tailwindcss 65, docs.astro.build
+  78, rankcli.dev 89): at a third of the on-page weight it moves the overall score by 0 to 1
+  point, so that change goes in as #6. The merge button is the one thing the permission
+  classifier blocks, so #3, #4, #5, #6 and rankcli.dev #13 wait for the founder; none of the
+  engine work is released until 0.0.54.
+- **Plan item 5 (agent surfaces), three PRs.** rankcli #7: `rankcli audit -o llm`, the
+  report as an agent reads it (plain Markdown, every finding by code, the fix's first
+  sentence on errors and warnings, about 700 words for a two-page audit of rankcli.dev).
+  rankcli #8: `astro-rankcli` 0.1.0 runs the full engine audit on the build output after
+  `astro build` (the same checks as `rankcli audit --dir dist`), logs the score and every
+  error and warning with its code, and gates the build on `audit.failOn`; a developer who
+  installed it used to get seven checks. `vite-plugin-rankcli` and `next-rankcli` now say
+  they are SEO lint and helpers, not the audit, with the one-line command that is.
+  rankcli-mcp-server #2: three task-named skills (`check-site-before-deploy`,
+  `fix-seo-regressions`, `is-my-site-blocked-from-ai-search`), the two older ones updated to
+  the 0.0.53 gate syntax, the stale server-source copy removed from that repository and its
+  README pointing at the right release page; to merge after 0.0.54 ships, since the bot-class
+  codes are 0.0.54 names. Verified on the way: the free hosted MCP endpoint serves the same
+  thirteen analysis tools as the local server, so the parity item needed no code.
+- **Plan item 6 begins: the corpus.** rankcli #9: the homepages of the 400 most popular npm
+  packages (npm's search API over fifteen keywords, ranked by npm's popularity order,
+  homepages that are sites of their own), audited one page each by a weekly workflow with the
+  CLI built from main, results published on a `corpus-data` branch, the small per-site record
+  keeping only scores, codes and the facts the headlines need. Pilot on the first 40 with a
+  CLI built from main plus every open engine branch (102 s, 39 audited, median 69): 54 percent
+  publish an llms.txt, 44 percent have no sitemap, 8 percent stamp one date on every sitemap
+  URL, one site refuses bingbot, PerplexityBot, GPTBot and ClaudeBot at the edge, one
+  disallows the AI search crawlers, none streams metadata only to Googlebot, none has an
+  IndexNow key. The full 400 run is in progress locally; the first scheduled run should follow
+  the engine merges, since the headline counts depend on the bot-class and metadata checks.
+  Also: rankcli.dev #14 holds the site docs for 0.0.54; rankcli #5 was made independent of #4
+  (both added an import on the same line); the plugin publish now pins astro-rankcli's
+  workspace dependency and refuses to run before the runtime version is on npm.
+- **The first full corpus dataset (local, not committed).** 400 sites in 659 seconds, 367
+  audited. 47 percent publish an llms.txt (Next.js sites 54 of 84), 41 percent have no
+  sitemap, 9 percent stamp one date on every sitemap URL (developer.mozilla.org, solidjs.com,
+  mantine.dev among them), 5 percent client-render the homepage, 3 percent refuse a training
+  crawler at the edge, three sites refuse the AI search crawlers at the edge, two refuse a
+  search crawler (ag-grid.com answers Googlebot and bingbot with 403), three disallow the AI
+  search crawlers in robots.txt, two stream metadata only to Googlebot (an HTMX and a Nuxt
+  site; none of the 84 Next.js sites), none has an IndexNow key; median score 70, median AI
+  Readiness 86. The run caught one wrong check: `METADATA_OUTSIDE_HEAD` fired on 41 sites
+  over an inline icon's `<svg><title>` (vuejs.org, getbootstrap.com, developer.mozilla.org);
+  fixed on rankcli #4 before it ever shipped, which is what the corpus is for. The numbers are
+  on rankcli #9 as a comment. The write-up waits for the first scheduled run after the merges.
 - **v0.0.53 and Action v1.2.0 shipped.** The founder created the v0.0.53 release at 19:48 UTC
   and pushed the staged Action at 19:49. `release.yml` published `@rankcli/agent-runtime`
   0.0.41, `@rankcli/mcp-server` 0.0.26 and `@rankcli/cli` 0.0.53 (both pin ^0.0.41) under

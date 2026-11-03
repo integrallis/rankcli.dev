@@ -70,7 +70,7 @@ jobs:
         if: steps.generate.outputs.changed == 'true'
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.122.1  # v3 (2026-11-02) targets the local stack by default and needs --yes for hosted changes; migrate deliberately
 
       - name: Deploy to Supabase
         if: steps.generate.outputs.changed == 'true'

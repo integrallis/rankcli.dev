@@ -170,7 +170,7 @@
       "price_cents": 9900,
       "price_cents_annual": 99000,
       "billing_period": "month",
-      "tagline": "For agencies & enterprises",
+      "tagline": "For agencies: replaces the hand-written client audit",
       "popular": false,
       "limits": {
         "sites": 50,
@@ -339,7 +339,7 @@
     "api_access": "REST API to integrate RankCLI into your own tools, dashboards, and workflows. Build custom integrations, automate bulk audits, and receive webhook notifications.",
     "white_label": "Remove RankCLI branding from client reports, widgets and exports. Add your own logo and colors for client-facing deliverables.",
     "local_auto_fix": "Apply SEO fixes directly to your local codebase via CLI. Creates commits and branches ready for you to push.",
-    "github_auto_fix": "RankCLI opens a pull request that fixes what the audit found. Free includes 3 a month; paid plans are unlimited. Every plan holds a limited number open per site at once, so a review queue never runs away: 1 on Free and Solo, 3 on Pro, 10 on Agency.",
+    "github_auto_fix": "RankCLI opens a pull request that fixes what the audit found. Free includes 3 a month, and one you close unmerged is given back; paid plans are unlimited. Every plan holds a limited number open per site at once, so a review queue never runs away: 1 on Free and Solo, 3 on Pro, 10 on Agency.",
     "gsc_integration": "Connect Google Search Console to track impressions, clicks, CTR, and average position. See which queries drive traffic and monitor keyword rankings.",
     "metrics_sync": "Automatic sync of SEO metrics from connected sources. Frequency varies by plan: Solo (weekly), Pro (daily), Agency (hourly).",
     "local_seo": "Local SEO analysis including NAP consistency detection, LocalBusiness schema validation, address/phone detection, and social profile linking.",

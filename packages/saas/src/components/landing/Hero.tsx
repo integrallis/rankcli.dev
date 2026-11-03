@@ -31,9 +31,9 @@ export function Hero() {
           </p>
           {/* Brand definition for AI extraction */}
           <p className="text-sm text-muted-foreground/80 mb-6 max-w-2xl leading-relaxed">
-            RankCLI is a free, developer-first SEO tool. Run audits locally, get framework-specific
-            fixes, automate in CI. Like ESLint for SEO. Plus an MCP server so your AI agents can
-            handle your SEO needs automatically.
+            RankCLI is a free, developer-first SEO tool: the audit you would otherwise pay a
+            contractor for, or skip until traffic drops, run where your code already runs. Locally,
+            in CI, or inside your coding agent through its MCP server. Like ESLint for SEO.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 mb-6">

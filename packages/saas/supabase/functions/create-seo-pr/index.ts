@@ -545,7 +545,11 @@ serve(async (req) => {
 
     // Monthly allowance. null = unlimited. Only auto-fix PRs count: a CI-setup PR is a
     // one-off template commit and charging quota for the thing that gets SEO into CI
-    // would be taxing the on-ramp.
+    // would be taxing the on-ramp. A PR closed unmerged doesn't count either: the user
+    // rejected the fix, its issues are handed back for a retry (see the issue release
+    // below), and charging for a fix nobody wanted would bill for our failure. Merged and
+    // still-open PRs count. The open-PR and per-report caps still bound how fast a user
+    // can cycle PRs.
     const monthlyAllowance = limits.autoFixPrsPerMonth;
     let prsThisMonth = 0;
     if (monthlyAllowance !== null) {
@@ -557,6 +561,7 @@ serve(async (req) => {
         .select('id, projects!inner(user_id)', { count: 'exact', head: true })
         .eq('projects.user_id', project.user_id)
         .eq('kind', 'auto_fix')
+        .neq('pr_state', 'closed')
         .gte('created_at', monthStart.toISOString());
       prsThisMonth = count ?? 0;
       if (prsThisMonth >= monthlyAllowance) {
@@ -721,6 +726,15 @@ serve(async (req) => {
       'AI_NO_EXPERIENCE_SIGNALS', 'NO_EXPERIENCE_SIGNALS', 'AI_NO_COMPARISON_TABLE',
       'AI_NO_QA_FORMAT', 'AI_NO_NUMBERED_STEPS', 'AI_NO_BRAND_DEFINITION',
       'NO_AGENT_EXPERIENCE_SURFACE',
+      // Facts only the owner has. integrallis/rankcli.dev#11 "fixed" these three by inventing
+      // an address and phone number for the company; told to fix missing social profiles or
+      // trust badges, a model invents profile URLs and badges; told to cite statistics or add
+      // references, it invents sources. agent-runtime's safety check now refuses any such
+      // fact the original file lacked, but by then the whole file is lost, so these are
+      // never put in the prompt in the first place.
+      'ADDRESS_NOT_DETECTED', 'PHONE_NOT_DETECTED', 'LOCAL_BUSINESS_SCHEMA_MISSING',
+      'NO_SOCIAL_PROFILES', 'NO_HIGH_PRIORITY_PLATFORMS', 'NO_EMBEDDED_SOCIAL',
+      'COMMERCIAL_NO_TRUST_BADGES', 'AI_UNCITED_STATISTICS', 'AI_NO_REFERENCES_SECTION',
     ];
 
     // Issues that CANNOT be auto-fixed (require manual intervention or architectural changes)
@@ -1126,16 +1140,18 @@ but they are still changes to your repository, so read the diff.`}
 Refused before committing, so you should not see them here: paths outside the app, files that
 came back shorter than they went in, HTML that lost a \`<script>\`, a stylesheet or a
 site-verification tag, source files that lost an import, invalid JSON, XML or JSON-LD, sitemaps
-with fewer URLs or a \`lastmod\` moved backwards, and any rewrite of an existing robots.txt,
+with fewer URLs or a \`lastmod\` moved backwards, a phone number, email, address, rating or
+social profile your file did not already state, and any rewrite of an existing robots.txt,
 sitemap.xml or llms.txt.${rejectedPaths.length > 0 ? ` On this PR that dropped: ${rejectedPaths.map((p) => `\`${p}\``).join(', ')}.` : ''}
 
 Not checked, and yours to judge: whether the copy sounds like you, whether the structured data
 describes your business correctly, and whether any of it is right for your site. Nothing here
 is claimed to be an improvement - it is a proposal, which is why it is a pull request.
 
-Issues that can only be fixed by writing real content - testimonials, author credentials,
-citations, original data - are deliberately left out of this PR and reported on your dashboard
-instead. RankCLI will not invent those for you.
+Issues that can only be fixed with facts or content only you have - your address and phone
+number, social profiles, trust badges, testimonials, author credentials, citations and sources,
+original data - are deliberately left out of this PR and reported on your dashboard instead.
+RankCLI will not invent those for you.
 
 ---
 

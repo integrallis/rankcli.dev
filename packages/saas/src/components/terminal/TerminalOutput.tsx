@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import { heroRun } from '@/data/hero-run/lines';
 
 interface TerminalLine {
   type: 'prompt' | 'output' | 'success' | 'error' | 'warning';
@@ -12,6 +13,7 @@ interface TerminalOutputProps {
   className?: string;
   autoPlay?: boolean;
   loop?: boolean;
+  bodyClassName?: string;
 }
 
 export function TerminalOutput({
@@ -19,6 +21,7 @@ export function TerminalOutput({
   className,
   autoPlay = true,
   loop = true,
+  bodyClassName = 'h-[176px]',
 }: TerminalOutputProps) {
   const [visibleLines, setVisibleLines] = useState<number>(0);
   const [isTyping, setIsTyping] = useState(false);
@@ -69,7 +72,7 @@ export function TerminalOutput({
         <div className="terminal-dot terminal-dot-green" />
         <span className="ml-2 text-xs text-muted-foreground">Terminal</span>
       </div>
-      <div ref={terminalBodyRef} className="terminal-body h-[176px] overflow-y-auto">
+      <div ref={terminalBodyRef} className={cn('terminal-body overflow-y-auto', bodyClassName)}>
         {lines.slice(0, visibleLines).map((line, index) => (
           <div key={index} className="terminal-line mb-0.5">
             {line.type === 'prompt' ? (
@@ -83,7 +86,7 @@ export function TerminalOutput({
             ) : (
               <span
                 className={cn(
-                  'terminal-output',
+                  'terminal-output whitespace-pre',
                   line.type === 'success' && 'terminal-success',
                   line.type === 'error' && 'terminal-error',
                   line.type === 'warning' && 'terminal-warning'
@@ -99,24 +102,17 @@ export function TerminalOutput({
   );
 }
 
-// Pre-built demo for landing page - uses real CLI output format
+// The landing-page terminal replays a real recorded audit of rankcli.dev. Its lines come from
+// src/data/hero-run/raw.txt (stdout of the published CLI, see scripts/record-hero-run.ts),
+// selected verbatim at build time, so the demo cannot drift from what the CLI prints.
 export function LandingTerminalDemo() {
-  const demoLines: TerminalLine[] = [
-    { type: 'prompt', content: 'rankcli audit https://myapp.com --geo', delay: 1200 },
-    { type: 'output', content: '🔍 Running comprehensive SEO audit...', delay: 600 },
-    { type: 'output', content: '📋 Phase 1: Crawlability + GEO checks', delay: 400 },
-    { type: 'output', content: '🤖 Phase 2: AI crawler access (GPTBot, ClaudeBot)', delay: 400 },
-    { type: 'output', content: '📝 Phase 3: On-page + structured data', delay: 400 },
-    { type: 'success', content: '✅ Audit complete!', delay: 500 },
-    { type: 'output', content: '', delay: 200 },
-    { type: 'output', content: '📊 Score: 78/100  GEO: 85/100  CWV: A', delay: 600 },
-    { type: 'output', content: '✅ GPTBot allowed  ✅ ClaudeBot allowed', delay: 400 },
-    { type: 'warning', content: '⚠️ 2 issues: FAQ schema missing, no citations', delay: 400 },
-    { type: 'output', content: '', delay: 600 },
-    { type: 'prompt', content: 'rankcli apply --auto', delay: 1200 },
-    { type: 'output', content: 'Generating Next.js fixes...', delay: 500 },
-    { type: 'success', content: '✓ PR #127 created with 8 fixes', delay: 400 },
-  ];
-
-  return <TerminalOutput lines={demoLines} className="w-full" />;
+  return (
+    <figure className="w-full">
+      <TerminalOutput lines={heroRun.lines} className="w-full" bodyClassName="h-[372px]" />
+      <figcaption className="mt-2 text-xs text-muted-foreground text-center">
+        A recorded run of @rankcli/cli {heroRun.cliVersion} against {heroRun.url.replace('https://', '')},{' '}
+        {new Date(`${heroRun.recordedAt}T00:00:00Z`).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}
+      </figcaption>
+    </figure>
+  );
 }
