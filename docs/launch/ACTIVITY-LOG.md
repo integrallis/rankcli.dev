@@ -143,6 +143,21 @@ and the developer channels have produced no measurable visit.
   over an inline icon's `<svg><title>` (vuejs.org, getbootstrap.com, developer.mozilla.org);
   fixed on rankcli #4 before it ever shipped, which is what the corpus is for. The numbers are
   on rankcli #9 as a comment. The write-up waits for the first scheduled run after the merges.
+- **Stage 3 went DIRTY and the engine diverged.** Another session committed two engine
+  changes to the monorepo's frozen copy (`6d938c1`, the footer-image fix the public repo
+  already had; `29f989d`, an auto-fix safety concern that refuses to commit a phone, address,
+  rating or similar the original file did not contain, plus the `create-seo-pr` function
+  using it). The stage-3 merge was resolved by keeping the deletions and the published
+  bundle; the new concern is ported to the public repo as rankcli #10 (131 fixer tests pass)
+  and reaches the hosted product with the next pin bump. `@rankcli/agent-runtime` 0.0.41
+  already exports the two functions the edge function imports, so #13 can merge on its own.
+  CLAUDE.md on main now says where engine changes go, so this does not repeat.
+- **The dataset as a page.** rankcli.dev #16 adds `/data/npm-sites`: the browser reads the
+  latest weekly run from the public repository's `corpus-data` branch, shows the headline
+  counts as shares of the audited sites, explains each fact by bot class, and lists every
+  audited site with its framework, scores and observed facts, filterable and sortable. It
+  says so until the first run is published. Footer link, prerender and sitemap entries,
+  three tests for the data shaping.
 - **v0.0.53 and Action v1.2.0 shipped.** The founder created the v0.0.53 release at 19:48 UTC
   and pushed the staged Action at 19:49. `release.yml` published `@rankcli/agent-runtime`
   0.0.41, `@rankcli/mcp-server` 0.0.26 and `@rankcli/cli` 0.0.53 (both pin ^0.0.41) under
