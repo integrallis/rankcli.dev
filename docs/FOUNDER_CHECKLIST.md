@@ -79,12 +79,12 @@ Bump `version` in `.claude-plugin/plugin.json` with each release after that.
 1. **Link each package to the workflow**, so releases stop depending on the token (npm retires direct token publishing in January 2027). On any machine with npm 11.15 or newer (`npx npm@latest` is fine), logged in as `integrallis`:
 
    ```bash
-   npx npm@latest trust github astro-rankcli       --file publish-plugins.yml --repo integrallis/rankcli.dev --allow-publish
-   npx npm@latest trust github vite-plugin-rankcli --file publish-plugins.yml --repo integrallis/rankcli.dev --allow-publish
-   npx npm@latest trust github next-rankcli        --file publish-plugins.yml --repo integrallis/rankcli.dev --allow-publish
+   npx npm@latest trust github astro-rankcli       --file publish-plugins.yml --repo integrallis/rankcli --allow-publish
+   npx npm@latest trust github vite-plugin-rankcli --file publish-plugins.yml --repo integrallis/rankcli --allow-publish
+   npx npm@latest trust github next-rankcli        --file publish-plugins.yml --repo integrallis/rankcli --allow-publish
    ```
 
-   Each asks for your 2FA code. The website does the same: package -> Settings -> Trusted Publisher -> GitHub Actions, organization `integrallis`, repository `rankcli.dev`, workflow `publish-plugins.yml`. Afterwards the workflow publishes through OIDC and the `NPM_TOKEN` secret can be deleted.
+   Each asks for your 2FA code. The website does the same: package -> Settings -> Trusted Publisher -> GitHub Actions, organization `integrallis`, repository `rankcli`, workflow `publish-plugins.yml`. Afterwards the workflow publishes through OIDC and the `NPM_TOKEN` secret can be deleted.
 
 2. **Optional: remove the `0.0.0-stage` stubs.** npm put a 335-byte placeholder version beside each package when it created them. `latest` is 0.0.1 and installs are unaffected, but the version list shows the stub. A 2FA-bypass token may not unpublish, so it needs a code, and npm allows it for 72 hours after publish (until 2026-10-16):
 

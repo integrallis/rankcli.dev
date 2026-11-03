@@ -5,29 +5,31 @@
 // assistant to call three tools that were never registered, and the server ships fifteen -
 // so the page was both wrong and undersold it by a factor of nearly four.
 //
-// Read from source rather than importing, for the same reason frameworks.test.ts does: this
-// package has no dependency on @rankcli/mcp-server, and its dist/ is gitignored.
+// The server is the published @rankcli/mcp-server, a devDependency pinned to the version the
+// hosted free endpoint runs; its bundle is scanned for the tool names it registers.
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import mcpTools from '@/config/mcp-tools.json';
 
-const MCP_SRC = join(__dirname, '../../../mcp-server/src');
+// The package only exports ESM entry points, so resolve its bundle by path: pnpm links the
+// devDependency into this package's own node_modules.
+const MCP_DIST = join(__dirname, '../../node_modules/@rankcli/mcp-server/dist');
 
 function registeredToolNames(): string[] {
-  const names: string[] = [];
-  for (const file of ['server.ts', 'index.ts']) {
-    const src = readFileSync(join(MCP_SRC, file), 'utf8');
-    for (const m of src.matchAll(/^\s*name: '((?:seo|rankcli)_[a-z_]+)',$/gm)) names.push(m[1]);
+  const names = new Set<string>();
+  for (const file of readdirSync(MCP_DIST).filter((f) => f.endsWith('.js'))) {
+    const src = readFileSync(join(MCP_DIST, file), 'utf8');
+    for (const m of src.matchAll(/\bname: ["']((?:seo|rankcli)_[a-z_]+)["']/g)) names.add(m[1]);
   }
-  return names;
+  return [...names];
 }
 
 describe('MCP tools the site advertises', () => {
   const registered = registeredToolNames();
 
   it('parses the tool definitions at all', () => {
-    expect(registered.length, 'did server.ts change shape?').toBeGreaterThan(10);
+    expect(registered.length, 'did the server bundle change shape?').toBeGreaterThan(10);
   });
 
   it('lists exactly the tools the server registers', () => {

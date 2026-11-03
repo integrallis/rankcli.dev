@@ -14,6 +14,7 @@ const footerLinks = {
     { label: 'About', href: '/about' },
     { label: 'Blog', href: '/blog' },
     { label: 'Framework SEO guides', href: '/seo' },
+    { label: 'Data: npm sites', href: '/data/npm-sites' },
     { label: 'Contact', href: '/contact' },
   ],
   compare: [

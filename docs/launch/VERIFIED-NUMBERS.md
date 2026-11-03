@@ -13,9 +13,17 @@ like a regression when nothing has changed:
 
 | Measurement | Score | What it is |
 |---|---|---|
-| `--max-pages 1` | **89** since 2026-11-02 on `@rankcli/cli@0.0.53` and 0.0.52 alike (90 from 2026-10-29 to 2026-11-02 on 0.0.52 and 0.0.51; 85 on 0.0.50; 80 on 0.0.49; 75 until 2026-10-14) | The homepage. **This is the number all launch copy cites.** |
+| `--max-pages 1` | **89** since 2026-11-02 on `@rankcli/cli@0.0.54`, 0.0.53 and 0.0.52 alike (90 from 2026-10-29 to 2026-11-02 on 0.0.52 and 0.0.51; 85 on 0.0.50; 80 on 0.0.49; 75 until 2026-10-14) | The homepage. **This is the number all launch copy cites.** |
 | default crawl (5 pages) | 72 before 2026-10-14; 8 pages score 80 after | Averages in weaker inner pages |
 | SEO gate CI run | 81 (last checked 2026-10-02) | The published Action's own scope |
+
+**Re-verified 2026-11-03 on the published `@rankcli/cli@0.0.54`, from an empty directory:
+homepage 89/100, 0 errors, 3 warnings, 31 notices, AI Readiness 89, on-page 85, React; 310
+checks run, 307 passed.** One notice fewer than 0.0.53 (a finding the evidence did not support
+is gone); the structured-data scoring change moved nothing here. New in the report:
+`AI_TRAINING_BOTS_DISALLOWED` (rankcli.dev's robots.txt disallows the training crawlers, a
+choice, reported as a notice), `notes.aiReadiness` and `linkGraph`. `-o llm` prints the same
+audit as plain Markdown.
 
 **Re-verified 2026-11-02 on the published `@rankcli/cli@0.0.53`, from an empty directory:
 homepage 89/100, 0 errors, 3 warnings, 32 notices, AI Readiness 89, React; 310 checks run, 307

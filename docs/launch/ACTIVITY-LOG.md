@@ -117,6 +117,80 @@ and the developer channels have produced no measurable visit.
   README pointing at the right release page; to merge after 0.0.54 ships, since the bot-class
   codes are 0.0.54 names. Verified on the way: the free hosted MCP endpoint serves the same
   thirteen analysis tools as the local server, so the parity item needed no code.
+- **Plan item 6 begins: the corpus.** rankcli #9: the homepages of the 400 most popular npm
+  packages (npm's search API over fifteen keywords, ranked by npm's popularity order,
+  homepages that are sites of their own), audited one page each by a weekly workflow with the
+  CLI built from main, results published on a `corpus-data` branch, the small per-site record
+  keeping only scores, codes and the facts the headlines need. Pilot on the first 40 with a
+  CLI built from main plus every open engine branch (102 s, 39 audited, median 69): 54 percent
+  publish an llms.txt, 44 percent have no sitemap, 8 percent stamp one date on every sitemap
+  URL, one site refuses bingbot, PerplexityBot, GPTBot and ClaudeBot at the edge, one
+  disallows the AI search crawlers, none streams metadata only to Googlebot, none has an
+  IndexNow key. The full 400 run is in progress locally; the first scheduled run should follow
+  the engine merges, since the headline counts depend on the bot-class and metadata checks.
+  Also: rankcli.dev #14 holds the site docs for 0.0.54; rankcli #5 was made independent of #4
+  (both added an import on the same line); the plugin publish now pins astro-rankcli's
+  workspace dependency and refuses to run before the runtime version is on npm.
+- **The first full corpus dataset (local, not committed).** 400 sites in 659 seconds, 367
+  audited. 47 percent publish an llms.txt (Next.js sites 54 of 84), 41 percent have no
+  sitemap, 9 percent stamp one date on every sitemap URL (developer.mozilla.org, solidjs.com,
+  mantine.dev among them), 5 percent client-render the homepage, 3 percent refuse a training
+  crawler at the edge, three sites refuse the AI search crawlers at the edge, two refuse a
+  search crawler (ag-grid.com answers Googlebot and bingbot with 403), three disallow the AI
+  search crawlers in robots.txt, two stream metadata only to Googlebot (an HTMX and a Nuxt
+  site; none of the 84 Next.js sites), none has an IndexNow key; median score 70, median AI
+  Readiness 86. The run caught one wrong check: `METADATA_OUTSIDE_HEAD` fired on 41 sites
+  over an inline icon's `<svg><title>` (vuejs.org, getbootstrap.com, developer.mozilla.org);
+  fixed on rankcli #4 before it ever shipped, which is what the corpus is for. The numbers are
+  on rankcli #9 as a comment. The write-up waits for the first scheduled run after the merges.
+- **Stage 3 went DIRTY and the engine diverged.** Another session committed two engine
+  changes to the monorepo's frozen copy (`6d938c1`, the footer-image fix the public repo
+  already had; `29f989d`, an auto-fix safety concern that refuses to commit a phone, address,
+  rating or similar the original file did not contain, plus the `create-seo-pr` function
+  using it). The stage-3 merge was resolved by keeping the deletions and the published
+  bundle; the new concern is ported to the public repo as rankcli #10 (131 fixer tests pass)
+  and reaches the hosted product with the next pin bump. `@rankcli/agent-runtime` 0.0.41
+  already exports the two functions the edge function imports, so #13 can merge on its own.
+  CLAUDE.md on main now says where engine changes go, so this does not repeat.
+- **The dataset as a page.** rankcli.dev #16 adds `/data/npm-sites`: the browser reads the
+  latest weekly run from the public repository's `corpus-data` branch, shows the headline
+  counts as shares of the audited sites, explains each fact by bot class, and lists every
+  audited site with its framework, scores and observed facts, filterable and sortable. It
+  says so until the first run is published. Footer link, prerender and sitemap entries,
+  three tests for the data shaping.
+
+### 2026-11-03
+
+- **v0.0.54 shipped and stage 3 is live.** On the founder's "merge and continue": rankcli
+  #3 to #10 merged, versions bumped (cli 0.0.54, agent-runtime 0.0.42, mcp-server 0.0.27),
+  release created from the session; npm has all three (the CLI's `bin` intact; npm 12's
+  "bin invalid and removed" publish warning is normalization noise, present on 0.0.53 too),
+  the five binaries and `rankcli-0.0.27.mcpb` are attached, Homebrew and Scoop are on 0.0.54.
+  rankcli.dev #13 and #16 merged: the edge functions deploy with the npm engine bundle, the
+  audit worker redeployed on Fly from the npm packages, then the pins moved to 0.0.42/0.0.27
+  with the bundle re-synced, so the hosted product runs the 0.0.54 engine including the
+  auto-fix safety concern; worker healthy, hosted MCP endpoint serving its thirteen tools,
+  `/data/npm-sites` live (saying "no run yet" until the first Monday run). The task-named
+  skills merged. rankcli.dev re-verified at 89 on the published 0.0.54. Three things the
+  classifier left to the founder: pushing the staged Action v1.3.0 (and moving `v1`), the npm
+  trust links or an `NPM_TOKEN` on the public repo for the plugin publish (astro-rankcli 0.1.0
+  failed with a 404 from npm), and merging rankcli.dev #14 once the plugin is on npm.
+- **The corpus's first scheduled-style run, and the Nuxt module.** The corpus workflow was
+  dispatched by hand so the first dataset lands now rather than Monday (run 41566518506;
+  publishes to the `corpus-data` branch, which makes `/data/npm-sites` show real numbers).
+  rankcli #11: `nuxt-rankcli` 0.1.0, the Nuxt side of what astro-rankcli does: after
+  `nuxi generate` it serves `.output/public` and runs the full audit, logs every error and
+  warning with its code, gates on `failOn`; a server build gets a one-line pointer to the
+  deploy command instead; ten tests; registered in CI and the plugin publish. A Nuxt modules
+  directory listing and a `/seo/nuxt` page follow the first publish.
+- **The first published corpus dataset.** Run 41566518506 with the CLI built from main
+  (0.0.54): 367 of 400 sites in 841 seconds, published on the `corpus-data` branch
+  (`9231d73`), which `/data/npm-sites` reads. Headlines: llms.txt 174 (47 percent), no sitemap
+  150 (41 percent), one lastmod for every sitemap URL 32 (9 percent), client-rendered homepage
+  20 (5 percent), edge refuses a training crawler 11, an AI search crawler 5, a user-triggered
+  fetcher 3, a search crawler 3; robots.txt disallows the AI search crawlers 3, the training
+  crawlers 11; metadata streamed only to Googlebot 2; IndexNow 0; median score 70. nuxt-rankcli
+  merged (rankcli #11, CI green with its own plugin job).
 - **v0.0.53 and Action v1.2.0 shipped.** The founder created the v0.0.53 release at 19:48 UTC
   and pushed the staged Action at 19:49. `release.yml` published `@rankcli/agent-runtime`
   0.0.41, `@rankcli/mcp-server` 0.0.26 and `@rankcli/cli` 0.0.53 (both pin ^0.0.41) under

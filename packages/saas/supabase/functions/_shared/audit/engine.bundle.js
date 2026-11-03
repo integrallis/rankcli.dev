@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-11-02T21:23:59.144Z
+// Generated: 2026-11-03T02:18:57.482Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -11,7 +11,7 @@ if (typeof globalThis.Buffer === 'undefined') {
 }
 
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/identity.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/identity.js
 var ALIAS = Symbol.for("yaml.alias");
 var DOC = Symbol.for("yaml.document");
 var MAP = Symbol.for("yaml.map");
@@ -47,7 +47,7 @@ function isNode(node) {
 }
 var hasAnchor = (node) => (isScalar(node) || isCollection(node)) && !!node.anchor;
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/visit.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/visit.js
 var BREAK = Symbol("break visit");
 var SKIP = Symbol("skip children");
 var REMOVE = Symbol("remove node");
@@ -197,7 +197,7 @@ function replaceNode(key, path, node) {
   }
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/doc/directives.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/doc/directives.js
 var escapeChars = {
   "!": "%21",
   ",": "%2C",
@@ -360,7 +360,7 @@ var Directives = class _Directives {
 Directives.defaultYaml = { explicit: false, version: "1.2" };
 Directives.defaultTags = { "!!": "tag:yaml.org,2002:" };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/doc/anchors.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/doc/anchors.js
 function anchorIsValid(anchor) {
   if (/[\x00-\x19\s,[\]{}]/.test(anchor)) {
     const sa = JSON.stringify(anchor);
@@ -419,7 +419,7 @@ function createNodeAnchors(doc, prefix) {
   };
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/doc/applyReviver.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/doc/applyReviver.js
 function applyReviver(reviver, obj, key, val) {
   if (val && typeof val === "object") {
     if (Array.isArray(val)) {
@@ -463,7 +463,7 @@ function applyReviver(reviver, obj, key, val) {
   return reviver.call(obj, key, val);
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/toJS.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/toJS.js
 function toJS(value, arg, ctx) {
   if (Array.isArray(value))
     return value.map((v, i) => toJS(v, String(i), ctx));
@@ -486,7 +486,7 @@ function toJS(value, arg, ctx) {
   return value;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/Node.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/Node.js
 var NodeBase = class {
   constructor(type) {
     Object.defineProperty(this, NODE_TYPE, { value: type });
@@ -518,7 +518,7 @@ var NodeBase = class {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/Alias.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/Alias.js
 var Alias = class extends NodeBase {
   constructor(source) {
     super(ALIAS);
@@ -534,6 +534,8 @@ var Alias = class extends NodeBase {
    * instance of the `source` anchor before this node.
    */
   resolve(doc, ctx) {
+    if (ctx?.maxAliasCount === 0)
+      throw new ReferenceError("Alias resolution is disabled");
     let nodes;
     if (ctx?.aliasResolveCache) {
       nodes = ctx.aliasResolveCache;
@@ -555,36 +557,38 @@ var Alias = class extends NodeBase {
       if (node.anchor === this.source)
         found = node;
     }
+    if (found && ctx) {
+      const { anchors, doc: doc2, maxAliasCount } = ctx;
+      let data = anchors.get(found);
+      if (!data) {
+        toJS(found, null, ctx);
+        data = anchors.get(found);
+      }
+      if (data?.res === void 0) {
+        const msg = "This should not happen: Alias anchor was not resolved?";
+        throw new ReferenceError(msg);
+      }
+      if (maxAliasCount >= 0) {
+        data.count += 1;
+        if (data.aliasCount === 0)
+          data.aliasCount = getAliasCount(doc2, found, anchors);
+        if (data.count * data.aliasCount > maxAliasCount) {
+          const msg = "Excessive alias count indicates a resource exhaustion attack";
+          throw new ReferenceError(msg);
+        }
+      }
+    }
     return found;
   }
   toJSON(_arg, ctx) {
     if (!ctx)
       return { source: this.source };
-    const { anchors, doc, maxAliasCount } = ctx;
-    const source = this.resolve(doc, ctx);
+    const source = this.resolve(ctx.doc, ctx);
     if (!source) {
       const msg = `Unresolved alias (the anchor must be set before the alias): ${this.source}`;
       throw new ReferenceError(msg);
     }
-    let data = anchors.get(source);
-    if (!data) {
-      toJS(source, null, ctx);
-      data = anchors.get(source);
-    }
-    if (data?.res === void 0) {
-      const msg = "This should not happen: Alias anchor was not resolved?";
-      throw new ReferenceError(msg);
-    }
-    if (maxAliasCount >= 0) {
-      data.count += 1;
-      if (data.aliasCount === 0)
-        data.aliasCount = getAliasCount(doc, source, anchors);
-      if (data.count * data.aliasCount > maxAliasCount) {
-        const msg = "Excessive alias count indicates a resource exhaustion attack";
-        throw new ReferenceError(msg);
-      }
-    }
-    return data.res;
+    return ctx.anchors.get(source).res;
   }
   toString(ctx, _onComment, _onChompKeep) {
     const src = `*${this.source}`;
@@ -621,7 +625,7 @@ function getAliasCount(doc, node, anchors) {
   return 1;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/Scalar.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/Scalar.js
 var isScalarValue = (value) => !value || typeof value !== "function" && typeof value !== "object";
 var Scalar = class extends NodeBase {
   constructor(value) {
@@ -641,7 +645,7 @@ Scalar.PLAIN = "PLAIN";
 Scalar.QUOTE_DOUBLE = "QUOTE_DOUBLE";
 Scalar.QUOTE_SINGLE = "QUOTE_SINGLE";
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/doc/createNode.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/doc/createNode.js
 var defaultTagPrefix = "tag:yaml.org,2002:";
 function findTagObject(value, tagName, tags) {
   if (tagName) {
@@ -707,7 +711,7 @@ function createNode(value, tagName, ctx) {
   return node;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/Collection.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/Collection.js
 function collectionFromPath(schema4, path, value) {
   let v = value;
   for (let i = path.length - 1; i >= 0; --i) {
@@ -839,7 +843,7 @@ var Collection = class extends NodeBase {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/stringify/stringifyComment.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/stringify/stringifyComment.js
 var stringifyComment = (str) => str.replace(/^(?!$)(?: $)?/gm, "#");
 function indentComment(comment, indent) {
   if (/^\n+$/.test(comment))
@@ -848,7 +852,7 @@ function indentComment(comment, indent) {
 }
 var lineComment = (str, indent, comment) => str.endsWith("\n") ? indentComment(comment, indent) : comment.includes("\n") ? "\n" + indentComment(comment, indent) : (str.endsWith(" ") ? "" : " ") + comment;
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/stringify/foldFlowLines.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/stringify/foldFlowLines.js
 var FOLD_FLOW = "flow";
 var FOLD_BLOCK = "block";
 var FOLD_QUOTED = "quoted";
@@ -975,7 +979,7 @@ function consumeMoreIndentedLines(text, i, indent) {
   return end;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/stringify/stringifyString.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/stringify/stringifyString.js
 var getFoldOptions = (ctx, isBlock2) => ({
   indentAtStart: isBlock2 ? ctx.indent.length : ctx.indentAtStart,
   lineWidth: ctx.options.lineWidth,
@@ -1250,7 +1254,7 @@ function stringifyString(item, ctx, onComment, onChompKeep) {
   return res;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/stringify/stringify.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/stringify/stringify.js
 function createStringifyContext(doc, options) {
   const opt = Object.assign({
     blockQuote: true,
@@ -1268,6 +1272,7 @@ function createStringifyContext(doc, options) {
     nullStr: "null",
     simpleKeys: false,
     singleQuote: null,
+    trailingComma: false,
     trueStr: "true",
     verifyAliasOrder: true
   }, doc.schema.toStringOptions, options);
@@ -1362,7 +1367,7 @@ function stringify(item, ctx, onComment, onChompKeep) {
 ${ctx.indent}${str}`;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/stringify/stringifyPair.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/stringify/stringifyPair.js
 function stringifyPair({ key, value }, ctx, onComment, onChompKeep) {
   const { allNullValues, doc, indent, indentStep, options: { commentString, indentSeq, simpleKeys } } = ctx;
   let keyComment = isNode(key) && key.comment || null;
@@ -1485,14 +1490,14 @@ ${ctx.indent}`;
   return str;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/log.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/log.js
 function warn(logLevel, warning) {
   if (logLevel === "debug" || logLevel === "warn") {
     console.warn(warning);
   }
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/merge.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/merge.js
 var MERGE_KEY = "<<";
 var merge = {
   identify: (value) => value === MERGE_KEY || typeof value === "symbol" && value.description === MERGE_KEY,
@@ -1506,18 +1511,18 @@ var merge = {
 };
 var isMergeKey = (ctx, key) => (merge.identify(key) || isScalar(key) && (!key.type || key.type === Scalar.PLAIN) && merge.identify(key.value)) && ctx?.doc.schema.tags.some((tag) => tag.tag === merge.tag && tag.default);
 function addMergeToJSMap(ctx, map2, value) {
-  value = ctx && isAlias(value) ? value.resolve(ctx.doc) : value;
-  if (isSeq(value))
-    for (const it of value.items)
+  const source = resolveAliasValue(ctx, value);
+  if (isSeq(source))
+    for (const it of source.items)
       mergeValue(ctx, map2, it);
-  else if (Array.isArray(value))
-    for (const it of value)
+  else if (Array.isArray(source))
+    for (const it of source)
       mergeValue(ctx, map2, it);
   else
-    mergeValue(ctx, map2, value);
+    mergeValue(ctx, map2, source);
 }
 function mergeValue(ctx, map2, value) {
-  const source = ctx && isAlias(value) ? value.resolve(ctx.doc) : value;
+  const source = resolveAliasValue(ctx, value);
   if (!isMap(source))
     throw new Error("Merge sources must be maps or map aliases");
   const srcMap = source.toJSON(null, ctx, Map);
@@ -1538,8 +1543,11 @@ function mergeValue(ctx, map2, value) {
   }
   return map2;
 }
+function resolveAliasValue(ctx, value) {
+  return ctx && isAlias(value) ? value.resolve(ctx.doc, ctx) : value;
+}
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/addPairToJSMap.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/addPairToJSMap.js
 function addPairToJSMap(ctx, map2, { key, value }) {
   if (isNode(key) && key.addToJSMap)
     key.addToJSMap(ctx, map2, value);
@@ -1592,7 +1600,7 @@ function stringifyKey(key, jsKey, ctx) {
   return JSON.stringify(jsKey);
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/Pair.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/Pair.js
 function createPair(key, value, ctx) {
   const k = createNode(key, void 0, ctx);
   const v = createNode(value, void 0, ctx);
@@ -1621,7 +1629,7 @@ var Pair = class _Pair {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/stringify/stringifyCollection.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/stringify/stringifyCollection.js
 function stringifyCollection(collection, ctx, options) {
   const flow = ctx.inFlow ?? collection.flow;
   const stringify4 = flow ? stringifyFlowCollection : stringifyBlockCollection;
@@ -1718,12 +1726,19 @@ function stringifyFlowCollection({ items }, ctx, { flowChars, itemIndent }) {
     if (comment)
       reqNewline = true;
     let str = stringify(item, itemCtx, () => comment = null);
-    if (i < items.length - 1)
+    reqNewline || (reqNewline = lines.length > linesAtValue || str.includes("\n"));
+    if (i < items.length - 1) {
       str += ",";
+    } else if (ctx.options.trailingComma) {
+      if (ctx.options.lineWidth > 0) {
+        reqNewline || (reqNewline = lines.reduce((sum, line) => sum + line.length + 2, 2) + (str.length + 2) > ctx.options.lineWidth);
+      }
+      if (reqNewline) {
+        str += ",";
+      }
+    }
     if (comment)
       str += lineComment(str, itemIndent, commentString(comment));
-    if (!reqNewline && (lines.length > linesAtValue || str.includes("\n")))
-      reqNewline = true;
     lines.push(str);
     linesAtValue = lines.length;
   }
@@ -1756,7 +1771,7 @@ function addCommentBefore({ indent, options: { commentString } }, lines, comment
   }
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/YAMLMap.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/YAMLMap.js
 function findPair(items, key) {
   const k = isScalar(key) ? key.value : key;
   for (const it of items) {
@@ -1887,7 +1902,7 @@ var YAMLMap = class extends Collection {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/common/map.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/common/map.js
 var map = {
   collection: "map",
   default: true,
@@ -1901,7 +1916,7 @@ var map = {
   createNode: (schema4, obj, ctx) => YAMLMap.from(schema4, obj, ctx)
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/YAMLSeq.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/YAMLSeq.js
 var YAMLSeq = class extends Collection {
   static get tagName() {
     return "tag:yaml.org,2002:seq";
@@ -2005,7 +2020,7 @@ function asItemIndex(key) {
   return typeof idx === "number" && Number.isInteger(idx) && idx >= 0 ? idx : null;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/common/seq.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/common/seq.js
 var seq = {
   collection: "seq",
   default: true,
@@ -2019,7 +2034,7 @@ var seq = {
   createNode: (schema4, obj, ctx) => YAMLSeq.from(schema4, obj, ctx)
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/common/string.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/common/string.js
 var string = {
   identify: (value) => typeof value === "string",
   default: true,
@@ -2031,7 +2046,7 @@ var string = {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/common/null.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/common/null.js
 var nullTag = {
   identify: (value) => value == null,
   createNode: () => new Scalar(null),
@@ -2042,7 +2057,7 @@ var nullTag = {
   stringify: ({ source }, ctx) => typeof source === "string" && nullTag.test.test(source) ? source : ctx.options.nullStr
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/core/bool.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/core/bool.js
 var boolTag = {
   identify: (value) => typeof value === "boolean",
   default: true,
@@ -2059,7 +2074,7 @@ var boolTag = {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/stringify/stringifyNumber.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/stringify/stringifyNumber.js
 function stringifyNumber({ format, minFractionDigits, tag, value }) {
   if (typeof value === "bigint")
     return String(value);
@@ -2067,7 +2082,7 @@ function stringifyNumber({ format, minFractionDigits, tag, value }) {
   if (!isFinite(num))
     return isNaN(num) ? ".nan" : num < 0 ? "-.inf" : ".inf";
   let n = Object.is(value, -0) ? "-0" : JSON.stringify(value);
-  if (!format && minFractionDigits && (!tag || tag === "tag:yaml.org,2002:float") && /^\d/.test(n)) {
+  if (!format && minFractionDigits && (!tag || tag === "tag:yaml.org,2002:float") && /^-?\d/.test(n) && !n.includes("e")) {
     let i = n.indexOf(".");
     if (i < 0) {
       i = n.length;
@@ -2080,7 +2095,7 @@ function stringifyNumber({ format, minFractionDigits, tag, value }) {
   return n;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/core/float.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/core/float.js
 var floatNaN = {
   identify: (value) => typeof value === "number",
   default: true,
@@ -2116,7 +2131,7 @@ var float = {
   stringify: stringifyNumber
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/core/int.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/core/int.js
 var intIdentify = (value) => typeof value === "bigint" || Number.isInteger(value);
 var intResolve = (str, offset, radix, { intAsBigInt }) => intAsBigInt ? BigInt(str) : parseInt(str.substring(offset), radix);
 function intStringify(node, radix, prefix) {
@@ -2152,7 +2167,7 @@ var intHex = {
   stringify: (node) => intStringify(node, 16, "0x")
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/core/schema.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/core/schema.js
 var schema = [
   map,
   seq,
@@ -2167,7 +2182,7 @@ var schema = [
   float
 ];
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/json/schema.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/json/schema.js
 function intIdentify2(value) {
   return typeof value === "bigint" || Number.isInteger(value);
 }
@@ -2225,7 +2240,7 @@ var jsonError = {
 };
 var schema2 = [map, seq].concat(jsonScalars, jsonError);
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/binary.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/binary.js
 var binary = {
   identify: (value) => value instanceof Uint8Array,
   // Buffer inherits from Uint8Array
@@ -2278,7 +2293,7 @@ var binary = {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/pairs.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/pairs.js
 function resolvePairs(seq2, onError) {
   if (isSeq(seq2)) {
     for (let i = 0; i < seq2.items.length; ++i) {
@@ -2344,7 +2359,7 @@ var pairs = {
   createNode: createPairs
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/omap.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/omap.js
 var YAMLOMap = class _YAMLOMap extends YAMLSeq {
   constructor() {
     super();
@@ -2410,7 +2425,7 @@ var omap = {
   createNode: (schema4, iterable, ctx) => YAMLOMap.from(schema4, iterable, ctx)
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/bool.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/bool.js
 function boolStringify({ value, source }, ctx) {
   const boolObj = value ? trueTag : falseTag;
   if (source && boolObj.test.test(source))
@@ -2434,7 +2449,7 @@ var falseTag = {
   stringify: boolStringify
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/float.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/float.js
 var floatNaN2 = {
   identify: (value) => typeof value === "number",
   default: true,
@@ -2473,7 +2488,7 @@ var float2 = {
   stringify: stringifyNumber
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/int.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/int.js
 var intIdentify3 = (value) => typeof value === "bigint" || Number.isInteger(value);
 function intResolve2(str, offset, radix, { intAsBigInt }) {
   const sign = str[0];
@@ -2542,7 +2557,7 @@ var intHex2 = {
   stringify: (node) => intStringify2(node, 16, "0x")
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/set.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/set.js
 var YAMLSet = class _YAMLSet extends YAMLMap {
   constructor(schema4) {
     super(schema4);
@@ -2621,7 +2636,7 @@ var set = {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/timestamp.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/timestamp.js
 function parseSexagesimal(str, asBigInt) {
   const sign = str[0];
   const parts = sign === "-" || sign === "+" ? str.substring(1) : str;
@@ -2700,7 +2715,7 @@ var timestamp = {
   stringify: ({ value }) => value?.toISOString().replace(/(T00:00:00)?\.000Z$/, "") ?? ""
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/schema.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/schema.js
 var schema3 = [
   map,
   seq,
@@ -2725,7 +2740,7 @@ var schema3 = [
   timestamp
 ];
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/tags.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/tags.js
 var schemas = /* @__PURE__ */ new Map([
   ["core", schema],
   ["failsafe", [map, seq, string]],
@@ -2796,7 +2811,7 @@ function getTags(customTags, schemaName, addMergeTag) {
   }, []);
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/Schema.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/Schema.js
 var sortMapEntriesByKey = (a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
 var Schema = class _Schema {
   constructor({ compat, customTags, merge: merge2, resolveKnownTags, schema: schema4, sortMapEntries, toStringDefaults }) {
@@ -2817,7 +2832,7 @@ var Schema = class _Schema {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/stringify/stringifyDocument.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/stringify/stringifyDocument.js
 function stringifyDocument(doc, options) {
   const lines = [];
   let hasDirectives = options.directives === true;
@@ -2888,7 +2903,7 @@ function stringifyDocument(doc, options) {
   return lines.join("\n") + "\n";
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/doc/Document.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/doc/Document.js
 var Document = class _Document {
   constructor(value, replacer, options) {
     this.commentBefore = null;
@@ -3180,7 +3195,7 @@ function assertCollection(contents) {
   throw new Error("Expected a YAML collection as document contents");
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/errors.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/errors.js
 var YAMLError = class extends Error {
   constructor(name, pos, code, message) {
     super();
@@ -3236,7 +3251,7 @@ ${pointer}
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/resolve-props.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/resolve-props.js
 function resolveProps(tokens, { flow, indicator, next, offset, onError, parentIndent, startOnNewline }) {
   let spaceBefore = false;
   let atNewline = startOnNewline;
@@ -3363,7 +3378,7 @@ function resolveProps(tokens, { flow, indicator, next, offset, onError, parentIn
   };
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/util-contains-newline.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/util-contains-newline.js
 function containsNewline(key) {
   if (!key)
     return null;
@@ -3399,7 +3414,7 @@ function containsNewline(key) {
   }
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/util-flow-indent-check.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/util-flow-indent-check.js
 function flowIndentCheck(indent, fc, onError) {
   if (fc?.type === "flow-collection") {
     const end = fc.end[0];
@@ -3410,7 +3425,7 @@ function flowIndentCheck(indent, fc, onError) {
   }
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/util-map-includes.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/util-map-includes.js
 function mapIncludes(ctx, items, search) {
   const { uniqueKeys } = ctx.options;
   if (uniqueKeys === false)
@@ -3419,7 +3434,7 @@ function mapIncludes(ctx, items, search) {
   return items.some((pair) => isEqual(pair.key, search));
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/resolve-block-map.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/resolve-block-map.js
 var startColMsg = "All mapping items must start at the same column";
 function resolveBlockMap({ composeNode: composeNode2, composeEmptyNode: composeEmptyNode2 }, ctx, bm, onError, tag) {
   const NodeClass = tag?.nodeClass ?? YAMLMap;
@@ -3515,7 +3530,7 @@ function resolveBlockMap({ composeNode: composeNode2, composeEmptyNode: composeE
   return map2;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/resolve-block-seq.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/resolve-block-seq.js
 function resolveBlockSeq({ composeNode: composeNode2, composeEmptyNode: composeEmptyNode2 }, ctx, bs, onError, tag) {
   const NodeClass = tag?.nodeClass ?? YAMLSeq;
   const seq2 = new NodeClass(ctx.schema);
@@ -3557,7 +3572,7 @@ function resolveBlockSeq({ composeNode: composeNode2, composeEmptyNode: composeE
   return seq2;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/resolve-end.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/resolve-end.js
 function resolveEnd(end, offset, reqSpace, onError) {
   let comment = "";
   if (end) {
@@ -3594,7 +3609,7 @@ function resolveEnd(end, offset, reqSpace, onError) {
   return { comment, offset };
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/resolve-flow-collection.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/resolve-flow-collection.js
 var blockMsg = "Block collections are not allowed within flow collections";
 var isBlock = (token) => token && (token.type === "block-map" || token.type === "block-seq");
 function resolveFlowCollection({ composeNode: composeNode2, composeEmptyNode: composeEmptyNode2 }, ctx, fc, onError, tag) {
@@ -3775,7 +3790,7 @@ function resolveFlowCollection({ composeNode: composeNode2, composeEmptyNode: co
   return coll;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/compose-collection.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/compose-collection.js
 function resolveCollection(CN2, ctx, token, onError, tagName, tag) {
   const coll = token.type === "block-map" ? resolveBlockMap(CN2, ctx, token, onError, tag) : token.type === "block-seq" ? resolveBlockSeq(CN2, ctx, token, onError, tag) : resolveFlowCollection(CN2, ctx, token, onError, tag);
   const Coll = coll.constructor;
@@ -3827,7 +3842,7 @@ function composeCollection(CN2, ctx, token, props, onError) {
   return node;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/resolve-block-scalar.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/resolve-block-scalar.js
 function resolveBlockScalar(ctx, scalar, onError) {
   const start = scalar.offset;
   const header = parseBlockScalarHeader(scalar, ctx.options.strict, onError);
@@ -4001,7 +4016,7 @@ function splitLines(source) {
   return lines;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/resolve-flow-scalar.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/resolve-flow-scalar.js
 function resolveFlowScalar(scalar, strict, onError) {
   const { offset, type, source, end } = scalar;
   let _type;
@@ -4063,37 +4078,38 @@ function plainValue(source, onError) {
   }
   if (badChar)
     onError(0, "BAD_SCALAR_START", `Plain value cannot start with ${badChar}`);
-  return foldLines(source);
+  return unfoldLines(source);
 }
 function singleQuotedValue(source, onError) {
   if (source[source.length - 1] !== "'" || source.length === 1)
     onError(source.length, "MISSING_CHAR", "Missing closing 'quote");
-  return foldLines(source.slice(1, -1)).replace(/''/g, "'");
+  return unfoldLines(source.slice(1, -1)).replace(/''/g, "'");
 }
-function foldLines(source) {
-  let first, line;
-  try {
-    first = new RegExp("(.*?)(?<![ 	])[ 	]*\r?\n", "sy");
-    line = new RegExp("[ 	]*(.*?)(?:(?<![ 	])[ 	]*)?\r?\n", "sy");
-  } catch {
-    first = /(.*?)[ \t]*\r?\n/sy;
-    line = /[ \t]*(.*?)[ \t]*\r?\n/sy;
-  }
-  let match = first.exec(source);
+function unfoldLines(source) {
+  const line = /(.*?)\r?\n/sy;
+  let match = line.exec(source);
   if (!match)
     return source;
-  let res = match[1];
+  let trimEnd, trimBoth;
+  try {
+    trimEnd = new RegExp("(?<![ 	])[ 	]+$");
+    trimBoth = new RegExp("^[ 	]+|(?<![ 	])[ 	]+$", "g");
+  } catch {
+    trimEnd = /[ \t]+$/;
+    trimBoth = /^[ \t]+|[ \t]+$/g;
+  }
+  let res = match[1].replace(trimEnd, "");
   let sep = " ";
-  let pos = first.lastIndex;
-  line.lastIndex = pos;
+  let pos = line.lastIndex;
   while (match = line.exec(source)) {
-    if (match[1] === "") {
+    const lm = match[1].replace(trimBoth, "");
+    if (lm === "") {
       if (sep === "\n")
         res += sep;
       else
         sep = "\n";
     } else {
-      res += sep + match[1];
+      res += sep + lm;
       sep = " ";
     }
     pos = line.lastIndex;
@@ -4127,7 +4143,7 @@ function doubleQuotedValue(source, onError) {
         while (next === " " || next === "	")
           next = source[++i + 1];
       } else if (next === "x" || next === "u" || next === "U") {
-        const length = { x: 2, u: 4, U: 8 }[next];
+        const length = next === "x" ? 2 : next === "u" ? 4 : 8;
         res += parseCharCode(source, i + 1, length, onError);
         i += length;
       } else {
@@ -4202,15 +4218,16 @@ function parseCharCode(source, offset, length, onError) {
   const cc = source.substr(offset, length);
   const ok = cc.length === length && /^[0-9a-fA-F]+$/.test(cc);
   const code = ok ? parseInt(cc, 16) : NaN;
-  if (isNaN(code)) {
+  try {
+    return String.fromCodePoint(code);
+  } catch {
     const raw = source.substr(offset - 2, length + 2);
     onError(offset - 2, "BAD_DQ_ESCAPE", `Invalid escape sequence ${raw}`);
     return raw;
   }
-  return String.fromCodePoint(code);
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/compose-scalar.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/compose-scalar.js
 function composeScalar(ctx, token, tagToken, onError) {
   const { value, type, comment, range } = token.type === "block-scalar" ? resolveBlockScalar(ctx, token, onError) : resolveFlowScalar(token, ctx.options.strict, onError);
   const tagName = tagToken ? ctx.directives.tagName(tagToken.source, (msg) => onError(tagToken, "TAG_RESOLVE_FAILED", msg)) : null;
@@ -4281,7 +4298,7 @@ function findScalarTagByTest({ atKey, directives, schema: schema4 }, value, toke
   return tag;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/util-empty-scalar-position.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/util-empty-scalar-position.js
 function emptyScalarPosition(offset, before, pos) {
   if (before) {
     pos ?? (pos = before.length);
@@ -4305,7 +4322,7 @@ function emptyScalarPosition(offset, before, pos) {
   return offset;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/compose-node.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/compose-node.js
 var CN = { composeNode, composeEmptyNode };
 function composeNode(ctx, token, props, onError) {
   const atKey = ctx.atKey;
@@ -4329,17 +4346,22 @@ function composeNode(ctx, token, props, onError) {
     case "block-map":
     case "block-seq":
     case "flow-collection":
-      node = composeCollection(CN, ctx, token, props, onError);
-      if (anchor)
-        node.anchor = anchor.source.substring(1);
+      try {
+        node = composeCollection(CN, ctx, token, props, onError);
+        if (anchor)
+          node.anchor = anchor.source.substring(1);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        onError(token, "RESOURCE_EXHAUSTION", message);
+      }
       break;
     default: {
       const message = token.type === "error" ? token.message : `Unsupported token (type: ${token.type})`;
       onError(token, "UNEXPECTED_TOKEN", message);
-      node = composeEmptyNode(ctx, token.offset, void 0, null, props, onError);
       isSrcToken = false;
     }
   }
+  node ?? (node = composeEmptyNode(ctx, token.offset, void 0, null, props, onError));
   if (anchor && node.anchor === "")
     onError(anchor, "BAD_ALIAS", "Anchor cannot be an empty string");
   if (atKey && ctx.options.stringKeys && (!isScalar(node) || typeof node.value !== "string" || node.tag && node.tag !== "tag:yaml.org,2002:str")) {
@@ -4393,7 +4415,7 @@ function composeAlias({ options }, { offset, source, end }, onError) {
   return alias;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/compose-doc.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/compose-doc.js
 function composeDoc(options, directives, { offset, start, value, end }, onError) {
   const opts = Object.assign({ _directives: directives }, options);
   const doc = new Document(void 0, opts);
@@ -4426,7 +4448,7 @@ function composeDoc(options, directives, { offset, start, value, end }, onError)
   return doc;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/composer.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/composer.js
 function getErrorPos(src) {
   if (typeof src === "number")
     return [src, src + 1];
@@ -4500,8 +4522,10 @@ ${cb}` : comment;
       }
     }
     if (afterDoc) {
-      Array.prototype.push.apply(doc.errors, this.errors);
-      Array.prototype.push.apply(doc.warnings, this.warnings);
+      for (let i = 0; i < this.errors.length; ++i)
+        doc.errors.push(this.errors[i]);
+      for (let i = 0; i < this.warnings.length; ++i)
+        doc.warnings.push(this.warnings[i]);
     } else {
       doc.errors = this.errors;
       doc.warnings = this.warnings;
@@ -4617,7 +4641,7 @@ ${end.comment}` : end.comment;
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/parse/cst-visit.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/parse/cst-visit.js
 var BREAK2 = Symbol("break visit");
 var SKIP2 = Symbol("skip children");
 var REMOVE2 = Symbol("remove item");
@@ -4673,7 +4697,7 @@ function _visit(path, item, visitor) {
   return typeof ctrl === "function" ? ctrl(item, path) : ctrl;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/parse/cst.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/parse/cst.js
 var BOM = "\uFEFF";
 var DOCUMENT = "";
 var FLOW_END = "";
@@ -4738,7 +4762,7 @@ function tokenType(source) {
   return null;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/parse/lexer.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/parse/lexer.js
 function isEmpty(ch) {
   switch (ch) {
     case void 0:
@@ -4936,7 +4960,7 @@ var Lexer = class {
       const n = (yield* this.pushCount(1)) + (yield* this.pushSpaces(true));
       this.indentNext = this.indentValue + 1;
       this.indentValue += n;
-      return yield* this.parseBlockStart();
+      return "block-start";
     }
     return "doc";
   }
@@ -5233,26 +5257,37 @@ var Lexer = class {
     return 0;
   }
   *pushIndicators() {
-    switch (this.charAt(0)) {
-      case "!":
-        return (yield* this.pushTag()) + (yield* this.pushSpaces(true)) + (yield* this.pushIndicators());
-      case "&":
-        return (yield* this.pushUntil(isNotAnchorChar)) + (yield* this.pushSpaces(true)) + (yield* this.pushIndicators());
-      case "-":
-      case "?":
-      case ":": {
-        const inFlow = this.flowLevel > 0;
-        const ch1 = this.charAt(1);
-        if (isEmpty(ch1) || inFlow && flowIndicatorChars.has(ch1)) {
-          if (!inFlow)
-            this.indentNext = this.indentValue + 1;
-          else if (this.flowKey)
-            this.flowKey = false;
-          return (yield* this.pushCount(1)) + (yield* this.pushSpaces(true)) + (yield* this.pushIndicators());
+    let n = 0;
+    loop:
+      while (true) {
+        switch (this.charAt(0)) {
+          case "!":
+            n += yield* this.pushTag();
+            n += yield* this.pushSpaces(true);
+            continue loop;
+          case "&":
+            n += yield* this.pushUntil(isNotAnchorChar);
+            n += yield* this.pushSpaces(true);
+            continue loop;
+          case "-":
+          case "?":
+          case ":": {
+            const inFlow = this.flowLevel > 0;
+            const ch1 = this.charAt(1);
+            if (isEmpty(ch1) || inFlow && flowIndicatorChars.has(ch1)) {
+              if (!inFlow)
+                this.indentNext = this.indentValue + 1;
+              else if (this.flowKey)
+                this.flowKey = false;
+              n += yield* this.pushCount(1);
+              n += yield* this.pushSpaces(true);
+              continue loop;
+            }
+          }
         }
+        break loop;
       }
-    }
-    return 0;
+    return n;
   }
   *pushTag() {
     if (this.charAt(1) === "<") {
@@ -5306,7 +5341,7 @@ var Lexer = class {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/parse/line-counter.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/parse/line-counter.js
 var LineCounter = class {
   constructor() {
     this.lineStarts = [];
@@ -5331,16 +5366,16 @@ var LineCounter = class {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/parse/parser.js
-function includesToken(list, type) {
-  for (let i = 0; i < list.length; ++i)
-    if (list[i].type === type)
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/parse/parser.js
+function includesToken(list2, type) {
+  for (let i = 0; i < list2.length; ++i)
+    if (list2[i].type === type)
       return true;
   return false;
 }
-function findNonEmptyIndex(list) {
-  for (let i = 0; i < list.length; ++i) {
-    switch (list[i].type) {
+function findNonEmptyIndex(list2) {
+  for (let i = 0; i < list2.length; ++i) {
+    switch (list2[i].type) {
       case "space":
       case "comment":
       case "newline":
@@ -5396,6 +5431,13 @@ function getFirstKeyStartProps(prev) {
   }
   return prev.splice(i, prev.length);
 }
+function arrayPushArray(target, source) {
+  if (source.length < 1e5)
+    Array.prototype.push.apply(target, source);
+  else
+    for (let i = 0; i < source.length; ++i)
+      target.push(source[i]);
+}
 function fixFlowSeqItems(fc) {
   if (fc.start.type === "flow-seq-start") {
     for (const it of fc.items) {
@@ -5405,11 +5447,11 @@ function fixFlowSeqItems(fc) {
         delete it.key;
         if (isFlowToken(it.value)) {
           if (it.value.end)
-            Array.prototype.push.apply(it.value.end, it.sep);
+            arrayPushArray(it.value.end, it.sep);
           else
             it.value.end = it.sep;
         } else
-          Array.prototype.push.apply(it.start, it.sep);
+          arrayPushArray(it.start, it.sep);
         delete it.sep;
       }
     }
@@ -5760,7 +5802,7 @@ var Parser = class {
             const prev = map2.items[map2.items.length - 2];
             const end = prev?.value?.end;
             if (Array.isArray(end)) {
-              Array.prototype.push.apply(end, it.start);
+              arrayPushArray(end, it.start);
               end.push(this.sourceToken);
               map2.items.pop();
               return;
@@ -5948,7 +5990,7 @@ var Parser = class {
             const prev = seq2.items[seq2.items.length - 2];
             const end = prev?.value?.end;
             if (Array.isArray(end)) {
-              Array.prototype.push.apply(end, it.start);
+              arrayPushArray(end, it.start);
               end.push(this.sourceToken);
               seq2.items.pop();
               return;
@@ -6184,7 +6226,7 @@ var Parser = class {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/public-api.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/public-api.js
 function parseOptions(options) {
   const prettyErrors = options.prettyErrors !== false;
   const lineCounter = options.lineCounter || prettyErrors && new LineCounter() || null;
@@ -8550,6 +8592,15 @@ var ISSUE_DEFINITIONS = {
     impact: "Search engines may ignore lastmod entirely for this sitemap once they detect invalid values, losing the freshness signal for every URL in it.",
     howToFix: "Use a real, valid ISO 8601 date (e.g. 2026-01-15 or 2026-01-15T10:00:00Z) reflecting the actual last-changed time - never a placeholder or future date."
   },
+  SITEMAP_LASTMOD_UNIFORM: {
+    code: "SITEMAP_LASTMOD_UNIFORM",
+    severity: "notice",
+    category: "crawlability",
+    title: "Every sitemap lastmod is the same date",
+    description: "Every <url> in the sitemap carries the same <lastmod>. That is the build time, not when each page last changed.",
+    impact: "Google uses lastmod only while it proves consistently accurate and ignores it once it does not; Bing pairs an accurate lastmod with IndexNow so AI systems reference the current version of a page. A uniform value gives up the freshness signal for every URL.",
+    howToFix: "Emit each page\u2019s real last-changed date (the content\u2019s updated date, or the file\u2019s last commit), or omit <lastmod> rather than stamping the build time."
+  },
   REDIRECT_CHAIN: {
     code: "REDIRECT_CHAIN",
     severity: "warning",
@@ -9342,64 +9393,73 @@ var ISSUE_DEFINITIONS = {
     code: "LLMS_TXT_MISSING",
     severity: "notice",
     category: "ai-readiness",
-    title: "Missing llms.txt file",
-    description: "No llms.txt file found at the root of the domain.",
-    impact: "AI crawlers like ChatGPT and Claude may not understand how to best use your content.",
-    howToFix: "Create an llms.txt file at your domain root with guidance for AI systems. See llmstxt.org for format."
+    title: "No llms.txt",
+    description: "No /llms.txt. It is a convention for coding agents and documentation sites (Lighthouse 13.3 audits it; Anthropic, OpenAI, Stripe, Vercel and Supabase publish one for their docs). No search engine or answer engine reads it: Google says it neither helps nor harms, and in a 137,000-domain study 97 percent of the files received no request in a month.",
+    impact: "None on search or AI answers. A documentation site gains a curated index for the agents that look for one.",
+    howToFix: "For a documentation site, publish /llms.txt: an H1 with the project name, a one-line blockquote description, then markdown links with a short description each (the Lighthouse criteria). For a marketing site, ignore this notice."
   },
   LLMS_TXT_INVALID: {
     code: "LLMS_TXT_INVALID",
-    severity: "warning",
+    severity: "notice",
     category: "ai-readiness",
-    title: "Invalid llms.txt format",
-    description: "The llms.txt file exists but has invalid format or syntax.",
-    impact: "AI crawlers may not be able to parse your AI guidance properly.",
-    howToFix: "Validate your llms.txt file format against the specification at llmstxt.org."
+    title: "llms.txt does not follow the convention",
+    description: "The file exists but does not follow the llms.txt convention (an H1, a blockquote description, markdown links).",
+    impact: "The agents that read llms.txt (coding agents, Lighthouse\u2019s agentic audit) get less than intended; search and answer engines are unaffected either way.",
+    howToFix: 'Start the file with "# Project name", follow with "> one-line description", then sections of "- [Title](url): description" links. See https://llmstxt.org/.'
   },
   AI_BOT_BLOCKED_ALL: {
     code: "AI_BOT_BLOCKED_ALL",
-    severity: "notice",
+    severity: "warning",
     category: "ai-readiness",
-    title: "All AI bots blocked in robots.txt",
-    description: "robots.txt blocks all major AI crawlers (GPTBot, Claude-Web, PerplexityBot, etc.).",
-    impact: "Your content will not appear in AI-powered search and assistants.",
-    howToFix: "Consider allowing some AI bots if you want visibility in AI-generated responses."
+    title: "robots.txt disallows every AI crawler, the search ones included",
+    description: "Every AI crawler is disallowed: the search crawlers (OAI-SearchBot, Claude-SearchBot, PerplexityBot), the user-triggered fetchers (ChatGPT-User, Claude-User, Perplexity-User) and the training crawlers (GPTBot, ClaudeBot, CCBot, Google-Extended).",
+    impact: "The site is out of ChatGPT search, Claude search and Perplexity answers, and assistants cannot read a page a user pastes. Disallowing the training crawlers alone would have cost none of that.",
+    howToFix: `Keep the training crawlers disallowed if that is the policy, and allow the rest explicitly:
+
+User-agent: OAI-SearchBot
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+User-agent: ChatGPT-User
+User-agent: Claude-User
+User-agent: Perplexity-User
+Allow: /`
   },
-  AI_BOT_GPTBOT_BLOCKED: {
-    code: "AI_BOT_GPTBOT_BLOCKED",
-    severity: "notice",
+  AI_SEARCH_BOTS_DISALLOWED: {
+    code: "AI_SEARCH_BOTS_DISALLOWED",
+    severity: "warning",
     category: "ai-readiness",
-    title: "GPTBot blocked in robots.txt",
-    description: "robots.txt blocks OpenAI's GPTBot crawler.",
-    impact: "Your content will not be used to train or cited by ChatGPT.",
-    howToFix: 'Remove "User-agent: GPTBot Disallow: /" if you want ChatGPT visibility.'
+    title: "robots.txt opts the site out of AI search answers",
+    description: 'These are the crawlers that build the index each assistant answers from. OpenAI: "Sites that are opted out of OAI-SearchBot will not be shown in ChatGPT search answers"; Anthropic documents the same for Claude-SearchBot; PerplexityBot is how Perplexity reads the web.',
+    impact: "The site is absent from those answers. This is independent of training: GPTBot and ClaudeBot can stay disallowed without this cost.",
+    howToFix: `Allow the search crawlers explicitly (an Allow in their own group wins over a wildcard Disallow):
+
+User-agent: OAI-SearchBot
+User-agent: Claude-SearchBot
+User-agent: PerplexityBot
+Allow: /`
   },
-  AI_BOT_CLAUDEBOT_BLOCKED: {
-    code: "AI_BOT_CLAUDEBOT_BLOCKED",
-    severity: "notice",
+  AI_USER_FETCH_DISALLOWED: {
+    code: "AI_USER_FETCH_DISALLOWED",
+    severity: "warning",
     category: "ai-readiness",
-    title: "ClaudeBot blocked in robots.txt",
-    description: "robots.txt blocks Anthropic's ClaudeBot crawler.",
-    impact: "Your content will not be used by Claude AI.",
-    howToFix: 'Remove "User-agent: ClaudeBot Disallow: /" if you want Claude visibility.'
+    title: "robots.txt disallows the agents that fetch a page when a user asks",
+    description: "These agents retrieve one page because a user pasted its link or asked about it; they are not crawlers and visit nothing on their own.",
+    impact: "A user who asks ChatGPT, Claude or Perplexity about a page on this site gets an error instead of its content.",
+    howToFix: `Allow them explicitly:
+
+User-agent: ChatGPT-User
+User-agent: Claude-User
+User-agent: Perplexity-User
+Allow: /`
   },
-  AI_BOT_PERPLEXITY_BLOCKED: {
-    code: "AI_BOT_PERPLEXITY_BLOCKED",
+  AI_TRAINING_BOTS_DISALLOWED: {
+    code: "AI_TRAINING_BOTS_DISALLOWED",
     severity: "notice",
     category: "ai-readiness",
-    title: "PerplexityBot blocked in robots.txt",
-    description: "robots.txt blocks Perplexity AI's crawler.",
-    impact: "Your content will not appear in Perplexity AI search results.",
-    howToFix: 'Remove "User-agent: PerplexityBot Disallow: /" if you want Perplexity visibility.'
-  },
-  AI_BOT_GOOGLE_EXTENDED_BLOCKED: {
-    code: "AI_BOT_GOOGLE_EXTENDED_BLOCKED",
-    severity: "notice",
-    category: "ai-readiness",
-    title: "Google-Extended blocked in robots.txt",
-    description: "robots.txt blocks Google's AI training crawler (Google-Extended).",
-    impact: "Your content will not be used for Bard/Gemini AI training (regular search unaffected).",
-    howToFix: 'Remove "User-agent: Google-Extended Disallow: /" if you want Google AI visibility.'
+    title: "robots.txt disallows AI training crawlers",
+    description: "These crawlers collect model-training data only. OpenAI and Anthropic both document the training crawler (GPTBot, ClaudeBot) and the search crawler (OAI-SearchBot, Claude-SearchBot) as separate bots with separate consequences.",
+    impact: "None on search or AI answers. Reported so the choice is visible, not to change it.",
+    howToFix: "Nothing, if that is the policy. To allow training on the content, remove the Disallow for the crawler\u2019s group."
   },
   CLOUDFLARE_AI_CRAWLER_GATE_AMBIGUOUS: {
     code: "CLOUDFLARE_AI_CRAWLER_GATE_AMBIGUOUS",
@@ -9408,7 +9468,7 @@ var ISSUE_DEFINITIONS = {
     title: "No explicit AI crawler rules on a Cloudflare-fronted site",
     description: 'This site appears to be served through Cloudflare but robots.txt has no explicit Allow/Disallow rules for AI crawlers. Cloudflare blocks "mixed-use" AI crawlers by default on ad-hosting zones starting September 15, 2026, and is rolling out Pay Per Crawl / Pay Per Use gating beyond that.',
     impact: "Without an explicit rule, whether AI crawlers (and future citation opportunities in ChatGPT, Claude, Perplexity, etc.) can reach this site now depends on Cloudflare account-level bot-management defaults, not on this codebase \u2014 a silent, invisible-to-git failure mode.",
-    howToFix: `Two ways to make your stance explicit, either works: (1) add a Content-Signal line to robots.txt - e.g. "Content-Signal: search=yes,ai-train=no,use=reference" - the format Cloudflare's AI Crawl Control update actually reads, or (2) add explicit User-agent rules for GPTBot, Claude-Web/ClaudeBot, PerplexityBot, and Google-Extended. Either way, confirm the matching allow/block posture in the Cloudflare dashboard under Bot Management \u2192 AI Crawl Control. If you'd rather charge than block, Cloudflare's Pay Per Crawl (AI Crawl Control \u2192 Payments tab) lets you set a per-crawl price instead of a flat allow/deny \u2014 worth a look if you get meaningful AI-crawler traffic.`
+    howToFix: `Two ways to make your stance explicit, either works: (1) add a Content-Signal line to robots.txt - e.g. "Content-Signal: search=yes,ai-train=no,use=reference" - the format Cloudflare's AI Crawl Control update actually reads, or (2) add explicit User-agent rules for the search crawlers (OAI-SearchBot, Claude-SearchBot, PerplexityBot) and, separately, the training crawlers (GPTBot, ClaudeBot, CCBot, Google-Extended). Either way, confirm the matching allow/block posture in the Cloudflare dashboard under Bot Management \u2192 AI Crawl Control. If you'd rather charge than block, Cloudflare's Pay Per Crawl (AI Crawl Control \u2192 Payments tab) lets you set a per-crawl price instead of a flat allow/deny \u2014 worth a look if you get meaningful AI-crawler traffic.`
   },
   NO_AGENT_EXPERIENCE_SURFACE: {
     code: "NO_AGENT_EXPERIENCE_SURFACE",
@@ -10025,7 +10085,7 @@ var ISSUE_DEFINITIONS = {
     category: "crawlability",
     title: "IndexNow not implemented",
     description: "Site does not appear to have IndexNow instant indexing set up.",
-    impact: "Content changes may take longer to appear in Bing, Yandex, and other search engines.",
+    impact: "Content changes reach Bing, Yandex and the engines that read Bing\u2019s index later. Bing tells publishers to pair an accurate sitemap lastmod with IndexNow so AI systems reference the current version of a page.",
     howToFix: "Create a key at indexnow.org and implement the IndexNow protocol."
   },
   INDEXNOW_INVALID_KEY: {
@@ -10784,11 +10844,11 @@ function analyzeFeaturedSnippet(html, url) {
     });
   }
   if (lists.found) {
-    for (const list of lists.lists) {
-      if (!list.context.toLowerCase().match(/^\d+|^(how|steps|tips|ways)/)) {
+    for (const list2 of lists.lists) {
+      if (!list2.context.toLowerCase().match(/^\d+|^(how|steps|tips|ways)/)) {
         opportunities.push({
           type: "list",
-          heading: list.context,
+          heading: list2.context,
           score: 70,
           issues: ["List heading could be more snippet-friendly"],
           suggestions: [
@@ -15022,7 +15082,7 @@ function analyzeFreshnessSignals(html, url) {
       category: "structured-data",
       title: "Missing dateModified in schema",
       description: "Schema markup lacks dateModified property.",
-      impact: "dateModified signals content freshness to search engines and AI assistants, boosting citation odds by ~18%.",
+      impact: "Freshness is one of the few levers the citation evidence supports: cited URLs are 25.7 percent newer than organic results (Ahrefs), and pages updated within three months averaged 6.0 ChatGPT citations against 3.6 for stale ones (SE Ranking). dateModified is how a page states its date to a crawler.",
       howToFix: "Add dateModified property to your Article/WebPage schema with ISO 8601 format.",
       affectedUrls: [url],
       details: {
@@ -15037,7 +15097,7 @@ function analyzeFreshnessSignals(html, url) {
       category: "content",
       title: "Time-sensitive content may be stale",
       description: `Content was last modified ${dateSignals.daysSinceModified} days ago on a topic that benefits from freshness.`,
-      impact: "Query Deserves Freshness (QDF) prioritizes fresh content for this topic type.",
+      impact: "Query Deserves Freshness (QDF) prioritizes fresh content for this topic type, and AI citations decay with a half-life of about 4.5 weeks, so a page that is not refreshed drops out of answers.",
       howToFix: `Update this content ${qdfRelevance.updateFrequencyRecommendation}. Add new data, stats, or insights.`,
       affectedUrls: [url],
       details: {
@@ -15073,7 +15133,7 @@ function analyzeFreshnessSignals(html, url) {
       category: "content",
       title: "No visible publish/update date",
       description: "Content page lacks a visible date for users.",
-      impact: "Users prefer seeing when content was published/updated for credibility.",
+      impact: "Readers and assistants both judge freshness from a visible date; cited pages are 25.7 percent newer than organic results (Ahrefs).",
       howToFix: "Display publish date and last updated date on the page.",
       affectedUrls: [url]
     });
@@ -15218,19 +15278,20 @@ function analyzeAIContentStructure(html, url) {
     structureScore -= 5;
   }
   structureScore = Math.max(0, Math.min(100, structureScore));
-  if (!hasComparisonTable && bodyText.includes("compar") || bodyText.includes("vs") || bodyText.includes("versus")) {
+  const comparesThings = /\b(compar(e|es|ed|ing|ison|isons)|versus|vs\.?)\b/.test(bodyText);
+  if (!hasComparisonTable && comparesThings) {
     issues.push({
       code: "AI_NO_COMPARISON_TABLE",
       severity: "notice",
       category: "ai-readiness",
-      title: "Comparison content without table format",
-      description: "Your content mentions comparisons but doesn't use a table format. AI systems can easily parse and quote table data.",
-      impact: "AI may not accurately extract comparison data, reducing chances of being cited in AI-generated comparisons.",
-      howToFix: "Convert comparison content to HTML tables with clear headers. Example: Feature | Option A | Option B",
+      title: "Comparison content without a table",
+      description: "The page compares things in prose. In a 193,507-answer study of AI assistants, pages with tables had 69 percent higher odds of being cited; a table is also the unit an assistant can quote whole.",
+      impact: "A comparison in prose gets paraphrased or skipped; one in a table gets quoted.",
+      howToFix: "Put the comparison in an HTML table with header cells: one row per option, one column per criterion.",
       affectedUrls: [url]
     });
   }
-  if (!hasStepByStep && (bodyText.includes("step") || bodyText.includes("how to") || bodyText.includes("guide"))) {
+  if (!hasStepByStep && /\b(steps?|how to|guide|tutorial|walkthrough)\b/.test(bodyText)) {
     issues.push({
       code: "AI_NO_NUMBERED_STEPS",
       severity: "notice",
@@ -15242,59 +15303,16 @@ function analyzeAIContentStructure(html, url) {
       affectedUrls: [url]
     });
   }
-  if (!hasExplicitQA && questionCount === 0) {
-    issues.push({
-      code: "AI_NO_QA_FORMAT",
-      severity: "notice",
-      category: "ai-readiness",
-      title: "No question-and-answer format detected",
-      description: "Content lacks explicit Q&A structure. AI systems often look for clear question-answer pairs to provide direct responses.",
-      impact: "Lower chance of being featured in AI direct answers or FAQ-style responses.",
-      howToFix: "Add FAQ section with common questions as headings (H2/H3) followed by concise answers. Implement FAQ schema markup.",
-      affectedUrls: [url],
-      details: {
-        suggestions: [
-          "Use question words in headings (What, How, Why, etc.)",
-          "Follow questions with short, direct answer paragraphs",
-          "Add FAQ schema markup for structured data",
-          "Consider using <details>/<summary> for expandable Q&A"
-        ]
-      }
-    });
-  }
-  if (questionCount >= 2 && !hasDirectAnswers) {
-    issues.push({
-      code: "AI_QUESTIONS_NO_DIRECT_ANSWERS",
-      severity: "notice",
-      category: "ai-readiness",
-      title: "Questions in headings lack direct answers",
-      description: `Found ${questionCount} question-style headings but answers are too long or not immediately following. AI prefers concise answers right after questions.`,
-      impact: "AI may struggle to extract clear answers, reducing citation likelihood.",
-      howToFix: "Start each answer section with a 1-2 sentence direct answer, then expand with details. First sentence should standalone as a complete answer.",
-      affectedUrls: [url]
-    });
-  }
-  if (!hasDefinitions && (bodyText.includes("what is") || bodyText.includes("definition"))) {
-    issues.push({
-      code: "AI_NO_DEFINITIONS",
-      severity: "notice",
-      category: "ai-readiness",
-      title: "Missing clear definitions",
-      description: 'Content discusses concepts but lacks Wikipedia-style definitions. AI loves clear "X is a..." statements.',
-      impact: "Less likely to be cited for definitional queries in AI search.",
-      howToFix: 'Add clear definitions early in content: "[Term] is a [category] that [distinguishing features]." Make first paragraph a complete definition.',
-      affectedUrls: [url]
-    });
-  }
   if (structureScore < 50) {
     issues.push({
       code: "AI_LOW_STRUCTURE_SCORE",
-      severity: "warning",
+      // A heuristic score, not a defect a crawler can see: never a failed build.
+      severity: "notice",
       category: "ai-readiness",
       title: "Content structure not optimized for AI parsing",
       description: `AI structure score: ${structureScore}/100. Content lacks structured elements that AI can easily parse and quote.`,
       impact: "Lower likelihood of being cited in AI-generated answers due to poor content structure.",
-      howToFix: "Improve content structure: add tables for data, numbered lists for steps, bullet points for features, Q&A sections for common questions.",
+      howToFix: "Give the assistant something to quote whole: a table for data or comparisons, a numbered list for steps, and a short paragraph that answers each question heading.",
       affectedUrls: [url],
       details: {
         structureScore,
@@ -15634,7 +15652,8 @@ function analyzeCitationQuality(html, url) {
   if (totalReputable === 0 && externalLinks > 0) {
     issues.push({
       code: "AI_NO_REPUTABLE_CITATIONS",
-      severity: "warning",
+      // "Reputable" is a curated domain list, so this is a hint, never a failed build.
+      severity: "notice",
       category: "ai-readiness",
       title: "No reputable sources cited",
       description: "Content has external links but none to recognized authoritative sources. AI prioritizes content that cites reputable sources.",
@@ -15655,7 +15674,8 @@ function analyzeCitationQuality(html, url) {
   if (externalLinks === 0 && totalLinks > 0) {
     issues.push({
       code: "AI_NO_EXTERNAL_CITATIONS",
-      severity: "warning",
+      // A product or landing page with no outbound links is normal; a hint, never a failed build.
+      severity: "notice",
       category: "ai-readiness",
       title: "No external sources linked",
       description: "Content has no external links. AI values content that references and links to authoritative sources.",
@@ -15670,9 +15690,9 @@ function analyzeCitationQuality(html, url) {
       severity: "warning",
       category: "ai-readiness",
       title: "Statistics without source citations",
-      description: `Found ${statisticsWithoutSources} statistic(s) without linked sources. AI is trained to prefer claims backed by citations.`,
-      impact: "Uncited statistics reduce content credibility and E-E-A-T signals.",
-      howToFix: 'Add source links or citations for all statistics. Include the source name and year when possible (e.g., "according to [Source, 2024]").',
+      description: `Found ${statisticsWithoutSources} statistic(s) with no linked source. In the Princeton GEO experiments, adding statistics with sources raised a page's visibility in generated answers by 29 percent and adding quotations by 40 percent, while keyword stuffing lowered it by 9 percent.`,
+      impact: "An uncited number is a claim the assistant cannot verify and will not repeat with attribution.",
+      howToFix: 'Link each statistic to its source and name it in the sentence ("according to Ahrefs, 2026"), or drop the number.',
       affectedUrls: [url],
       details: {
         statisticsWithSources,
@@ -15835,8 +15855,8 @@ function analyzeAnswerConciseness(html, url) {
       severity: "notice",
       category: "ai-readiness",
       title: "Questions lack direct, quotable answers",
-      description: `${questionHeadings} question headings found but only ${headingsWithDirectAnswers} have direct answers. AI prefers content that answers questions immediately.`,
-      impact: "AI may skip your content for sources with clearer, more direct answers.",
+      description: `${questionHeadings} question headings, ${headingsWithDirectAnswers} answered in the paragraph right after. In a 193,507-answer study, 23 percent of the pages assistants cited opened with a direct answer, against 14 percent of pages retrieved but not cited.`,
+      impact: "The assistant quotes the page that answers first and paraphrases the one that builds up to it.",
       howToFix: 'Start answer paragraphs with a direct 1-2 sentence answer. Avoid filler words like "Well," "So," "Basically." Lead with the answer, then explain.',
       affectedUrls: [url],
       details: {
@@ -15894,7 +15914,8 @@ function analyzeAnswerConciseness(html, url) {
   if (concisenessScore < 50) {
     issues.push({
       code: "AI_LOW_CONCISENESS",
-      severity: "warning",
+      // A heuristic score, not a defect a crawler can see: never a failed build.
+      severity: "notice",
       category: "ai-readiness",
       title: "Content lacks concise, quotable answers",
       description: `Conciseness score: ${concisenessScore}/100. AI prefers content with clear, succinct answers it can quote directly.`,
@@ -16395,22 +16416,6 @@ function analyzeAICitationWorthiness(html, url) {
       impact: "AI may prefer sources that demonstrate real-world experience over generic explanations.",
       howToFix: `Add personal experience: "In my experience...", "When we tested...", "Here's what happened when...". Include specific scenarios you've encountered.`,
       affectedUrls: [url]
-    });
-  }
-  if (stockImageCount > 0 && stockImageCount >= totalImages * 0.5) {
-    issues.push({
-      code: "AI_STOCK_IMAGE_HEAVY",
-      severity: "notice",
-      category: "ai-readiness",
-      title: "Heavy use of stock images",
-      description: `${stockImageCount} of ${totalImages} images appear to be from stock photo sites. Original visuals signal authenticity.`,
-      impact: "Stock-heavy content appears less authentic and expert to both users and AI.",
-      howToFix: "Replace stock photos with original screenshots, diagrams, photos, or custom graphics that AI cannot easily replicate.",
-      affectedUrls: [url],
-      details: {
-        stockImageCount,
-        totalImages
-      }
     });
   }
   if (!hasAuthorByline && !hasAuthorCredentials) {
@@ -17286,14 +17291,19 @@ function validateLastmodValues(content) {
   const matches = content.match(/<lastmod>([^<]*)<\/lastmod>/g) || [];
   let invalidCount = 0;
   const now = Date.now();
+  const days = /* @__PURE__ */ new Set();
+  let sample;
   for (const match of matches) {
     const value = match.replace(/<\/?lastmod>/g, "").trim();
     const parsed = LASTMOD_PATTERN.test(value) ? new Date(value) : null;
     if (!parsed || isNaN(parsed.getTime()) || parsed.getTime() > now) {
       invalidCount++;
     }
+    days.add(value.slice(0, 10));
+    sample ??= value;
   }
-  return { count: matches.length, invalidCount };
+  const uniform = matches.length >= 10 && days.size === 1;
+  return { count: matches.length, invalidCount, uniform, sample };
 }
 async function checkRobotsTxt(baseUrl) {
   const issues = [];
@@ -17407,7 +17417,7 @@ async function checkSitemap(baseUrl, robotsData) {
             affectedUrls: [sitemapUrl]
           });
         }
-        const { count: lastmodCount, invalidCount: invalidLastmodCount } = validateLastmodValues(content);
+        const { count: lastmodCount, invalidCount: invalidLastmodCount, uniform: uniformLastmod, sample } = validateLastmodValues(content);
         if (lastmodCount === 0) {
           issues.push({
             ...ISSUE_DEFINITIONS.SITEMAP_LASTMOD_MISSING,
@@ -17419,10 +17429,16 @@ async function checkSitemap(baseUrl, robotsData) {
             affectedUrls: [sitemapUrl],
             details: { invalidCount: invalidLastmodCount, totalCount: lastmodCount }
           });
+        } else if (uniformLastmod) {
+          issues.push({
+            ...ISSUE_DEFINITIONS.SITEMAP_LASTMOD_UNIFORM,
+            affectedUrls: [sitemapUrl],
+            details: { lastmod: sample, urlCount: lastmodCount }
+          });
         }
         return {
           issues,
-          data: { exists: true, url: sitemapUrl, urlCount, errors: [], lastmodCount, invalidLastmodCount }
+          data: { exists: true, url: sitemapUrl, urlCount, errors: [], lastmodCount, invalidLastmodCount, uniformLastmod }
         };
       }
     } catch {
@@ -19372,44 +19388,123 @@ async function analyzeRedirects(url, maxHops = 10) {
   return { issues, data };
 }
 
-// src/audit/checks/crawler-access.ts
-var CRAWLERS = [
+// src/audit/checks/ai-bots.ts
+var KNOWN_BOTS = [
+  // Classic search indexes. 88 percent of ChatGPT citations come from the general search index
+  // (Ahrefs, 2026), so these matter for AI answers as much as for organic traffic.
   {
     name: "Googlebot",
+    class: "search",
+    robotsTokens: ["googlebot"],
     userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
-    matters: "Google Search indexing",
-    critical: true
+    loses: "Google Search and AI Overviews"
   },
   {
     name: "bingbot",
+    class: "search",
+    robotsTokens: ["bingbot"],
     userAgent: "Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)",
-    matters: "Bing indexing, and Copilot answers",
-    critical: true
+    loses: "Bing and Copilot"
+  },
+  // AI search crawlers: the index each assistant answers from.
+  {
+    name: "OAI-SearchBot",
+    class: "ai-search",
+    robotsTokens: ["oai-searchbot"],
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; OAI-SearchBot/1.0; +https://openai.com/searchbot",
+    loses: "ChatGPT search answers"
   },
   {
-    name: "GPTBot",
-    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; GPTBot/1.1; +https://openai.com/gptbot)",
-    matters: "ChatGPT being able to read and cite the page",
-    critical: false
-  },
-  {
-    name: "ClaudeBot",
-    userAgent: "Mozilla/5.0 (compatible; ClaudeBot/1.0; +claudebot@anthropic.com)",
-    matters: "Claude being able to read and cite the page",
-    critical: false
+    name: "Claude-SearchBot",
+    class: "ai-search",
+    robotsTokens: ["claude-searchbot"],
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-SearchBot/1.0; +Claude-SearchBot@anthropic.com)",
+    loses: "Claude search results"
   },
   {
     name: "PerplexityBot",
-    userAgent: "Mozilla/5.0 (compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)",
-    matters: "Perplexity being able to read and cite the page",
-    critical: false
+    class: "ai-search",
+    robotsTokens: ["perplexitybot"],
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; PerplexityBot/1.0; +https://perplexity.ai/perplexitybot)",
+    loses: "Perplexity answers"
+  },
+  // User-triggered fetchers: retrieve one page because a user pasted its link or asked about it.
+  {
+    name: "ChatGPT-User",
+    class: "user",
+    robotsTokens: ["chatgpt-user"],
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; ChatGPT-User/1.0; +https://openai.com/bot",
+    loses: "ChatGPT reading a page a user asks about"
+  },
+  {
+    name: "Claude-User",
+    class: "user",
+    robotsTokens: ["claude-user"],
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Claude-User/1.0; +Claude-User@anthropic.com)",
+    loses: "Claude reading a page a user asks about"
+  },
+  {
+    name: "Perplexity-User",
+    class: "user",
+    robotsTokens: ["perplexity-user"],
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Perplexity-User/1.0; +https://perplexity.ai/perplexity-user)",
+    loses: "Perplexity reading a page a user asks about"
+  },
+  // Training crawlers: model-training data, nothing a user sees. Both OpenAI and Anthropic
+  // document that disallowing these has no effect on search answers.
+  {
+    name: "GPTBot",
+    class: "training",
+    robotsTokens: ["gptbot"],
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko); compatible; GPTBot/1.2; +https://openai.com/gptbot",
+    loses: "OpenAI's training corpus"
+  },
+  {
+    name: "ClaudeBot",
+    class: "training",
+    // Claude-Web and anthropic-ai are the older tokens still found in robots.txt files.
+    robotsTokens: ["claudebot", "claude-web", "anthropic-ai"],
+    userAgent: "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; ClaudeBot/1.0; +claudebot@anthropic.com)",
+    loses: "Anthropic's training corpus"
+  },
+  {
+    name: "CCBot",
+    class: "training",
+    robotsTokens: ["ccbot"],
+    userAgent: "CCBot/2.0 (https://commoncrawl.org/faq/)",
+    loses: "Common Crawl, which several models train on"
+  },
+  {
+    name: "Google-Extended",
+    class: "training",
+    robotsTokens: ["google-extended"],
+    userAgent: null,
+    loses: "Gemini's training data (Search is unaffected)"
+  },
+  {
+    name: "Bytespider",
+    class: "training",
+    robotsTokens: ["bytespider"],
+    userAgent: null,
+    loses: "ByteDance's training corpus"
   }
 ];
+
+// src/audit/checks/crawler-access.ts
 var BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
 function isRefusal(status) {
   return status === 401 || status === 403 || status === 429 || status === 503;
 }
-async function statusFor(url, userAgent) {
+function isChallengePage(headers, body) {
+  const mitigated = headers["cf-mitigated"] ?? headers["CF-Mitigated"];
+  if (mitigated && /challenge/i.test(mitigated))
+    return true;
+  if (typeof body !== "string")
+    return false;
+  const head = body.slice(0, 4e3);
+  return /cdn-cgi\/challenge-platform|<title>Just a moment\.\.\.<\/title>|_cf_chl_opt/.test(head);
+}
+async function probe(url, userAgent) {
   try {
     const response = await httpGet(url, {
       headers: { "User-Agent": userAgent },
@@ -19417,78 +19512,229 @@ async function statusFor(url, userAgent) {
       // We want the status itself, not an exception on 4xx/5xx.
       validateStatus: () => true
     });
-    return response.status;
+    return { status: response.status, challenge: isChallengePage(response.headers ?? {}, response.data) };
   } catch {
-    return null;
+    return { status: null, challenge: false };
   }
 }
+var refused = (p) => p.challenge || p.status !== null && isRefusal(p.status);
+async function mapLimit(items, limit, fn) {
+  const out = new Array(items.length);
+  let next = 0;
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, async () => {
+      while (next < items.length) {
+        const i = next++;
+        out[i] = await fn(items[i]);
+      }
+    })
+  );
+  return out;
+}
+var MEMO_TTL_MS = 10 * 60 * 1e3;
+var memo = /* @__PURE__ */ new Map();
 async function analyzeCrawlerAccess(url) {
+  const origin = new URL(url).origin;
+  const hit = memo.get(origin);
+  if (hit && Date.now() - hit.at < MEMO_TTL_MS)
+    return hit.result;
+  const result = run(url);
+  memo.set(origin, { at: Date.now(), result });
+  return result;
+}
+function statusText(p) {
+  if (p.challenge)
+    return p.status === null ? "a challenge page" : `a challenge page (${p.status})`;
+  return String(p.status);
+}
+function describe(outcomes) {
+  return {
+    names: outcomes.map(({ bot }) => bot.name).join(", "),
+    statuses: outcomes.map(({ probe: probe2 }) => statusText(probe2)).join(", "),
+    loses: outcomes.map(({ bot }) => bot.loses).join(", ")
+  };
+}
+async function run(url) {
   const issues = [];
-  const baselineStatus = await statusFor(url, BROWSER_UA);
-  const data = { baselineStatus, crawlers: [] };
-  if (baselineStatus === null || baselineStatus >= 400) {
+  const data = { baselineStatus: null, rateLimited: false, crawlers: [] };
+  const baseline = await probe(url, BROWSER_UA);
+  data.baselineStatus = baseline.status;
+  if (baseline.status === null || baseline.status >= 400 || baseline.challenge) {
     return { issues, data };
   }
-  const results = await Promise.all(
-    CRAWLERS.map(async (crawler) => ({
-      crawler,
-      status: await statusFor(url, crawler.userAgent)
-    }))
-  );
-  const blocked = results.filter(({ status }) => status !== null && isRefusal(status));
-  data.crawlers = results.map(({ crawler, status }) => ({
-    name: crawler.name,
-    status,
-    blocked: status !== null && isRefusal(status)
+  const live = KNOWN_BOTS.filter((bot) => bot.userAgent !== null);
+  const outcomes = await mapLimit(live, 3, async (bot) => ({ bot, probe: await probe(url, bot.userAgent) }));
+  data.crawlers = outcomes.map(({ bot, probe: probe2 }) => ({
+    name: bot.name,
+    class: bot.class,
+    status: probe2.status,
+    challenge: probe2.challenge,
+    blocked: refused(probe2)
   }));
+  const blocked = outcomes.filter(({ probe: probe2 }) => refused(probe2));
   if (blocked.length === 0)
     return { issues, data };
-  const search = blocked.filter(({ crawler }) => crawler.critical);
-  const ai = blocked.filter(({ crawler }) => !crawler.critical);
+  if (blocked.length === live.length && blocked.every(({ probe: probe2 }) => probe2.status === 429 && !probe2.challenge)) {
+    data.rateLimited = true;
+    return { issues, data };
+  }
+  const ofClass = (cls) => blocked.filter(({ bot }) => bot.class === cls);
+  const observed = "Observed with the crawler\u2019s user-agent. Real crawlers are also verified by IP, so a site may treat them differently.";
+  const blockedDetail = (outcomes2) => outcomes2.map(({ bot, probe: probe2 }) => ({ crawler: bot.name, status: probe2.status, challenge: probe2.challenge }));
+  const search = ofClass("search");
   if (search.length > 0) {
-    const names = search.map(({ crawler }) => crawler.name).join(", ");
+    const { names, statuses } = describe(search);
     issues.push({
       code: "SEARCH_CRAWLER_BLOCKED_AT_EDGE",
       severity: "error",
       category: "crawlability",
       title: `${names} refused at the edge, not by robots.txt`,
-      description: `A browser request to this URL returned ${baselineStatus}, but ${names} received ${search.map(({ status }) => status).join(", ")}. Something in front of the origin - a CDN, WAF or bot rule - is turning the crawler away, and robots.txt cannot show you this.`,
-      impact: "Pages a search crawler cannot fetch fall out of the index. This is the failure mode behind Cloudflare\u2019s 2026-09-15 default, where blocking AI training also blocked Googlebot because it is classed as a mixed-use crawler.",
+      description: `A browser request to this URL returned ${baseline.status}, but ${names} received ${statuses}. Something in front of the origin - a CDN, WAF or bot rule - is turning the crawler away, and robots.txt cannot show you this.`,
+      impact: "Pages a search crawler cannot fetch fall out of the index, and 88 percent of ChatGPT citations come from that index. This is the failure mode behind Cloudflare\u2019s 2026-09-15 default, where blocking AI training also blocked Googlebot because it is classed as a mixed-use crawler.",
       howToFix: `Check your CDN or WAF bot rules rather than robots.txt.
 
 On Cloudflare: the zone's Security > Bots settings, and any "Block AI Bots" or AI Crawler Control toggle. Because Googlebot crawls for both Search and AI training, blocking Training applies to all of its functions on ad-supported pages - allow Search crawlers explicitly, or opt out of the default.
 
 Confirm with Search Console's URL Inspection, which fetches as the verified Googlebot.`,
       affectedUrls: [url],
-      details: {
-        baselineStatus,
-        blocked: search.map(({ crawler, status }) => ({ crawler: crawler.name, status })),
-        note: "Observed with the crawler\u2019s user-agent. Real crawlers are also verified by IP, so a site may treat them differently."
-      }
+      details: { baselineStatus: baseline.status, blocked: blockedDetail(search), note: observed }
     });
   }
-  if (ai.length > 0) {
-    const names = ai.map(({ crawler }) => crawler.name).join(", ");
+  const aiSearch = ofClass("ai-search");
+  if (aiSearch.length > 0) {
+    const { names, statuses, loses } = describe(aiSearch);
     issues.push({
-      code: "AI_CRAWLER_BLOCKED_AT_EDGE",
+      code: "AI_SEARCH_CRAWLER_BLOCKED_AT_EDGE",
       severity: "warning",
       category: "ai-readiness",
-      title: `${names} refused at the edge, not by robots.txt`,
-      description: `A browser request returned ${baselineStatus}, but ${names} received ${ai.map(({ status }) => status).join(", ")}. The block is in front of the origin, so allowing these agents in robots.txt will not change it.`,
-      impact: "An assistant that cannot fetch the page cannot quote it. This is invisible to a robots.txt check, which is where most AI-visibility tools stop.",
-      howToFix: `If blocking them is deliberate, nothing to do. If not, the rule is in your CDN or WAF, not robots.txt - on Cloudflare see Security > Bots and any AI Crawler Control setting.`,
+      title: `${names} refused at the edge: the site is out of ${loses}`,
+      description: `A browser request returned ${baseline.status}, but ${names} received ${statuses}. These crawlers build the index each assistant answers from: OpenAI documents that a site opted out of OAI-SearchBot is not shown in ChatGPT search answers, and Anthropic says the same of Claude-SearchBot. The block is in front of the origin, so robots.txt cannot show it and allowing the bot there will not lift it.`,
+      impact: "The site is absent from those assistants\u2019 answers whatever robots.txt says. Refusing the training crawlers (GPTBot, ClaudeBot) does not have this effect; refusing the search crawlers does.",
+      howToFix: `If the refusal is deliberate, nothing to do. Otherwise the rule is in the CDN or WAF, not robots.txt: on Cloudflare, Security > Bots (AI Crawl Control) lists Search crawlers separately from Training crawlers - allow the Search class and keep Training blocked if that is the policy. Then fetch the page as the bot again; assume you are blocked until that says otherwise.`,
       affectedUrls: [url],
-      details: {
-        baselineStatus,
-        blocked: ai.map(({ crawler, status }) => ({ crawler: crawler.name, status }))
-      }
+      details: { baselineStatus: baseline.status, blocked: blockedDetail(aiSearch), note: observed }
+    });
+  }
+  const user = ofClass("user");
+  if (user.length > 0) {
+    const { names, statuses } = describe(user);
+    issues.push({
+      code: "AI_USER_FETCH_BLOCKED_AT_EDGE",
+      severity: "warning",
+      category: "ai-readiness",
+      title: `${names} refused at the edge: assistants cannot read this page when a user asks`,
+      description: `A browser request returned ${baseline.status}, but ${names} received ${statuses}. These agents fetch one page because a user pasted its link or asked about it; they are not crawlers and visit nothing on their own.`,
+      impact: "A user who asks ChatGPT, Claude or Perplexity about this page gets an error instead of its content.",
+      howToFix: "Allow the user-triggered agents (ChatGPT-User, Claude-User, Perplexity-User) in the CDN or WAF rule, even where the training crawlers stay blocked; Cloudflare\u2019s AI Crawl Control lists them as their own category.",
+      affectedUrls: [url],
+      details: { baselineStatus: baseline.status, blocked: blockedDetail(user), note: observed }
+    });
+  }
+  const training = ofClass("training");
+  if (training.length > 0) {
+    const { names, statuses } = describe(training);
+    issues.push({
+      code: "AI_TRAINING_CRAWLER_BLOCKED_AT_EDGE",
+      severity: "notice",
+      category: "ai-readiness",
+      title: `${names} refused at the edge (training crawlers)`,
+      description: `A browser request returned ${baseline.status}, but ${names} received ${statuses}. These crawlers collect model-training data only; OpenAI and Anthropic both document that refusing them has no effect on search answers.`,
+      impact: "None on visibility. Listed so the block is a decision rather than a default you did not know about: Cloudflare has blocked known AI crawlers on new zones since 2025-07-01 and on ad-bearing pages since 2026-09-15.",
+      howToFix: "Nothing, if that is the intent. To let these crawlers in, change the CDN or WAF rule; robots.txt cannot override an edge block.",
+      affectedUrls: [url],
+      details: { baselineStatus: baseline.status, blocked: blockedDetail(training), note: observed }
+    });
+  }
+  return { issues, data };
+}
+
+// src/audit/checks/metadata-placement.ts
+import * as cheerio34 from "https://esm.sh/cheerio@1.0.0";
+var TAGS = [
+  { label: "<title>", select: "title" },
+  { label: "the meta description", select: 'meta[name="description"]' },
+  { label: "the canonical link", select: 'link[rel="canonical"]' },
+  { label: "the robots meta", select: 'meta[name="robots"]' }
+];
+function metadataPlacement(html) {
+  const $ = cheerio34.load(html);
+  const inHead = [];
+  const inBody = [];
+  for (const tag of TAGS) {
+    const inHeadCount = $(`head ${tag.select}`).length;
+    if (inHeadCount > 0)
+      inHead.push(tag.label);
+    const bodyMatches = $(`body ${tag.select}`).filter((_, el) => $(el).closest("svg").length === 0);
+    if (inHeadCount === 0 && bodyMatches.length > 0)
+      inBody.push(tag.label);
+  }
+  return { inHead, inBody };
+}
+var GOOGLEBOT_UA = KNOWN_BOTS.find((bot) => bot.name === "Googlebot").userAgent;
+async function fetchAs(url, userAgent) {
+  try {
+    const response = await httpGet(url, {
+      headers: { "User-Agent": userAgent },
+      timeout: 8e3,
+      validateStatus: () => true
+    });
+    return response.status === 200 && typeof response.data === "string" ? response.data : null;
+  } catch {
+    return null;
+  }
+}
+function list(labels) {
+  if (labels.length <= 1)
+    return labels.join("");
+  return `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}`;
+}
+async function analyzeMetadataPlacement(html, url, options = {}) {
+  const page = metadataPlacement(html);
+  const data = { page, streamed: [] };
+  const issues = [];
+  const essential = TAGS.slice(0, 3).map((t) => t.label);
+  const suspicious = essential.some((label) => !page.inHead.includes(label)) || page.inBody.length > 0;
+  if (options.compareAsGooglebot !== false && suspicious) {
+    const asGooglebot = await fetchAs(url, GOOGLEBOT_UA);
+    if (asGooglebot) {
+      data.googlebot = metadataPlacement(asGooglebot);
+      data.streamed = data.googlebot.inHead.filter((label) => !page.inHead.includes(label));
+    }
+  }
+  if (data.streamed.length > 0) {
+    const labels = list(data.streamed);
+    const inBody = data.streamed.filter((label) => page.inBody.includes(label));
+    const where = inBody.length === data.streamed.length ? "they arrive later, inside <body>" : inBody.length > 0 ? "some arrive later inside <body> and the rest not at all" : "they are absent";
+    issues.push({
+      code: "METADATA_STREAMED_FOR_BOTS",
+      severity: "warning",
+      category: "indexability",
+      title: `${labels} reach Googlebot but not other agents`,
+      description: `Fetched as Googlebot, this page has ${labels} in <head>. Fetched as this audit, which is on no framework's bot list, ${where}. Next.js app router streams metadata this way: it waits for it only for user agents it recognises, so OAI-SearchBot, Claude-SearchBot, PerplexityBot, link previews and any crawler it does not list read the page without it.`,
+      impact: 'Google may still index the page correctly; every other reader gets it without a canonical or a description. That is the "Duplicate without user-selected canonical" and zero-impressions failure in the Next.js reports, and for AI search a page with nothing to cite.',
+      howToFix: "Serve the metadata in the initial HTML to everyone. Next.js: list the AI crawlers in `htmlLimitedBots` in next.config (OAI-SearchBot, Claude-SearchBot, PerplexityBot, ChatGPT-User, Claude-User), or make the route\u2019s metadata synchronous so nothing is streamed. Other frameworks: emit <title>, the description and the canonical before any body content.",
+      affectedUrls: [url],
+      details: { streamed: data.streamed, page, googlebot: data.googlebot }
+    });
+  } else if (page.inBody.length > 0) {
+    const labels = list(page.inBody);
+    issues.push({
+      code: "METADATA_OUTSIDE_HEAD",
+      severity: "warning",
+      category: "indexability",
+      title: `${labels} sit inside <body>, where crawlers do not read them`,
+      description: `${labels} appear after the first body content. The HTML parser closes <head> at that point, so they land in <body>; Google documents that a canonical outside <head> is ignored, and a description there is not used as a snippet.`,
+      impact: "The page can be indexed under a URL you did not choose and shown without its description.",
+      howToFix: "Emit the metadata before any body content: from the server-rendered <head>, not from a component that renders late or a script that injects tags after load.",
+      affectedUrls: [url],
+      details: { inBody: page.inBody, inHead: page.inHead }
     });
   }
   return { issues, data };
 }
 
 // src/audit/checks/ai-readiness.ts
-import * as cheerio34 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio35 from "https://esm.sh/cheerio@1.0.0";
 
 // src/audit/checks/agent-experience.ts
 var SIGNAL_PATHS = [
@@ -19548,18 +19794,6 @@ async function checkAgentExperience(baseUrl) {
 }
 
 // src/audit/checks/ai-readiness.ts
-var AI_BOTS = {
-  GPTBot: "GPTBot",
-  "ChatGPT-User": "ChatGPT-User",
-  "OAI-SearchBot": "OAI-SearchBot",
-  ClaudeBot: "ClaudeBot",
-  "Claude-Web": "Claude-Web",
-  "anthropic-ai": "anthropic-ai",
-  PerplexityBot: "PerplexityBot",
-  "Google-Extended": "Google-Extended",
-  Bytespider: "Bytespider",
-  CCBot: "CCBot"
-};
 async function checkLlmsTxt(baseUrl) {
   const issues = [];
   const url = new URL("/llms.txt", baseUrl).href;
@@ -19633,130 +19867,130 @@ function parseContentSignal(robotsTxtContent) {
   }
   return null;
 }
+function parseRobotsGroups(content) {
+  const groups = /* @__PURE__ */ new Map();
+  let current = [];
+  let lastWasAgent = false;
+  for (const raw of content.split("\n")) {
+    const line = raw.replace(/#.*$/, "").trim();
+    if (!line)
+      continue;
+    const colon = line.indexOf(":");
+    if (colon === -1)
+      continue;
+    const directive = line.slice(0, colon).trim().toLowerCase();
+    const value = line.slice(colon + 1).trim();
+    if (directive === "user-agent") {
+      if (!lastWasAgent)
+        current = [];
+      current.push(value.toLowerCase());
+      lastWasAgent = true;
+      for (const token of current)
+        if (!groups.has(token))
+          groups.set(token, { disallowAll: false, allowRoot: false });
+      continue;
+    }
+    lastWasAgent = false;
+    if (directive === "disallow" && (value === "/" || value === "/*")) {
+      for (const token of current)
+        groups.get(token).disallowAll = true;
+    } else if (directive === "allow" && (value === "/" || value === "/*")) {
+      for (const token of current)
+        groups.get(token).allowRoot = true;
+    }
+  }
+  return groups;
+}
+function isDisallowed(bot, groups) {
+  const own = bot.robotsTokens.map((token) => groups.get(token)).filter((g) => !!g);
+  if (own.length > 0)
+    return own.some((g) => g.disallowAll) && !own.some((g) => g.allowRoot);
+  const star = groups.get("*");
+  return !!star?.disallowAll;
+}
+function emptyClasses() {
+  return {
+    search: { allowed: [], disallowed: [] },
+    "ai-search": { allowed: [], disallowed: [] },
+    user: { allowed: [], disallowed: [] },
+    training: { allowed: [], disallowed: [] }
+  };
+}
+function allAllowed(robotsExists) {
+  const classes = emptyClasses();
+  for (const bot of KNOWN_BOTS)
+    classes[bot.class].allowed.push(bot.name);
+  return { robotsExists, blockedBots: [], allowedBots: KNOWN_BOTS.map((b) => b.name), allBlocked: false, contentSignal: null, classes };
+}
 async function checkAIBotBlocking(baseUrl) {
   const issues = [];
   const url = new URL("/robots.txt", baseUrl).href;
+  let content;
+  try {
+    const response = await httpGet(url, { timeout: 1e4, validateStatus: () => true });
+    if (response.status >= 400 || looksLikeHtmlFallback(response.data, response.headers?.["content-type"])) {
+      return { issues, data: allAllowed(false) };
+    }
+    content = response.data;
+  } catch {
+    return { issues, data: allAllowed(false) };
+  }
+  const groups = parseRobotsGroups(content);
+  const classes = emptyClasses();
   const blockedBots = [];
   const allowedBots = [];
-  try {
-    const response = await httpGet(url, {
-      timeout: 1e4,
-      validateStatus: () => true
-    });
-    if (response.status === 404 || response.status >= 400) {
-      return {
-        issues,
-        data: {
-          robotsExists: false,
-          blockedBots: [],
-          allowedBots: Object.keys(AI_BOTS),
-          allBlocked: false,
-          contentSignal: null
-        }
-      };
-    }
-    const content = response.data;
-    const lines = content.split("\n");
-    const contentSignal = parseContentSignal(content);
-    let currentUserAgent = "";
-    const botRules = {};
-    for (const line of lines) {
-      const trimmed = line.trim().toLowerCase();
-      if (trimmed.startsWith("content-signal:")) {
-        continue;
-      } else if (trimmed.startsWith("user-agent:")) {
-        currentUserAgent = trimmed.split(":")[1].trim();
-      } else if (trimmed.startsWith("disallow:")) {
-        const path = trimmed.split(":")[1]?.trim() || "";
-        for (const [botKey, botName] of Object.entries(AI_BOTS)) {
-          if (currentUserAgent === "*" || currentUserAgent === botKey.toLowerCase() || currentUserAgent === botName.toLowerCase()) {
-            if (path === "/" || path === "/*") {
-              if (!botRules[botKey]) {
-                botRules[botKey] = { allowed: false, disallowAll: false };
-              }
-              if (currentUserAgent !== "*" || currentUserAgent === "*" && !botRules[botKey].allowed) {
-                botRules[botKey].disallowAll = true;
-              }
-            }
-          }
-        }
-      } else if (trimmed.startsWith("allow:")) {
-        for (const [botKey] of Object.entries(AI_BOTS)) {
-          if (currentUserAgent === botKey.toLowerCase()) {
-            if (!botRules[botKey]) {
-              botRules[botKey] = { allowed: true, disallowAll: false };
-            }
-            botRules[botKey].allowed = true;
-          }
-        }
-      }
-    }
-    for (const [botKey] of Object.entries(AI_BOTS)) {
-      const rules = botRules[botKey];
-      if (rules?.disallowAll && !rules?.allowed) {
-        blockedBots.push(botKey);
-      } else {
-        allowedBots.push(botKey);
-      }
-    }
-    if (blockedBots.length === Object.keys(AI_BOTS).length) {
-      issues.push({
-        ...ISSUE_DEFINITIONS.AI_BOT_BLOCKED_ALL,
-        affectedUrls: [url],
-        details: { blockedBots }
-      });
+  for (const bot of KNOWN_BOTS) {
+    if (isDisallowed(bot, groups)) {
+      classes[bot.class].disallowed.push(bot.name);
+      blockedBots.push(bot.name);
     } else {
-      if (blockedBots.includes("GPTBot") || blockedBots.includes("ChatGPT-User")) {
-        issues.push({
-          ...ISSUE_DEFINITIONS.AI_BOT_GPTBOT_BLOCKED,
-          affectedUrls: [url]
-        });
-      }
-      if (blockedBots.includes("ClaudeBot") || blockedBots.includes("Claude-Web") || blockedBots.includes("anthropic-ai")) {
-        issues.push({
-          ...ISSUE_DEFINITIONS.AI_BOT_CLAUDEBOT_BLOCKED,
-          affectedUrls: [url]
-        });
-      }
-      if (blockedBots.includes("PerplexityBot")) {
-        issues.push({
-          ...ISSUE_DEFINITIONS.AI_BOT_PERPLEXITY_BLOCKED,
-          affectedUrls: [url]
-        });
-      }
-      if (blockedBots.includes("Google-Extended")) {
-        issues.push({
-          ...ISSUE_DEFINITIONS.AI_BOT_GOOGLE_EXTENDED_BLOCKED,
-          affectedUrls: [url]
-        });
-      }
+      classes[bot.class].allowed.push(bot.name);
+      allowedBots.push(bot.name);
     }
-    return {
-      issues,
-      data: {
-        robotsExists: true,
-        blockedBots,
-        allowedBots,
-        allBlocked: blockedBots.length === Object.keys(AI_BOTS).length,
-        contentSignal
-      }
-    };
-  } catch (error) {
-    return {
-      issues,
-      data: {
-        robotsExists: false,
-        blockedBots: [],
-        allowedBots: Object.keys(AI_BOTS),
-        allBlocked: false,
-        contentSignal: null
-      }
-    };
   }
+  const aiBots = KNOWN_BOTS.filter((bot) => bot.class !== "search");
+  const allBlocked = aiBots.every((bot) => blockedBots.includes(bot.name));
+  const names = (cls) => classes[cls].disallowed.join(", ");
+  if (allBlocked) {
+    issues.push({
+      ...ISSUE_DEFINITIONS.AI_BOT_BLOCKED_ALL,
+      affectedUrls: [url],
+      details: { blockedBots, classes }
+    });
+  } else {
+    if (classes["ai-search"].disallowed.length > 0) {
+      issues.push({
+        ...ISSUE_DEFINITIONS.AI_SEARCH_BOTS_DISALLOWED,
+        description: `robots.txt disallows ${names("ai-search")}. ${ISSUE_DEFINITIONS.AI_SEARCH_BOTS_DISALLOWED.description}`,
+        affectedUrls: [url],
+        details: { disallowed: classes["ai-search"].disallowed }
+      });
+    }
+    if (classes.user.disallowed.length > 0) {
+      issues.push({
+        ...ISSUE_DEFINITIONS.AI_USER_FETCH_DISALLOWED,
+        description: `robots.txt disallows ${names("user")}. ${ISSUE_DEFINITIONS.AI_USER_FETCH_DISALLOWED.description}`,
+        affectedUrls: [url],
+        details: { disallowed: classes.user.disallowed }
+      });
+    }
+    if (classes.training.disallowed.length > 0) {
+      issues.push({
+        ...ISSUE_DEFINITIONS.AI_TRAINING_BOTS_DISALLOWED,
+        description: `robots.txt disallows ${names("training")}. ${ISSUE_DEFINITIONS.AI_TRAINING_BOTS_DISALLOWED.description}`,
+        affectedUrls: [url],
+        details: { disallowed: classes.training.disallowed }
+      });
+    }
+  }
+  return {
+    issues,
+    data: { robotsExists: true, blockedBots, allowedBots, allBlocked, contentSignal: parseContentSignal(content), classes }
+  };
 }
 function checkJSRenderingRatio(html, url) {
   const issues = [];
-  const $ = cheerio34.load(html);
+  const $ = cheerio35.load(html);
   $("script, style, noscript").remove();
   const staticText = $("body").text().replace(/\s+/g, " ").trim();
   const staticWordCount = staticText.split(/\s+/).filter((word) => word.length > 0).length;
@@ -19841,7 +20075,7 @@ async function runAIReadinessChecks(baseUrl, html) {
 }
 
 // src/audit/checks/serp-preview.ts
-import * as cheerio35 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio36 from "https://esm.sh/cheerio@1.0.0";
 var CHAR_WIDTHS = {
   // Lowercase letters
   a: 9,
@@ -19974,7 +20208,7 @@ function formatSERPUrl(url) {
 }
 function analyzeSERPPreview(html, url) {
   const issues = [];
-  const $ = cheerio35.load(html);
+  const $ = cheerio36.load(html);
   const rawTitle = $("title").text().trim() || "";
   const titlePixels = calculatePixelWidth(rawTitle);
   const titleTruncated = truncateToPixels(rawTitle, TITLE_MAX_PIXELS);
@@ -20079,7 +20313,7 @@ function wrapText(text, maxWidth) {
 }
 
 // src/audit/checks/local-seo.ts
-import * as cheerio36 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio37 from "https://esm.sh/cheerio@1.0.0";
 var PHONE_PATTERNS = [
   /\+?1?[-.\s]?\(?[0-9]{3}\)?[-.\s]?[0-9]{3}[-.\s]?[0-9]{4}/g,
   // US/Canada
@@ -20094,7 +20328,7 @@ var ADDRESS_PATTERNS = [
   // Generic US address
 ];
 function extractSchema(html) {
-  const $ = cheerio36.load(html);
+  const $ = cheerio37.load(html);
   let hasLocalBusiness = false;
   let hasOrganization = false;
   let schemaData = null;
@@ -20161,7 +20395,7 @@ function formatAddress(address) {
   return void 0;
 }
 function detectPhones(html) {
-  const $ = cheerio36.load(html);
+  const $ = cheerio37.load(html);
   const text = $("body").text();
   const phones = /* @__PURE__ */ new Set();
   $('a[href^="tel:"]').each((_, el) => {
@@ -20182,7 +20416,7 @@ function detectPhones(html) {
   });
 }
 function detectAddresses(html) {
-  const $ = cheerio36.load(html);
+  const $ = cheerio37.load(html);
   const text = $("body").text();
   const addresses = /* @__PURE__ */ new Set();
   for (const pattern of ADDRESS_PATTERNS) {
@@ -20199,7 +20433,7 @@ function detectAddresses(html) {
   return Array.from(addresses);
 }
 function detectSocialProfiles(html) {
-  const $ = cheerio36.load(html);
+  const $ = cheerio37.load(html);
   const profiles = [];
   const socialDomains = [
     "facebook.com",
@@ -20249,7 +20483,7 @@ function analyzeLocalSEO(html, url) {
       affectedUrls: [url]
     });
   }
-  const $ = cheerio36.load(html);
+  const $ = cheerio37.load(html);
   const isBusinessPage = $('a[href^="tel:"]').length > 0 || $('a[href^="mailto:"]').length > 0 || html.toLowerCase().includes("contact") || html.toLowerCase().includes("about us");
   if (isBusinessPage) {
     if (detectedAddresses.length === 0 && !schemaData?.address) {
@@ -20413,7 +20647,7 @@ async function analyzeSecurityHeaders(url) {
 }
 
 // src/audit/checks/content-freshness.ts
-import * as cheerio37 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio38 from "https://esm.sh/cheerio@1.0.0";
 var ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1e3;
 function parseDate(dateStr) {
   if (!dateStr)
@@ -20435,7 +20669,7 @@ function calculateAgeInDays(date) {
   return Math.floor(diff / (24 * 60 * 60 * 1e3));
 }
 function extractDatesFromHtml(html) {
-  const $ = cheerio37.load(html);
+  const $ = cheerio38.load(html);
   const articleModifiedTime = parseDate(
     $('meta[property="article:modified_time"]').attr("content") || $('meta[name="article:modified_time"]').attr("content")
   );
@@ -20495,7 +20729,7 @@ async function analyzeContentFreshness(url, html) {
       }
     });
   }
-  const $ = cheerio37.load(html);
+  const $ = cheerio38.load(html);
   const isArticle = $("article").length > 0 || $('meta[property="og:type"][content="article"]').length > 0 || $('meta[property="article:published_time"]').length > 0;
   if (isArticle && !htmlDates.articleModifiedTime && !htmlDates.ogUpdatedTime) {
     issues.push({
@@ -20518,7 +20752,7 @@ async function analyzeContentFreshness(url, html) {
 }
 
 // src/audit/checks/dom-analysis.ts
-import * as cheerio38 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio39 from "https://esm.sh/cheerio@1.0.0";
 var DOM_SIZE_WARNING = 1500;
 var DOM_SIZE_ERROR = 3e3;
 var DOM_DEPTH_WARNING = 32;
@@ -20584,7 +20818,7 @@ function findRenderBlockingResources($) {
 }
 function analyzeDOMStructure(html, url) {
   const issues = [];
-  const $ = cheerio38.load(html);
+  const $ = cheerio39.load(html);
   const nodeCount = countNodes($);
   const maxDepth = calculateMaxDepth($);
   const renderBlockingResources = findRenderBlockingResources($);
@@ -20647,7 +20881,7 @@ function analyzeDOMStructure(html, url) {
 }
 
 // src/audit/checks/modern-images.ts
-import * as cheerio39 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio40 from "https://esm.sh/cheerio@1.0.0";
 var MODERN_FORMATS = [".webp", ".avif"];
 var LEGACY_FORMATS = [".jpg", ".jpeg", ".png", ".gif", ".bmp"];
 function getImageFormat(url) {
@@ -20743,7 +20977,7 @@ function extractImages($, baseUrl) {
 }
 function analyzeModernImages(html, url) {
   const issues = [];
-  const $ = cheerio39.load(html);
+  const $ = cheerio40.load(html);
   const images = extractImages($, url);
   const uniqueImages = images.filter((img, idx, arr) => arr.findIndex((i) => i.src === img.src) === idx);
   const modernFormatCount = uniqueImages.filter((img) => img.isModernFormat).length;
@@ -20794,11 +21028,11 @@ function analyzeModernImages(html, url) {
 }
 
 // src/audit/checks/tech-detection.ts
-import * as cheerio40 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio41 from "https://esm.sh/cheerio@1.0.0";
 var VULNERABLE_JQUERY = ["1.", "2.0", "2.1", "2.2", "3.0", "3.1", "3.2", "3.3", "3.4"];
 function detectTechnologies(html, url, headers) {
   const issues = [];
-  const $ = cheerio40.load(html);
+  const $ = cheerio41.load(html);
   const technologies = [];
   detectCMS($, technologies);
   detectFrameworks($, html, technologies);
@@ -21130,7 +21364,7 @@ function detectCDN(headers, technologies) {
 }
 
 // src/audit/checks/keyword-analysis.ts
-import * as cheerio41 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio42 from "https://esm.sh/cheerio@1.0.0";
 var STOP_WORDS = /* @__PURE__ */ new Set([
   "a",
   "an",
@@ -21269,7 +21503,7 @@ function extractNGrams(words, n) {
 }
 function analyzeKeywords(html, url) {
   const issues = [];
-  const $ = cheerio41.load(html);
+  const $ = cheerio42.load(html);
   const title = extractText($, "title");
   const h1 = extractText($, "h1");
   const h2 = extractText($, "h2");
@@ -21378,7 +21612,7 @@ function analyzeKeywords(html, url) {
 }
 
 // src/audit/checks/additional-checks.ts
-import * as cheerio42 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio43 from "https://esm.sh/cheerio@1.0.0";
 async function resolveTxtDoH(domain) {
   const url = `https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(domain)}&type=TXT`;
   const response = await fetch(url, {
@@ -21518,7 +21752,7 @@ async function checkSPF(domain) {
 }
 function checkAMP(html, url) {
   const issues = [];
-  const $ = cheerio42.load(html);
+  const $ = cheerio43.load(html);
   const ampLink = $('link[rel="amphtml"]').attr("href");
   if (ampLink) {
     return {
@@ -21553,7 +21787,7 @@ function checkAMP(html, url) {
 }
 function checkPlaintextEmails(html, url) {
   const issues = [];
-  const $ = cheerio42.load(html);
+  const $ = cheerio43.load(html);
   $("script, style").remove();
   const text = $("body").text();
   const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
@@ -21577,7 +21811,7 @@ function checkPlaintextEmails(html, url) {
 }
 function checkAppleTouchIcon(html, url) {
   const issues = [];
-  const $ = cheerio42.load(html);
+  const $ = cheerio43.load(html);
   const hasAppleTouchIcon = $('link[rel="apple-touch-icon"]').length > 0 || $('link[rel="apple-touch-icon-precomposed"]').length > 0;
   if (!hasAppleTouchIcon) {
     issues.push({
@@ -21589,7 +21823,7 @@ function checkAppleTouchIcon(html, url) {
 }
 function checkFaviconFormat(html, url) {
   const issues = [];
-  const $ = cheerio42.load(html);
+  const $ = cheerio43.load(html);
   const faviconLink = $('link[rel="icon"]').attr("href") || $('link[rel="shortcut icon"]').attr("href") || null;
   if (!faviconLink) {
     return { issues, format: null };
@@ -21642,9 +21876,9 @@ async function runAdditionalChecks(url, html) {
 }
 
 // src/audit/checks/resource-hints.ts
-import * as cheerio43 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio44 from "https://esm.sh/cheerio@1.0.0";
 function extractResourceHints(html) {
-  const $ = cheerio43.load(html);
+  const $ = cheerio44.load(html);
   const hints = [];
   $('link[rel="dns-prefetch"]').each((_, el) => {
     const href = $(el).attr("href");
@@ -21692,7 +21926,7 @@ function extractResourceHints(html) {
   return hints;
 }
 function detectThirdPartyDomains(html, pageUrl) {
-  const $ = cheerio43.load(html);
+  const $ = cheerio44.load(html);
   const baseDomain = new URL(pageUrl).hostname;
   const domains = /* @__PURE__ */ new Set();
   $("script[src]").each((_, el) => {
@@ -21818,7 +22052,7 @@ function analyzeResourceHints(html, url) {
       affectedUrls: [url]
     });
   }
-  const $ = cheerio43.load(html);
+  const $ = cheerio44.load(html);
   const hasHeroImage = $("img").first().length > 0;
   const hasImagePreload = preload.some((p) => p.as === "image");
   if (hasHeroImage && !hasImagePreload) {
@@ -21889,7 +22123,7 @@ function analyzeResourceHints(html, url) {
 }
 
 // src/audit/checks/indexnow.ts
-import * as cheerio44 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio45 from "https://esm.sh/cheerio@1.0.0";
 async function checkRobotsTxtForIndexNow(baseUrl) {
   try {
     const response = await httpGet(`${new URL(baseUrl).origin}/robots.txt`, {
@@ -21947,12 +22181,12 @@ async function findIndexNowKeyFile(baseUrl, possibleKeys) {
   return { found: false, url: null, key: null };
 }
 function checkIndexNowLinkTag(html) {
-  const $ = cheerio44.load(html);
+  const $ = cheerio45.load(html);
   const indexNowLink = $('link[rel="indexnow"]').attr("href") || $('link[rel="index-now"]').attr("href") || $('meta[name="indexnow-key"]').attr("content") || null;
   return { found: !!indexNowLink, href: indexNowLink };
 }
 function detectIndexNowCMSSupport(html, headers) {
-  const $ = cheerio44.load(html);
+  const $ = cheerio45.load(html);
   const isWordPress = html.includes("wp-content") || html.includes("wp-includes") || $('meta[name="generator"][content*="WordPress"]').length > 0;
   if (isWordPress) {
     if (html.includes("yoast-seo") || html.includes("wordpress-seo")) {
@@ -22023,7 +22257,7 @@ async function analyzeIndexNow(html, url, headers = {}) {
 }
 
 // src/audit/checks/site-maturity.ts
-import * as cheerio45 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio46 from "https://esm.sh/cheerio@1.0.0";
 async function getSSLCertificateAge(url) {
   let https;
   try {
@@ -22101,7 +22335,7 @@ async function estimateIndexedPages(url) {
           validateStatus: () => true
         });
         if (response.status === 200) {
-          const $ = cheerio45.load(response.data, { xmlMode: true });
+          const $ = cheerio46.load(response.data, { xmlMode: true });
           const sitemaps = $("sitemap").length;
           if (sitemaps > 0) {
             return sitemaps * 500;
@@ -22120,7 +22354,7 @@ async function estimateIndexedPages(url) {
   }
 }
 function analyzeHTMLMaturitySignals(html, url) {
-  const $ = cheerio45.load(html);
+  const $ = cheerio46.load(html);
   const text = $("body").text().toLowerCase();
   const htmlLower = html.toLowerCase();
   const hasBlog = $('a[href*="/blog"]').length > 0 || $('a[href*="/posts"]').length > 0 || $('a[href*="/articles"]').length > 0 || htmlLower.includes("/blog") || $('[class*="blog"]').length > 0;
@@ -22310,7 +22544,7 @@ async function analyzeSiteMaturity(html, url) {
 }
 
 // src/audit/checks/tracker-bloat.ts
-import * as cheerio46 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio47 from "https://esm.sh/cheerio@1.0.0";
 var KNOWN_TRACKERS = [
   // Analytics
   { name: "Google Analytics (GA4)", domain: "googletagmanager.com", type: "analytics", impact: "medium" },
@@ -22380,7 +22614,7 @@ var KNOWN_TRACKERS = [
   { name: "Google Optimize", domain: "googleoptimize.com", type: "other", impact: "medium" }
 ];
 function detectTrackers(html) {
-  const $ = cheerio46.load(html);
+  const $ = cheerio47.load(html);
   const trackers = [];
   const scripts = $("script");
   scripts.each((_, el) => {
@@ -22649,7 +22883,7 @@ function analyzeTrackerBloat(html, url) {
 }
 
 // src/audit/checks/client-rendering.ts
-import * as cheerio47 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio48 from "https://esm.sh/cheerio@1.0.0";
 var FRAMEWORK_PATTERNS = {
   "Next.js": [/__NEXT_DATA__/, /next\//, /_next\//],
   "Nuxt": [/__NUXT__/, /nuxt/, /_nuxt\//],
@@ -22718,7 +22952,7 @@ function detectFramework2(html) {
   return null;
 }
 function analyzeRendering(html) {
-  const $ = cheerio47.load(html);
+  const $ = cheerio48.load(html);
   const signals = [];
   const frameworkDetected = detectFramework2(html);
   let csrScore = 0;
@@ -22889,7 +23123,7 @@ function generateRecommendations2(renderingMethod, hasContentInHTML, charCount, 
   return recommendations;
 }
 function analyzeClientRendering(html, url) {
-  const $ = cheerio47.load(html);
+  const $ = cheerio48.load(html);
   const issues = [];
   const analysis = analyzeRendering(html);
   if (analysis.renderingMethod === "csr" && analysis.confidence !== "low") {
@@ -23279,7 +23513,7 @@ async function analyzeRedirectChain(url) {
 }
 
 // src/audit/checks/responsive-images.ts
-import * as cheerio48 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio49 from "https://esm.sh/cheerio@1.0.0";
 var MODERN_FORMATS2 = [".webp", ".avif"];
 function analyzeImage($, img, index) {
   const $img = $(img);
@@ -23297,7 +23531,7 @@ function analyzeImage($, img, index) {
   const srcLower = src.toLowerCase();
   const usesModernFormat = MODERN_FORMATS2.some((fmt) => srcLower.includes(fmt));
   const isInHeader = $img.closest('header, [class*="hero"], [class*="banner"], [class*="jumbotron"]').length > 0;
-  const isInFooter = $img.closest('footer, [role="contentinfo"]').length > 0;
+  const isInFooter = $img.closest('footer, [class*="footer"]').length > 0;
   const isAboveFold = !isInFooter && (index < 3 || isInHeader);
   if (!hasExplicitDimensions) {
     issues.push("Missing width/height attributes (causes CLS)");
@@ -23390,7 +23624,7 @@ function detectImageCDN(html) {
   };
 }
 function analyzeResponsiveImages(html, url) {
-  const $ = cheerio48.load(html);
+  const $ = cheerio49.load(html);
   const issues = [];
   const images = [];
   const imgElements = $("img");
@@ -23554,7 +23788,7 @@ function analyzeResponsiveImages(html, url) {
 }
 
 // src/audit/checks/bing-optimization.ts
-import * as cheerio49 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio50 from "https://esm.sh/cheerio@1.0.0";
 
 // src/audit/checks/site-verification.ts
 var UNCHECKED = {
@@ -23661,7 +23895,7 @@ async function fetchBingSiteAuth(origin) {
 // src/audit/checks/bing-optimization.ts
 async function analyzeBingOptimization(html, url) {
   const issues = [];
-  const $ = cheerio49.load(html);
+  const $ = cheerio50.load(html);
   const parsedUrl = new URL(url);
   const baseUrl = `${parsedUrl.protocol}//${parsedUrl.hostname}`;
   const detectedIssues = [];
@@ -24163,10 +24397,10 @@ async function analyzeLlmsTxt(url) {
       code: "AI_NO_LLMS_TXT",
       severity: "notice",
       category: "ai-readiness",
-      title: "No llms.txt file found",
-      description: "llms.txt is a proposed standard for providing context to LLMs about your website. Having one helps AI systems better understand and represent your site.",
-      impact: "AI systems may have less context about your site, potentially leading to less accurate representations.",
-      howToFix: "Create an /llms.txt file with a Markdown description of your site. Include: site name, brief description, and links to key pages. See https://llmstxt.org/ for the specification.",
+      title: "No llms.txt",
+      description: "No /llms.txt. It is a convention for coding agents and documentation sites (Lighthouse 13.3 audits it; Anthropic, OpenAI, Stripe, Vercel and Supabase publish one for their docs). No search engine or answer engine reads it: Google says it neither helps nor harms, and in a 137,000-domain study 97 percent of the files received no request in a month.",
+      impact: "None on search or AI answers. A documentation site gains a curated index for the agents that look for one.",
+      howToFix: "For a documentation site, publish /llms.txt: an H1 with the project name, a one-line blockquote description, then markdown links with a short description each (the Lighthouse criteria). For a marketing site, ignore this notice. See https://llmstxt.org/.",
       affectedUrls: [llmsTxtUrl],
       details: {
         specification: "https://llmstxt.org/",
@@ -24296,11 +24530,154 @@ function analyzeStructure(content) {
   };
 }
 
+// src/audit/discovery/link-crawler.ts
+var HIGH_PRIORITY_PATTERNS = [
+  /^\/(pricing|about|features|contact|demo|signup|login|blog)\/?$/i,
+  /^\/(products?|services?|solutions?|plans?)\/?$/i,
+  /^\/(docs?|documentation|help|support|faq)\/?$/i,
+  /^\/(careers?|jobs?|team|company)\/?$/i
+];
+var MEDIUM_PRIORITY_PATTERNS = [
+  /^\/(privacy|terms|legal|security)\/?$/i,
+  /^\/[a-z0-9-]+\/?$/i
+  // Top-level pages
+];
+var EXCLUDE_PATTERNS = [
+  /\.(png|jpg|jpeg|gif|svg|webp|ico|pdf|zip|tar|gz)$/i,
+  // Images & archives
+  /\.(json|xml|txt|webmanifest|rss|atom)$/i,
+  // Data files (not HTML)
+  /^(mailto:|tel:|javascript:|#)/i,
+  // Non-HTTP
+  /\/(api|_next|static|assets|cdn)\//i,
+  // Technical paths
+  /[?&](utm_|ref=|source=)/i
+  // Tracking params
+];
+function extractLinks2(html, baseUrl) {
+  const base = new URL(baseUrl);
+  const links = /* @__PURE__ */ new Set();
+  const hrefRegex = /href=["']([^"']+)["']/gi;
+  let match;
+  while ((match = hrefRegex.exec(html)) !== null) {
+    try {
+      const href = match[1];
+      if (EXCLUDE_PATTERNS.some((pattern) => pattern.test(href))) {
+        continue;
+      }
+      let url;
+      if (href.startsWith("http://") || href.startsWith("https://")) {
+        url = new URL(href);
+      } else if (href.startsWith("/")) {
+        url = new URL(href, base);
+      } else {
+        continue;
+      }
+      if (url.hostname !== base.hostname) {
+        continue;
+      }
+      const normalized = normalizeUrl3(url);
+      if (normalized) {
+        links.add(normalized);
+      }
+    } catch {
+    }
+  }
+  return Array.from(links);
+}
+var extractInternalLinks2 = extractLinks2;
+function normalizeUrl3(url) {
+  url.hash = "";
+  const paramsToRemove = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "ref", "source"];
+  for (const param of paramsToRemove) {
+    url.searchParams.delete(param);
+  }
+  let pathname = url.pathname;
+  if (pathname.length > 1 && pathname.endsWith("/")) {
+    pathname = pathname.slice(0, -1);
+  }
+  if (pathname === "" || pathname === "/") {
+    return null;
+  }
+  return `${url.protocol}//${url.hostname}${pathname}${url.search}`;
+}
+function calculatePriority(url) {
+  try {
+    const pathname = new URL(url).pathname;
+    for (const pattern of HIGH_PRIORITY_PATTERNS) {
+      if (pattern.test(pathname)) {
+        return 9;
+      }
+    }
+    for (const pattern of MEDIUM_PRIORITY_PATTERNS) {
+      if (pattern.test(pathname)) {
+        return 6;
+      }
+    }
+    const depth = (pathname.match(/\//g) || []).length;
+    if (depth >= 3) {
+      return 2;
+    }
+    if (depth === 2) {
+      return 4;
+    }
+    return 5;
+  } catch {
+    return 1;
+  }
+}
+function discoverPagesFromLinks(baseUrl, html, maxPages = 5) {
+  const links = extractLinks2(html, baseUrl);
+  const pages = links.map((url) => ({
+    url,
+    source: "internal-link",
+    priority: calculatePriority(url)
+  }));
+  pages.sort((a, b) => b.priority - a.priority);
+  return pages.slice(0, maxPages);
+}
+function parseSitemap(xml, baseUrl) {
+  const pages = [];
+  const base = new URL(baseUrl);
+  const locRegex = /<loc>([^<]+)<\/loc>/gi;
+  let match;
+  while ((match = locRegex.exec(xml)) !== null) {
+    try {
+      const url = new URL(match[1]);
+      if (url.hostname !== base.hostname) {
+        continue;
+      }
+      if (EXCLUDE_PATTERNS.some((pattern) => pattern.test(url.pathname))) {
+        continue;
+      }
+      pages.push({
+        url: url.href,
+        source: "sitemap",
+        priority: calculatePriority(url.href)
+      });
+    } catch {
+    }
+  }
+  return pages;
+}
+function mergePages(...pageSets) {
+  const seen = /* @__PURE__ */ new Map();
+  for (const pages of pageSets) {
+    for (const page of pages) {
+      const existing = seen.get(page.url);
+      if (!existing || page.priority > existing.priority) {
+        seen.set(page.url, page);
+      }
+    }
+  }
+  return Array.from(seen.values()).sort((a, b) => b.priority - a.priority);
+}
+
 // src/audit/checks/html-compliance.ts
-import * as cheerio50 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio51 from "https://esm.sh/cheerio@1.0.0";
 async function analyzeHtmlCompliance(html, url, headers) {
   const issues = [];
-  const $ = cheerio50.load(html);
+  const $ = cheerio51.load(html);
   const parsedUrl = new URL(url);
   const doctypeMatch = html.match(/<!DOCTYPE\s+([^>]+)>/i);
   const hasDoctype = doctypeMatch !== null;
@@ -24872,7 +25249,7 @@ function getAssetType(url) {
 }
 
 // src/audit/checks/dom-size.ts
-import * as cheerio51 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio52 from "https://esm.sh/cheerio@1.0.0";
 var THRESHOLDS = {
   totalElements: {
     warning: 1500,
@@ -24889,7 +25266,7 @@ var THRESHOLDS = {
 };
 function analyzeDomSize(html, url) {
   const issues = [];
-  const $ = cheerio51.load(html);
+  const $ = cheerio52.load(html);
   const allElements = $("*");
   const totalElements = allElements.length;
   let maxDepth = 0;
@@ -25045,10 +25422,10 @@ function getDomReductionSuggestions(breakdown) {
 }
 
 // src/audit/checks/image-dimensions.ts
-import * as cheerio52 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio53 from "https://esm.sh/cheerio@1.0.0";
 function analyzeImageDimensions(html, url) {
   const issues = [];
-  const $ = cheerio52.load(html);
+  const $ = cheerio53.load(html);
   const images = $("img");
   const totalImages = images.length;
   let withDimensions = 0;
@@ -25159,7 +25536,7 @@ function truncateSrc(src) {
 }
 
 // src/audit/checks/color-contrast.ts
-import * as cheerio53 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio54 from "https://esm.sh/cheerio@1.0.0";
 var KNOWN_LOW_CONTRAST_PAIRS = [
   { fg: "#999999", bg: "#ffffff", ratio: 2.85 },
   { fg: "#888888", bg: "#ffffff", ratio: 3.54 },
@@ -25208,7 +25585,7 @@ function inheritedBackground($el) {
 }
 function analyzeColorContrast(html, url) {
   const issues = [];
-  const $ = cheerio53.load(html);
+  const $ = cheerio54.load(html);
   const potentialIssues = [];
   let elementsAnalyzed = 0;
   let passedChecks = 0;
@@ -25398,7 +25775,7 @@ function calculateContrastRatio(fg, bg) {
 }
 
 // src/audit/checks/asset-minification.ts
-import * as cheerio54 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio55 from "https://esm.sh/cheerio@1.0.0";
 function isMinified(content, type) {
   const lines = content.split("\n");
   const totalLines = lines.length;
@@ -25426,7 +25803,7 @@ function isMinified(content, type) {
   };
 }
 function extractAssetUrls(html, baseUrl) {
-  const $ = cheerio54.load(html);
+  const $ = cheerio55.load(html);
   const base = new URL(baseUrl);
   const css = [];
   const js = [];
@@ -25572,10 +25949,10 @@ async function analyzeAssetMinification(html, url) {
 }
 
 // src/audit/checks/page-resources.ts
-import * as cheerio55 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio56 from "https://esm.sh/cheerio@1.0.0";
 function analyzePageResources(html, url) {
   const issues = [];
-  const $ = cheerio55.load(html);
+  const $ = cheerio56.load(html);
   const baseUrl = new URL(url);
   const baseHostname = baseUrl.hostname;
   const stylesheets = [];
@@ -25775,7 +26152,7 @@ function analyzePageResources(html, url) {
 }
 
 // src/audit/checks/responsive-css.ts
-import * as cheerio56 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio57 from "https://esm.sh/cheerio@1.0.0";
 var MAX_STYLESHEETS = 3;
 var MAX_STYLESHEET_BYTES = 1024 * 1024;
 var STYLESHEET_TIMEOUT_MS = 3e3;
@@ -25824,7 +26201,7 @@ function classifyBreakpoints(mediaQueries) {
 }
 async function analyzeResponsiveCss(html, url) {
   const issues = [];
-  const $ = cheerio56.load(html);
+  const $ = cheerio57.load(html);
   const baseUrl = new URL(url);
   const viewportMeta = $('meta[name="viewport"]').attr("content");
   const hasViewport = !!viewportMeta;
@@ -26590,7 +26967,7 @@ var urlSafetyDatabase = {
 };
 
 // src/audit/checks/tracking-verification.ts
-import * as cheerio57 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio58 from "https://esm.sh/cheerio@1.0.0";
 var OTHER_ANALYTICS = [
   { name: "Cloudflare Web Analytics", pattern: /cloudflareinsights\.com\/beacon(?:\.min)?\.js/i },
   { name: "Plausible", pattern: /plausible\.io\/js\/|<script[^>]*data-domain=[^>]*plausible|<script[^>]*plausible[^>]*data-domain=/i },
@@ -26608,7 +26985,7 @@ function detectOtherAnalytics(html) {
 }
 async function analyzeTrackingVerification(html, url) {
   const issues = [];
-  const $ = cheerio57.load(html);
+  const $ = cheerio58.load(html);
   const ga4Match = html.match(/gtag\s*\(\s*['"]config['"]\s*,\s*['"](G-[A-Z0-9]+)['"]/i) || html.match(/googletagmanager\.com\/gtag\/js\?id=(G-[A-Z0-9]+)/i);
   const hasGa4 = !!ga4Match;
   const ga4MeasurementId = ga4Match ? ga4Match[1] : void 0;
@@ -26749,11 +27126,11 @@ async function analyzeTrackingVerification(html, url) {
 }
 
 // src/audit/meta-refresh.ts
-import * as cheerio58 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio59 from "https://esm.sh/cheerio@1.0.0";
 function metaRefreshTarget(html, pageUrl) {
   if (!/http-equiv\s*=\s*["']?refresh/i.test(html))
     return null;
-  const $ = cheerio58.load(html);
+  const $ = cheerio59.load(html);
   for (const el of $("meta[http-equiv]").toArray()) {
     if (($(el).attr("http-equiv") || "").trim().toLowerCase() !== "refresh")
       continue;
@@ -26823,7 +27200,8 @@ var REDUNDANT_WHEN_PRESENT = [
       "SPA_WITHOUT_SSR",
       "EMPTY_BODY_CONTENT",
       "HIGH_JS_RENDERING_RATIO",
-      "AI_LOW_HTML_READABILITY"
+      "AI_LOW_HTML_READABILITY",
+      "NAV_NOT_IN_HTML"
     ]
   },
   // An empty body has no vocabulary to be undiverse.
@@ -26865,6 +27243,7 @@ function dedupeIssues(issues) {
 }
 
 // src/audit/engine.ts
+var HOST_ONLY_CODES = /* @__PURE__ */ new Set(["HSTS_MISSING", "UNCOMPRESSED", "NO_CACHE", "SLOW_TTFB", "SLOW_PAGE"]);
 function sameUrl(a, b) {
   try {
     const ua = new URL(a);
@@ -26876,7 +27255,7 @@ function sameUrl(a, b) {
   }
 }
 async function runFullAudit(options) {
-  const { checkBrokenLinks = false, checkHreflangUrls = false, checkCanonicalChain = false, cruxApiKey, checksLimit = 280, premiumChecks: premiumChecks2 = premiumChecks } = options;
+  const { checkBrokenLinks = false, checkHreflangUrls = false, checkCanonicalChain = false, cruxApiKey, checksLimit = 280, premiumChecks: premiumChecks2 = premiumChecks, staticBuild = false } = options;
   let url = options.url;
   const auditRoot = isSiteRoot(url) || sameUrl(url, options.auditRootUrl ?? url);
   const allIssues = [];
@@ -27118,12 +27497,17 @@ async function runFullAudit(options) {
   asyncChecks.push(safeAsync("Images", () => analyzeImages(html, url, checkBrokenLinks)));
   asyncChecks.push(performancePromise);
   asyncChecks.push(safeAsync("Security", () => analyzeSecurity(html, url, headers)));
-  asyncChecks.push(safeAsyncIssues("Certificate", async () => (await checkCertificate(url)).issues));
-  asyncChecks.push(safeAsync("Redirects", () => analyzeRedirects(url)));
+  if (!staticBuild) {
+    asyncChecks.push(safeAsyncIssues("Certificate", async () => (await checkCertificate(url)).issues));
+    asyncChecks.push(safeAsync("Redirects", () => analyzeRedirects(url)));
+  }
   asyncChecks.push(safeAsync("Robots Validation", () => validateRobotsTxt(url)));
   asyncChecks.push(safeAsync("Tracking Verification", () => analyzeTrackingVerification(html, url)));
-  asyncChecks.push(safeAsyncIssues("Crawler Access", async () => (await analyzeCrawlerAccess(url)).issues));
-  asyncChecks.push(safeAsync("Canonical Domain", () => analyzeCanonicalDomain(url)));
+  if (!staticBuild) {
+    asyncChecks.push(safeAsyncIssues("Crawler Access", async () => (await analyzeCrawlerAccess(url)).issues));
+    asyncChecks.push(safeAsync("Canonical Domain", () => analyzeCanonicalDomain(url)));
+  }
+  asyncChecks.push(safeAsync("Metadata Placement", () => analyzeMetadataPlacement(html, url, { compareAsGooglebot: !staticBuild })));
   asyncChecks.push(safeAsyncIssues("Framework Detection", async () => {
     const frameworkInfo = detectFramework({ html, headers });
     if (frameworkInfo.framework === "unknown")
@@ -27135,13 +27519,15 @@ async function runFullAudit(options) {
   if (runExtendedChecks) {
     asyncChecks.push(safeAsync("Hreflang", () => analyzeHreflang(html, url, { validateUrls: checkHreflangUrls })));
     asyncChecks.push(safeAsync("Canonical Advanced", () => analyzeCanonicalAdvanced(html, url, { checkChain: checkCanonicalChain })));
-    asyncChecks.push(safeAsync("Security Headers", () => analyzeSecurityHeaders(url)));
-    asyncChecks.push(safeAsync("Caching Headers", () => analyzeCachingHeaders(url, headers)));
+    if (!staticBuild) {
+      asyncChecks.push(safeAsync("Security Headers", () => analyzeSecurityHeaders(url)));
+      asyncChecks.push(safeAsync("Caching Headers", () => analyzeCachingHeaders(url, headers)));
+      asyncChecks.push(safeAsync("Redirect Chain", () => analyzeRedirectChain(url)));
+      asyncChecks.push(safeAsync("Directory Listing", () => analyzeDirectoryListing(url)));
+    }
     asyncChecks.push(safeAsync("HTML Compliance", () => analyzeHtmlCompliance(html, url, headers)));
-    asyncChecks.push(safeAsync("Redirect Chain", () => analyzeRedirectChain(url)));
     asyncChecks.push(safeAsync("Asset Minification", () => analyzeAssetMinification(html, url)));
     asyncChecks.push(safeAsync("Responsive CSS", () => analyzeResponsiveCss(html, url)));
-    asyncChecks.push(safeAsync("Directory Listing", () => analyzeDirectoryListing(url)));
   }
   if (runPremiumChecks) {
     asyncChecks.push(safeAsync("AI Readiness", () => runAIReadinessChecks(url, html)));
@@ -27191,7 +27577,7 @@ async function runFullAudit(options) {
   for (const issues2 of asyncResults) {
     allIssues.push(...issues2);
   }
-  const issues = dedupeIssues(allIssues);
+  const issues = dedupeIssues(staticBuild ? allIssues.filter((i) => !HOST_ONLY_CODES.has(i.code)) : allIssues);
   pages.push({
     url,
     statusCode,
@@ -27201,7 +27587,8 @@ async function runFullAudit(options) {
     h1: onPageResult.data.h1s,
     wordCount: onPageResult.data.wordCount,
     loadTime: perfData.loadTime,
-    issues: issues.map((i) => i.code)
+    issues: issues.map((i) => i.code),
+    internalLinks: extractInternalLinks2(html, url)
   });
   console.error("\n\u2705 Audit complete!\n");
   return createReport(url, domain, issues, pages);
@@ -27266,7 +27653,7 @@ function calculateHealthScore(issues) {
   }
   const crawlability = Math.max(0, 100 - categoryDeductions.crawlability * 5);
   const indexability = Math.max(0, 100 - categoryDeductions.indexability * 5);
-  const onPage = Math.max(0, 100 - categoryDeductions["on-page"] * 3);
+  const onPage = Math.max(0, 100 - (categoryDeductions["on-page"] * 3 + categoryDeductions["structured-data"]));
   const content = Math.max(0, 100 - categoryDeductions.content * 3);
   const links = Math.max(0, 100 - categoryDeductions.links * 3);
   const performance = Math.max(0, 100 - categoryDeductions.performance * 4);
@@ -27316,7 +27703,7 @@ function formatReport(report) {
   lines.push(`    Links:         ${report.healthScore.links}/100`);
   lines.push(`    Performance:   ${report.healthScore.performance}/100`);
   lines.push(`    Security:      ${report.healthScore.security}/100`);
-  lines.push(`    AI Readiness:  ${report.healthScore.aiReadiness}/100`);
+  lines.push(`    AI Readiness:  ${report.healthScore.aiReadiness}/100  (hygiene on evidence-backed levers; not a citation predictor)`);
   lines.push(`    Social:        ${report.healthScore.social}/100`);
   lines.push(`    Local SEO:     ${report.healthScore.localSeo}/100`);
   lines.push(`    Accessibility: ${report.healthScore.accessibility}/100`);
@@ -27374,7 +27761,7 @@ function groupIssuesByCategory(issues) {
 }
 
 // src/analyzers/geo-analyzer.ts
-import * as cheerio59 from "https://esm.sh/cheerio@1.0.0";
+import * as cheerio60 from "https://esm.sh/cheerio@1.0.0";
 function generateAIFriendlyRobotsTxt(siteUrl) {
   return `# AI-Optimized robots.txt
 # Generated by RankCLI - https://rankcli.dev
@@ -27996,36 +28383,33 @@ ${permissions}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install RankCLI
-        run: npm install -g @rankcli/cli
+        uses: actions/checkout@v7
 ${sync ? `
-      # Fails fast if the secret is missing or the key was revoked, instead
-      # of silently auditing on the Free tier.
+      # Fails fast if the secret is missing, instead of silently auditing on the Free tier.
       - name: Verify RankCLI API key${keyEnv}
         run: |
           if [ -z "$RANKCLI_API_KEY" ]; then
             echo "::error::The RANKCLI_API_KEY secret is not set - see .github/SEO_SETUP.md"
             exit 1
           fi
-          rankcli login
 ` : ""}
-      # Exit codes: 0 ok, 1 a gate tripped, 2 bad invocation, 3 site
-      # unreachable or the URL answered 4xx/5xx. To fail this job on SEO
-      # regressions, add gates, e.g.: --fail-on error --min-score 80
+      # The same audit as \`rankcli audit\`, run by the published Action. To fail this job on
+      # SEO regressions, add gate rules, e.g.
+      #   fail-on: error,score<80
+      #   baseline: .rankcli/baseline.json   (only findings not in the baseline count)
+      # Audit a build instead of the live site: \`dir: dist\` with \`url\` naming the site.
       - name: Run SEO audit
-        id: audit${keyEnv}
-        run: rankcli audit --url "$SITE_URL" --output json > "$RUNNER_TEMP/audit-report.json"
+        id: audit
+        uses: integrallis/rankcli-action@v1
+        with:
+          url: \${{ env.SITE_URL }}
+          report-file: \${{ runner.temp }}/audit-report.json
+          comment-on-pr: regressions${sync ? `
+          api-key: \${{ secrets.RANKCLI_API_KEY }}` : ""}
 ${config.features.createIssues ? `
       - name: Create/update SEO report issue
         if: \${{ !cancelled() && steps.audit.outcome != 'skipped' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
@@ -28091,13 +28475,20 @@ ${config.features.createIssues ? `
               });
             }
 ` : ""}${autoFixPRs ? `
-      # Auto-fix needs a Solo+ plan (resolved from RANKCLI_API_KEY). It
-      # always writes JSON - appliedCount is 0 when there was nothing to fix
-      # or the plan doesn't include auto-fix.
+      # \`rankcli fix\` is a CLI command, so the CLI is installed for this step only. It always
+      # writes JSON - appliedCount is 0 when there was nothing to fix.
+      - name: Setup Node.js
+        if: \${{ !cancelled() && steps.audit.outcome != 'skipped' }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
       - name: Auto-fix issues
         id: autofix
         if: \${{ !cancelled() && steps.audit.outcome != 'skipped' }}${keyEnv}
-        run: rankcli fix --url "$SITE_URL" --auto --output json > "$RUNNER_TEMP/fixes.json"
+        run: |
+          npm install -g @rankcli/cli
+          rankcli fix --url "$SITE_URL" --auto --output json > "$RUNNER_TEMP/fixes.json"
 
       - name: Check if any fixes were applied
         id: fixes
@@ -28108,7 +28499,7 @@ ${config.features.createIssues ? `
 
       - name: Create PR with fixes
         if: \${{ !cancelled() && steps.fixes.outputs.applied != '' && steps.fixes.outputs.applied != '0' }}
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           token: \${{ secrets.GITHUB_TOKEN }}
           commit-message: 'fix(seo): automated SEO improvements'
@@ -28127,7 +28518,7 @@ ${config.features.createIssues ? `
 ` : ""}
       - name: Save report artifact
         if: \${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rankcli-report-\${{ github.run_number }}
           path: |
@@ -28182,146 +28573,597 @@ get auto-fix PRs (Solo plan or higher), re-run
   return secrets;
 }
 
-// src/audit/discovery/link-crawler.ts
-var HIGH_PRIORITY_PATTERNS = [
-  /^\/(pricing|about|features|contact|demo|signup|login|blog)\/?$/i,
-  /^\/(products?|services?|solutions?|plans?)\/?$/i,
-  /^\/(docs?|documentation|help|support|faq)\/?$/i,
-  /^\/(careers?|jobs?|team|company)\/?$/i
+// src/audit/ci/gate.ts
+var FAIL_ON_LEVELS = ["error", "warning", "notice"];
+var SEVERITY_RANK = { critical: 4, error: 3, warning: 2, notice: 1, info: 1 };
+var SCORE_CATEGORIES = [
+  "overall",
+  "crawlability",
+  "indexability",
+  "onPage",
+  "content",
+  "links",
+  "performance",
+  "security",
+  "aiReadiness",
+  "social",
+  "localSeo",
+  "accessibility"
 ];
-var MEDIUM_PRIORITY_PATTERNS = [
-  /^\/(privacy|terms|legal|security)\/?$/i,
-  /^\/[a-z0-9-]+\/?$/i
-  // Top-level pages
-];
-var EXCLUDE_PATTERNS = [
-  /\.(png|jpg|jpeg|gif|svg|webp|ico|pdf|zip|tar|gz)$/i,
-  // Images & archives
-  /\.(json|xml|txt|webmanifest|rss|atom)$/i,
-  // Data files (not HTML)
-  /^(mailto:|tel:|javascript:|#)/i,
-  // Non-HTTP
-  /\/(api|_next|static|assets|cdn)\//i,
-  // Technical paths
-  /[?&](utm_|ref=|source=)/i
-  // Tracking params
-];
-function extractLinks2(html, baseUrl) {
-  const base = new URL(baseUrl);
-  const links = /* @__PURE__ */ new Set();
-  const hrefRegex = /href=["']([^"']+)["']/gi;
-  let match;
-  while ((match = hrefRegex.exec(html)) !== null) {
-    try {
-      const href = match[1];
-      if (EXCLUDE_PATTERNS.some((pattern) => pattern.test(href))) {
-        continue;
-      }
-      let url;
-      if (href.startsWith("http://") || href.startsWith("https://")) {
-        url = new URL(href);
-      } else if (href.startsWith("/")) {
-        url = new URL(href, base);
-      } else {
-        continue;
-      }
-      if (url.hostname !== base.hostname) {
-        continue;
-      }
-      const normalized = normalizeUrl3(url);
-      if (normalized) {
-        links.add(normalized);
-      }
-    } catch {
+var CATEGORY_ALIASES = {
+  overall: "overall",
+  crawlability: "crawlability",
+  indexability: "indexability",
+  onpage: "onPage",
+  "on-page": "onPage",
+  on_page: "onPage",
+  content: "content",
+  links: "links",
+  performance: "performance",
+  security: "security",
+  aireadiness: "aiReadiness",
+  "ai-readiness": "aiReadiness",
+  ai_readiness: "aiReadiness",
+  ai: "aiReadiness",
+  social: "social",
+  localseo: "localSeo",
+  "local-seo": "localSeo",
+  local_seo: "localSeo",
+  accessibility: "accessibility"
+};
+function scoreCategory(name) {
+  return CATEGORY_ALIASES[name.trim().toLowerCase()];
+}
+var EMPTY_GATE = { budgets: [] };
+var RULE_HELP = `${FAIL_ON_LEVELS.join(", ")}, score<N or score:<category><N`;
+function parseFailOn(rules) {
+  const spec = { budgets: [] };
+  const list2 = (Array.isArray(rules) ? rules : rules ? [rules] : []).flatMap((r) => String(r).split(",")).map((r) => r.trim()).filter(Boolean);
+  for (const rule of list2) {
+    const lower = rule.toLowerCase();
+    if (FAIL_ON_LEVELS.includes(lower)) {
+      const level = lower;
+      if (!spec.failOn || SEVERITY_RANK[level] < SEVERITY_RANK[spec.failOn])
+        spec.failOn = level;
+      continue;
+    }
+    const m = lower.match(/^score(?::([a-z_-]+))?\s*<\s*(\d+(?:\.\d+)?)$/);
+    if (m) {
+      const category = m[1] ? scoreCategory(m[1]) : "overall";
+      if (!category)
+        return { spec, error: `Unknown score category "${m[1]}" in "${rule}" (use ${SCORE_CATEGORIES.join(", ")})` };
+      const min = Number(m[2]);
+      if (min < 0 || min > 100)
+        return { spec, error: `Invalid threshold in "${rule}" (use a number from 0 to 100)` };
+      addBudget(spec, { category, min });
+      continue;
+    }
+    return { spec, error: `Invalid rule "${rule}" (use ${RULE_HELP})` };
+  }
+  return { spec };
+}
+function parseBudgets(budgets) {
+  const spec = { budgets: [] };
+  if (budgets === void 0 || budgets === null)
+    return { spec };
+  if (typeof budgets !== "object" || Array.isArray(budgets))
+    return { spec, error: 'budgets must be an object such as { "overall": 80, "aiReadiness": 70 }' };
+  for (const [name, value] of Object.entries(budgets)) {
+    const category = scoreCategory(name);
+    if (!category)
+      return { spec, error: `Unknown score category "${name}" in budgets (use ${SCORE_CATEGORIES.join(", ")})` };
+    const min = Number(value);
+    if (typeof value !== "number" || !Number.isFinite(min) || min < 0 || min > 100) {
+      return { spec, error: `Invalid budget for "${name}": ${JSON.stringify(value)} (use a number from 0 to 100)` };
+    }
+    addBudget(spec, { category, min });
+  }
+  return { spec };
+}
+function mergeGateSpecs(...specs) {
+  const merged = { budgets: [] };
+  for (const spec of specs) {
+    if (spec.failOn && (!merged.failOn || SEVERITY_RANK[spec.failOn] < SEVERITY_RANK[merged.failOn]))
+      merged.failOn = spec.failOn;
+    for (const budget of spec.budgets)
+      addBudget(merged, budget);
+  }
+  return merged;
+}
+function addBudget(spec, budget) {
+  const existing = spec.budgets.find((b) => b.category === budget.category);
+  if (!existing)
+    spec.budgets.push({ ...budget });
+  else
+    existing.min = Math.max(existing.min, budget.min);
+}
+function isGated(spec) {
+  return spec.failOn !== void 0 || spec.budgets.length > 0;
+}
+function evaluateGate(spec, issues, scores, options = {}) {
+  const failures = [];
+  if (spec.failOn) {
+    const threshold = SEVERITY_RANK[spec.failOn];
+    const hits = issues.filter((i) => (SEVERITY_RANK[i.severity] ?? 0) >= threshold);
+    if (hits.length > 0) {
+      const counts = /* @__PURE__ */ new Map();
+      for (const i of hits)
+        counts.set(i.severity, (counts.get(i.severity) || 0) + 1);
+      const breakdown = [...counts.entries()].sort((a, b) => (SEVERITY_RANK[b[0]] ?? 0) - (SEVERITY_RANK[a[0]] ?? 0)).map(([severity, n]) => `${n} ${severity}`).join(", ");
+      const noun = options.newOnly ? "new issue" : "issue";
+      failures.push(`${hits.length} ${noun}${hits.length === 1 ? "" : "s"} at or above fail-on ${spec.failOn} (${breakdown})`);
     }
   }
-  return Array.from(links);
+  const budgets = spec.budgets.map((b) => ({ ...b, actual: scores[b.category] ?? 0 }));
+  for (const b of budgets) {
+    if (b.actual < b.min) {
+      failures.push(b.category === "overall" ? `score ${b.actual} is below the minimum ${b.min}` : `${b.category} score ${b.actual} is below its minimum ${b.min}`);
+    }
+  }
+  const overall = spec.budgets.find((b) => b.category === "overall");
+  return { failOn: spec.failOn, minScore: overall?.min, budgets, passed: failures.length === 0, failures };
 }
-function normalizeUrl3(url) {
-  url.hash = "";
-  const paramsToRemove = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "ref", "source"];
-  for (const param of paramsToRemove) {
-    url.searchParams.delete(param);
+
+// src/audit/ci/baseline.ts
+function pagePath(url) {
+  try {
+    const u = new URL(url);
+    return (u.pathname.replace(/\/+$/, "") || "/") + u.search;
+  } catch {
+    return url;
   }
-  let pathname = url.pathname;
-  if (pathname.length > 1 && pathname.endsWith("/")) {
-    pathname = pathname.slice(0, -1);
+}
+var keyOf = (code, url) => url === void 0 ? code : `${code} ${pagePath(url)}`;
+function issueKeys(issue) {
+  const urls = issue.affectedUrls ?? [];
+  return urls.length ? urls.map((u) => keyOf(issue.code, u)) : [keyOf(issue.code)];
+}
+function diffIssues(before, after) {
+  const beforeKeys = new Set(before.flatMap(issueKeys));
+  const afterKeys = new Set(after.flatMap(issueKeys));
+  let unchanged = 0;
+  for (const key of afterKeys)
+    if (beforeKeys.has(key))
+      unchanged++;
+  return { added: onlyIn(after, beforeKeys), fixed: onlyIn(before, afterKeys), unchanged };
+}
+function onlyIn(issues, known) {
+  const out = [];
+  for (const issue of issues) {
+    const urls = issue.affectedUrls ?? [];
+    if (urls.length === 0) {
+      if (!known.has(keyOf(issue.code)))
+        out.push({ ...issue });
+      continue;
+    }
+    const fresh = urls.filter((u) => !known.has(keyOf(issue.code, u)));
+    if (fresh.length)
+      out.push({ ...issue, affectedUrls: fresh });
   }
-  if (pathname === "" || pathname === "/") {
+  return out;
+}
+function readBaseline(doc) {
+  if (!doc || typeof doc !== "object" || Array.isArray(doc))
+    return { error: "not a JSON object" };
+  const d = doc;
+  if (!Array.isArray(d.issues))
+    return { error: 'no "issues" array (save one with: rankcli audit -o json > baseline.json)' };
+  const issues = d.issues.filter((i) => i && typeof i === "object" && typeof i.code === "string");
+  const scores = d.healthScores ?? d.healthScore;
+  const score = typeof d.score === "number" ? d.score : scores?.overall;
+  return {
+    issues,
+    score,
+    healthScores: scores && typeof scores === "object" ? scores : void 0,
+    url: typeof d.url === "string" ? d.url : void 0,
+    timestamp: typeof d.timestamp === "string" ? d.timestamp : void 0
+  };
+}
+
+// src/audit/ci/ignore.ts
+function globToRegExp(glob) {
+  let re = "";
+  for (let i = 0; i < glob.length; i++) {
+    const c = glob[i];
+    if (c === "*") {
+      if (glob[i + 1] === "*") {
+        re += ".*";
+        i++;
+      } else
+        re += "[^/]*";
+    } else if (c === "?") {
+      re += "[^/]";
+    } else {
+      re += c.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+    }
+  }
+  return new RegExp(`^${re}$`, "i");
+}
+function compileIgnoreRules(rules) {
+  const compiled = [];
+  const errors = [];
+  if (rules === void 0 || rules === null)
+    return { rules: compiled, errors };
+  if (!Array.isArray(rules))
+    return { rules: compiled, errors: ["ignore must be an array of codes or { code, url } objects"] };
+  rules.forEach((rule, i) => {
+    if (typeof rule === "string") {
+      if (!rule.trim())
+        errors.push(`ignore[${i}] is empty`);
+      else
+        compiled.push({ code: globToRegExp(rule.trim()), wholeUrl: false });
+      return;
+    }
+    if (!rule || typeof rule !== "object") {
+      errors.push(`ignore[${i}] must be a code or a { code, url } object`);
+      return;
+    }
+    const { code, url } = rule;
+    if (code !== void 0 && typeof code !== "string") {
+      errors.push(`ignore[${i}].code must be a string`);
+      return;
+    }
+    if (url !== void 0 && typeof url !== "string") {
+      errors.push(`ignore[${i}].url must be a string`);
+      return;
+    }
+    if (!code && !url) {
+      errors.push(`ignore[${i}] needs a code, a url, or both`);
+      return;
+    }
+    const wholeUrl = !!url && /^https?:\/\//i.test(url);
+    const pattern = url ? wholeUrl ? url.replace(/\/+$/, "") : url.startsWith("/") ? url : `/${url}` : void 0;
+    compiled.push({
+      code: code ? globToRegExp(code.trim()) : void 0,
+      url: pattern ? globToRegExp(pattern) : void 0,
+      wholeUrl
+    });
+  });
+  return { rules: compiled, errors };
+}
+function matchesUrl(rule, url) {
+  if (!rule.url)
+    return true;
+  return rule.wholeUrl ? rule.url.test(url.replace(/\/+$/, "")) : rule.url.test(pagePath(url).split("?")[0]);
+}
+function applyIgnores(issues, rules) {
+  const { rules: compiled } = compileIgnoreRules(rules);
+  if (compiled.length === 0)
+    return { issues, ignored: [] };
+  const kept = [];
+  const ignored = [];
+  for (const issue of issues) {
+    const forCode = compiled.filter((r) => !r.code || r.code.test(issue.code));
+    if (forCode.length === 0) {
+      kept.push(issue);
+      continue;
+    }
+    if (forCode.some((r) => !r.url)) {
+      ignored.push({ code: issue.code });
+      continue;
+    }
+    const urls = issue.affectedUrls ?? [];
+    if (urls.length === 0) {
+      kept.push(issue);
+      continue;
+    }
+    const remaining = urls.filter((u) => !forCode.some((r) => matchesUrl(r, u)));
+    if (remaining.length === urls.length)
+      kept.push(issue);
+    else if (remaining.length === 0)
+      ignored.push({ code: issue.code, urls });
+    else {
+      kept.push({ ...issue, affectedUrls: remaining });
+      ignored.push({ code: issue.code, urls: urls.filter((u) => !remaining.includes(u)) });
+    }
+  }
+  return { issues: kept, ignored };
+}
+
+// src/audit/ci/sarif.ts
+var LEVELS = {
+  critical: "error",
+  error: "error",
+  warning: "warning",
+  notice: "note",
+  info: "note"
+};
+function artifactUri(url) {
+  const path = pagePath(url).split("?")[0];
+  return path === "/" ? "index.html" : path.replace(/^\/+/, "");
+}
+function toSarif(input) {
+  const rules = [];
+  const ruleIndex = /* @__PURE__ */ new Map();
+  const results = [];
+  for (const issue of input.issues) {
+    let index = ruleIndex.get(issue.code);
+    if (index === void 0) {
+      index = rules.length;
+      ruleIndex.set(issue.code, index);
+      rules.push({
+        id: issue.code,
+        name: issue.code,
+        shortDescription: { text: issue.title },
+        fullDescription: { text: issue.description || issue.title },
+        help: { text: issue.howToFix || issue.description || issue.title },
+        defaultConfiguration: { level: LEVELS[issue.severity] ?? "warning" },
+        properties: { category: issue.category, impact: issue.impact, tags: ["seo", issue.category] }
+      });
+    }
+    const urls = issue.affectedUrls?.length ? issue.affectedUrls : [input.url];
+    for (const url of urls) {
+      results.push({
+        ruleId: issue.code,
+        ruleIndex: index,
+        level: LEVELS[issue.severity] ?? "warning",
+        message: { text: issue.howToFix ? `${issue.title}. ${issue.howToFix}` : issue.title },
+        locations: [{
+          physicalLocation: {
+            artifactLocation: { uri: input.fileFor?.(url) ?? artifactUri(url), uriBaseId: "%SRCROOT%" },
+            region: { startLine: 1, startColumn: 1 }
+          }
+        }],
+        partialFingerprints: { rankcli: `${issue.code} ${pagePath(url)}` },
+        ...input.baselineKeys && { baselineState: input.baselineKeys.has(`${issue.code} ${pagePath(url)}`) || input.baselineKeys.has(issue.code) ? "unchanged" : "new" },
+        properties: { url, severity: issue.severity, category: issue.category }
+      });
+    }
+  }
+  return {
+    $schema: "https://json.schemastore.org/sarif-2.1.0.json",
+    version: "2.1.0",
+    runs: [{
+      tool: {
+        driver: {
+          name: "RankCLI",
+          fullName: "RankCLI SEO and AI-search audit",
+          informationUri: "https://rankcli.dev",
+          ...input.toolVersion && { version: input.toolVersion },
+          rules
+        }
+      },
+      invocations: [{
+        executionSuccessful: !input.error,
+        ...input.exitCode !== void 0 && { exitCode: input.exitCode },
+        ...input.error && { toolExecutionNotifications: [{ level: "error", message: { text: input.error } }] }
+      }],
+      results,
+      properties: {
+        url: input.url,
+        ...input.score !== void 0 && { score: input.score },
+        ...input.healthScores && { healthScores: input.healthScores }
+      }
+    }]
+  };
+}
+
+// src/audit/ci/junit.ts
+function esc(text) {
+  return String(text ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "");
+}
+function toJUnit(input) {
+  const threshold = SEVERITY_RANK[input.failOn ?? "error"];
+  const seconds = ((input.durationMs ?? 0) / 1e3).toFixed(3);
+  const cases = [];
+  let failures = 0;
+  let errors = 0;
+  if (input.error) {
+    errors = 1;
+    cases.push(`    <testcase name="audit" classname="rankcli" time="${seconds}">
+      <error message="${esc(input.error)}">${esc(input.error)}</error>
+    </testcase>`);
+  }
+  for (const issue of input.issues) {
+    const name = `${issue.code}: ${issue.title}`;
+    const pages = issue.affectedUrls?.length ? `
+Pages:
+${issue.affectedUrls.map((u) => `  ${u}`).join("\n")}` : "";
+    const body = `${issue.severity}: ${issue.title}
+${issue.description}
+Fix: ${issue.howToFix}${pages}`;
+    if ((SEVERITY_RANK[issue.severity] ?? 0) >= threshold && (!input.isNew || input.isNew(issue))) {
+      failures++;
+      cases.push(`    <testcase name="${esc(name)}" classname="rankcli.${esc(issue.category)}" time="0">
+      <failure message="${esc(issue.title)}" type="${esc(issue.severity)}">${esc(body)}</failure>
+    </testcase>`);
+    } else {
+      cases.push(`    <testcase name="${esc(name)}" classname="rankcli.${esc(issue.category)}" time="0">
+      <system-out>${esc(body)}</system-out>
+    </testcase>`);
+    }
+  }
+  for (const failure of input.gateFailures ?? []) {
+    failures++;
+    cases.push(`    <testcase name="gate: ${esc(failure)}" classname="rankcli.gate" time="0">
+      <failure message="${esc(failure)}" type="gate">${esc(failure)}</failure>
+    </testcase>`);
+  }
+  if (input.checksPassed) {
+    cases.push(`    <testcase name="${input.checksPassed} checks passed" classname="rankcli" time="0"/>`);
+  }
+  const tests = cases.length;
+  const attrs = `name="rankcli audit ${esc(input.url)}" tests="${tests}" failures="${failures}" errors="${errors}" skipped="0" time="${seconds}"${input.timestamp ? ` timestamp="${esc(input.timestamp)}"` : ""}`;
+  const properties = [
+    `      <property name="url" value="${esc(input.url)}"/>`,
+    ...input.score !== void 0 ? [`      <property name="score" value="${input.score}"/>`] : []
+  ].join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="rankcli" tests="${tests}" failures="${failures}" errors="${errors}" time="${seconds}">
+  <testsuite ${attrs}>
+    <properties>
+${properties}
+    </properties>
+${cases.join("\n")}
+  </testsuite>
+</testsuites>
+`;
+}
+
+// src/audit/ci/request-defaults.ts
+var active = [];
+var originalFetch;
+function installRequestDefaults(defaults) {
+  const host = new URL(defaults.origin).hostname.toLowerCase();
+  const hosts = /* @__PURE__ */ new Set([host, host.startsWith("www.") ? host.slice(4) : `www.${host}`]);
+  const entry = { ...defaults, hosts };
+  active.push(entry);
+  if (!originalFetch) {
+    originalFetch = globalThis.fetch;
+    globalThis.fetch = fetchWithDefaults;
+  }
+  return () => {
+    const index = active.indexOf(entry);
+    if (index >= 0)
+      active.splice(index, 1);
+    if (active.length === 0 && originalFetch) {
+      globalThis.fetch = originalFetch;
+      originalFetch = void 0;
+    }
+  };
+}
+function fetchWithDefaults(input, init) {
+  const passthrough = originalFetch ?? globalThis.fetch;
+  const url = input instanceof Request ? input.url : String(input);
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return passthrough(input, init);
+  }
+  const match = active.find((a) => a.hosts.has(parsed.hostname.toLowerCase()));
+  if (!match)
+    return passthrough(input, init);
+  const headers = new Headers(input instanceof Request ? input.headers : void 0);
+  if (init?.headers)
+    new Headers(init.headers).forEach((value, key) => headers.set(key, value));
+  for (const [key, value] of Object.entries(match.headers ?? {}))
+    headers.set(key, value);
+  let target = url;
+  if (match.rewriteTo) {
+    const to = new URL(match.rewriteTo);
+    parsed.protocol = to.protocol;
+    parsed.host = to.host;
+    target = parsed.toString();
+  }
+  if (input instanceof Request) {
+    const request = new Request(target, {
+      method: input.method,
+      redirect: input.redirect,
+      signal: input.signal,
+      ...init,
+      headers
+    });
+    return passthrough(request);
+  }
+  return passthrough(target, { ...init, headers });
+}
+
+// src/audit/discovery/sitemap.ts
+var MAX_CHILD_SITEMAPS = 5;
+var MAX_SITEMAP_BYTES = 2 * 1024 * 1024;
+async function fetchText(url, timeout, maxBytes) {
+  try {
+    const response = await httpGet(url, { timeout, validateStatus: () => true, maxBytes });
+    if (response.status !== 200)
+      return null;
+    const body = typeof response.data === "string" ? response.data : "";
+    if (looksLikeHtmlFallback(body, response.headers["content-type"]))
+      return null;
+    return body;
+  } catch {
     return null;
   }
-  return `${url.protocol}//${url.hostname}${pathname}${url.search}`;
 }
-function calculatePriority(url) {
-  try {
-    const pathname = new URL(url).pathname;
-    for (const pattern of HIGH_PRIORITY_PATTERNS) {
-      if (pattern.test(pathname)) {
-        return 9;
-      }
-    }
-    for (const pattern of MEDIUM_PRIORITY_PATTERNS) {
-      if (pattern.test(pathname)) {
-        return 6;
-      }
-    }
-    const depth = (pathname.match(/\//g) || []).length;
-    if (depth >= 3) {
-      return 2;
-    }
-    if (depth === 2) {
-      return 4;
-    }
-    return 5;
-  } catch {
-    return 1;
-  }
-}
-function discoverPagesFromLinks(baseUrl, html, maxPages = 5) {
-  const links = extractLinks2(html, baseUrl);
-  const pages = links.map((url) => ({
-    url,
-    source: "internal-link",
-    priority: calculatePriority(url)
-  }));
-  pages.sort((a, b) => b.priority - a.priority);
-  return pages.slice(0, maxPages);
-}
-function parseSitemap(xml, baseUrl) {
-  const pages = [];
-  const base = new URL(baseUrl);
-  const locRegex = /<loc>([^<]+)<\/loc>/gi;
-  let match;
-  while ((match = locRegex.exec(xml)) !== null) {
+async function sitemapsFromRobots(base, timeout) {
+  const robots = await fetchText(new URL("/robots.txt", base).href, timeout, 64 * 1024);
+  if (!robots)
+    return [];
+  const urls = [];
+  for (const line of robots.split("\n")) {
+    const m = line.match(/^\s*sitemap:\s*(\S+)/i);
+    if (!m)
+      continue;
     try {
-      const url = new URL(match[1]);
-      if (url.hostname !== base.hostname) {
-        continue;
-      }
-      if (EXCLUDE_PATTERNS.some((pattern) => pattern.test(url.pathname))) {
-        continue;
-      }
-      pages.push({
-        url: url.href,
-        source: "sitemap",
-        priority: calculatePriority(url.href)
-      });
+      urls.push(new URL(m[1], base).href);
     } catch {
     }
   }
-  return pages;
+  return urls;
 }
-function mergePages(...pageSets) {
-  const seen = /* @__PURE__ */ new Map();
-  for (const pages of pageSets) {
-    for (const page of pages) {
-      const existing = seen.get(page.url);
-      if (!existing || page.priority > existing.priority) {
-        seen.set(page.url, page);
+function childSitemaps(xml) {
+  const urls = [];
+  const re = /<loc>\s*([^<\s]+)\s*<\/loc>/gi;
+  let m;
+  while ((m = re.exec(xml)) !== null)
+    urls.push(m[1]);
+  return urls;
+}
+var isSitemapXml = (xml) => /<urlset|<sitemapindex/i.test(xml);
+async function discoverPagesFromSitemap(baseUrl, maxPages, options = {}) {
+  const result = { pages: [], sitemapsRead: 0, urls: [], complete: false };
+  if (maxPages <= 0)
+    return result;
+  const timeout = options.timeout ?? 1e4;
+  const base = new URL(baseUrl);
+  const candidates = [
+    ...await sitemapsFromRobots(base, timeout),
+    new URL("/sitemap.xml", base).href,
+    new URL("/sitemap_index.xml", base).href,
+    new URL("/sitemap-index.xml", base).href
+  ];
+  const seen = /* @__PURE__ */ new Set();
+  let pages = [];
+  let truncated = false;
+  for (const candidate of candidates) {
+    if (seen.has(candidate))
+      continue;
+    seen.add(candidate);
+    const xml = await fetchText(candidate, timeout, MAX_SITEMAP_BYTES);
+    if (!xml || !isSitemapXml(xml))
+      continue;
+    result.sitemapsRead++;
+    result.sitemapUrl ??= candidate;
+    if (/<sitemapindex/i.test(xml)) {
+      const children = childSitemaps(xml);
+      if (children.length > MAX_CHILD_SITEMAPS)
+        truncated = true;
+      for (const child of children.slice(0, MAX_CHILD_SITEMAPS)) {
+        if (seen.has(child))
+          continue;
+        seen.add(child);
+        const childXml = await fetchText(child, timeout, MAX_SITEMAP_BYTES);
+        if (!childXml || !isSitemapXml(childXml))
+          continue;
+        result.sitemapsRead++;
+        pages = mergePages(pages, parseSitemap(childXml, baseUrl));
+        if (pages.length >= maxPages) {
+          truncated = true;
+          break;
+        }
       }
+    } else {
+      pages = mergePages(pages, parseSitemap(xml, baseUrl));
+    }
+    if (pages.length >= maxPages) {
+      truncated = true;
+      break;
     }
   }
-  return Array.from(seen.values()).sort((a, b) => b.priority - a.priority);
+  const pathOf = (url) => {
+    try {
+      const u = new URL(url);
+      return (u.pathname.replace(/\/+$/, "") || "/") + u.search;
+    } catch {
+      return url;
+    }
+  };
+  const root = pathOf(baseUrl);
+  const own = pages.filter((p) => pathOf(p.url) !== root);
+  result.pages = own.slice(0, maxPages);
+  result.urls = own.map((p) => p.url);
+  result.complete = result.sitemapsRead > 0 && !truncated;
+  return result;
 }
 
 // src/audit/discovery/repo-routes.ts
@@ -28398,11 +29240,11 @@ function discoverNextRoutes(files) {
     }
     const pagesMatch = file.match(/^pages\/(.+)\.(tsx?|jsx?)$/);
     if (pagesMatch) {
-      const pagePath = pagesMatch[1];
-      if (pagePath.startsWith("_") || pagePath.startsWith("api/")) {
+      const pagePath2 = pagesMatch[1];
+      if (pagePath2.startsWith("_") || pagePath2.startsWith("api/")) {
         continue;
       }
-      let path = "/" + pagePath;
+      let path = "/" + pagePath2;
       path = path.replace(/\/index$/, "");
       if (path === "")
         path = "/";
@@ -28535,7 +29377,11 @@ function routesToUrls(routes, baseUrl, maxUrls = 5) {
   });
 }
 export {
+  EMPTY_GATE,
+  FAIL_ON_LEVELS,
   ISSUE_DEFINITIONS,
+  SCORE_CATEGORIES,
+  SEVERITY_RANK,
   analyzeAICitationWorthiness,
   analyzeAIContentStructure,
   analyzeAnchorText,
@@ -28582,6 +29428,8 @@ export {
   analyzeTopicalClusters,
   analyzeTrackerBloat,
   analyzeUrlSafety,
+  applyIgnores,
+  artifactUri,
   assessReplacement,
   buildDeterministicFixes,
   buildFrameworkGuidance,
@@ -28592,25 +29440,41 @@ export {
   checkRedirects,
   checkRobotsTxt,
   checkSitemap,
+  compileIgnoreRules,
   describeConcerns,
   detectFramework3 as detectFramework,
   detectSoft404,
   detectTechnologies,
+  diffIssues,
   discoverPagesFromLinks,
+  discoverPagesFromSitemap,
   discoverRoutesFromRepo,
+  evaluateGate,
   findAppRoot,
   formatReport,
   generateSecretsDoc,
   generateWorkflow,
+  globToRegExp,
+  installRequestDefaults,
+  isGated,
+  issueKeys,
   loadRecipe,
+  mergeGateSpecs,
   mergePages,
+  pagePath,
+  parseBudgets,
+  parseFailOn,
   parseSitemap,
   premiumChecks,
+  readBaseline,
   routesToUrls,
   runAIReadinessChecks,
   runCrawlabilityChecks,
   runFullAudit,
+  scoreCategory,
   servedDir,
   suggestSchemaTypes,
+  toJUnit,
+  toSarif,
   urlSafetyDatabase
 };
