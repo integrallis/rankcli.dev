@@ -13,9 +13,15 @@ like a regression when nothing has changed:
 
 | Measurement | Score | What it is |
 |---|---|---|
-| `--max-pages 1` | **92** since 2026-11-03 on `@rankcli/cli@0.0.55` (89 from 2026-11-02 on 0.0.54, 0.0.53 and 0.0.52 alike; 90 from 2026-10-29 to 2026-11-02 on 0.0.52 and 0.0.51; 85 on 0.0.50; 80 on 0.0.49; 75 until 2026-10-14) | The homepage. **This is the number all launch copy cites.** |
+| `--max-pages 1` | **92** since 2026-11-03 on `@rankcli/cli@0.0.57`, 0.0.56 and 0.0.55 alike (89 from 2026-11-02 on 0.0.54, 0.0.53 and 0.0.52 alike; 90 from 2026-10-29 to 2026-11-02 on 0.0.52 and 0.0.51; 85 on 0.0.50; 80 on 0.0.49; 75 until 2026-10-14) | The homepage. **This is the number all launch copy cites.** |
 | default crawl (5 pages) | 72 before 2026-10-14; 8 pages score 80 after | Averages in weaker inner pages |
 | SEO gate CI run | 81 (last checked 2026-10-02) | The published Action's own scope |
+
+**Re-verified 2026-11-03 on the published `@rankcli/cli@0.0.57`, from an empty directory:
+homepage 92/100, 0 errors, 3 warnings, 17 notices, AI Readiness 94, content 88, React; 310
+checks run, 307 passed.** Two notices fewer than 0.0.55 (`LOW_AI_CITATION_READINESS` and
+`NO_AGENT_EXPERIENCE_SURFACE`, both removed in 0.0.57), nothing new, the same three warnings;
+the overall score did not move, so the hero run recorded on 0.0.55 stands.
 
 **Re-verified 2026-11-03 on the published `@rankcli/cli@0.0.55`, from an empty directory:
 homepage 92/100, 0 errors, 3 warnings, 19 notices, AI Readiness 93, on-page 94, content 85,

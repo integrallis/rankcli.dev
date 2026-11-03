@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-11-03T03:51:33.652Z
+// Generated: 2026-11-03T16:23:38.468Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -9470,15 +9470,6 @@ Allow: /`
     impact: "Without an explicit rule, whether AI crawlers (and future citation opportunities in ChatGPT, Claude, Perplexity, etc.) can reach this site now depends on Cloudflare account-level bot-management defaults, not on this codebase \u2014 a silent, invisible-to-git failure mode.",
     howToFix: `Two ways to make your stance explicit, either works: (1) add a Content-Signal line to robots.txt - e.g. "Content-Signal: search=yes,ai-train=no,use=reference" - the format Cloudflare's AI Crawl Control update actually reads, or (2) add explicit User-agent rules for the search crawlers (OAI-SearchBot, Claude-SearchBot, PerplexityBot) and, separately, the training crawlers (GPTBot, ClaudeBot, CCBot, Google-Extended). Either way, confirm the matching allow/block posture in the Cloudflare dashboard under Bot Management \u2192 AI Crawl Control. If you'd rather charge than block, Cloudflare's Pay Per Crawl (AI Crawl Control \u2192 Payments tab) lets you set a per-crawl price instead of a flat allow/deny \u2014 worth a look if you get meaningful AI-crawler traffic.`
   },
-  NO_AGENT_EXPERIENCE_SURFACE: {
-    code: "NO_AGENT_EXPERIENCE_SURFACE",
-    severity: "notice",
-    category: "ai-readiness",
-    title: "No agent-facing discovery surface found",
-    description: "None of the emerging AI-agent discovery conventions were found: llms-full.txt, SKILL.md, a discoverable MCP server, or an OpenAPI spec. This is a genuinely new, low-adoption category as of 2026 \u2014 most sites have none of these yet \u2014 so this is an opportunity, not a compliance failure.",
-    impact: "AI agents (not just chatbots answering questions, but agents that browse and act on a user's behalf) increasingly prefer sites that expose machine-readable capabilities over ones that require scraping and guessing at HTML structure. Being an early, discoverable site in this space is a low-competition differentiator right now.",
-    howToFix: "Start with whichever fits your site: llms-full.txt (a single Markdown dump of your key content \u2014 measured as fetched roughly 2x more than plain llms.txt), a SKILL.md capability manifest, or an OpenAPI spec at /openapi.json if you already have an API. A discoverable MCP server is the highest-effort, highest-payoff option if your product has one to expose."
-  },
   HIGH_JS_RENDERING_RATIO: {
     code: "HIGH_JS_RENDERING_RATIO",
     severity: "warning",
@@ -13461,22 +13452,6 @@ function analyzePlatformPresence(html, url) {
       affectedUrls: [url]
     });
   }
-  if (!hasHighPriorityPlatforms && detectedPlatforms.length > 0) {
-    issues.push({
-      code: "NO_HIGH_PRIORITY_PLATFORMS",
-      severity: "notice",
-      category: "social",
-      title: "Missing high-priority platform links",
-      description: "No links to YouTube, TikTok, Twitter/X, LinkedIn, or Reddit detected.",
-      impact: "These platforms have the highest reach and impact for SEO diversification.",
-      howToFix: "Prioritize creating presence on YouTube, Twitter/X, and LinkedIn (using RICE framework).",
-      affectedUrls: [url],
-      details: {
-        currentPlatforms: detectedPlatforms,
-        recommendedPlatforms: highPriorityPlatforms
-      }
-    });
-  }
   if (schemaData.sameAsUrls.length === 0 && socialProfiles.length > 0) {
     issues.push({
       code: "NO_SCHEMA_SAMEAS",
@@ -14359,34 +14334,6 @@ function analyzeNavBoostSignals(html, url) {
   if (!dwellTimeFactors.hasRelatedContent) {
     recommendations.push("Add related content section to increase session duration");
   }
-  if (clickOptimization.estimatedCTRPotential === "low") {
-    issues.push({
-      code: "LOW_CTR_POTENTIAL",
-      severity: "warning",
-      category: "on-page",
-      title: "Title and meta description have low CTR potential",
-      description: "The title and meta description lack compelling elements that drive clicks.",
-      impact: "NavBoost uses click data as a ranking signal. Higher CTR improves rankings over time.",
-      howToFix: "Add power words (free, best, ultimate), numbers, or current year to increase CTR.",
-      affectedUrls: [url],
-      details: {
-        ctrPotential: clickOptimization.estimatedCTRPotential,
-        titleTruncated: clickOptimization.titleTruncated
-      }
-    });
-  }
-  if (bounceRiskFactors.hasPopupRisk) {
-    issues.push({
-      code: "POPUP_BOUNCE_RISK",
-      severity: "notice",
-      category: "content",
-      title: "Popup/modal detected - potential bounce risk",
-      description: "Popups detected that may cause visitors to leave immediately.",
-      impact: "Intrusive interstitials increase bounce rate and hurt NavBoost signals.",
-      howToFix: "Delay popups by 30+ seconds, or use exit-intent only. Avoid fullscreen overlays.",
-      affectedUrls: [url]
-    });
-  }
   if (dwellTimeFactors.contentDepth === "thin" && dwellTimeFactors.estimatedReadTime < 3) {
     issues.push({
       code: "LOW_DWELL_TIME_CONTENT",
@@ -14961,26 +14908,6 @@ function analyzeFreshnessSignals(html, url) {
       impact: "Readers and assistants both judge freshness from a visible date; cited pages are 25.7 percent newer than organic results (Ahrefs).",
       howToFix: "Display publish date and last updated date on the page.",
       affectedUrls: [url]
-    });
-  }
-  if (aiCitationOptimization.aiCitationReadiness === "low" && qdfRelevance.isLikelyQDFTopic) {
-    issues.push({
-      code: "LOW_AI_CITATION_READINESS",
-      severity: "notice",
-      category: "content",
-      title: "Low AI citation readiness for fresh content",
-      description: "This page lacks freshness signals that AI assistants prioritize.",
-      impact: "AI assistants cite content 25.7% fresher than organic results. Missing signals reduce citation odds.",
-      howToFix: "Add dateModified schema, visible update date, and current year mentions.",
-      affectedUrls: [url],
-      details: {
-        aiCitationReadiness: aiCitationOptimization.aiCitationReadiness,
-        missingSignals: [
-          !dateSignals.hasSchemaDateModified && "dateModified schema",
-          !freshnessIndicators.hasUpdateNotice && "visible update notice",
-          !freshnessIndicators.hasCurrentYearMention && "current year mention"
-        ].filter(Boolean)
-      }
     });
   }
   return {
@@ -15884,18 +15811,6 @@ function analyzeBrandMentionOptimization(html, url) {
   if (hasReviewLinks)
     brandScore += 5;
   brandScore = Math.min(100, Math.max(0, brandScore));
-  if (!hasUSP) {
-    issues.push({
-      code: "AI_NO_USP",
-      severity: "notice",
-      category: "ai-readiness",
-      title: "No unique selling proposition (USP) detected",
-      description: "AI needs clear differentiators to recommend your brand over competitors. No USP patterns found.",
-      impact: "AI may not distinguish your brand from competitors when making recommendations.",
-      howToFix: 'Add clear differentiators: "The only...", "Unlike competitors...", "Guaranteed...", specific numbers (e.g., "50% faster").',
-      affectedUrls: [url]
-    });
-  }
   const missingTopics = [];
   if (!hasPricingInfo)
     missingTopics.push("pricing");
@@ -15905,25 +15820,6 @@ function analyzeBrandMentionOptimization(html, url) {
     missingTopics.push("testimonials/reviews");
   if (!hasProofPoints)
     missingTopics.push("proof points/case studies");
-  if (!hasReviewLinks && !hasTestimonials) {
-    issues.push({
-      code: "AI_NO_REVIEW_INTEGRATION",
-      severity: "notice",
-      category: "ai-readiness",
-      title: "No review platform integration",
-      description: "No links to review platforms or testimonial sections found. AI uses review signals from multiple platforms for trust.",
-      impact: "Missing review diversity signals that AI uses for brand trust assessment.",
-      howToFix: "Link to your profiles on relevant review platforms (G2, Capterra, Trustpilot, etc.) and display testimonials with attribution.",
-      affectedUrls: [url],
-      details: {
-        relevantPlatforms: [
-          "B2B SaaS: G2, Capterra, TrustRadius",
-          "Local: Google Business, Yelp, BBB",
-          "Professional: Clutch, UpCity"
-        ]
-      }
-    });
-  }
   return {
     issues,
     data: {
@@ -16384,38 +16280,6 @@ function analyzeReviewEcosystem(html, url) {
   if (hasMediaMentions)
     reviewEcosystemScore += 2;
   reviewEcosystemScore = Math.min(100, Math.max(0, reviewEcosystemScore));
-  if (linkedPlatforms.length === 0 && embeddedPlatforms.length === 0) {
-    issues.push({
-      code: "AI_NO_REVIEW_PLATFORMS",
-      severity: "warning",
-      category: "ai-readiness",
-      title: "No review platform integration",
-      description: "No links or embeds from review platforms detected. AI uses review signals from multiple platforms to assess brand trust.",
-      impact: "Missing review diversity signals that AI uses when recommending brands.",
-      howToFix: "Link to your profiles on 2-3 relevant review platforms. Consider embedding review widgets for social proof.",
-      affectedUrls: [url],
-      details: {
-        suggestedPlatforms: {
-          "All businesses": ["Google Business", "Trustpilot", "BBB"],
-          "SaaS/Software": ["G2", "Capterra", "Product Hunt"],
-          "Professional services": ["Clutch", "UpCity"],
-          "Local services": ["Angi", "HomeAdvisor", "Yelp"]
-        }
-      }
-    });
-  }
-  if (testimonialCount === 0) {
-    issues.push({
-      code: "AI_NO_TESTIMONIALS",
-      severity: "notice",
-      category: "ai-readiness",
-      title: "No testimonials or reviews on page",
-      description: "No customer testimonials found on the page. AI looks for social proof when evaluating brand trustworthiness.",
-      impact: "Missing on-page social proof that strengthens brand authority.",
-      howToFix: "Add customer testimonials with: name attribution, company/title, and optionally photos. Use blockquote elements for semantic markup.",
-      affectedUrls: [url]
-    });
-  }
   if (testimonialCount > 0 && !hasAttribution) {
     issues.push({
       code: "AI_UNATTRIBUTED_TESTIMONIALS",
@@ -16444,24 +16308,6 @@ function analyzeReviewEcosystem(html, url) {
       impact: "Missing rich snippet opportunity and AI-readable review data.",
       howToFix: "Add AggregateRating schema with ratingValue, ratingCount, and bestRating. This enables star ratings in search results.",
       affectedUrls: [url]
-    });
-  }
-  if (reviewEcosystemScore < 40) {
-    issues.push({
-      code: "AI_WEAK_REVIEW_ECOSYSTEM",
-      severity: "warning",
-      category: "ai-readiness",
-      title: "Weak review ecosystem integration",
-      description: `Review ecosystem score: ${reviewEcosystemScore}/100. AI uses review diversity across platforms to assess brand trust.`,
-      impact: "Low review presence may result in AI recommending better-reviewed competitors.",
-      howToFix: "Build review diversity: 1) Link to review platforms, 2) Add testimonials with attribution, 3) Implement review schema, 4) Display trust badges.",
-      affectedUrls: [url],
-      details: {
-        reviewEcosystemScore,
-        linkedPlatforms,
-        testimonialCount,
-        hasAggregateRating
-      }
     });
   }
   return {
@@ -19539,13 +19385,6 @@ async function checkAgentExperience(baseUrl) {
   );
   const presentCount = signals.filter((s) => s.present).length;
   const score = Math.round(presentCount / signals.length * 100);
-  if (presentCount === 0) {
-    issues.push({
-      ...ISSUE_DEFINITIONS.NO_AGENT_EXPERIENCE_SURFACE,
-      affectedUrls: [baseUrl],
-      details: { checkedPaths: SIGNAL_PATHS.map((s) => s.path) }
-    });
-  }
   return { issues, data: { signals, score } };
 }
 
@@ -26736,18 +26575,6 @@ async function analyzeTrackingVerification(html, url) {
   };
   if (!hasGscVerification) {
     const dnsChecked = verification.dnsChecked;
-    issues.push({
-      code: "GSC_VERIFICATION_MISSING",
-      // A notice: a site verified by DNS, Google Analytics or Tag Manager leaves no trace here.
-      severity: "notice",
-      category: "on-page",
-      title: dnsChecked ? "Google Search Console verification not found" : "Google Search Console verification not visible in the HTML",
-      description: dnsChecked ? "No google-site-verification meta tag in the HTML and no google-site-verification TXT record on the domain. GSC provides essential data about your search performance." : "No google-site-verification meta tag in the HTML. The site may be verified through a DNS TXT record instead, which this run could not check. GSC provides essential data about your search performance.",
-      impact: "Missing critical insights into Google search visibility, impressions, and clicks.",
-      howToFix: dnsChecked ? "Verify the site in Google Search Console: add the meta tag to <head>, or a TXT record to the domain's DNS. Get it from search.google.com/search-console." : "If the site is not yet verified in Google Search Console, add the meta tag to <head> or a TXT record to the domain's DNS. Get it from search.google.com/search-console.",
-      affectedUrls: [url],
-      details: { dnsChecked }
-    });
   }
   if (!hasBingVerification) {
     const dnsChecked = verification.dnsChecked;
@@ -26852,8 +26679,7 @@ var REDUNDANT_WHEN_PRESENT = [
   },
   { keep: "NO_ORGANIZATION_SCHEMA", drop: ["ORGANIZATION_SCHEMA_MISSING"] },
   // No title, no H1: the findings about their wording are implied.
-  { keep: "TITLE_MISSING", drop: ["LOW_CTR_POTENTIAL", "NO_KEYWORDS_IN_TITLE", "TITLE_TOO_SHORT"] },
-  { keep: "META_DESC_MISSING", drop: ["LOW_CTR_POTENTIAL"] },
+  { keep: "TITLE_MISSING", drop: ["NO_KEYWORDS_IN_TITLE", "TITLE_TOO_SHORT"] },
   { keep: "H1_MISSING", drop: ["NO_VISIBLE_HEADLINE", "NO_KEYWORDS_IN_H1", "H1_MISSING_KEYWORD"] },
   // Client-side rendering, diagnosed once. CLIENT_SIDE_RENDERING carries the per-framework fix.
   {
@@ -26874,8 +26700,7 @@ var REDUNDANT_WHEN_PRESENT = [
   { keep: "THIN_CONTENT", drop: ["LOW_DWELL_TIME_CONTENT"] },
   { keep: "NO_INTERNAL_LINKS", drop: ["NO_CONTENT_INTERNAL_LINKS", "HIGH_ORPHAN_RISK", "LINKS_NO_INTERNAL"] },
   // No testimonials on the page, said once instead of six times.
-  { keep: "NO_SOCIAL_PROOF", drop: ["BOFU_NO_SOCIAL_PROOF", "AI_NO_TESTIMONIALS", "AI_NO_REVIEW_INTEGRATION", "AI_NO_REVIEW_PLATFORMS", "AI_WEAK_REVIEW_ECOSYSTEM"] },
-  { keep: "AI_NO_TESTIMONIALS", drop: ["AI_NO_REVIEW_INTEGRATION", "AI_NO_REVIEW_PLATFORMS", "AI_WEAK_REVIEW_ECOSYSTEM"] }
+  { keep: "NO_SOCIAL_PROOF", drop: ["BOFU_NO_SOCIAL_PROOF"] }
   // The brand-score composite restates the brand-definition finding it is built from.
 ];
 function dedupeIssues(issues) {
