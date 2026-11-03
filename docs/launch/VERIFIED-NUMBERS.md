@@ -13,9 +13,16 @@ like a regression when nothing has changed:
 
 | Measurement | Score | What it is |
 |---|---|---|
-| `--max-pages 1` | **92** since 2026-11-03 on `@rankcli/cli@0.0.57`, 0.0.56 and 0.0.55 alike (89 from 2026-11-02 on 0.0.54, 0.0.53 and 0.0.52 alike; 90 from 2026-10-29 to 2026-11-02 on 0.0.52 and 0.0.51; 85 on 0.0.50; 80 on 0.0.49; 75 until 2026-10-14) | The homepage. **This is the number all launch copy cites.** |
+| `--max-pages 1` | **93** since 2026-11-03 on `@rankcli/cli@0.0.58` (92 earlier that day on 0.0.57, 0.0.56 and 0.0.55; 89 from 2026-11-02 on 0.0.54, 0.0.53 and 0.0.52 alike; 90 from 2026-10-29 to 2026-11-02 on 0.0.52 and 0.0.51; 85 on 0.0.50; 80 on 0.0.49; 75 until 2026-10-14) | The homepage. **This is the number all launch copy cites.** |
 | default crawl (5 pages) | 72 before 2026-10-14; 8 pages score 80 after | Averages in weaker inner pages |
 | SEO gate CI run | 81 (last checked 2026-10-02) | The published Action's own scope |
+
+**Re-verified 2026-11-03 on the published `@rankcli/cli@0.0.58`, from an empty directory:
+homepage 93/100, 0 errors, 2 warnings, 17 notices, AI Readiness 94, performance 72, React;
+310 checks run, 308 passed.** The point gained is `MISSING_PRECONNECT` no longer firing for
+the lazy footer badge (0.0.58, rankcli.dev #30); performance 60 to 72, nothing new, the two
+warnings left are `AI_UNCITED_STATISTICS` and `RENDER_BLOCKING_RESOURCES`. The hero run was
+re-recorded on 0.0.58 and shows the same 93.
 
 **Re-verified 2026-11-03 on the published `@rankcli/cli@0.0.57`, from an empty directory:
 homepage 92/100, 0 errors, 3 warnings, 17 notices, AI Readiness 94, content 88, React; 310

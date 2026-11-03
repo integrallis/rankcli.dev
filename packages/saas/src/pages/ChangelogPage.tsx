@@ -7,6 +7,11 @@ import frameworks from '@/config/frameworks.json';
 
 const highlights = [
   {
+    title: 'v0.0.58: five findings from dogfooding, fixed',
+    description:
+      'Found by auditing a plain static site and reading the source behind each finding. An inline style block is no longer a render-blocking resource (the check had recommended inlining critical CSS and then counted it). A 401, 403, 405 or 429 from an external link is retried with a browser-like GET and, if still refused, is indeterminate rather than broken, so links to Medium stop being reported dead. /index.html is the homepage, so NAV_NOT_IN_HTML no longer reports zero links over ten static ones. The FAQ and plaintext-email recommendations now say what the checks accept. The auto-fixer writes a WebSite or WebPage from the page\'s own title and description, never a SoftwareApplication with a free Offer. A lazy-loaded image\'s origin no longer asks for a preconnect.',
+  },
+  {
     title: 'v0.0.57: the second pass over the always-on findings',
     description:
       'v0.0.55 took the audit from 56 codes per site to 42 on the npm corpus; this release takes the next tier, ten findings on a third to two thirds of sites with no evidence behind them: the testimonials and review-ecosystem heuristics, the "agent experience surface" notice, the freshness composite, the popup detector, the click-through estimate, Search Console verification by meta tag, the unique-selling-proposition and social-platform checks. The security headers, DMARC and SPF, structured data, the performance findings Lighthouse also reports and the llms.txt notice stay.',
@@ -68,7 +73,7 @@ export function ChangelogPage() {
     <div className="min-h-screen bg-background">
       <SEO
         title="Changelog"
-        description="What's new in RankCLI: v0.0.57 and v0.0.55 remove the 35 findings the npm corpus showed firing on most sites; v0.0.54 reads AI crawler access by bot class, catches streaming metadata and draws the link graph without JavaScript; v0.0.53 turns the audit into a CI gate with one rule syntax, baselines, SARIF and JUnit output and a config file; v0.0.52 runs every check in the CLI, the MCP server and the GitHub Action under the FSL-1.1-MIT license; agentic auto-fix, keyword rank tracking, GEO checks for AI search, the MCP server for AI assistants, and framework-specific fix recipes."
+        description="What's new in RankCLI: v0.0.58 fixes five findings from dogfooding; v0.0.57 and v0.0.55 remove the 35 findings the npm corpus showed firing on most sites; v0.0.54 reads AI crawler access by bot class, catches streaming metadata and draws the link graph without JavaScript; v0.0.53 turns the audit into a CI gate with one rule syntax, baselines, SARIF and JUnit output and a config file; v0.0.52 runs every check in the CLI, the MCP server and the GitHub Action under the FSL-1.1-MIT license; agentic auto-fix, keyword rank tracking, GEO checks for AI search, the MCP server for AI assistants, and framework-specific fix recipes."
         path="/changelog"
       />
       <Navbar />
