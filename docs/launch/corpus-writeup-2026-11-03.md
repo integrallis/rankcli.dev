@@ -72,6 +72,17 @@ sitemap URL with the same date, which is the build time and not the content's. G
 lastmod only while it proves accurate and ignores it once it does not, so those sitemaps
 carry no freshness signal at all.
 
+## What it changed here
+
+The run measured the tool as much as the sites. Across the 367 reports the audit printed 56
+codes per site on average, and 30 of those codes appeared on six in ten of the best-built
+documentation sites on the web. A notice every site gets carries no information, so 0.0.55
+removed 25 of them (the Google tag manager and analytics, Bing's webmaster tools, and the
+brand, entity, experience, engagement, snippet and dwell-time heuristics that had no evidence
+behind them), stopped reporting a missing breadcrumb on a homepage, and stopped asking for
+IndexNow on a site with no sitemap. The next weekly run is the first one taken with the
+shorter list; the numbers above are from the run that caused it.
+
 ## Check your own
 
 ```bash

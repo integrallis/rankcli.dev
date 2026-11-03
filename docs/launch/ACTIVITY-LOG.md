@@ -161,6 +161,12 @@ and the developer channels have produced no measurable visit.
 
 ### 2026-11-03
 
+- **The production end-to-end checks pass after the day's deploys** (`node
+  scripts/e2e-production.mjs`, 12 of 12: the free audit scores 92 on the 0.0.56 engine, the
+  edge functions refuse unauthenticated and forged calls, the CLI audits a live site and exits
+  3 on an unreachable one). The corpus write-up draft gained a section on what the run changed
+  in the tool itself (the 25 removed findings), so the piece stays true after 0.0.55. The
+  Monday corpus run builds the CLI from main, so it audits with the shorter list.
 - **astro-rankcli 0.1.0 and nuxt-rankcli 0.1.0 are on npm; the site docs for 0.0.54 to 0.0.56
   are live.** The plugin publish had failed twice with a 404 because the `NPM_TOKEN` secret was
   on this repository, not on integrallis/rankcli where `publish-plugins.yml` runs; the founder
