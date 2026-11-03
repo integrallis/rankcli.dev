@@ -7,6 +7,11 @@ import frameworks from '@/config/frameworks.json';
 
 const highlights = [
   {
+    title: 'v0.0.54: the AI checks say what the evidence says',
+    description:
+      'AI crawler access by bot class (search, AI search, user-triggered, training), read from robots.txt and fetched live as each bot, each finding worded for what blocking that class costs. A fetch as Googlebot catches Next.js streaming metadata that other agents never get. The site audit draws the link graph without JavaScript: clicks from the homepage, orphans, navigation missing from the HTML. The answer-shaped and freshness findings cite their studies; unsupported ones are gone. rankcli audit -o llm prints the report as an agent reads it. The AI Readiness score is stated for what it is: hygiene on evidence-backed levers, not a citation predictor.',
+  },
+  {
     title: 'v0.0.53: the audit as a CI gate',
     description:
       'One rule syntax for the gate in the CLI, in rankcli.config.json and in the GitHub Action (v1.2.0): error, warning or notice, score<80, score:aiReadiness<70. A committed baseline makes the severity rule count only new findings, so an existing site adopts the gate without first fixing every old finding; rankcli diff compares two saved reports. -o sarif feeds GitHub Code Scanning and -o junit test reporters. --dir audits the build directory before it is deployed, --header and --cookie reach protected previews, and the config file carries ignore rules and category budgets.',
@@ -53,7 +58,7 @@ export function ChangelogPage() {
     <div className="min-h-screen bg-background">
       <SEO
         title="Changelog"
-        description="What's new in RankCLI: v0.0.53 turns the audit into a CI gate with one rule syntax, baselines, SARIF and JUnit output and a config file; v0.0.52 runs every check in the CLI, the MCP server and the GitHub Action under the FSL-1.1-MIT license; agentic auto-fix, keyword rank tracking, GEO checks for AI search, the MCP server for AI assistants, and framework-specific fix recipes."
+        description="What's new in RankCLI: v0.0.54 reads AI crawler access by bot class, catches streaming metadata and draws the link graph without JavaScript; v0.0.53 turns the audit into a CI gate with one rule syntax, baselines, SARIF and JUnit output and a config file; v0.0.52 runs every check in the CLI, the MCP server and the GitHub Action under the FSL-1.1-MIT license; agentic auto-fix, keyword rank tracking, GEO checks for AI search, the MCP server for AI assistants, and framework-specific fix recipes."
         path="/changelog"
       />
       <Navbar />

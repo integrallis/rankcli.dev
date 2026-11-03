@@ -6,8 +6,8 @@
       "package": "astro-rankcli",
       "npm": "https://www.npmjs.com/package/astro-rankcli",
       "install": "npm install astro-rankcli",
-      "summary": "On astro build it writes sitemap.xml and robots.txt into the output unless public/ already provides them, then checks every built page and, with failOnError, fails the build on error-level issues. Astro 3 through 7.",
-      "snippet": "// astro.config.mjs\nimport { defineConfig } from 'astro/config';\nimport rankcli from 'astro-rankcli';\n\nexport default defineConfig({\n  integrations: [\n    rankcli({\n      siteUrl: 'https://example.com',\n      validate: { failOnError: true },\n    }),\n  ],\n});"
+      "summary": "On astro build it runs the full RankCLI audit on the output (the same 280+ checks as rankcli audit --dir dist), logs the score and every error and warning with its code, and fails the build on audit.failOn with the rules of --fail-on. It also writes sitemap.xml and robots.txt unless public/ already provides them and checks each page's basics. Astro 3 through 7.",
+      "snippet": "// astro.config.mjs\nimport { defineConfig } from 'astro/config';\nimport rankcli from 'astro-rankcli';\n\nexport default defineConfig({\n  integrations: [\n    rankcli({\n      siteUrl: 'https://example.com',\n      audit: { failOn: ['error', 'score<80'] },\n    }),\n  ],\n});"
     },
     {
       "slug": "nextjs",

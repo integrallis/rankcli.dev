@@ -339,7 +339,7 @@ function GettingStartedSection() {
             { name: 'Security', desc: 'HTTPS, headers, vulnerabilities' },
             { name: 'Social', desc: 'OG tags, Twitter cards' },
             { name: 'Structured Data', desc: 'Schema.org, JSON-LD' },
-            { name: 'AI Readiness', desc: 'LLM optimization, citations' },
+            { name: 'AI Readiness', desc: 'crawler access by bot class, freshness, answer-first structure; hygiene on the levers the citation evidence supports, not a citation predictor' },
             { name: 'Framework', desc: 'React, Next.js, Vue, etc.' },
           ].map((category) => (
             <div key={category.name} className="p-3 border rounded-lg">
@@ -442,28 +442,22 @@ function GEOSection() {
           AI Crawlers
         </h3>
         <p className="text-muted-foreground mb-4">
-          RankCLI tracks access for all major AI crawlers:
+          Four kinds of bot read a site, and blocking each costs something different. OpenAI documents GPTBot as training-only and says a site opted out of OAI-SearchBot is not shown in ChatGPT search answers; Anthropic documents the same split. RankCLI reads robots.txt and also fetches the page as each bot, so a block at the CDN edge shows up with the status the bot received, and each finding is worded for its class:
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
           {[
-            { name: 'GPTBot', company: 'OpenAI', desc: 'ChatGPT training & browsing' },
-            { name: 'ChatGPT-User', company: 'OpenAI', desc: 'ChatGPT browsing feature' },
-            { name: 'Claude-Web', company: 'Anthropic', desc: 'Claude web access' },
-            { name: 'PerplexityBot', company: 'Perplexity', desc: 'Perplexity AI search' },
-            { name: 'Google-Extended', company: 'Google', desc: 'Bard/Gemini training' },
-            { name: 'bingbot', company: 'Microsoft', desc: 'Bing Chat/Copilot' },
-            { name: 'Applebot-Extended', company: 'Apple', desc: 'Apple Intelligence' },
-            { name: 'Amazonbot', company: 'Amazon', desc: 'Alexa/Amazon AI' },
-            { name: 'meta-externalagent', company: 'Meta', desc: 'Meta AI training' },
-            { name: 'cohere-ai', company: 'Cohere', desc: 'Cohere training' },
-          ].map((crawler) => (
-            <div key={crawler.name} className="p-3 border rounded-lg">
-              <div className="flex items-center justify-between mb-1">
-                <h5 className="font-medium text-sm">{crawler.name}</h5>
-                <span className="text-xs bg-muted px-2 py-0.5 rounded">{crawler.company}</span>
+            { name: 'Search crawlers', bots: 'Googlebot, bingbot', desc: 'Blocking them costs the index that 88% of ChatGPT citations come from. An edge block is an error.' },
+            { name: 'AI search crawlers', bots: 'OAI-SearchBot, Claude-SearchBot, PerplexityBot', desc: "Blocking them takes the site out of that assistant's answers. A warning, in robots.txt or at the edge." },
+            { name: 'User-triggered fetchers', bots: 'ChatGPT-User, Claude-User, Perplexity-User', desc: 'They fetch one page because a user asked about it. Blocking them means the assistant cannot read a pasted page. A warning.' },
+            { name: 'Training crawlers', bots: 'GPTBot, ClaudeBot, CCBot, Google-Extended', desc: 'Model-training data only. Blocking them costs no visibility; reported as a notice so the choice is visible.' },
+          ].map((cls) => (
+            <div key={cls.name} className="p-3 border rounded-lg">
+              <div className="flex items-center justify-between mb-1 gap-2">
+                <h5 className="font-medium text-sm">{cls.name}</h5>
+                <span className="text-xs bg-muted px-2 py-0.5 rounded text-right">{cls.bots}</span>
               </div>
-              <p className="text-xs text-muted-foreground">{crawler.desc}</p>
+              <p className="text-xs text-muted-foreground">{cls.desc}</p>
             </div>
           ))}
         </div>
@@ -521,17 +515,16 @@ function GEOSection() {
 
         <div className="space-y-4">
           <div className="p-4 border rounded-lg">
-            <h4 className="font-medium mb-2">1. Allow AI Crawlers</h4>
+            <h4 className="font-medium mb-2">1. Allow the search crawlers and the user-triggered fetchers</h4>
             <p className="text-sm text-muted-foreground mb-2">
-              Update your robots.txt to allow AI bots:
+              An Allow in a bot's own group wins over a wildcard Disallow. Keep the training crawlers disallowed if that is your policy; it costs no visibility. A block at the CDN (Cloudflare's AI Crawl Control, a WAF rule) is not lifted by robots.txt: allow the Search class there too.
             </p>
-            <CodeBlock code={`User-agent: GPTBot
-Allow: /
-
-User-agent: ClaudeBot
-Allow: /
-
+            <CodeBlock code={`User-agent: OAI-SearchBot
+User-agent: Claude-SearchBot
 User-agent: PerplexityBot
+User-agent: ChatGPT-User
+User-agent: Claude-User
+User-agent: Perplexity-User
 Allow: /`} />
           </div>
 
@@ -835,7 +828,7 @@ rankcli whoami              Show current logged in user`}
 Options:
   -u, --url <url>           URL to audit (or the url in rankcli.config.json)
   --dir <path>              Audit a build directory (dist, out, build) served locally; --url names the site it is built for
-  -o, --output <format>     Output: console (default), json, sarif, junit
+  -o, --output <format>     Output: console (default), json, sarif, junit, llm
   --max-pages <n>           Pages to audit, the sitemap first (default: 5)
   --check-links             Check for broken internal/external links (slower)
   --fail-on <rules>         CI gate: error | warning | notice, score<80, score:aiReadiness<70 (comma-separated or repeated)
@@ -861,7 +854,7 @@ Options:
           <li><code>3</code>: no real audit: the site was unreachable, answered 4xx/5xx, or no page could be analyzed</li>
         </ul>
         <p className="text-muted-foreground mb-4">
-          The gates are opt-in: without them a completed audit exits 0 however many issues it finds. With -o json, stdout is always one JSON document (on failure too) carrying exitCode, timestamp, cliVersion, a per-page breakdown, where each page came from, the ignored findings and, when gates are set, a gate object with the reasons. -o sarif writes SARIF 2.1.0 for GitHub Code Scanning and -o junit JUnit XML for test reporters, each one document on stdout, on failure too.
+          The gates are opt-in: without them a completed audit exits 0 however many issues it finds. With -o json, stdout is always one JSON document (on failure too) carrying exitCode, timestamp, cliVersion, a per-page breakdown, where each page came from, the ignored findings and, when gates are set, a gate object with the reasons. -o sarif writes SARIF 2.1.0 for GitHub Code Scanning and -o junit JUnit XML for test reporters, each one document on stdout, on failure too. -o llm prints the report as an agent reads it: plain Markdown, every finding by code, the fix's first sentence on errors and warnings, in a few hundred tokens. The JSON also carries linkGraph (the site's links before any script runs: clicks from the homepage per page, unreachable pages, orphans once every sitemap page was audited) and notes.aiReadiness, which says what that score measures.
         </p>
         <h4 className="font-medium mt-6 mb-2">CI gates and baselines</h4>
         <p className="text-muted-foreground mb-4">
