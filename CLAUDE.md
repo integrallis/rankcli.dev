@@ -35,7 +35,12 @@ All credentials are in `.env` (read it for the key names).
 
 ## Commands
 
-CLI commands: see `rankcli --help` / `packages/cli`.
+CLI commands: see `rankcli --help`.
+
+**Where engine, CLI, MCP server, Action and plugin changes go: https://github.com/integrallis/rankcli**
+(public, FSL-1.1-MIT). The copies under `packages/` here are frozen since 2026-10-29 and leave
+with PR #13 (stage 3); a fix made here is lost at the next release unless it is also made
+there. The hosted product will take the engine from npm (`@rankcli/agent-runtime`).
 
 ```bash
 # SaaS
