@@ -191,6 +191,17 @@ and the developer channels have produced no measurable visit.
   fetcher 3, a search crawler 3; robots.txt disallows the AI search crawlers 3, the training
   crawlers 11; metadata streamed only to Googlebot 2; IndexNow 0; median score 70. nuxt-rankcli
   merged (rankcli #11, CI green with its own plugin job).
+- **The corpus's first use: plan item 2's trust leak, measured.** The audit printed 56 codes
+  per site on average, and 30 of them fired on 60 percent or more of the 367 best-built
+  documentation sites (INDEXNOW 100 percent, NO_BREADCRUMBS 98, AI_INCOMPLETE_BRAND_COVERAGE
+  95, BING_VERIFICATION_MISSING 92, NO_SNIPPET_BAIT_HEADERS 92, NO_RELATED_CONTENT 89, ...).
+  rankcli #12 removes twenty-five of them (vendor absence, content heuristics with no
+  evidence, the report's own list), conditions two (no breadcrumbs on the homepage, no
+  IndexNow finding without a sitemap) and keeps the security-header, email-authentication
+  and icon notices; 818 runtime tests pass. AI Readiness scores will rise by roughly the
+  notices removed; VERIFIED-NUMBERS gets re-checked at the next release. Also on the way:
+  deploy.yml no longer double-deploys the frontend and functions on a push (`a63e8f9`), and
+  the Nuxt guide on the docs branch (#14) shows nuxt-rankcli.
 - **v0.0.53 and Action v1.2.0 shipped.** The founder created the v0.0.53 release at 19:48 UTC
   and pushed the staged Action at 19:49. `release.yml` published `@rankcli/agent-runtime`
   0.0.41, `@rankcli/mcp-server` 0.0.26 and `@rankcli/cli` 0.0.53 (both pin ^0.0.41) under
