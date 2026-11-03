@@ -6,8 +6,8 @@
       "package": "astro-rankcli",
       "npm": "https://www.npmjs.com/package/astro-rankcli",
       "install": "npm install astro-rankcli",
-      "summary": "On astro build it writes sitemap.xml and robots.txt into the output unless public/ already provides them, then checks every built page and, with failOnError, fails the build on error-level issues. Astro 3 through 7.",
-      "snippet": "// astro.config.mjs\nimport { defineConfig } from 'astro/config';\nimport rankcli from 'astro-rankcli';\n\nexport default defineConfig({\n  integrations: [\n    rankcli({\n      siteUrl: 'https://example.com',\n      validate: { failOnError: true },\n    }),\n  ],\n});"
+      "summary": "On astro build it runs the full RankCLI audit on the output (the same 280+ checks as rankcli audit --dir dist), logs the score and every error and warning with its code, and fails the build on audit.failOn with the rules of --fail-on. It also writes sitemap.xml and robots.txt unless public/ already provides them and checks each page's basics. Astro 3 through 7.",
+      "snippet": "// astro.config.mjs\nimport { defineConfig } from 'astro/config';\nimport rankcli from 'astro-rankcli';\n\nexport default defineConfig({\n  integrations: [\n    rankcli({\n      siteUrl: 'https://example.com',\n      audit: { failOn: ['error', 'score<80'] },\n    }),\n  ],\n});"
     },
     {
       "slug": "nextjs",
@@ -16,6 +16,14 @@
       "install": "npm install next-rankcli",
       "summary": "A metadata generator for the App Router with a title template and canonical per path, plus sitemap and robots handlers for app/sitemap.ts and app/robots.ts. Next.js 13 through 16.",
       "snippet": "// lib/metadata.ts\nimport { createMetadataGenerator } from 'next-rankcli/metadata';\n\nexport const generateMetadata = createMetadataGenerator({\n  siteUrl: 'https://example.com',\n  siteName: 'My Site',\n  titleTemplate: '%s | My Site',\n});\n\n// app/about/page.tsx\nexport const metadata = generateMetadata({\n  title: 'About Us',\n  description: 'Learn about our company',\n  path: '/about',\n});"
+    },
+    {
+      "slug": "nuxt",
+      "package": "nuxt-rankcli",
+      "npm": "https://www.npmjs.com/package/nuxt-rankcli",
+      "install": "npm install -D nuxt-rankcli",
+      "summary": "After nuxi generate it serves .output/public the way a static host would and runs the full RankCLI audit on it (the same 280+ checks as rankcli audit --dir), logs the score and every error and warning with its code, and fails the build on failOn with the rules of --fail-on. A server build gets a one-line pointer to the deploy command instead. Nuxt 3 and 4.",
+      "snippet": "// nuxt.config.ts\nexport default defineNuxtConfig({\n  modules: ['nuxt-rankcli'],\n  rankcli: {\n    siteUrl: 'https://example.com',\n    failOn: ['error', 'score<80'],\n  },\n});"
     }
   ]
 }
