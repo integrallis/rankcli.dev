@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useEffect, useMemo, useState } from 'react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
@@ -55,6 +56,10 @@ export function DataNpmSitesPage() {
           <a className="underline" href={CORPUS_README_URL} target="_blank" rel="noopener">
             how the corpus is built
           </a>
+          . What the first run showed, in prose:{' '}
+          <Link className="underline" to="/blog/what-the-sites-behind-the-400-most-popular-npm-packages-do">
+            the write-up
+          </Link>
           .
         </p>
 
