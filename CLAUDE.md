@@ -12,7 +12,7 @@ Website: https://rankcli.dev
 
 ## Current State
 
-**Status**: MVP development - SaaS platform with CLI (see `packages/` for the monorepo layout)
+**Status**: MVP development. This repository is the hosted product (`packages/saas`, `packages/audit-worker`, `packages/vscode-extension`); the CLI, engine, MCP server, Action and plugins are published from https://github.com/integrallis/rankcli
 
 ## Test Site: animerm.ai
 
@@ -35,12 +35,10 @@ All credentials are in `.env` (read it for the key names).
 
 ## Commands
 
-CLI commands: see `rankcli --help`.
-
-**Where engine, CLI, MCP server, Action and plugin changes go: https://github.com/integrallis/rankcli**
-(public, FSL-1.1-MIT). The copies under `packages/` here are frozen since 2026-10-29 and leave
-with PR #13 (stage 3); a fix made here is lost at the next release unless it is also made
-there. The hosted product will take the engine from npm (`@rankcli/agent-runtime`).
+CLI commands: see `rankcli --help`. The CLI, the audit engine, the MCP server, the GitHub Action
+and the framework plugins live in the public repository https://github.com/integrallis/rankcli
+(FSL-1.1-MIT); this repository holds the hosted product: the site, the edge functions, the audit
+worker and the VS Code extension.
 
 ```bash
 # SaaS
@@ -51,17 +49,21 @@ pnpm dev               # Start dev server on localhost:3005
 ./scripts/dev-deploy.sh   # Full dev setup (migrations, functions, server)
 ```
 
-### Running the CLI from this repo
+### The engine the hosted product runs
 
-A monorepo build has no injected production config (`inject-config` runs at publish), so
-cloud sync fails until you pass it:
+The edge functions import `packages/saas/supabase/functions/_shared/audit/engine.bundle.js`,
+a tracked copy of the Deno bundle that `@rankcli/agent-runtime` publishes; the audit worker
+depends on `@rankcli/agent-runtime` and `@rankcli/mcp-server` from npm. To move the hosted
+product to a new engine release:
 
 ```bash
-cd packages/agent-runtime && pnpm build      # cli bundles this; dist/ is gitignored and
-                                             # goes stale, which makes CLI tests fail oddly
-cd ../cli && pnpm build:js
-RANKCLI_SUPABASE_URL=... RANKCLI_SUPABASE_ANON_KEY=... node dist/index.js audit -u <url>
+# bump @rankcli/agent-runtime in packages/saas/package.json and packages/audit-worker/package.json
+# (and @rankcli/mcp-server in the worker), then
+npx -y pnpm@8.15.0 install
+pnpm --filter @rankcli/saas sync:engine     # copies the bundle; commit it
 ```
+
+Engine, CLI, MCP server and Action changes go to https://github.com/integrallis/rankcli.
 
 ## Taglines
 

@@ -1,0 +1,12 @@
+# Build context for packages/audit-worker/Dockerfile (Fly remote build and local docker build)
+node_modules
+**/node_modules
+**/dist
+.git
+packages/saas
+packages/vscode-extension
+docs
+reports
+research_notes
+test_repos
+*.md

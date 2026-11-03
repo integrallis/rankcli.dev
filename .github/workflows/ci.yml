@@ -23,11 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       saas: ${{ steps.filter.outputs.saas }}
-      cli: ${{ steps.filter.outputs.cli }}
-      agent: ${{ steps.filter.outputs.agent }}
       plugins: ${{ steps.filter.outputs.plugins }}
-      action: ${{ steps.filter.outputs.action }}
-      mcp: ${{ steps.filter.outputs.mcp }}
     steps:
       - uses: actions/checkout@v7
 
@@ -37,19 +33,8 @@ jobs:
           filters: |
             saas:
               - 'packages/saas/**'
-            cli:
-              - 'packages/cli/**'
-            agent:
-              - 'packages/agent-runtime/**'
             plugins:
-              - 'packages/vite-plugin/**'
-              - 'packages/next-plugin/**'
-              - 'packages/astro-plugin/**'
               - 'packages/vscode-extension/**'
-            action:
-              - 'packages/github-action/**'
-            mcp:
-              - 'packages/mcp-server/**'
 
   # ---------------------------------------------------------------------------
   # SaaS Frontend Tests
@@ -93,123 +78,6 @@ jobs:
           VITE_SUPABASE_ANON_KEY: placeholder-anon-key
 
   # ---------------------------------------------------------------------------
-  # Agent Runtime Tests
-  # ---------------------------------------------------------------------------
-  agent-tests:
-    name: Agent Runtime Tests
-    runs-on: ubuntu-latest
-    needs: changes
-    if: needs.changes.outputs.agent == 'true' || github.event_name == 'push'
-
-    defaults:
-      run:
-        working-directory: packages/agent-runtime
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build
-        run: pnpm build
-
-      - name: Run tests
-        run: pnpm test
-
-  # ---------------------------------------------------------------------------
-  # CLI Tests
-  # ---------------------------------------------------------------------------
-  cli-tests:
-    name: CLI Tests
-    runs-on: ubuntu-latest
-    needs: changes
-    if: needs.changes.outputs.cli == 'true' || needs.changes.outputs.agent == 'true' || github.event_name == 'push'
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build agent-runtime
-        working-directory: packages/agent-runtime
-        run: pnpm build
-
-      - name: Build CLI
-        working-directory: packages/cli
-        run: pnpm build:js
-
-      # The built CLI reports the codes of the 21 checks that used to be encrypted into a
-      # WASM binary (a stale binary once shipped for months with none of them).
-      - name: Verify every check runs
-        working-directory: packages/cli
-        run: node scripts/verify-premium-audit.js
-
-      - name: Run unit tests
-        working-directory: packages/cli
-        run: pnpm test
-
-  # ---------------------------------------------------------------------------
-  # Apple Intelligence helper: the CLI compiles packages/cli/src/lib/apple-ai-source.ts with
-  # swiftc on users' Macs, so a Foundation Models API mistake would only show up there. This
-  # compiles it the same way. (CI VMs have no Apple Intelligence; on a macOS 26 runner the
-  # helper's --check still has to answer with valid JSON.)
-  # ---------------------------------------------------------------------------
-  apple-ai-helper:
-    name: Apple Intelligence helper (Swift)
-    runs-on: macos-15
-    needs: changes
-    if: needs.changes.outputs.cli == 'true' || github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '22' # --experimental-strip-types, to read the .ts source
-
-      - name: Select Xcode 26 (macOS 26 SDK)
-        run: |
-          xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
-          if [ -z "$xcode" ]; then echo "No Xcode 26 on this runner:"; ls -d /Applications/Xcode*.app; exit 1; fi
-          sudo xcode-select -s "$xcode"
-          xcrun --sdk macosx --show-sdk-version
-
-      - name: Compile the helper as the CLI does
-        run: |
-          node --experimental-strip-types --input-type=module -e "
-            const { APPLE_AI_SWIFT_SOURCE } = await import('./packages/cli/src/lib/apple-ai-source.ts');
-            (await import('node:fs')).writeFileSync('main.swift', APPLE_AI_SWIFT_SOURCE);"
-          xcrun swiftc -O -target arm64-apple-macos26.0 main.swift -o rankcli-apple-ai
-          file rankcli-apple-ai
-
-      - name: Run --check (macOS 26 runners only)
-        run: |
-          major=$(sw_vers -productVersion | cut -d. -f1)
-          if [ "$major" -lt 26 ]; then echo "macOS $major: can't run a macOS 26 binary here; compile check only"; exit 0; fi
-          out=$(./rankcli-apple-ai --check)
-          echo "$out"
-          echo "$out" | node -e "JSON.parse(require('fs').readFileSync(0, 'utf8'))"
-
-  # ---------------------------------------------------------------------------
   # Plugin Tests
   # ---------------------------------------------------------------------------
   plugin-tests:
@@ -220,7 +88,7 @@ jobs:
 
     strategy:
       matrix:
-        plugin: [vite-plugin, next-plugin, astro-plugin, vscode-extension]
+        plugin: [vscode-extension]
 
     defaults:
       run:
@@ -245,101 +113,19 @@ jobs:
         run: pnpm test
 
   # ---------------------------------------------------------------------------
-  # GitHub Action + MCP server (both bundle agent-runtime, so build it first)
-  # ---------------------------------------------------------------------------
-  action-tests:
-    name: GitHub Action Tests
-    runs-on: ubuntu-latest
-    needs: changes
-    if: needs.changes.outputs.action == 'true' || needs.changes.outputs.agent == 'true' || github.event_name == 'push'
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build agent-runtime
-        working-directory: packages/agent-runtime
-        run: pnpm build
-
-      # The ncc bundle is what users run; dist.test.ts executes it the way
-      # the Actions runner does.
-      - name: Build action
-        working-directory: packages/github-action
-        run: pnpm build
-
-      - name: Type check
-        working-directory: packages/github-action
-        run: pnpm exec tsc --noEmit
-
-      - name: Run tests
-        working-directory: packages/github-action
-        run: pnpm test
-
-  mcp-tests:
-    name: MCP Server Tests
-    runs-on: ubuntu-latest
-    needs: changes
-    if: needs.changes.outputs.mcp == 'true' || needs.changes.outputs.agent == 'true' || github.event_name == 'push'
-
-    steps:
-      - uses: actions/checkout@v7
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build agent-runtime
-        working-directory: packages/agent-runtime
-        run: pnpm build
-
-      - name: Build
-        working-directory: packages/mcp-server
-        run: pnpm build
-
-      - name: Type check
-        working-directory: packages/mcp-server
-        run: pnpm exec tsc --noEmit
-
-      - name: Run tests
-        working-directory: packages/mcp-server
-        run: pnpm test
-
   # ---------------------------------------------------------------------------
   # Summary job that other workflows can depend on
   # ---------------------------------------------------------------------------
   ci-complete:
     name: CI Complete
     runs-on: ubuntu-latest
-    needs: [changes, saas-tests, agent-tests, cli-tests, plugin-tests, action-tests, mcp-tests]
+    needs: [changes, saas-tests, plugin-tests]
     if: always()
     steps:
       - name: Check results
         run: |
           if [[ "${{ needs.saas-tests.result }}" == "failure" ]] || \
-             [[ "${{ needs.agent-tests.result }}" == "failure" ]] || \
-             [[ "${{ needs.cli-tests.result }}" == "failure" ]] || \
-             [[ "${{ needs.plugin-tests.result }}" == "failure" ]] || \
-             [[ "${{ needs.action-tests.result }}" == "failure" ]] || \
-             [[ "${{ needs.mcp-tests.result }}" == "failure" ]]; then
+             [[ "${{ needs.plugin-tests.result }}" == "failure" ]]; then
             echo "CI failed"
             exit 1
           fi

@@ -233,15 +233,13 @@ fi
 # =============================================================================
 if [ "$SKIP_FUNCTIONS" = false ]; then
   echo ""
-  echo -e "${YELLOW}Step 6: Building Deno bundle for Edge Functions...${NC}"
-
-  cd "$REPO_ROOT/packages/agent-runtime"
-  pnpm build:deno 2>/dev/null || {
-    echo -e "${YELLOW}⚠ Deno bundle build failed, continuing anyway...${NC}"
-  }
-  echo -e "${GREEN}✓ Deno bundle built${NC}"
+  echo -e "${YELLOW}Step 6: Engine bundle for Edge Functions (from the published @rankcli/agent-runtime)...${NC}"
 
   cd "$REPO_ROOT/packages/saas"
+  pnpm sync:engine 2>/dev/null || {
+    echo -e "${YELLOW}⚠ Could not copy the engine bundle from @rankcli/agent-runtime; the tracked copy stays${NC}"
+  }
+  echo -e "${GREEN}✓ Engine bundle in place${NC}"
 fi
 
 # =============================================================================

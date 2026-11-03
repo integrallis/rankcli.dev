@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-11-02T21:23:59.144Z
+// Generated: 2026-11-02T19:51:55.802Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -11,7 +11,7 @@ if (typeof globalThis.Buffer === 'undefined') {
 }
 
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/identity.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/identity.js
 var ALIAS = Symbol.for("yaml.alias");
 var DOC = Symbol.for("yaml.document");
 var MAP = Symbol.for("yaml.map");
@@ -47,7 +47,7 @@ function isNode(node) {
 }
 var hasAnchor = (node) => (isScalar(node) || isCollection(node)) && !!node.anchor;
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/visit.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/visit.js
 var BREAK = Symbol("break visit");
 var SKIP = Symbol("skip children");
 var REMOVE = Symbol("remove node");
@@ -197,7 +197,7 @@ function replaceNode(key, path, node) {
   }
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/doc/directives.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/doc/directives.js
 var escapeChars = {
   "!": "%21",
   ",": "%2C",
@@ -360,7 +360,7 @@ var Directives = class _Directives {
 Directives.defaultYaml = { explicit: false, version: "1.2" };
 Directives.defaultTags = { "!!": "tag:yaml.org,2002:" };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/doc/anchors.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/doc/anchors.js
 function anchorIsValid(anchor) {
   if (/[\x00-\x19\s,[\]{}]/.test(anchor)) {
     const sa = JSON.stringify(anchor);
@@ -419,7 +419,7 @@ function createNodeAnchors(doc, prefix) {
   };
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/doc/applyReviver.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/doc/applyReviver.js
 function applyReviver(reviver, obj, key, val) {
   if (val && typeof val === "object") {
     if (Array.isArray(val)) {
@@ -463,7 +463,7 @@ function applyReviver(reviver, obj, key, val) {
   return reviver.call(obj, key, val);
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/toJS.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/toJS.js
 function toJS(value, arg, ctx) {
   if (Array.isArray(value))
     return value.map((v, i) => toJS(v, String(i), ctx));
@@ -486,7 +486,7 @@ function toJS(value, arg, ctx) {
   return value;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/Node.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/Node.js
 var NodeBase = class {
   constructor(type) {
     Object.defineProperty(this, NODE_TYPE, { value: type });
@@ -518,7 +518,7 @@ var NodeBase = class {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/Alias.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/Alias.js
 var Alias = class extends NodeBase {
   constructor(source) {
     super(ALIAS);
@@ -534,6 +534,8 @@ var Alias = class extends NodeBase {
    * instance of the `source` anchor before this node.
    */
   resolve(doc, ctx) {
+    if (ctx?.maxAliasCount === 0)
+      throw new ReferenceError("Alias resolution is disabled");
     let nodes;
     if (ctx?.aliasResolveCache) {
       nodes = ctx.aliasResolveCache;
@@ -555,36 +557,38 @@ var Alias = class extends NodeBase {
       if (node.anchor === this.source)
         found = node;
     }
+    if (found && ctx) {
+      const { anchors, doc: doc2, maxAliasCount } = ctx;
+      let data = anchors.get(found);
+      if (!data) {
+        toJS(found, null, ctx);
+        data = anchors.get(found);
+      }
+      if (data?.res === void 0) {
+        const msg = "This should not happen: Alias anchor was not resolved?";
+        throw new ReferenceError(msg);
+      }
+      if (maxAliasCount >= 0) {
+        data.count += 1;
+        if (data.aliasCount === 0)
+          data.aliasCount = getAliasCount(doc2, found, anchors);
+        if (data.count * data.aliasCount > maxAliasCount) {
+          const msg = "Excessive alias count indicates a resource exhaustion attack";
+          throw new ReferenceError(msg);
+        }
+      }
+    }
     return found;
   }
   toJSON(_arg, ctx) {
     if (!ctx)
       return { source: this.source };
-    const { anchors, doc, maxAliasCount } = ctx;
-    const source = this.resolve(doc, ctx);
+    const source = this.resolve(ctx.doc, ctx);
     if (!source) {
       const msg = `Unresolved alias (the anchor must be set before the alias): ${this.source}`;
       throw new ReferenceError(msg);
     }
-    let data = anchors.get(source);
-    if (!data) {
-      toJS(source, null, ctx);
-      data = anchors.get(source);
-    }
-    if (data?.res === void 0) {
-      const msg = "This should not happen: Alias anchor was not resolved?";
-      throw new ReferenceError(msg);
-    }
-    if (maxAliasCount >= 0) {
-      data.count += 1;
-      if (data.aliasCount === 0)
-        data.aliasCount = getAliasCount(doc, source, anchors);
-      if (data.count * data.aliasCount > maxAliasCount) {
-        const msg = "Excessive alias count indicates a resource exhaustion attack";
-        throw new ReferenceError(msg);
-      }
-    }
-    return data.res;
+    return ctx.anchors.get(source).res;
   }
   toString(ctx, _onComment, _onChompKeep) {
     const src = `*${this.source}`;
@@ -621,7 +625,7 @@ function getAliasCount(doc, node, anchors) {
   return 1;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/Scalar.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/Scalar.js
 var isScalarValue = (value) => !value || typeof value !== "function" && typeof value !== "object";
 var Scalar = class extends NodeBase {
   constructor(value) {
@@ -641,7 +645,7 @@ Scalar.PLAIN = "PLAIN";
 Scalar.QUOTE_DOUBLE = "QUOTE_DOUBLE";
 Scalar.QUOTE_SINGLE = "QUOTE_SINGLE";
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/doc/createNode.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/doc/createNode.js
 var defaultTagPrefix = "tag:yaml.org,2002:";
 function findTagObject(value, tagName, tags) {
   if (tagName) {
@@ -707,7 +711,7 @@ function createNode(value, tagName, ctx) {
   return node;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/Collection.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/Collection.js
 function collectionFromPath(schema4, path, value) {
   let v = value;
   for (let i = path.length - 1; i >= 0; --i) {
@@ -839,7 +843,7 @@ var Collection = class extends NodeBase {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/stringify/stringifyComment.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/stringify/stringifyComment.js
 var stringifyComment = (str) => str.replace(/^(?!$)(?: $)?/gm, "#");
 function indentComment(comment, indent) {
   if (/^\n+$/.test(comment))
@@ -848,7 +852,7 @@ function indentComment(comment, indent) {
 }
 var lineComment = (str, indent, comment) => str.endsWith("\n") ? indentComment(comment, indent) : comment.includes("\n") ? "\n" + indentComment(comment, indent) : (str.endsWith(" ") ? "" : " ") + comment;
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/stringify/foldFlowLines.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/stringify/foldFlowLines.js
 var FOLD_FLOW = "flow";
 var FOLD_BLOCK = "block";
 var FOLD_QUOTED = "quoted";
@@ -975,7 +979,7 @@ function consumeMoreIndentedLines(text, i, indent) {
   return end;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/stringify/stringifyString.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/stringify/stringifyString.js
 var getFoldOptions = (ctx, isBlock2) => ({
   indentAtStart: isBlock2 ? ctx.indent.length : ctx.indentAtStart,
   lineWidth: ctx.options.lineWidth,
@@ -1250,7 +1254,7 @@ function stringifyString(item, ctx, onComment, onChompKeep) {
   return res;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/stringify/stringify.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/stringify/stringify.js
 function createStringifyContext(doc, options) {
   const opt = Object.assign({
     blockQuote: true,
@@ -1268,6 +1272,7 @@ function createStringifyContext(doc, options) {
     nullStr: "null",
     simpleKeys: false,
     singleQuote: null,
+    trailingComma: false,
     trueStr: "true",
     verifyAliasOrder: true
   }, doc.schema.toStringOptions, options);
@@ -1362,7 +1367,7 @@ function stringify(item, ctx, onComment, onChompKeep) {
 ${ctx.indent}${str}`;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/stringify/stringifyPair.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/stringify/stringifyPair.js
 function stringifyPair({ key, value }, ctx, onComment, onChompKeep) {
   const { allNullValues, doc, indent, indentStep, options: { commentString, indentSeq, simpleKeys } } = ctx;
   let keyComment = isNode(key) && key.comment || null;
@@ -1485,14 +1490,14 @@ ${ctx.indent}`;
   return str;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/log.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/log.js
 function warn(logLevel, warning) {
   if (logLevel === "debug" || logLevel === "warn") {
     console.warn(warning);
   }
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/merge.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/merge.js
 var MERGE_KEY = "<<";
 var merge = {
   identify: (value) => value === MERGE_KEY || typeof value === "symbol" && value.description === MERGE_KEY,
@@ -1506,18 +1511,18 @@ var merge = {
 };
 var isMergeKey = (ctx, key) => (merge.identify(key) || isScalar(key) && (!key.type || key.type === Scalar.PLAIN) && merge.identify(key.value)) && ctx?.doc.schema.tags.some((tag) => tag.tag === merge.tag && tag.default);
 function addMergeToJSMap(ctx, map2, value) {
-  value = ctx && isAlias(value) ? value.resolve(ctx.doc) : value;
-  if (isSeq(value))
-    for (const it of value.items)
+  const source = resolveAliasValue(ctx, value);
+  if (isSeq(source))
+    for (const it of source.items)
       mergeValue(ctx, map2, it);
-  else if (Array.isArray(value))
-    for (const it of value)
+  else if (Array.isArray(source))
+    for (const it of source)
       mergeValue(ctx, map2, it);
   else
-    mergeValue(ctx, map2, value);
+    mergeValue(ctx, map2, source);
 }
 function mergeValue(ctx, map2, value) {
-  const source = ctx && isAlias(value) ? value.resolve(ctx.doc) : value;
+  const source = resolveAliasValue(ctx, value);
   if (!isMap(source))
     throw new Error("Merge sources must be maps or map aliases");
   const srcMap = source.toJSON(null, ctx, Map);
@@ -1538,8 +1543,11 @@ function mergeValue(ctx, map2, value) {
   }
   return map2;
 }
+function resolveAliasValue(ctx, value) {
+  return ctx && isAlias(value) ? value.resolve(ctx.doc, ctx) : value;
+}
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/addPairToJSMap.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/addPairToJSMap.js
 function addPairToJSMap(ctx, map2, { key, value }) {
   if (isNode(key) && key.addToJSMap)
     key.addToJSMap(ctx, map2, value);
@@ -1592,7 +1600,7 @@ function stringifyKey(key, jsKey, ctx) {
   return JSON.stringify(jsKey);
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/Pair.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/Pair.js
 function createPair(key, value, ctx) {
   const k = createNode(key, void 0, ctx);
   const v = createNode(value, void 0, ctx);
@@ -1621,7 +1629,7 @@ var Pair = class _Pair {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/stringify/stringifyCollection.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/stringify/stringifyCollection.js
 function stringifyCollection(collection, ctx, options) {
   const flow = ctx.inFlow ?? collection.flow;
   const stringify4 = flow ? stringifyFlowCollection : stringifyBlockCollection;
@@ -1718,12 +1726,19 @@ function stringifyFlowCollection({ items }, ctx, { flowChars, itemIndent }) {
     if (comment)
       reqNewline = true;
     let str = stringify(item, itemCtx, () => comment = null);
-    if (i < items.length - 1)
+    reqNewline || (reqNewline = lines.length > linesAtValue || str.includes("\n"));
+    if (i < items.length - 1) {
       str += ",";
+    } else if (ctx.options.trailingComma) {
+      if (ctx.options.lineWidth > 0) {
+        reqNewline || (reqNewline = lines.reduce((sum, line) => sum + line.length + 2, 2) + (str.length + 2) > ctx.options.lineWidth);
+      }
+      if (reqNewline) {
+        str += ",";
+      }
+    }
     if (comment)
       str += lineComment(str, itemIndent, commentString(comment));
-    if (!reqNewline && (lines.length > linesAtValue || str.includes("\n")))
-      reqNewline = true;
     lines.push(str);
     linesAtValue = lines.length;
   }
@@ -1756,7 +1771,7 @@ function addCommentBefore({ indent, options: { commentString } }, lines, comment
   }
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/YAMLMap.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/YAMLMap.js
 function findPair(items, key) {
   const k = isScalar(key) ? key.value : key;
   for (const it of items) {
@@ -1887,7 +1902,7 @@ var YAMLMap = class extends Collection {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/common/map.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/common/map.js
 var map = {
   collection: "map",
   default: true,
@@ -1901,7 +1916,7 @@ var map = {
   createNode: (schema4, obj, ctx) => YAMLMap.from(schema4, obj, ctx)
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/nodes/YAMLSeq.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/nodes/YAMLSeq.js
 var YAMLSeq = class extends Collection {
   static get tagName() {
     return "tag:yaml.org,2002:seq";
@@ -2005,7 +2020,7 @@ function asItemIndex(key) {
   return typeof idx === "number" && Number.isInteger(idx) && idx >= 0 ? idx : null;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/common/seq.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/common/seq.js
 var seq = {
   collection: "seq",
   default: true,
@@ -2019,7 +2034,7 @@ var seq = {
   createNode: (schema4, obj, ctx) => YAMLSeq.from(schema4, obj, ctx)
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/common/string.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/common/string.js
 var string = {
   identify: (value) => typeof value === "string",
   default: true,
@@ -2031,7 +2046,7 @@ var string = {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/common/null.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/common/null.js
 var nullTag = {
   identify: (value) => value == null,
   createNode: () => new Scalar(null),
@@ -2042,7 +2057,7 @@ var nullTag = {
   stringify: ({ source }, ctx) => typeof source === "string" && nullTag.test.test(source) ? source : ctx.options.nullStr
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/core/bool.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/core/bool.js
 var boolTag = {
   identify: (value) => typeof value === "boolean",
   default: true,
@@ -2059,7 +2074,7 @@ var boolTag = {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/stringify/stringifyNumber.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/stringify/stringifyNumber.js
 function stringifyNumber({ format, minFractionDigits, tag, value }) {
   if (typeof value === "bigint")
     return String(value);
@@ -2067,7 +2082,7 @@ function stringifyNumber({ format, minFractionDigits, tag, value }) {
   if (!isFinite(num))
     return isNaN(num) ? ".nan" : num < 0 ? "-.inf" : ".inf";
   let n = Object.is(value, -0) ? "-0" : JSON.stringify(value);
-  if (!format && minFractionDigits && (!tag || tag === "tag:yaml.org,2002:float") && /^\d/.test(n)) {
+  if (!format && minFractionDigits && (!tag || tag === "tag:yaml.org,2002:float") && /^-?\d/.test(n) && !n.includes("e")) {
     let i = n.indexOf(".");
     if (i < 0) {
       i = n.length;
@@ -2080,7 +2095,7 @@ function stringifyNumber({ format, minFractionDigits, tag, value }) {
   return n;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/core/float.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/core/float.js
 var floatNaN = {
   identify: (value) => typeof value === "number",
   default: true,
@@ -2116,7 +2131,7 @@ var float = {
   stringify: stringifyNumber
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/core/int.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/core/int.js
 var intIdentify = (value) => typeof value === "bigint" || Number.isInteger(value);
 var intResolve = (str, offset, radix, { intAsBigInt }) => intAsBigInt ? BigInt(str) : parseInt(str.substring(offset), radix);
 function intStringify(node, radix, prefix) {
@@ -2152,7 +2167,7 @@ var intHex = {
   stringify: (node) => intStringify(node, 16, "0x")
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/core/schema.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/core/schema.js
 var schema = [
   map,
   seq,
@@ -2167,7 +2182,7 @@ var schema = [
   float
 ];
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/json/schema.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/json/schema.js
 function intIdentify2(value) {
   return typeof value === "bigint" || Number.isInteger(value);
 }
@@ -2225,7 +2240,7 @@ var jsonError = {
 };
 var schema2 = [map, seq].concat(jsonScalars, jsonError);
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/binary.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/binary.js
 var binary = {
   identify: (value) => value instanceof Uint8Array,
   // Buffer inherits from Uint8Array
@@ -2278,7 +2293,7 @@ var binary = {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/pairs.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/pairs.js
 function resolvePairs(seq2, onError) {
   if (isSeq(seq2)) {
     for (let i = 0; i < seq2.items.length; ++i) {
@@ -2344,7 +2359,7 @@ var pairs = {
   createNode: createPairs
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/omap.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/omap.js
 var YAMLOMap = class _YAMLOMap extends YAMLSeq {
   constructor() {
     super();
@@ -2410,7 +2425,7 @@ var omap = {
   createNode: (schema4, iterable, ctx) => YAMLOMap.from(schema4, iterable, ctx)
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/bool.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/bool.js
 function boolStringify({ value, source }, ctx) {
   const boolObj = value ? trueTag : falseTag;
   if (source && boolObj.test.test(source))
@@ -2434,7 +2449,7 @@ var falseTag = {
   stringify: boolStringify
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/float.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/float.js
 var floatNaN2 = {
   identify: (value) => typeof value === "number",
   default: true,
@@ -2473,7 +2488,7 @@ var float2 = {
   stringify: stringifyNumber
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/int.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/int.js
 var intIdentify3 = (value) => typeof value === "bigint" || Number.isInteger(value);
 function intResolve2(str, offset, radix, { intAsBigInt }) {
   const sign = str[0];
@@ -2542,7 +2557,7 @@ var intHex2 = {
   stringify: (node) => intStringify2(node, 16, "0x")
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/set.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/set.js
 var YAMLSet = class _YAMLSet extends YAMLMap {
   constructor(schema4) {
     super(schema4);
@@ -2621,7 +2636,7 @@ var set = {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/timestamp.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/timestamp.js
 function parseSexagesimal(str, asBigInt) {
   const sign = str[0];
   const parts = sign === "-" || sign === "+" ? str.substring(1) : str;
@@ -2700,7 +2715,7 @@ var timestamp = {
   stringify: ({ value }) => value?.toISOString().replace(/(T00:00:00)?\.000Z$/, "") ?? ""
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/yaml-1.1/schema.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/yaml-1.1/schema.js
 var schema3 = [
   map,
   seq,
@@ -2725,7 +2740,7 @@ var schema3 = [
   timestamp
 ];
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/tags.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/tags.js
 var schemas = /* @__PURE__ */ new Map([
   ["core", schema],
   ["failsafe", [map, seq, string]],
@@ -2796,7 +2811,7 @@ function getTags(customTags, schemaName, addMergeTag) {
   }, []);
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/schema/Schema.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/schema/Schema.js
 var sortMapEntriesByKey = (a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0;
 var Schema = class _Schema {
   constructor({ compat, customTags, merge: merge2, resolveKnownTags, schema: schema4, sortMapEntries, toStringDefaults }) {
@@ -2817,7 +2832,7 @@ var Schema = class _Schema {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/stringify/stringifyDocument.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/stringify/stringifyDocument.js
 function stringifyDocument(doc, options) {
   const lines = [];
   let hasDirectives = options.directives === true;
@@ -2888,7 +2903,7 @@ function stringifyDocument(doc, options) {
   return lines.join("\n") + "\n";
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/doc/Document.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/doc/Document.js
 var Document = class _Document {
   constructor(value, replacer, options) {
     this.commentBefore = null;
@@ -3180,7 +3195,7 @@ function assertCollection(contents) {
   throw new Error("Expected a YAML collection as document contents");
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/errors.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/errors.js
 var YAMLError = class extends Error {
   constructor(name, pos, code, message) {
     super();
@@ -3236,7 +3251,7 @@ ${pointer}
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/resolve-props.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/resolve-props.js
 function resolveProps(tokens, { flow, indicator, next, offset, onError, parentIndent, startOnNewline }) {
   let spaceBefore = false;
   let atNewline = startOnNewline;
@@ -3363,7 +3378,7 @@ function resolveProps(tokens, { flow, indicator, next, offset, onError, parentIn
   };
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/util-contains-newline.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/util-contains-newline.js
 function containsNewline(key) {
   if (!key)
     return null;
@@ -3399,7 +3414,7 @@ function containsNewline(key) {
   }
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/util-flow-indent-check.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/util-flow-indent-check.js
 function flowIndentCheck(indent, fc, onError) {
   if (fc?.type === "flow-collection") {
     const end = fc.end[0];
@@ -3410,7 +3425,7 @@ function flowIndentCheck(indent, fc, onError) {
   }
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/util-map-includes.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/util-map-includes.js
 function mapIncludes(ctx, items, search) {
   const { uniqueKeys } = ctx.options;
   if (uniqueKeys === false)
@@ -3419,7 +3434,7 @@ function mapIncludes(ctx, items, search) {
   return items.some((pair) => isEqual(pair.key, search));
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/resolve-block-map.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/resolve-block-map.js
 var startColMsg = "All mapping items must start at the same column";
 function resolveBlockMap({ composeNode: composeNode2, composeEmptyNode: composeEmptyNode2 }, ctx, bm, onError, tag) {
   const NodeClass = tag?.nodeClass ?? YAMLMap;
@@ -3515,7 +3530,7 @@ function resolveBlockMap({ composeNode: composeNode2, composeEmptyNode: composeE
   return map2;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/resolve-block-seq.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/resolve-block-seq.js
 function resolveBlockSeq({ composeNode: composeNode2, composeEmptyNode: composeEmptyNode2 }, ctx, bs, onError, tag) {
   const NodeClass = tag?.nodeClass ?? YAMLSeq;
   const seq2 = new NodeClass(ctx.schema);
@@ -3557,7 +3572,7 @@ function resolveBlockSeq({ composeNode: composeNode2, composeEmptyNode: composeE
   return seq2;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/resolve-end.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/resolve-end.js
 function resolveEnd(end, offset, reqSpace, onError) {
   let comment = "";
   if (end) {
@@ -3594,7 +3609,7 @@ function resolveEnd(end, offset, reqSpace, onError) {
   return { comment, offset };
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/resolve-flow-collection.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/resolve-flow-collection.js
 var blockMsg = "Block collections are not allowed within flow collections";
 var isBlock = (token) => token && (token.type === "block-map" || token.type === "block-seq");
 function resolveFlowCollection({ composeNode: composeNode2, composeEmptyNode: composeEmptyNode2 }, ctx, fc, onError, tag) {
@@ -3775,7 +3790,7 @@ function resolveFlowCollection({ composeNode: composeNode2, composeEmptyNode: co
   return coll;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/compose-collection.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/compose-collection.js
 function resolveCollection(CN2, ctx, token, onError, tagName, tag) {
   const coll = token.type === "block-map" ? resolveBlockMap(CN2, ctx, token, onError, tag) : token.type === "block-seq" ? resolveBlockSeq(CN2, ctx, token, onError, tag) : resolveFlowCollection(CN2, ctx, token, onError, tag);
   const Coll = coll.constructor;
@@ -3827,7 +3842,7 @@ function composeCollection(CN2, ctx, token, props, onError) {
   return node;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/resolve-block-scalar.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/resolve-block-scalar.js
 function resolveBlockScalar(ctx, scalar, onError) {
   const start = scalar.offset;
   const header = parseBlockScalarHeader(scalar, ctx.options.strict, onError);
@@ -4001,7 +4016,7 @@ function splitLines(source) {
   return lines;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/resolve-flow-scalar.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/resolve-flow-scalar.js
 function resolveFlowScalar(scalar, strict, onError) {
   const { offset, type, source, end } = scalar;
   let _type;
@@ -4063,37 +4078,38 @@ function plainValue(source, onError) {
   }
   if (badChar)
     onError(0, "BAD_SCALAR_START", `Plain value cannot start with ${badChar}`);
-  return foldLines(source);
+  return unfoldLines(source);
 }
 function singleQuotedValue(source, onError) {
   if (source[source.length - 1] !== "'" || source.length === 1)
     onError(source.length, "MISSING_CHAR", "Missing closing 'quote");
-  return foldLines(source.slice(1, -1)).replace(/''/g, "'");
+  return unfoldLines(source.slice(1, -1)).replace(/''/g, "'");
 }
-function foldLines(source) {
-  let first, line;
-  try {
-    first = new RegExp("(.*?)(?<![ 	])[ 	]*\r?\n", "sy");
-    line = new RegExp("[ 	]*(.*?)(?:(?<![ 	])[ 	]*)?\r?\n", "sy");
-  } catch {
-    first = /(.*?)[ \t]*\r?\n/sy;
-    line = /[ \t]*(.*?)[ \t]*\r?\n/sy;
-  }
-  let match = first.exec(source);
+function unfoldLines(source) {
+  const line = /(.*?)\r?\n/sy;
+  let match = line.exec(source);
   if (!match)
     return source;
-  let res = match[1];
+  let trimEnd, trimBoth;
+  try {
+    trimEnd = new RegExp("(?<![ 	])[ 	]+$");
+    trimBoth = new RegExp("^[ 	]+|(?<![ 	])[ 	]+$", "g");
+  } catch {
+    trimEnd = /[ \t]+$/;
+    trimBoth = /^[ \t]+|[ \t]+$/g;
+  }
+  let res = match[1].replace(trimEnd, "");
   let sep = " ";
-  let pos = first.lastIndex;
-  line.lastIndex = pos;
+  let pos = line.lastIndex;
   while (match = line.exec(source)) {
-    if (match[1] === "") {
+    const lm = match[1].replace(trimBoth, "");
+    if (lm === "") {
       if (sep === "\n")
         res += sep;
       else
         sep = "\n";
     } else {
-      res += sep + match[1];
+      res += sep + lm;
       sep = " ";
     }
     pos = line.lastIndex;
@@ -4127,7 +4143,7 @@ function doubleQuotedValue(source, onError) {
         while (next === " " || next === "	")
           next = source[++i + 1];
       } else if (next === "x" || next === "u" || next === "U") {
-        const length = { x: 2, u: 4, U: 8 }[next];
+        const length = next === "x" ? 2 : next === "u" ? 4 : 8;
         res += parseCharCode(source, i + 1, length, onError);
         i += length;
       } else {
@@ -4202,15 +4218,16 @@ function parseCharCode(source, offset, length, onError) {
   const cc = source.substr(offset, length);
   const ok = cc.length === length && /^[0-9a-fA-F]+$/.test(cc);
   const code = ok ? parseInt(cc, 16) : NaN;
-  if (isNaN(code)) {
+  try {
+    return String.fromCodePoint(code);
+  } catch {
     const raw = source.substr(offset - 2, length + 2);
     onError(offset - 2, "BAD_DQ_ESCAPE", `Invalid escape sequence ${raw}`);
     return raw;
   }
-  return String.fromCodePoint(code);
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/compose-scalar.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/compose-scalar.js
 function composeScalar(ctx, token, tagToken, onError) {
   const { value, type, comment, range } = token.type === "block-scalar" ? resolveBlockScalar(ctx, token, onError) : resolveFlowScalar(token, ctx.options.strict, onError);
   const tagName = tagToken ? ctx.directives.tagName(tagToken.source, (msg) => onError(tagToken, "TAG_RESOLVE_FAILED", msg)) : null;
@@ -4281,7 +4298,7 @@ function findScalarTagByTest({ atKey, directives, schema: schema4 }, value, toke
   return tag;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/util-empty-scalar-position.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/util-empty-scalar-position.js
 function emptyScalarPosition(offset, before, pos) {
   if (before) {
     pos ?? (pos = before.length);
@@ -4305,7 +4322,7 @@ function emptyScalarPosition(offset, before, pos) {
   return offset;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/compose-node.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/compose-node.js
 var CN = { composeNode, composeEmptyNode };
 function composeNode(ctx, token, props, onError) {
   const atKey = ctx.atKey;
@@ -4329,17 +4346,22 @@ function composeNode(ctx, token, props, onError) {
     case "block-map":
     case "block-seq":
     case "flow-collection":
-      node = composeCollection(CN, ctx, token, props, onError);
-      if (anchor)
-        node.anchor = anchor.source.substring(1);
+      try {
+        node = composeCollection(CN, ctx, token, props, onError);
+        if (anchor)
+          node.anchor = anchor.source.substring(1);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        onError(token, "RESOURCE_EXHAUSTION", message);
+      }
       break;
     default: {
       const message = token.type === "error" ? token.message : `Unsupported token (type: ${token.type})`;
       onError(token, "UNEXPECTED_TOKEN", message);
-      node = composeEmptyNode(ctx, token.offset, void 0, null, props, onError);
       isSrcToken = false;
     }
   }
+  node ?? (node = composeEmptyNode(ctx, token.offset, void 0, null, props, onError));
   if (anchor && node.anchor === "")
     onError(anchor, "BAD_ALIAS", "Anchor cannot be an empty string");
   if (atKey && ctx.options.stringKeys && (!isScalar(node) || typeof node.value !== "string" || node.tag && node.tag !== "tag:yaml.org,2002:str")) {
@@ -4393,7 +4415,7 @@ function composeAlias({ options }, { offset, source, end }, onError) {
   return alias;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/compose-doc.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/compose-doc.js
 function composeDoc(options, directives, { offset, start, value, end }, onError) {
   const opts = Object.assign({ _directives: directives }, options);
   const doc = new Document(void 0, opts);
@@ -4426,7 +4448,7 @@ function composeDoc(options, directives, { offset, start, value, end }, onError)
   return doc;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/compose/composer.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/compose/composer.js
 function getErrorPos(src) {
   if (typeof src === "number")
     return [src, src + 1];
@@ -4500,8 +4522,10 @@ ${cb}` : comment;
       }
     }
     if (afterDoc) {
-      Array.prototype.push.apply(doc.errors, this.errors);
-      Array.prototype.push.apply(doc.warnings, this.warnings);
+      for (let i = 0; i < this.errors.length; ++i)
+        doc.errors.push(this.errors[i]);
+      for (let i = 0; i < this.warnings.length; ++i)
+        doc.warnings.push(this.warnings[i]);
     } else {
       doc.errors = this.errors;
       doc.warnings = this.warnings;
@@ -4617,7 +4641,7 @@ ${end.comment}` : end.comment;
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/parse/cst-visit.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/parse/cst-visit.js
 var BREAK2 = Symbol("break visit");
 var SKIP2 = Symbol("skip children");
 var REMOVE2 = Symbol("remove item");
@@ -4673,7 +4697,7 @@ function _visit(path, item, visitor) {
   return typeof ctrl === "function" ? ctrl(item, path) : ctrl;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/parse/cst.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/parse/cst.js
 var BOM = "\uFEFF";
 var DOCUMENT = "";
 var FLOW_END = "";
@@ -4738,7 +4762,7 @@ function tokenType(source) {
   return null;
 }
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/parse/lexer.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/parse/lexer.js
 function isEmpty(ch) {
   switch (ch) {
     case void 0:
@@ -4936,7 +4960,7 @@ var Lexer = class {
       const n = (yield* this.pushCount(1)) + (yield* this.pushSpaces(true));
       this.indentNext = this.indentValue + 1;
       this.indentValue += n;
-      return yield* this.parseBlockStart();
+      return "block-start";
     }
     return "doc";
   }
@@ -5233,26 +5257,37 @@ var Lexer = class {
     return 0;
   }
   *pushIndicators() {
-    switch (this.charAt(0)) {
-      case "!":
-        return (yield* this.pushTag()) + (yield* this.pushSpaces(true)) + (yield* this.pushIndicators());
-      case "&":
-        return (yield* this.pushUntil(isNotAnchorChar)) + (yield* this.pushSpaces(true)) + (yield* this.pushIndicators());
-      case "-":
-      case "?":
-      case ":": {
-        const inFlow = this.flowLevel > 0;
-        const ch1 = this.charAt(1);
-        if (isEmpty(ch1) || inFlow && flowIndicatorChars.has(ch1)) {
-          if (!inFlow)
-            this.indentNext = this.indentValue + 1;
-          else if (this.flowKey)
-            this.flowKey = false;
-          return (yield* this.pushCount(1)) + (yield* this.pushSpaces(true)) + (yield* this.pushIndicators());
+    let n = 0;
+    loop:
+      while (true) {
+        switch (this.charAt(0)) {
+          case "!":
+            n += yield* this.pushTag();
+            n += yield* this.pushSpaces(true);
+            continue loop;
+          case "&":
+            n += yield* this.pushUntil(isNotAnchorChar);
+            n += yield* this.pushSpaces(true);
+            continue loop;
+          case "-":
+          case "?":
+          case ":": {
+            const inFlow = this.flowLevel > 0;
+            const ch1 = this.charAt(1);
+            if (isEmpty(ch1) || inFlow && flowIndicatorChars.has(ch1)) {
+              if (!inFlow)
+                this.indentNext = this.indentValue + 1;
+              else if (this.flowKey)
+                this.flowKey = false;
+              n += yield* this.pushCount(1);
+              n += yield* this.pushSpaces(true);
+              continue loop;
+            }
+          }
         }
+        break loop;
       }
-    }
-    return 0;
+    return n;
   }
   *pushTag() {
     if (this.charAt(1) === "<") {
@@ -5306,7 +5341,7 @@ var Lexer = class {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/parse/line-counter.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/parse/line-counter.js
 var LineCounter = class {
   constructor() {
     this.lineStarts = [];
@@ -5331,7 +5366,7 @@ var LineCounter = class {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/parse/parser.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/parse/parser.js
 function includesToken(list, type) {
   for (let i = 0; i < list.length; ++i)
     if (list[i].type === type)
@@ -5396,6 +5431,13 @@ function getFirstKeyStartProps(prev) {
   }
   return prev.splice(i, prev.length);
 }
+function arrayPushArray(target, source) {
+  if (source.length < 1e5)
+    Array.prototype.push.apply(target, source);
+  else
+    for (let i = 0; i < source.length; ++i)
+      target.push(source[i]);
+}
 function fixFlowSeqItems(fc) {
   if (fc.start.type === "flow-seq-start") {
     for (const it of fc.items) {
@@ -5405,11 +5447,11 @@ function fixFlowSeqItems(fc) {
         delete it.key;
         if (isFlowToken(it.value)) {
           if (it.value.end)
-            Array.prototype.push.apply(it.value.end, it.sep);
+            arrayPushArray(it.value.end, it.sep);
           else
             it.value.end = it.sep;
         } else
-          Array.prototype.push.apply(it.start, it.sep);
+          arrayPushArray(it.start, it.sep);
         delete it.sep;
       }
     }
@@ -5760,7 +5802,7 @@ var Parser = class {
             const prev = map2.items[map2.items.length - 2];
             const end = prev?.value?.end;
             if (Array.isArray(end)) {
-              Array.prototype.push.apply(end, it.start);
+              arrayPushArray(end, it.start);
               end.push(this.sourceToken);
               map2.items.pop();
               return;
@@ -5948,7 +5990,7 @@ var Parser = class {
             const prev = seq2.items[seq2.items.length - 2];
             const end = prev?.value?.end;
             if (Array.isArray(end)) {
-              Array.prototype.push.apply(end, it.start);
+              arrayPushArray(end, it.start);
               end.push(this.sourceToken);
               seq2.items.pop();
               return;
@@ -6184,7 +6226,7 @@ var Parser = class {
   }
 };
 
-// ../../node_modules/.pnpm/yaml@2.8.2/node_modules/yaml/browser/dist/public-api.js
+// ../../node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/browser/dist/public-api.js
 function parseOptions(options) {
   const prettyErrors = options.prettyErrors !== false;
   const lineCounter = options.lineCounter || prettyErrors && new LineCounter() || null;
@@ -23297,8 +23339,7 @@ function analyzeImage($, img, index) {
   const srcLower = src.toLowerCase();
   const usesModernFormat = MODERN_FORMATS2.some((fmt) => srcLower.includes(fmt));
   const isInHeader = $img.closest('header, [class*="hero"], [class*="banner"], [class*="jumbotron"]').length > 0;
-  const isInFooter = $img.closest('footer, [role="contentinfo"]').length > 0;
-  const isAboveFold = !isInFooter && (index < 3 || isInHeader);
+  const isAboveFold = index < 3 || isInHeader;
   if (!hasExplicitDimensions) {
     issues.push("Missing width/height attributes (causes CLS)");
   }
@@ -26865,6 +26906,7 @@ function dedupeIssues(issues) {
 }
 
 // src/audit/engine.ts
+var HOST_ONLY_CODES = /* @__PURE__ */ new Set(["HSTS_MISSING", "UNCOMPRESSED", "NO_CACHE", "SLOW_TTFB", "SLOW_PAGE"]);
 function sameUrl(a, b) {
   try {
     const ua = new URL(a);
@@ -26876,7 +26918,7 @@ function sameUrl(a, b) {
   }
 }
 async function runFullAudit(options) {
-  const { checkBrokenLinks = false, checkHreflangUrls = false, checkCanonicalChain = false, cruxApiKey, checksLimit = 280, premiumChecks: premiumChecks2 = premiumChecks } = options;
+  const { checkBrokenLinks = false, checkHreflangUrls = false, checkCanonicalChain = false, cruxApiKey, checksLimit = 280, premiumChecks: premiumChecks2 = premiumChecks, staticBuild = false } = options;
   let url = options.url;
   const auditRoot = isSiteRoot(url) || sameUrl(url, options.auditRootUrl ?? url);
   const allIssues = [];
@@ -27118,12 +27160,16 @@ async function runFullAudit(options) {
   asyncChecks.push(safeAsync("Images", () => analyzeImages(html, url, checkBrokenLinks)));
   asyncChecks.push(performancePromise);
   asyncChecks.push(safeAsync("Security", () => analyzeSecurity(html, url, headers)));
-  asyncChecks.push(safeAsyncIssues("Certificate", async () => (await checkCertificate(url)).issues));
-  asyncChecks.push(safeAsync("Redirects", () => analyzeRedirects(url)));
+  if (!staticBuild) {
+    asyncChecks.push(safeAsyncIssues("Certificate", async () => (await checkCertificate(url)).issues));
+    asyncChecks.push(safeAsync("Redirects", () => analyzeRedirects(url)));
+  }
   asyncChecks.push(safeAsync("Robots Validation", () => validateRobotsTxt(url)));
   asyncChecks.push(safeAsync("Tracking Verification", () => analyzeTrackingVerification(html, url)));
-  asyncChecks.push(safeAsyncIssues("Crawler Access", async () => (await analyzeCrawlerAccess(url)).issues));
-  asyncChecks.push(safeAsync("Canonical Domain", () => analyzeCanonicalDomain(url)));
+  if (!staticBuild) {
+    asyncChecks.push(safeAsyncIssues("Crawler Access", async () => (await analyzeCrawlerAccess(url)).issues));
+    asyncChecks.push(safeAsync("Canonical Domain", () => analyzeCanonicalDomain(url)));
+  }
   asyncChecks.push(safeAsyncIssues("Framework Detection", async () => {
     const frameworkInfo = detectFramework({ html, headers });
     if (frameworkInfo.framework === "unknown")
@@ -27135,13 +27181,15 @@ async function runFullAudit(options) {
   if (runExtendedChecks) {
     asyncChecks.push(safeAsync("Hreflang", () => analyzeHreflang(html, url, { validateUrls: checkHreflangUrls })));
     asyncChecks.push(safeAsync("Canonical Advanced", () => analyzeCanonicalAdvanced(html, url, { checkChain: checkCanonicalChain })));
-    asyncChecks.push(safeAsync("Security Headers", () => analyzeSecurityHeaders(url)));
-    asyncChecks.push(safeAsync("Caching Headers", () => analyzeCachingHeaders(url, headers)));
+    if (!staticBuild) {
+      asyncChecks.push(safeAsync("Security Headers", () => analyzeSecurityHeaders(url)));
+      asyncChecks.push(safeAsync("Caching Headers", () => analyzeCachingHeaders(url, headers)));
+      asyncChecks.push(safeAsync("Redirect Chain", () => analyzeRedirectChain(url)));
+      asyncChecks.push(safeAsync("Directory Listing", () => analyzeDirectoryListing(url)));
+    }
     asyncChecks.push(safeAsync("HTML Compliance", () => analyzeHtmlCompliance(html, url, headers)));
-    asyncChecks.push(safeAsync("Redirect Chain", () => analyzeRedirectChain(url)));
     asyncChecks.push(safeAsync("Asset Minification", () => analyzeAssetMinification(html, url)));
     asyncChecks.push(safeAsync("Responsive CSS", () => analyzeResponsiveCss(html, url)));
-    asyncChecks.push(safeAsync("Directory Listing", () => analyzeDirectoryListing(url)));
   }
   if (runPremiumChecks) {
     asyncChecks.push(safeAsync("AI Readiness", () => runAIReadinessChecks(url, html)));
@@ -27191,7 +27239,7 @@ async function runFullAudit(options) {
   for (const issues2 of asyncResults) {
     allIssues.push(...issues2);
   }
-  const issues = dedupeIssues(allIssues);
+  const issues = dedupeIssues(staticBuild ? allIssues.filter((i) => !HOST_ONLY_CODES.has(i.code)) : allIssues);
   pages.push({
     url,
     statusCode,
@@ -27776,62 +27824,6 @@ var PLACEHOLDERS = [
   { pattern: /\blorem ipsum\b/i, what: "lorem ipsum" },
   { pattern: /\bXXX-XXX-XXXX\b/i, what: "an unfilled phone template" }
 ];
-var BUSINESS_FACT_KEYS = /* @__PURE__ */ new Set([
-  "telephone",
-  "faxNumber",
-  "email",
-  "streetAddress",
-  "postalCode",
-  "addressLocality",
-  "addressRegion",
-  "postOfficeBoxNumber",
-  "latitude",
-  "longitude",
-  "openingHours",
-  "priceRange",
-  "foundingDate",
-  "numberOfEmployees",
-  "ratingValue",
-  "reviewCount",
-  "ratingCount",
-  "sameAs",
-  "vatID",
-  "taxID",
-  "legalName",
-  "founder"
-]);
-function businessFacts(text) {
-  const facts = /* @__PURE__ */ new Set();
-  const visit3 = (node, key) => {
-    if (Array.isArray(node))
-      return node.forEach((v) => visit3(v, key));
-    if (node && typeof node === "object") {
-      for (const [k, v] of Object.entries(node))
-        visit3(v, k);
-      return;
-    }
-    if (key && BUSINESS_FACT_KEYS.has(key) && (typeof node === "string" || typeof node === "number")) {
-      const value = String(node).trim();
-      if (value)
-        facts.add(`${key}: ${value}`);
-    }
-  };
-  for (const m of text.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
-    try {
-      visit3(JSON.parse(m[1]));
-    } catch {
-    }
-  }
-  for (const m of text.matchAll(/href=["'](tel|mailto):([^"'?]+)/gi))
-    facts.add(`${m[1].toLowerCase()}: ${m[2].trim()}`);
-  return facts;
-}
-function inventedFacts(original, replacement) {
-  return [...businessFacts(replacement)].filter((fact) => {
-    const value = fact.slice(fact.indexOf(": ") + 2);
-    return !(original && original.includes(value));
-  });
-}
 function isSharedShell(html) {
   return /<div[^>]+id=["'](root|app|__next|__nuxt)["']/i.test(html);
 }
@@ -27843,9 +27835,6 @@ function assessReplacement(path, original, replacement) {
     if (hit && !(original && pattern.test(original))) {
       add("placeholder_content", `contains ${what} (${hit[0]})`);
     }
-  }
-  for (const fact of inventedFacts(original, replacement)) {
-    add("invented_business_fact", `adds ${fact}, which the original does not contain`);
   }
   if (/\.html?$/i.test(path) && isSharedShell(replacement)) {
     const addsCanonical = /<link[^>]+rel=["']canonical["']/i.test(replacement) && !(original && /<link[^>]+rel=["']canonical["']/i.test(original));
@@ -27996,36 +27985,33 @@ ${permissions}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Install RankCLI
-        run: npm install -g @rankcli/cli
+        uses: actions/checkout@v7
 ${sync ? `
-      # Fails fast if the secret is missing or the key was revoked, instead
-      # of silently auditing on the Free tier.
+      # Fails fast if the secret is missing, instead of silently auditing on the Free tier.
       - name: Verify RankCLI API key${keyEnv}
         run: |
           if [ -z "$RANKCLI_API_KEY" ]; then
             echo "::error::The RANKCLI_API_KEY secret is not set - see .github/SEO_SETUP.md"
             exit 1
           fi
-          rankcli login
 ` : ""}
-      # Exit codes: 0 ok, 1 a gate tripped, 2 bad invocation, 3 site
-      # unreachable or the URL answered 4xx/5xx. To fail this job on SEO
-      # regressions, add gates, e.g.: --fail-on error --min-score 80
+      # The same audit as \`rankcli audit\`, run by the published Action. To fail this job on
+      # SEO regressions, add gate rules, e.g.
+      #   fail-on: error,score<80
+      #   baseline: .rankcli/baseline.json   (only findings not in the baseline count)
+      # Audit a build instead of the live site: \`dir: dist\` with \`url\` naming the site.
       - name: Run SEO audit
-        id: audit${keyEnv}
-        run: rankcli audit --url "$SITE_URL" --output json > "$RUNNER_TEMP/audit-report.json"
+        id: audit
+        uses: integrallis/rankcli-action@v1
+        with:
+          url: \${{ env.SITE_URL }}
+          report-file: \${{ runner.temp }}/audit-report.json
+          comment-on-pr: regressions${sync ? `
+          api-key: \${{ secrets.RANKCLI_API_KEY }}` : ""}
 ${config.features.createIssues ? `
       - name: Create/update SEO report issue
         if: \${{ !cancelled() && steps.audit.outcome != 'skipped' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
@@ -28091,13 +28077,20 @@ ${config.features.createIssues ? `
               });
             }
 ` : ""}${autoFixPRs ? `
-      # Auto-fix needs a Solo+ plan (resolved from RANKCLI_API_KEY). It
-      # always writes JSON - appliedCount is 0 when there was nothing to fix
-      # or the plan doesn't include auto-fix.
+      # \`rankcli fix\` is a CLI command, so the CLI is installed for this step only. It always
+      # writes JSON - appliedCount is 0 when there was nothing to fix.
+      - name: Setup Node.js
+        if: \${{ !cancelled() && steps.audit.outcome != 'skipped' }}
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
       - name: Auto-fix issues
         id: autofix
         if: \${{ !cancelled() && steps.audit.outcome != 'skipped' }}${keyEnv}
-        run: rankcli fix --url "$SITE_URL" --auto --output json > "$RUNNER_TEMP/fixes.json"
+        run: |
+          npm install -g @rankcli/cli
+          rankcli fix --url "$SITE_URL" --auto --output json > "$RUNNER_TEMP/fixes.json"
 
       - name: Check if any fixes were applied
         id: fixes
@@ -28108,7 +28101,7 @@ ${config.features.createIssues ? `
 
       - name: Create PR with fixes
         if: \${{ !cancelled() && steps.fixes.outputs.applied != '' && steps.fixes.outputs.applied != '0' }}
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@v8
         with:
           token: \${{ secrets.GITHUB_TOKEN }}
           commit-message: 'fix(seo): automated SEO improvements'
@@ -28127,7 +28120,7 @@ ${config.features.createIssues ? `
 ` : ""}
       - name: Save report artifact
         if: \${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rankcli-report-\${{ github.run_number }}
           path: |
@@ -28180,6 +28173,492 @@ get auto-fix PRs (Solo plan or higher), re-run
 `;
   }
   return secrets;
+}
+
+// src/audit/ci/gate.ts
+var FAIL_ON_LEVELS = ["error", "warning", "notice"];
+var SEVERITY_RANK = { critical: 4, error: 3, warning: 2, notice: 1, info: 1 };
+var SCORE_CATEGORIES = [
+  "overall",
+  "crawlability",
+  "indexability",
+  "onPage",
+  "content",
+  "links",
+  "performance",
+  "security",
+  "aiReadiness",
+  "social",
+  "localSeo",
+  "accessibility"
+];
+var CATEGORY_ALIASES = {
+  overall: "overall",
+  crawlability: "crawlability",
+  indexability: "indexability",
+  onpage: "onPage",
+  "on-page": "onPage",
+  on_page: "onPage",
+  content: "content",
+  links: "links",
+  performance: "performance",
+  security: "security",
+  aireadiness: "aiReadiness",
+  "ai-readiness": "aiReadiness",
+  ai_readiness: "aiReadiness",
+  ai: "aiReadiness",
+  social: "social",
+  localseo: "localSeo",
+  "local-seo": "localSeo",
+  local_seo: "localSeo",
+  accessibility: "accessibility"
+};
+function scoreCategory(name) {
+  return CATEGORY_ALIASES[name.trim().toLowerCase()];
+}
+var EMPTY_GATE = { budgets: [] };
+var RULE_HELP = `${FAIL_ON_LEVELS.join(", ")}, score<N or score:<category><N`;
+function parseFailOn(rules) {
+  const spec = { budgets: [] };
+  const list = (Array.isArray(rules) ? rules : rules ? [rules] : []).flatMap((r) => String(r).split(",")).map((r) => r.trim()).filter(Boolean);
+  for (const rule of list) {
+    const lower = rule.toLowerCase();
+    if (FAIL_ON_LEVELS.includes(lower)) {
+      const level = lower;
+      if (!spec.failOn || SEVERITY_RANK[level] < SEVERITY_RANK[spec.failOn])
+        spec.failOn = level;
+      continue;
+    }
+    const m = lower.match(/^score(?::([a-z_-]+))?\s*<\s*(\d+(?:\.\d+)?)$/);
+    if (m) {
+      const category = m[1] ? scoreCategory(m[1]) : "overall";
+      if (!category)
+        return { spec, error: `Unknown score category "${m[1]}" in "${rule}" (use ${SCORE_CATEGORIES.join(", ")})` };
+      const min = Number(m[2]);
+      if (min < 0 || min > 100)
+        return { spec, error: `Invalid threshold in "${rule}" (use a number from 0 to 100)` };
+      addBudget(spec, { category, min });
+      continue;
+    }
+    return { spec, error: `Invalid rule "${rule}" (use ${RULE_HELP})` };
+  }
+  return { spec };
+}
+function parseBudgets(budgets) {
+  const spec = { budgets: [] };
+  if (budgets === void 0 || budgets === null)
+    return { spec };
+  if (typeof budgets !== "object" || Array.isArray(budgets))
+    return { spec, error: 'budgets must be an object such as { "overall": 80, "aiReadiness": 70 }' };
+  for (const [name, value] of Object.entries(budgets)) {
+    const category = scoreCategory(name);
+    if (!category)
+      return { spec, error: `Unknown score category "${name}" in budgets (use ${SCORE_CATEGORIES.join(", ")})` };
+    const min = Number(value);
+    if (typeof value !== "number" || !Number.isFinite(min) || min < 0 || min > 100) {
+      return { spec, error: `Invalid budget for "${name}": ${JSON.stringify(value)} (use a number from 0 to 100)` };
+    }
+    addBudget(spec, { category, min });
+  }
+  return { spec };
+}
+function mergeGateSpecs(...specs) {
+  const merged = { budgets: [] };
+  for (const spec of specs) {
+    if (spec.failOn && (!merged.failOn || SEVERITY_RANK[spec.failOn] < SEVERITY_RANK[merged.failOn]))
+      merged.failOn = spec.failOn;
+    for (const budget of spec.budgets)
+      addBudget(merged, budget);
+  }
+  return merged;
+}
+function addBudget(spec, budget) {
+  const existing = spec.budgets.find((b) => b.category === budget.category);
+  if (!existing)
+    spec.budgets.push({ ...budget });
+  else
+    existing.min = Math.max(existing.min, budget.min);
+}
+function isGated(spec) {
+  return spec.failOn !== void 0 || spec.budgets.length > 0;
+}
+function evaluateGate(spec, issues, scores, options = {}) {
+  const failures = [];
+  if (spec.failOn) {
+    const threshold = SEVERITY_RANK[spec.failOn];
+    const hits = issues.filter((i) => (SEVERITY_RANK[i.severity] ?? 0) >= threshold);
+    if (hits.length > 0) {
+      const counts = /* @__PURE__ */ new Map();
+      for (const i of hits)
+        counts.set(i.severity, (counts.get(i.severity) || 0) + 1);
+      const breakdown = [...counts.entries()].sort((a, b) => (SEVERITY_RANK[b[0]] ?? 0) - (SEVERITY_RANK[a[0]] ?? 0)).map(([severity, n]) => `${n} ${severity}`).join(", ");
+      const noun = options.newOnly ? "new issue" : "issue";
+      failures.push(`${hits.length} ${noun}${hits.length === 1 ? "" : "s"} at or above fail-on ${spec.failOn} (${breakdown})`);
+    }
+  }
+  const budgets = spec.budgets.map((b) => ({ ...b, actual: scores[b.category] ?? 0 }));
+  for (const b of budgets) {
+    if (b.actual < b.min) {
+      failures.push(b.category === "overall" ? `score ${b.actual} is below the minimum ${b.min}` : `${b.category} score ${b.actual} is below its minimum ${b.min}`);
+    }
+  }
+  const overall = spec.budgets.find((b) => b.category === "overall");
+  return { failOn: spec.failOn, minScore: overall?.min, budgets, passed: failures.length === 0, failures };
+}
+
+// src/audit/ci/baseline.ts
+function pagePath(url) {
+  try {
+    const u = new URL(url);
+    return (u.pathname.replace(/\/+$/, "") || "/") + u.search;
+  } catch {
+    return url;
+  }
+}
+var keyOf = (code, url) => url === void 0 ? code : `${code} ${pagePath(url)}`;
+function issueKeys(issue) {
+  const urls = issue.affectedUrls ?? [];
+  return urls.length ? urls.map((u) => keyOf(issue.code, u)) : [keyOf(issue.code)];
+}
+function diffIssues(before, after) {
+  const beforeKeys = new Set(before.flatMap(issueKeys));
+  const afterKeys = new Set(after.flatMap(issueKeys));
+  let unchanged = 0;
+  for (const key of afterKeys)
+    if (beforeKeys.has(key))
+      unchanged++;
+  return { added: onlyIn(after, beforeKeys), fixed: onlyIn(before, afterKeys), unchanged };
+}
+function onlyIn(issues, known) {
+  const out = [];
+  for (const issue of issues) {
+    const urls = issue.affectedUrls ?? [];
+    if (urls.length === 0) {
+      if (!known.has(keyOf(issue.code)))
+        out.push({ ...issue });
+      continue;
+    }
+    const fresh = urls.filter((u) => !known.has(keyOf(issue.code, u)));
+    if (fresh.length)
+      out.push({ ...issue, affectedUrls: fresh });
+  }
+  return out;
+}
+function readBaseline(doc) {
+  if (!doc || typeof doc !== "object" || Array.isArray(doc))
+    return { error: "not a JSON object" };
+  const d = doc;
+  if (!Array.isArray(d.issues))
+    return { error: 'no "issues" array (save one with: rankcli audit -o json > baseline.json)' };
+  const issues = d.issues.filter((i) => i && typeof i === "object" && typeof i.code === "string");
+  const scores = d.healthScores ?? d.healthScore;
+  const score = typeof d.score === "number" ? d.score : scores?.overall;
+  return {
+    issues,
+    score,
+    healthScores: scores && typeof scores === "object" ? scores : void 0,
+    url: typeof d.url === "string" ? d.url : void 0,
+    timestamp: typeof d.timestamp === "string" ? d.timestamp : void 0
+  };
+}
+
+// src/audit/ci/ignore.ts
+function globToRegExp(glob) {
+  let re = "";
+  for (let i = 0; i < glob.length; i++) {
+    const c = glob[i];
+    if (c === "*") {
+      if (glob[i + 1] === "*") {
+        re += ".*";
+        i++;
+      } else
+        re += "[^/]*";
+    } else if (c === "?") {
+      re += "[^/]";
+    } else {
+      re += c.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+    }
+  }
+  return new RegExp(`^${re}$`, "i");
+}
+function compileIgnoreRules(rules) {
+  const compiled = [];
+  const errors = [];
+  if (rules === void 0 || rules === null)
+    return { rules: compiled, errors };
+  if (!Array.isArray(rules))
+    return { rules: compiled, errors: ["ignore must be an array of codes or { code, url } objects"] };
+  rules.forEach((rule, i) => {
+    if (typeof rule === "string") {
+      if (!rule.trim())
+        errors.push(`ignore[${i}] is empty`);
+      else
+        compiled.push({ code: globToRegExp(rule.trim()), wholeUrl: false });
+      return;
+    }
+    if (!rule || typeof rule !== "object") {
+      errors.push(`ignore[${i}] must be a code or a { code, url } object`);
+      return;
+    }
+    const { code, url } = rule;
+    if (code !== void 0 && typeof code !== "string") {
+      errors.push(`ignore[${i}].code must be a string`);
+      return;
+    }
+    if (url !== void 0 && typeof url !== "string") {
+      errors.push(`ignore[${i}].url must be a string`);
+      return;
+    }
+    if (!code && !url) {
+      errors.push(`ignore[${i}] needs a code, a url, or both`);
+      return;
+    }
+    const wholeUrl = !!url && /^https?:\/\//i.test(url);
+    const pattern = url ? wholeUrl ? url.replace(/\/+$/, "") : url.startsWith("/") ? url : `/${url}` : void 0;
+    compiled.push({
+      code: code ? globToRegExp(code.trim()) : void 0,
+      url: pattern ? globToRegExp(pattern) : void 0,
+      wholeUrl
+    });
+  });
+  return { rules: compiled, errors };
+}
+function matchesUrl(rule, url) {
+  if (!rule.url)
+    return true;
+  return rule.wholeUrl ? rule.url.test(url.replace(/\/+$/, "")) : rule.url.test(pagePath(url).split("?")[0]);
+}
+function applyIgnores(issues, rules) {
+  const { rules: compiled } = compileIgnoreRules(rules);
+  if (compiled.length === 0)
+    return { issues, ignored: [] };
+  const kept = [];
+  const ignored = [];
+  for (const issue of issues) {
+    const forCode = compiled.filter((r) => !r.code || r.code.test(issue.code));
+    if (forCode.length === 0) {
+      kept.push(issue);
+      continue;
+    }
+    if (forCode.some((r) => !r.url)) {
+      ignored.push({ code: issue.code });
+      continue;
+    }
+    const urls = issue.affectedUrls ?? [];
+    if (urls.length === 0) {
+      kept.push(issue);
+      continue;
+    }
+    const remaining = urls.filter((u) => !forCode.some((r) => matchesUrl(r, u)));
+    if (remaining.length === urls.length)
+      kept.push(issue);
+    else if (remaining.length === 0)
+      ignored.push({ code: issue.code, urls });
+    else {
+      kept.push({ ...issue, affectedUrls: remaining });
+      ignored.push({ code: issue.code, urls: urls.filter((u) => !remaining.includes(u)) });
+    }
+  }
+  return { issues: kept, ignored };
+}
+
+// src/audit/ci/sarif.ts
+var LEVELS = {
+  critical: "error",
+  error: "error",
+  warning: "warning",
+  notice: "note",
+  info: "note"
+};
+function artifactUri(url) {
+  const path = pagePath(url).split("?")[0];
+  return path === "/" ? "index.html" : path.replace(/^\/+/, "");
+}
+function toSarif(input) {
+  const rules = [];
+  const ruleIndex = /* @__PURE__ */ new Map();
+  const results = [];
+  for (const issue of input.issues) {
+    let index = ruleIndex.get(issue.code);
+    if (index === void 0) {
+      index = rules.length;
+      ruleIndex.set(issue.code, index);
+      rules.push({
+        id: issue.code,
+        name: issue.code,
+        shortDescription: { text: issue.title },
+        fullDescription: { text: issue.description || issue.title },
+        help: { text: issue.howToFix || issue.description || issue.title },
+        defaultConfiguration: { level: LEVELS[issue.severity] ?? "warning" },
+        properties: { category: issue.category, impact: issue.impact, tags: ["seo", issue.category] }
+      });
+    }
+    const urls = issue.affectedUrls?.length ? issue.affectedUrls : [input.url];
+    for (const url of urls) {
+      results.push({
+        ruleId: issue.code,
+        ruleIndex: index,
+        level: LEVELS[issue.severity] ?? "warning",
+        message: { text: issue.howToFix ? `${issue.title}. ${issue.howToFix}` : issue.title },
+        locations: [{
+          physicalLocation: {
+            artifactLocation: { uri: input.fileFor?.(url) ?? artifactUri(url), uriBaseId: "%SRCROOT%" },
+            region: { startLine: 1, startColumn: 1 }
+          }
+        }],
+        partialFingerprints: { rankcli: `${issue.code} ${pagePath(url)}` },
+        ...input.baselineKeys && { baselineState: input.baselineKeys.has(`${issue.code} ${pagePath(url)}`) || input.baselineKeys.has(issue.code) ? "unchanged" : "new" },
+        properties: { url, severity: issue.severity, category: issue.category }
+      });
+    }
+  }
+  return {
+    $schema: "https://json.schemastore.org/sarif-2.1.0.json",
+    version: "2.1.0",
+    runs: [{
+      tool: {
+        driver: {
+          name: "RankCLI",
+          fullName: "RankCLI SEO and AI-search audit",
+          informationUri: "https://rankcli.dev",
+          ...input.toolVersion && { version: input.toolVersion },
+          rules
+        }
+      },
+      invocations: [{
+        executionSuccessful: !input.error,
+        ...input.exitCode !== void 0 && { exitCode: input.exitCode },
+        ...input.error && { toolExecutionNotifications: [{ level: "error", message: { text: input.error } }] }
+      }],
+      results,
+      properties: {
+        url: input.url,
+        ...input.score !== void 0 && { score: input.score },
+        ...input.healthScores && { healthScores: input.healthScores }
+      }
+    }]
+  };
+}
+
+// src/audit/ci/junit.ts
+function esc(text) {
+  return String(text ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g, "");
+}
+function toJUnit(input) {
+  const threshold = SEVERITY_RANK[input.failOn ?? "error"];
+  const seconds = ((input.durationMs ?? 0) / 1e3).toFixed(3);
+  const cases = [];
+  let failures = 0;
+  let errors = 0;
+  if (input.error) {
+    errors = 1;
+    cases.push(`    <testcase name="audit" classname="rankcli" time="${seconds}">
+      <error message="${esc(input.error)}">${esc(input.error)}</error>
+    </testcase>`);
+  }
+  for (const issue of input.issues) {
+    const name = `${issue.code}: ${issue.title}`;
+    const pages = issue.affectedUrls?.length ? `
+Pages:
+${issue.affectedUrls.map((u) => `  ${u}`).join("\n")}` : "";
+    const body = `${issue.severity}: ${issue.title}
+${issue.description}
+Fix: ${issue.howToFix}${pages}`;
+    if ((SEVERITY_RANK[issue.severity] ?? 0) >= threshold && (!input.isNew || input.isNew(issue))) {
+      failures++;
+      cases.push(`    <testcase name="${esc(name)}" classname="rankcli.${esc(issue.category)}" time="0">
+      <failure message="${esc(issue.title)}" type="${esc(issue.severity)}">${esc(body)}</failure>
+    </testcase>`);
+    } else {
+      cases.push(`    <testcase name="${esc(name)}" classname="rankcli.${esc(issue.category)}" time="0">
+      <system-out>${esc(body)}</system-out>
+    </testcase>`);
+    }
+  }
+  for (const failure of input.gateFailures ?? []) {
+    failures++;
+    cases.push(`    <testcase name="gate: ${esc(failure)}" classname="rankcli.gate" time="0">
+      <failure message="${esc(failure)}" type="gate">${esc(failure)}</failure>
+    </testcase>`);
+  }
+  if (input.checksPassed) {
+    cases.push(`    <testcase name="${input.checksPassed} checks passed" classname="rankcli" time="0"/>`);
+  }
+  const tests = cases.length;
+  const attrs = `name="rankcli audit ${esc(input.url)}" tests="${tests}" failures="${failures}" errors="${errors}" skipped="0" time="${seconds}"${input.timestamp ? ` timestamp="${esc(input.timestamp)}"` : ""}`;
+  const properties = [
+    `      <property name="url" value="${esc(input.url)}"/>`,
+    ...input.score !== void 0 ? [`      <property name="score" value="${input.score}"/>`] : []
+  ].join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="rankcli" tests="${tests}" failures="${failures}" errors="${errors}" time="${seconds}">
+  <testsuite ${attrs}>
+    <properties>
+${properties}
+    </properties>
+${cases.join("\n")}
+  </testsuite>
+</testsuites>
+`;
+}
+
+// src/audit/ci/request-defaults.ts
+var active = [];
+var originalFetch;
+function installRequestDefaults(defaults) {
+  const host = new URL(defaults.origin).hostname.toLowerCase();
+  const hosts = /* @__PURE__ */ new Set([host, host.startsWith("www.") ? host.slice(4) : `www.${host}`]);
+  const entry = { ...defaults, hosts };
+  active.push(entry);
+  if (!originalFetch) {
+    originalFetch = globalThis.fetch;
+    globalThis.fetch = fetchWithDefaults;
+  }
+  return () => {
+    const index = active.indexOf(entry);
+    if (index >= 0)
+      active.splice(index, 1);
+    if (active.length === 0 && originalFetch) {
+      globalThis.fetch = originalFetch;
+      originalFetch = void 0;
+    }
+  };
+}
+function fetchWithDefaults(input, init) {
+  const passthrough = originalFetch ?? globalThis.fetch;
+  const url = input instanceof Request ? input.url : String(input);
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return passthrough(input, init);
+  }
+  const match = active.find((a) => a.hosts.has(parsed.hostname.toLowerCase()));
+  if (!match)
+    return passthrough(input, init);
+  const headers = new Headers(input instanceof Request ? input.headers : void 0);
+  if (init?.headers)
+    new Headers(init.headers).forEach((value, key) => headers.set(key, value));
+  for (const [key, value] of Object.entries(match.headers ?? {}))
+    headers.set(key, value);
+  let target = url;
+  if (match.rewriteTo) {
+    const to = new URL(match.rewriteTo);
+    parsed.protocol = to.protocol;
+    parsed.host = to.host;
+    target = parsed.toString();
+  }
+  if (input instanceof Request) {
+    const request = new Request(target, {
+      method: input.method,
+      redirect: input.redirect,
+      signal: input.signal,
+      ...init,
+      headers
+    });
+    return passthrough(request);
+  }
+  return passthrough(target, { ...init, headers });
 }
 
 // src/audit/discovery/link-crawler.ts
@@ -28324,6 +28803,102 @@ function mergePages(...pageSets) {
   return Array.from(seen.values()).sort((a, b) => b.priority - a.priority);
 }
 
+// src/audit/discovery/sitemap.ts
+var MAX_CHILD_SITEMAPS = 5;
+var MAX_SITEMAP_BYTES = 2 * 1024 * 1024;
+async function fetchText(url, timeout, maxBytes) {
+  try {
+    const response = await httpGet(url, { timeout, validateStatus: () => true, maxBytes });
+    if (response.status !== 200)
+      return null;
+    const body = typeof response.data === "string" ? response.data : "";
+    if (looksLikeHtmlFallback(body, response.headers["content-type"]))
+      return null;
+    return body;
+  } catch {
+    return null;
+  }
+}
+async function sitemapsFromRobots(base, timeout) {
+  const robots = await fetchText(new URL("/robots.txt", base).href, timeout, 64 * 1024);
+  if (!robots)
+    return [];
+  const urls = [];
+  for (const line of robots.split("\n")) {
+    const m = line.match(/^\s*sitemap:\s*(\S+)/i);
+    if (!m)
+      continue;
+    try {
+      urls.push(new URL(m[1], base).href);
+    } catch {
+    }
+  }
+  return urls;
+}
+function childSitemaps(xml) {
+  const urls = [];
+  const re = /<loc>\s*([^<\s]+)\s*<\/loc>/gi;
+  let m;
+  while ((m = re.exec(xml)) !== null)
+    urls.push(m[1]);
+  return urls;
+}
+var isSitemapXml = (xml) => /<urlset|<sitemapindex/i.test(xml);
+async function discoverPagesFromSitemap(baseUrl, maxPages, options = {}) {
+  const result = { pages: [], sitemapsRead: 0 };
+  if (maxPages <= 0)
+    return result;
+  const timeout = options.timeout ?? 1e4;
+  const base = new URL(baseUrl);
+  const candidates = [
+    ...await sitemapsFromRobots(base, timeout),
+    new URL("/sitemap.xml", base).href,
+    new URL("/sitemap_index.xml", base).href,
+    new URL("/sitemap-index.xml", base).href
+  ];
+  const seen = /* @__PURE__ */ new Set();
+  let pages = [];
+  for (const candidate of candidates) {
+    if (seen.has(candidate))
+      continue;
+    seen.add(candidate);
+    const xml = await fetchText(candidate, timeout, MAX_SITEMAP_BYTES);
+    if (!xml || !isSitemapXml(xml))
+      continue;
+    result.sitemapsRead++;
+    result.sitemapUrl ??= candidate;
+    if (/<sitemapindex/i.test(xml)) {
+      for (const child of childSitemaps(xml).slice(0, MAX_CHILD_SITEMAPS)) {
+        if (seen.has(child))
+          continue;
+        seen.add(child);
+        const childXml = await fetchText(child, timeout, MAX_SITEMAP_BYTES);
+        if (!childXml || !isSitemapXml(childXml))
+          continue;
+        result.sitemapsRead++;
+        pages = mergePages(pages, parseSitemap(childXml, baseUrl));
+        if (pages.length >= maxPages)
+          break;
+      }
+    } else {
+      pages = mergePages(pages, parseSitemap(xml, baseUrl));
+    }
+    if (pages.length >= maxPages)
+      break;
+  }
+  const pathOf = (url) => {
+    try {
+      const u = new URL(url);
+      return (u.pathname.replace(/\/+$/, "") || "/") + u.search;
+    } catch {
+      return url;
+    }
+  };
+  const root = pathOf(baseUrl);
+  result.pages = pages.filter((p) => pathOf(p.url) !== root).slice(0, maxPages);
+  return result;
+}
+
 // src/audit/discovery/repo-routes.ts
 function detectFramework3(packageJson, files) {
   if (!packageJson)
@@ -28398,11 +28973,11 @@ function discoverNextRoutes(files) {
     }
     const pagesMatch = file.match(/^pages\/(.+)\.(tsx?|jsx?)$/);
     if (pagesMatch) {
-      const pagePath = pagesMatch[1];
-      if (pagePath.startsWith("_") || pagePath.startsWith("api/")) {
+      const pagePath2 = pagesMatch[1];
+      if (pagePath2.startsWith("_") || pagePath2.startsWith("api/")) {
         continue;
       }
-      let path = "/" + pagePath;
+      let path = "/" + pagePath2;
       path = path.replace(/\/index$/, "");
       if (path === "")
         path = "/";
@@ -28535,7 +29110,11 @@ function routesToUrls(routes, baseUrl, maxUrls = 5) {
   });
 }
 export {
+  EMPTY_GATE,
+  FAIL_ON_LEVELS,
   ISSUE_DEFINITIONS,
+  SCORE_CATEGORIES,
+  SEVERITY_RANK,
   analyzeAICitationWorthiness,
   analyzeAIContentStructure,
   analyzeAnchorText,
@@ -28582,6 +29161,8 @@ export {
   analyzeTopicalClusters,
   analyzeTrackerBloat,
   analyzeUrlSafety,
+  applyIgnores,
+  artifactUri,
   assessReplacement,
   buildDeterministicFixes,
   buildFrameworkGuidance,
@@ -28592,25 +29173,41 @@ export {
   checkRedirects,
   checkRobotsTxt,
   checkSitemap,
+  compileIgnoreRules,
   describeConcerns,
   detectFramework3 as detectFramework,
   detectSoft404,
   detectTechnologies,
+  diffIssues,
   discoverPagesFromLinks,
+  discoverPagesFromSitemap,
   discoverRoutesFromRepo,
+  evaluateGate,
   findAppRoot,
   formatReport,
   generateSecretsDoc,
   generateWorkflow,
+  globToRegExp,
+  installRequestDefaults,
+  isGated,
+  issueKeys,
   loadRecipe,
+  mergeGateSpecs,
   mergePages,
+  pagePath,
+  parseBudgets,
+  parseFailOn,
   parseSitemap,
   premiumChecks,
+  readBaseline,
   routesToUrls,
   runAIReadinessChecks,
   runCrawlabilityChecks,
   runFullAudit,
+  scoreCategory,
   servedDir,
   suggestSchemaTypes,
+  toJUnit,
+  toSarif,
   urlSafetyDatabase
 };

@@ -62,11 +62,11 @@ jobs:
           # Announce from the public mirror: it is the page readers can actually open, and if
           # the mirror is missing then the binaries are missing too and there is nothing to
           # announce yet.
-          if ! gh release view "$TAG" --repo integrallis/rankcli-cli >/dev/null 2>&1; then
-            echo "::error::No public release $TAG on integrallis/rankcli-cli - has CLI native release finished?"
+          if ! gh release view "$TAG" --repo integrallis/rankcli >/dev/null 2>&1; then
+            echo "::error::No public release $TAG on integrallis/rankcli - has CLI native release finished?"
             exit 1
           fi
-          TITLE=$(gh release view "$TAG" --repo integrallis/rankcli-cli --json name --jq '.name')
+          TITLE=$(gh release view "$TAG" --repo integrallis/rankcli --json name --jq '.name')
           echo "title=$TITLE" >> "$GITHUB_OUTPUT"
 
       - name: Build the posts

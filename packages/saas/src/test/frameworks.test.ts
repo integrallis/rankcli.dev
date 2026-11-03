@@ -1,29 +1,30 @@
 // The frameworks we claim to support, and the ones we actually have recipes for, must be the
 // same list. Three places used to state it independently - Features.tsx, the FAQ and the
-// changelog - and agent-runtime's SUPPORTED_FRAMEWORKS claimed three more (svelte, remix,
+// changelog - and agent-runtime's SUPPORTED_FRAMEWORKS once claimed three more (svelte, remix,
 // gatsby) than there were recipes for. This test is what makes the config the source of truth.
+//
+// The engine is the published @rankcli/agent-runtime, a devDependency pinned to the version the
+// hosted product runs (see scripts/sync-engine.mjs), so the copy describes what is deployed.
 import { describe, it, expect } from 'vitest';
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { frameworks as engine } from '@rankcli/agent-runtime';
 import frameworks from '@/config/frameworks.json';
 
-const RECIPE_DIR = join(__dirname, '../../../agent-runtime/src/frameworks/recipes');
+type Framework = Parameters<typeof engine.loadRecipe>[0];
 
 describe('supported frameworks', () => {
-  const onDisk = readdirSync(RECIPE_DIR)
-    .filter((f) => f.endsWith('.yaml'))
-    .map((f) => f.replace('.yaml', ''))
-    .sort();
+  const supported = [...engine.SUPPORTED_FRAMEWORKS].sort();
 
-  it('lists exactly the frameworks that have a recipe', () => {
-    expect(frameworks.with_recipes.map((f) => f.id).sort()).toEqual(onDisk);
+  it('lists exactly the frameworks that have a recipe', async () => {
+    for (const id of supported) {
+      expect(await engine.loadRecipe(id), `${id} is supported but has no recipe`).toBeTruthy();
+    }
+    expect(frameworks.with_recipes.map((f) => f.id).sort()).toEqual(supported);
   });
 
-  it('uses each recipe\'s own display_name', () => {
+  it("uses each recipe's own display_name", async () => {
     for (const framework of frameworks.with_recipes) {
-      const yaml = readFileSync(join(RECIPE_DIR, `${framework.id}.yaml`), 'utf8');
-      const declared = yaml.match(/^display_name:\s*(.+)$/m)?.[1].trim().replace(/^["']|["']$/g, '');
-      expect(framework.name, `${framework.id} display name`).toBe(declared);
+      const recipe = await engine.loadRecipe(framework.id as Framework);
+      expect(recipe?.display_name, `${framework.id} display name`).toBe(framework.name);
     }
   });
 
@@ -35,29 +36,20 @@ describe('supported frameworks', () => {
   });
 });
 
-// Detection and fixing are different claims, and the site now makes both. "11 frameworks" was
-// the only number the copy could state, because with_recipes was the only list that existed -
+// Detection and fixing are different claims, and the site makes both. "11 frameworks" was the
+// only number the copy could state, because with_recipes was the only list that existed -
 // which undersold an audit that names 32.
-//
-// These read agent-runtime's source rather than importing it, for the same reason the recipe
-// checks above read YAML off disk: this package has no dependency on agent-runtime, and its
-// dist/ is gitignored and goes stale (see CLAUDE.md), so importing it would make these tests
-// fail for reasons that have nothing to do with the copy being wrong.
 describe('detected frameworks', () => {
-  const FRAMEWORK_SRC = join(__dirname, '../../../agent-runtime/src/frameworks');
   const detectedIds = frameworks.detected.map((f) => f.id);
 
   it('lists exactly the frameworks the detector has signals for', () => {
-    const signals = readFileSync(join(FRAMEWORK_SRC, 'signals.ts'), 'utf8');
-    const signalIds = [
-      ...new Set([...signals.matchAll(/\bframework: '([a-z]+)'/g)].map((m) => m[1])),
-    ]
+    const signalIds = [...new Set(engine.SIGNALS.map((s) => s.framework as string))]
       // 'unknown' is what the detector returns when the evidence scores below the floor. It is
       // the refusal to guess, not a framework we support, and it does not belong in the copy.
       .filter((id) => id !== 'unknown')
       .sort();
 
-    expect(signalIds.length, 'no signals parsed - did signals.ts change shape?').toBeGreaterThan(20);
+    expect(signalIds.length, 'no signals - did the runtime change shape?').toBeGreaterThan(20);
     expect([...detectedIds].sort()).toEqual(signalIds);
   });
 
@@ -72,20 +64,11 @@ describe('detected frameworks', () => {
   });
 
   it('uses the runtime display name, so the site and the CLI say the same word', () => {
-    const detector = readFileSync(join(FRAMEWORK_SRC, 'detector.ts'), 'utf8');
-    // Scoped to getFrameworkDisplayName's own map: getLanguageDisplayName further down the file
-    // has a `go:` key too, and reading the whole file let 'Go' overwrite 'Go (Gin/Echo/Fiber)'.
-    const mapBody = detector.slice(detector.indexOf('export function getFrameworkDisplayName'));
-    const names = new Map(
-      [...mapBody.slice(0, mapBody.indexOf('\n}')).matchAll(/^\s{4}([a-z]+): '([^']+)',$/gm)].map(
-        (m) => [m[1], m[2]]
-      )
-    );
-
-    expect(names.size, 'no display names parsed - did detector.ts change shape?').toBeGreaterThan(20);
-
     for (const framework of frameworks.detected) {
-      expect(names.get(framework.id), `${framework.id} display name`).toBe(framework.name);
+      expect(
+        engine.getFrameworkDisplayName(framework.id as Framework),
+        `${framework.id} display name`
+      ).toBe(framework.name);
     }
   });
 });
