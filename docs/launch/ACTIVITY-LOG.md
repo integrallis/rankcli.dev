@@ -161,6 +161,12 @@ and the developer channels have produced no measurable visit.
 
 ### 2026-11-03
 
+- **Trusted Publishing proven; the token is gone.** The founder dispatched the staged publish
+  (run 41730702597): all four plugins published through Trusted Publishing, each with a
+  provenance statement in the Sigstore transparency log (astro-rankcli 0.1.1, nuxt-rankcli
+  0.1.1, vite-plugin-rankcli 0.0.2, next-rankcli 0.0.2). rankcli #17 closed with the proof;
+  the `NPM_TOKEN` secret deleted from integrallis/rankcli (only `PACKAGES_PUBLISH_TOKEN`, for
+  the taps, remains). Direct token publishing's January 2027 retirement no longer matters here.
 - **The npm trust links are in; the publish that proves them is staged.** The founder ran
   the four `npx npm@latest trust github` commands (the token still cannot read the result:
   `npm trust list` answers 403 to a 2FA-bypass token, so the proof is a publish). Public main

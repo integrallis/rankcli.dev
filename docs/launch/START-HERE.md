@@ -11,24 +11,22 @@ For what has actually been done, with outcomes, see
 
 ---
 
-## 2026-11-03: the trust links are in; one dispatch proves them
+## 2026-11-03: everything shipped; the plugins publish through Trusted Publishing
 
 v0.0.55 to v0.0.57 shipped (35 always-on findings gone on corpus evidence, one bot table,
 the geo tools by crawler class), the hosted product follows each release, the plugins are on
 npm at 0.1.0, the Action is at v1.3.0, the corpus write-up is a blog post. The Nuxt modules directory PR is open (nuxt/modules #1719) and the write-up is on dev.to with its
-canonical on rankcli.dev. The founder linked the four plugins to npm Trusted Publishing on 2026-11-03 (rankcli issue #17).
-What proves the links is a publish that goes through them: the public main carries
-astro-rankcli and nuxt-rankcli 0.1.1 and vite-plugin-rankcli and next-rankcli 0.0.2 (commit
-`f461954`, the first versions that will carry a provenance attestation). Dispatching that
-publish was refused to the session, so one command from a terminal:
+canonical on rankcli.dev. The founder linked the four plugins to npm Trusted Publishing on 2026-11-03 and dispatched the
+publish that proved it (run 41730702597): astro-rankcli 0.1.1, nuxt-rankcli 0.1.1,
+vite-plugin-rankcli 0.0.2 and next-rankcli 0.0.2 each went through Trusted Publishing with a
+provenance statement. rankcli #17 is closed and the `NPM_TOKEN` secret is gone from the public
+repository; from here a plugin release is a version bump on main and `gh workflow run
+publish-plugins.yml`.
 
-```bash
-gh workflow run publish-plugins.yml --repo integrallis/rankcli -f mode=publish -f package=all
-```
-
-When the run's log says "published … (Trusted Publishing)" for each package, close #17 and
-delete the `NPM_TOKEN` secret on integrallis/rankcli; the workflow tries Trusted Publishing
-first and only falls back to the token.
+Nothing is left for the founder from the 2026-11-03 plan. Open, and waiting on evidence or a
+decision rather than work: rankcli.dev #31, #34, #35 (the outcome plan's thresholds and the
+first external auto-fix PRs), nuxt/modules #1719 and kmpilot-dev/kmpilot.dev#81 (their
+maintainers). The corpus runs Mondays at 04:17 UTC.
 
 ---
 
