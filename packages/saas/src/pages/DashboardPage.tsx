@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { consumePendingSite } from '@/hooks/usePendingSite';
+import { peekSignupSource, clearSignupSource } from '@/hooks/useSignupSource';
+import { supabase } from '@/integrations/supabase/client';
 import { AddProjectModal } from '@/components/dashboard/AddProjectModal';
 import { UpgradeLimitModal } from '@/components/dashboard/UpgradeLimitModal';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,6 +29,22 @@ export function DashboardPage() {
 
   // A site audited on /free-audit before signup: open Add Project with it filled in, unless
   // it is already a project or the plan has no room. Read once, after projects load.
+  // Where this account came from, recorded once on the profile from what the site stored on
+  // the first visit (useSignupSource). The database refuses a second write, so a stored source
+  // is cleared whether or not the row still lacked one.
+  useEffect(() => {
+    if (!user) return;
+    const source = peekSignupSource();
+    if (!source) return;
+    supabase
+      .from('profiles')
+      .update({ signup_source: source })
+      .eq('id', user.id)
+      .is('signup_source', null)
+      .then(() => clearSignupSource(), () => clearSignupSource());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
   const [pendingSite, setPendingSiteUrl] = useState<string | null>(null);
   useEffect(() => {
     if (isLoading) return;
