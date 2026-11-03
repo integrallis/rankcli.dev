@@ -8,6 +8,7 @@ import {
   type AuditReport,
   type AuditIssue,
   type PlanTier,
+  analyzers,
 } from '@rankcli/agent-runtime';
 import { createAnalysisServer } from '@rankcli/mcp-server/server';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
@@ -1784,7 +1785,7 @@ const MCP_TOOLS = [
   },
   {
     name: 'seo_robots_check',
-    description: `Analyze a site's robots.txt for AI crawler permissions. Shows which AI crawlers (GPTBot, ClaudeBot, PerplexityBot, etc.) are allowed or blocked.`,
+    description: `Analyze a site's robots.txt for crawler access, by class: search crawlers, AI search crawlers (OAI-SearchBot, Claude-SearchBot, PerplexityBot), user-triggered fetchers and training crawlers (GPTBot, ClaudeBot, CCBot). Blocking a training crawler costs no visibility; blocking an AI search crawler takes the site out of that assistant's answers.`,
     inputSchema: {
       type: 'object',
       properties: {
@@ -1880,46 +1881,22 @@ async function validateMCPApiKey(apiKey: string): Promise<MCPKeyValidation> {
   return { valid: true, userId: keyData.user_id, tier, keyId: keyData.id, limit, used: usedCount + 1 };
 }
 
-// Analyze robots.txt for AI crawlers
+// The AI-crawler table, by class, from the engine's one bot table (audit/checks/ai-bots.ts):
+// the same analysis `rankcli geo` and the MCP server's seo_robots_ai print.
 function analyzeRobotsTxtForAI(robotsTxt: string): string {
-  const aiCrawlers = [
-    { name: 'GPTBot', agent: 'GPTBot' },
-    { name: 'ChatGPT-User', agent: 'ChatGPT-User' },
-    { name: 'ClaudeBot', agent: 'ClaudeBot' },
-    { name: 'Claude-Web', agent: 'Claude-Web' },
-    { name: 'PerplexityBot', agent: 'PerplexityBot' },
-    { name: 'Google-Extended', agent: 'Google-Extended' },
-    { name: 'Amazonbot', agent: 'Amazonbot' },
-  ];
+  const result = analyzers.analyzeRobotsTxtForAI(robotsTxt);
+  const row = (label: string, cls: keyof typeof result.byClass) =>
+    `| ${label} | ${result.byClass[cls].allowed.join(', ') || '-'} | ${result.byClass[cls].blocked.join(', ') || '-'} |`;
+  return `## AI crawler access in robots.txt, by class
 
-  const lines = robotsTxt.toLowerCase().split('\n');
-  const results: string[] = [];
+| Class | Allowed | Disallowed |
+|---|---|---|
+${row('Search crawlers (the index most AI answers draw from)', 'search')}
+${row("AI search crawlers (each assistant's own index)", 'ai-search')}
+${row('User-triggered fetchers (one page, because a user asked)', 'user')}
+${row('Training crawlers (model training only)', 'training')}
 
-  for (const crawler of aiCrawlers) {
-    const agentLower = crawler.agent.toLowerCase();
-    let status = '⚪ Not mentioned (defaults to allowed)';
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (line.startsWith('user-agent:') && line.includes(agentLower)) {
-        for (let j = i + 1; j < lines.length && !lines[j].trim().startsWith('user-agent:'); j++) {
-          const rule = lines[j].trim();
-          if (rule === 'disallow: /') {
-            status = '❌ Blocked';
-            break;
-          } else if (rule === 'allow: /') {
-            status = '✅ Allowed';
-            break;
-          }
-        }
-        break;
-      }
-    }
-    
-    results.push(`- ${crawler.name}: ${status}`);
-  }
-
-  return `## AI Crawler Status\n${results.join('\n')}`;
+${result.recommendations.map((r) => `- ${r}`).join('\n')}`;
 }
 
 // Handle MCP tool calls
@@ -1999,10 +1976,10 @@ ${robotsTxt ? analyzeRobotsTxtForAI(robotsTxt) : '## AI Crawler Status\nCould no
 ${geoIssues.map(i => `- **${i.code}:** ${i.title}`).join('\n') || 'No AI-specific issues found!'}
 
 ## Recommendations
-- Ensure GPTBot, ClaudeBot, PerplexityBot are allowed in robots.txt
-- Use clear, factual content that AI can cite
+- Keep the search crawlers, the AI search crawlers and the user-triggered fetchers allowed; blocking the training crawlers costs no visibility (the table above says which is which)
+- Use clear, factual content that AI can cite, with a source on every statistic
 - Add structured data (FAQ, HowTo schemas)
-- Avoid JavaScript-only content rendering
+- Serve the content in the initial HTML, not only after JavaScript runs
 `;
     }
 
