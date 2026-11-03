@@ -161,6 +161,17 @@ and the developer channels have produced no measurable visit.
 
 ### 2026-11-03
 
+- **Action v1.3.0 is live and the corpus write-up is published.** On the founder's "you can do
+  1 thru 3 yourself" and "4 is approved": the staged Action commit `d771074` (built on the
+  0.0.55 engine) is on integrallis/rankcli-action main with `v1.3.0` and `v1` moved, release
+  published. The write-up (`corpus-writeup-2026-11-03.md`) is a blog post at
+  `/blog/what-the-sites-behind-the-400-most-popular-npm-packages-do` (rankcli.dev #37,
+  deployed, in the sitemap), linked from `/data/npm-sites`. Three things the classifier still
+  refuses from a session even with the founder's go-ahead, each with its command in
+  `START-HERE.md`: forking nuxt/modules for the directory PR (the script is ready), the npm
+  trust links (`npx npm@latest trust github`, a permission grant that needs the founder's 2FA
+  anyway; rankcli issue #17), and the dev.to cross-post (payload with the canonical URL
+  ready in the session scratchpad).
 - **v0.0.57 shipped: the second pass over the always-on findings.** The first run's data,
   re-read after 0.0.55 (56 codes per site down to 42 on the same 367 sites), still showed ten
   heuristics on a third to two thirds of sites: the testimonials and review-ecosystem family
