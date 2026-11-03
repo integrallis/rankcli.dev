@@ -158,6 +158,23 @@ and the developer channels have produced no measurable visit.
   audited site with its framework, scores and observed facts, filterable and sortable. It
   says so until the first run is published. Footer link, prerender and sitemap entries,
   three tests for the data shaping.
+
+### 2026-11-03
+
+- **v0.0.54 shipped and stage 3 is live.** On the founder's "merge and continue": rankcli
+  #3 to #10 merged, versions bumped (cli 0.0.54, agent-runtime 0.0.42, mcp-server 0.0.27),
+  release created from the session; npm has all three (the CLI's `bin` intact; npm 12's
+  "bin invalid and removed" publish warning is normalization noise, present on 0.0.53 too),
+  the five binaries and `rankcli-0.0.27.mcpb` are attached, Homebrew and Scoop are on 0.0.54.
+  rankcli.dev #13 and #16 merged: the edge functions deploy with the npm engine bundle, the
+  audit worker redeployed on Fly from the npm packages, then the pins moved to 0.0.42/0.0.27
+  with the bundle re-synced, so the hosted product runs the 0.0.54 engine including the
+  auto-fix safety concern; worker healthy, hosted MCP endpoint serving its thirteen tools,
+  `/data/npm-sites` live (saying "no run yet" until the first Monday run). The task-named
+  skills merged. rankcli.dev re-verified at 89 on the published 0.0.54. Three things the
+  classifier left to the founder: pushing the staged Action v1.3.0 (and moving `v1`), the npm
+  trust links or an `NPM_TOKEN` on the public repo for the plugin publish (astro-rankcli 0.1.0
+  failed with a 404 from npm), and merging rankcli.dev #14 once the plugin is on npm.
 - **v0.0.53 and Action v1.2.0 shipped.** The founder created the v0.0.53 release at 19:48 UTC
   and pushed the staged Action at 19:49. `release.yml` published `@rankcli/agent-runtime`
   0.0.41, `@rankcli/mcp-server` 0.0.26 and `@rankcli/cli` 0.0.53 (both pin ^0.0.41) under
