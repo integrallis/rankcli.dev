@@ -1,6 +1,6 @@
 // Auto-generated Deno-compatible audit bundle
 // Do not edit manually - regenerate with: pnpm build:deno
-// Generated: 2026-11-03T02:18:57.482Z
+// Generated: 2026-11-03T03:29:09.464Z
 
 // Polyfill for Node's Buffer if needed
 if (typeof globalThis.Buffer === 'undefined') {
@@ -9886,24 +9886,6 @@ Allow: /`
     impact: "Missing out on FAQ rich results and PAA box opportunities.",
     howToFix: "Add FAQPage structured data for your Q&A content."
   },
-  INVERTED_PYRAMID_MISSING: {
-    code: "INVERTED_PYRAMID_MISSING",
-    severity: "notice",
-    category: "content",
-    title: "Content not structured for featured snippets",
-    description: "First paragraph does not contain a direct answer or summary.",
-    impact: "Featured snippets pull from early content; burying answers reduces snippet capture rate.",
-    howToFix: "Start with a concise answer (40-80 words) that directly addresses the page topic."
-  },
-  NO_SNIPPET_BAIT_HEADERS: {
-    code: "NO_SNIPPET_BAIT_HEADERS",
-    severity: "notice",
-    category: "on-page",
-    title: "No snippet-targeting headers found",
-    description: "Headings do not use patterns that commonly trigger featured snippets.",
-    impact: "Missing opportunities for high-visibility snippet placements.",
-    howToFix: 'Use headers like "What is [topic]?", "How to [action]", or "X Ways to [achieve goal]".'
-  },
   // Internal Link Graph
   NO_CONTEXTUAL_INTERNAL_LINKS: {
     code: "NO_CONTEXTUAL_INTERNAL_LINKS",
@@ -10033,15 +10015,6 @@ Allow: /`
     impact: "Citing authoritative sources builds trust for sensitive topics.",
     howToFix: "Add citations to government, academic, or recognized industry sources."
   },
-  NO_ENTITY_IDENTIFIED: {
-    code: "NO_ENTITY_IDENTIFIED",
-    severity: "notice",
-    category: "content",
-    title: "No author or organization identified",
-    description: "Page lacks clear attribution to an author or organization.",
-    impact: "Anonymous content may be seen as less trustworthy.",
-    howToFix: "Add author byline or organization information with structured data."
-  },
   NO_ORGANIZATION_SCHEMA: {
     code: "NO_ORGANIZATION_SCHEMA",
     severity: "notice",
@@ -10068,15 +10041,6 @@ Allow: /`
     description: "Content has published date but no last-modified date.",
     impact: "Modified dates signal content freshness to search engines.",
     howToFix: "Add article:modified_time meta tag or dateModified in schema."
-  },
-  NO_EXPERIENCE_SIGNALS: {
-    code: "NO_EXPERIENCE_SIGNALS",
-    severity: "notice",
-    category: "content",
-    title: "No first-hand experience signals detected",
-    description: "Content lacks indicators of personal/first-hand experience.",
-    impact: 'The "Experience" in E-E-A-T values authentic, first-hand knowledge.',
-    howToFix: "Add personal insights, original photos, or hands-on testing details."
   },
   // IndexNow
   INDEXNOW_NOT_IMPLEMENTED: {
@@ -10144,15 +10108,6 @@ Allow: /`
     howToFix: "Use semantic variations and related terms instead of exact repetition."
   },
   // Site Maturity
-  NEW_SITE_STRATEGY: {
-    code: "NEW_SITE_STRATEGY",
-    severity: "notice",
-    category: "content",
-    title: "New website detected - Authority-first strategy recommended",
-    description: "Your site appears to be new (<90 days). Standard SEO advice won't work well.",
-    impact: "Creating lots of content without authority is wasted effort.",
-    howToFix: "Focus on building 10+ quality backlinks to ONE great page before expanding content."
-  },
   CONTENT_AUTHORITY_IMBALANCE: {
     code: "CONTENT_AUTHORITY_IMBALANCE",
     severity: "warning",
@@ -10909,32 +10864,6 @@ function analyzeFeaturedSnippet(html, url) {
         "Follow each question heading with a direct answer paragraph",
         "Consider adding a FAQ section with 3-5 common questions"
       ]
-    });
-  }
-  if (!invertedPyramid.found) {
-    issues.push({
-      code: "INVERTED_PYRAMID_MISSING",
-      severity: "notice",
-      category: "content",
-      title: "Content not structured for featured snippets",
-      description: "First paragraph does not contain a direct answer or summary.",
-      impact: "Featured snippets pull from early content; burying answers reduces snippet capture rate.",
-      howToFix: "Start with a concise answer (40-80 words) that directly addresses the page topic.",
-      affectedUrls: [url],
-      details: { invertedPyramidScore: invertedPyramid.score }
-    });
-  }
-  if (snippetBaitHeaders.length === 0) {
-    issues.push({
-      code: "NO_SNIPPET_BAIT_HEADERS",
-      severity: "notice",
-      category: "on-page",
-      title: "No snippet-targeting headers found",
-      description: "Headings do not use patterns that commonly trigger featured snippets.",
-      impact: "Missing opportunities for high-visibility snippet placements.",
-      howToFix: 'Use headers like "What is [topic]?", "How to [action]", or "X Ways to [achieve goal]".',
-      affectedUrls: [url],
-      details: { suggestedPatterns: ["What is X?", "How to X", "X Steps to Y", "Best X for Y"] }
     });
   }
   return {
@@ -11717,18 +11646,6 @@ function analyzeEEATSignals(html, url) {
       });
     }
   }
-  if (!author.name && !organization.name) {
-    issues.push({
-      code: "NO_ENTITY_IDENTIFIED",
-      severity: "notice",
-      category: "content",
-      title: "No author or organization identified",
-      description: "Page lacks clear attribution to an author or organization.",
-      impact: "Anonymous content may be seen as less trustworthy.",
-      howToFix: "Add author byline or organization information with structured data.",
-      affectedUrls: [url]
-    });
-  }
   if (!organization.hasSchema) {
     issues.push({
       code: "NO_ORGANIZATION_SCHEMA",
@@ -11762,18 +11679,6 @@ function analyzeEEATSignals(html, url) {
       description: "Content has published date but no last-modified date.",
       impact: "Modified dates signal content freshness to search engines.",
       howToFix: "Add article:modified_time meta tag or dateModified in schema.",
-      affectedUrls: [url]
-    });
-  }
-  if (experienceSignals.length === 0 && !isYMYL) {
-    issues.push({
-      code: "NO_EXPERIENCE_SIGNALS",
-      severity: "notice",
-      category: "content",
-      title: "No first-hand experience signals detected",
-      description: "Content lacks indicators of personal/first-hand experience.",
-      impact: 'The "Experience" in E-E-A-T values authentic, first-hand knowledge.',
-      howToFix: "Add personal insights, original photos, or hands-on testing details.",
       affectedUrls: [url]
     });
   }
@@ -11822,18 +11727,6 @@ function analyzeEEATSignals(html, url) {
     });
   }
   const isReviewContent = /\b(review|reviews|reviewed|comparison|compared|vs\.?|best \w+|top \d+)\b/.test(headline);
-  if (isReviewContent && !videoExperience.hasVideo) {
-    issues.push({
-      code: "REVIEW_NO_VIDEO",
-      severity: "notice",
-      category: "content",
-      title: "Review content without video",
-      description: "Product review or comparison content lacks video demonstrations.",
-      impact: "Video content signals first-hand experience, highly valued by Google and AI tools.",
-      howToFix: "Add hands-on video reviews showing actual product testing and demonstration.",
-      affectedUrls: [url]
-    });
-  }
   return {
     issues,
     data: {
@@ -12540,17 +12433,6 @@ function analyzeConversionElements(html, url) {
   const recommendations = [];
   if (pageType === "commercial" || pageType === "mixed") {
     if (!aboveFold.hasCTA) {
-      issues.push({
-        code: "COMMERCIAL_NO_CTA",
-        severity: "warning",
-        category: "content",
-        title: "Commercial page without clear CTA",
-        description: "This appears to be a commercial page but has no clear call-to-action.",
-        impact: "Without a CTA, visitors have no clear next step. 80% of users only see above-the-fold content.",
-        howToFix: 'Add a prominent CTA button above the fold (e.g., "Get Free Quote", "Contact Us", "Start Free Trial").',
-        affectedUrls: [url],
-        details: { pageType }
-      });
       recommendations.push("Add prominent CTA button above the fold");
     }
     if (!aboveFold.hasForm && pageType === "commercial") {
@@ -12586,17 +12468,6 @@ function analyzeConversionElements(html, url) {
     }
   }
   if (!engagementTriggers.hasEmbeddedVideo && !engagementTriggers.hasInteractiveElement) {
-    issues.push({
-      code: "NO_ENGAGEMENT_TRIGGERS",
-      severity: "notice",
-      category: "content",
-      title: "No engagement triggers found",
-      description: "Page lacks interactive elements, videos, or calculators.",
-      impact: "Interactive content increases dwell time, a user signal that influences rankings.",
-      howToFix: "Add video content, calculators, interactive tools, or expandable sections.",
-      affectedUrls: [url],
-      details: { engagementScore: engagementTriggers.engagementScore }
-    });
     recommendations.push("Add video or interactive elements to increase engagement");
   }
   if (pageType === "commercial" && !engagementTriggers.hasCalculator) {
@@ -13086,6 +12957,13 @@ function calculateOrphanRisk(contentLinks, uniqueDestinations, clusterSignals) {
     return "medium";
   return "high";
 }
+function isRootPage(url) {
+  try {
+    return (new URL(url).pathname.replace(/\/+$/, "") || "/") === "/";
+  } catch {
+    return false;
+  }
+}
 function analyzeTopicalClusters(html, url) {
   const $ = cheerio8.load(html);
   const issues = [];
@@ -13160,7 +13038,7 @@ function analyzeTopicalClusters(html, url) {
       }
     });
   }
-  if (!clusterSignals.hasBreadcrumbs) {
+  if (!clusterSignals.hasBreadcrumbs && !isRootPage(url)) {
     issues.push({
       code: "NO_BREADCRUMBS",
       severity: "notice",
@@ -13169,18 +13047,6 @@ function analyzeTopicalClusters(html, url) {
       description: "Page lacks breadcrumb navigation for hierarchical context.",
       impact: "Breadcrumbs improve UX, help search engines understand site structure, and can appear in SERPs.",
       howToFix: "Add breadcrumb navigation with Schema.org BreadcrumbList markup.",
-      affectedUrls: [url]
-    });
-  }
-  if (!clusterSignals.hasRelatedPosts && !clusterSignals.hasCategoryLinks) {
-    issues.push({
-      code: "NO_RELATED_CONTENT",
-      severity: "notice",
-      category: "on-page",
-      title: "No related content section",
-      description: 'Page has no "Related Posts" or similar content discovery section.',
-      impact: "Related content sections reduce bounce rate, increase pageviews, and strengthen topic clusters.",
-      howToFix: "Add a section linking to related articles, products, or category pages.",
       affectedUrls: [url]
     });
   }
@@ -13958,18 +13824,6 @@ function analyzeInteractiveTools(html, url) {
       affectedUrls: [url]
     });
   }
-  if (dwellTimeScore < 20 && uniqueTools.length === 0) {
-    issues.push({
-      code: "LOW_DWELL_TIME_SIGNALS",
-      severity: "notice",
-      category: "content",
-      title: "Page lacks dwell time optimization",
-      description: "No interactive tools, calculators, quizzes, or video embeds detected.",
-      impact: "Interactive content significantly increases time on page, a user engagement signal.",
-      howToFix: "Add at least one interactive element: calculator, quiz, embedded video, or free tool.",
-      affectedUrls: [url]
-    });
-  }
   return {
     issues,
     data: {
@@ -14521,23 +14375,6 @@ function analyzeNavBoostSignals(html, url) {
       }
     });
   }
-  if (!bounceRiskFactors.hasAboveFoldContent || !bounceRiskFactors.hasImmediateValue) {
-    issues.push({
-      code: "HIGH_BOUNCE_RISK",
-      // A notice: a heuristic score, not a defect a crawler can see, and it fired on most sites.
-      severity: "notice",
-      category: "content",
-      title: "Page has high bounce risk signals",
-      description: "The page lacks above-fold content or immediate value for visitors.",
-      impact: "NavBoost tracks bounce rate. >70% bounce with <30s sessions hurts rankings.",
-      howToFix: "Add compelling content above the fold that delivers immediate value to visitors.",
-      affectedUrls: [url],
-      details: {
-        hasAboveFoldContent: bounceRiskFactors.hasAboveFoldContent,
-        hasImmediateValue: bounceRiskFactors.hasImmediateValue
-      }
-    });
-  }
   if (bounceRiskFactors.hasPopupRisk) {
     issues.push({
       code: "POPUP_BOUNCE_RISK",
@@ -14805,18 +14642,6 @@ function analyzeEntitySEO(html, url) {
         hasOrganization: entitySignals.hasOrganizationSchema,
         hasPerson: entitySignals.hasPersonSchema
       }
-    });
-  }
-  if (!entityClarity.hasWikipediaStyleIntro) {
-    issues.push({
-      code: "NO_ENTITY_DEFINITION",
-      severity: "notice",
-      category: "content",
-      title: "Missing entity definition in content",
-      description: "First paragraph lacks a clear definition of the primary entity.",
-      impact: "Clear entity definitions help AI systems extract and cite your content correctly.",
-      howToFix: 'Start content with "[Entity Name] is a [type] that [does what]" pattern.',
-      affectedUrls: [url]
     });
   }
   if (!entityClarity.entityNameConsistency && entityClarity.entityMentionCount < 3) {
@@ -15411,17 +15236,6 @@ function analyzeRAGChunkReadiness(html, url) {
   if (totalSections >= 3 && wellSizedSectionCount / totalSections < 0.5) {
     const tooLong = sections.filter((s) => s.sizeQuality === "too-long").length;
     const tooShort = sections.filter((s) => s.sizeQuality === "too-short").length;
-    issues.push({
-      code: "RAG_CHUNK_SIZE_MISMATCH",
-      severity: "notice",
-      category: "ai-readiness",
-      title: "Most sections are poorly sized for AI retrieval chunking",
-      description: `${wellSizedSectionCount} of ${totalSections} sections fall in a well-sized range for RAG retrieval (roughly 150-450 words); ${tooLong} are too long and likely to get split mid-thought, ${tooShort} are too short and likely to get merged with unrelated neighbors.`,
-      impact: "When an AI answer engine retrieves a chunk of this page in response to a query, oversized sections risk being cut off mid-point and undersized ones risk losing standalone context \u2014 both reduce the odds the retrieved chunk reads coherently in an AI-generated answer.",
-      howToFix: "Break up long sections (450+ words) with an additional H2/H3 subheading roughly every 300-400 words. Merge very short sections (under 150 words) into a neighboring section or expand them with enough context to stand alone.",
-      affectedUrls: [url],
-      details: { wellSizedSectionCount, totalSections, tooLong, tooShort }
-    });
   }
   if (totalSections >= 3 && danglingReferenceCount / totalSections > 0.3) {
     issues.push({
@@ -15712,26 +15526,6 @@ function analyzeCitationQuality(html, url) {
       impact: "Missing opportunity to demonstrate comprehensive research and boost E-E-A-T.",
       howToFix: 'Add a "References" or "Sources" section at the end listing all cited sources with full attribution.',
       affectedUrls: [url]
-    });
-  }
-  if (citationScore < 40) {
-    issues.push({
-      code: "AI_LOW_CITATION_QUALITY",
-      // A notice: a heuristic score, not a defect a crawler can see, and it fired on most sites.
-      severity: "notice",
-      category: "ai-readiness",
-      title: "Content citation quality needs improvement",
-      description: `Citation quality score: ${citationScore}/100. Well-cited content ranks higher in AI search results.`,
-      impact: "Low citation quality signals reduce E-E-A-T and AI citation likelihood.",
-      howToFix: "Improve citations: 1) Link to reputable sources, 2) Cite statistics with sources, 3) Add a references section, 4) Use inline citations for claims.",
-      affectedUrls: [url],
-      details: {
-        citationScore,
-        externalLinks,
-        reputableSources: totalReputable,
-        statisticsWithSources,
-        statisticsWithoutSources
-      }
     });
   }
   return {
@@ -16090,21 +15884,6 @@ function analyzeBrandMentionOptimization(html, url) {
   if (hasReviewLinks)
     brandScore += 5;
   brandScore = Math.min(100, Math.max(0, brandScore));
-  if (!hasBrandDefinition) {
-    issues.push({
-      code: "AI_NO_BRAND_DEFINITION",
-      severity: "warning",
-      category: "ai-readiness",
-      title: "No clear brand definition for AI to extract",
-      description: 'AI systems look for clear "Brand X is..." statements to quote when recommending brands. Your page lacks quotable brand definitions.',
-      impact: "AI cannot accurately describe your brand, reducing recommendation likelihood.",
-      howToFix: 'Add a clear brand definition early in your content: "[Brand] is a [category] that [key benefit]." Make it quotable (under 200 characters).',
-      affectedUrls: [url],
-      details: {
-        suggestion: `Example: "${potentialBrandName.charAt(0).toUpperCase() + potentialBrandName.slice(1)} is a [category] that helps [audience] [achieve benefit]."`
-      }
-    });
-  }
   if (!hasUSP) {
     issues.push({
       code: "AI_NO_USP",
@@ -16126,22 +15905,6 @@ function analyzeBrandMentionOptimization(html, url) {
     missingTopics.push("testimonials/reviews");
   if (!hasProofPoints)
     missingTopics.push("proof points/case studies");
-  if (missingTopics.length >= 2) {
-    issues.push({
-      code: "AI_INCOMPLETE_BRAND_COVERAGE",
-      severity: "notice",
-      category: "ai-readiness",
-      title: "Incomplete brand topic coverage",
-      description: `Missing key brand topics that AI uses to answer queries: ${missingTopics.join(", ")}. AI may rely on third-party sources instead.`,
-      impact: "Third-party sites may define your brand narrative instead of you.",
-      howToFix: "Cover key brand topics on your site: pricing, positioning, proof (testimonials, case studies), and FAQs.",
-      affectedUrls: [url],
-      details: {
-        missingTopics,
-        recommendation: "Control your brand narrative by having authoritative content on these topics on your own site."
-      }
-    });
-  }
   if (!hasReviewLinks && !hasTestimonials) {
     issues.push({
       code: "AI_NO_REVIEW_INTEGRATION",
@@ -16158,27 +15921,6 @@ function analyzeBrandMentionOptimization(html, url) {
           "Local: Google Business, Yelp, BBB",
           "Professional: Clutch, UpCity"
         ]
-      }
-    });
-  }
-  if (brandScore < 50) {
-    issues.push({
-      code: "AI_LOW_BRAND_SCORE",
-      severity: "warning",
-      category: "ai-readiness",
-      title: "Brand is not well-optimized for AI extraction",
-      description: `Brand optimization score: ${brandScore}/100. AI may struggle to accurately describe and recommend your brand.`,
-      impact: "Low likelihood of being recommended in AI answers for brand-related queries.",
-      howToFix: "Improve brand clarity: add quotable definitions, USPs, testimonials, proof points, and link to review platforms.",
-      affectedUrls: [url],
-      details: {
-        brandScore,
-        hasBrandDefinition,
-        hasUSP,
-        hasTestimonials,
-        hasProofPoints,
-        hasReviewLinks,
-        quotableBrandStatements: quotableBrandStatements.slice(0, 3)
       }
     });
   }
@@ -16394,30 +16136,6 @@ function analyzeAICitationWorthiness(html, url) {
   if (hasRealExamples)
     citationWorthinessScore += 3;
   citationWorthinessScore = Math.min(100, Math.max(0, citationWorthinessScore));
-  if (!hasOriginalData && !hasPrimaryResearch) {
-    issues.push({
-      code: "AI_NO_ORIGINAL_DATA",
-      severity: "notice",
-      category: "ai-readiness",
-      title: "No original data or research signals",
-      description: "Content lacks original data, surveys, or research findings. AI prefers citing sources with unique, first-party data.",
-      impact: "Generic content without original data is less likely to be cited as a source.",
-      howToFix: 'Add original data: survey results, internal analytics, case study numbers, or primary research findings. Use phrases like "Our data shows..." or "We surveyed X users...".',
-      affectedUrls: [url]
-    });
-  }
-  if (!hasFirstPersonExperience && !hasCaseStudies) {
-    issues.push({
-      code: "AI_NO_EXPERIENCE_SIGNALS",
-      severity: "notice",
-      category: "ai-readiness",
-      title: "No first-hand experience signals",
-      description: 'Content reads like it could be AI-generated. No "I tested...", "We implemented...", or case study language found.',
-      impact: "AI may prefer sources that demonstrate real-world experience over generic explanations.",
-      howToFix: `Add personal experience: "In my experience...", "When we tested...", "Here's what happened when...". Include specific scenarios you've encountered.`,
-      affectedUrls: [url]
-    });
-  }
   if (!hasAuthorByline && !hasAuthorCredentials) {
     issues.push({
       code: "AI_NO_AUTHOR_EXPERTISE",
@@ -16428,29 +16146,6 @@ function analyzeAICitationWorthiness(html, url) {
       impact: "Anonymous content is less trustworthy for AI citation purposes.",
       howToFix: "Add author byline with credentials: name, title, years of experience, certifications, or relevant expertise.",
       affectedUrls: [url]
-    });
-  }
-  if (citationWorthinessScore < 40) {
-    issues.push({
-      code: "AI_LOW_CITATION_WORTHINESS",
-      // A notice: a heuristic score, not a defect a crawler can see, and it fired on most sites.
-      severity: "notice",
-      category: "ai-readiness",
-      title: "Content lacks AI-proof originality signals",
-      description: `Citation worthiness score: ${citationWorthinessScore}/100. Content appears generic and could be easily replicated by AI.`,
-      impact: "AI may not cite this content as it lacks unique value that AI cannot generate itself.",
-      howToFix: "Add what AI can't fake: original data, real screenshots, dated experiences, expert quotes, case studies, and specific proof points.",
-      affectedUrls: [url],
-      details: {
-        citationWorthinessScore,
-        aiProofElements: aiProofElements.length > 0 ? aiProofElements : ["None detected"],
-        missing: [
-          !hasOriginalData && "Original data/research",
-          !hasFirstPersonExperience && "First-person experience",
-          !hasAuthorCredentials && "Expert credentials",
-          !hasSpecificNumbers && "Specific data points"
-        ].filter(Boolean)
-      }
     });
   }
   return {
@@ -19487,8 +19182,69 @@ var KNOWN_BOTS = [
     robotsTokens: ["bytespider"],
     userAgent: null,
     loses: "ByteDance's training corpus"
+  },
+  {
+    name: "Applebot-Extended",
+    class: "training",
+    robotsTokens: ["applebot-extended"],
+    userAgent: null,
+    loses: "Apple's training data (Applebot itself, which powers Siri and Spotlight search, is unaffected)"
+  },
+  {
+    name: "meta-externalagent",
+    class: "training",
+    robotsTokens: ["meta-externalagent"],
+    userAgent: null,
+    loses: "Meta's training corpus"
+  },
+  {
+    name: "Amazonbot",
+    class: "training",
+    robotsTokens: ["amazonbot"],
+    userAgent: null,
+    loses: "Amazon's training data for Alexa"
+  },
+  {
+    name: "cohere-ai",
+    class: "training",
+    robotsTokens: ["cohere-ai"],
+    userAgent: null,
+    loses: "Cohere's training corpus"
+  },
+  {
+    name: "YouBot",
+    class: "ai-search",
+    robotsTokens: ["youbot"],
+    userAgent: null,
+    loses: "You.com answers"
   }
 ];
+var BOT_OPERATOR = {
+  Googlebot: "Google",
+  bingbot: "Microsoft",
+  "OAI-SearchBot": "OpenAI",
+  "Claude-SearchBot": "Anthropic",
+  PerplexityBot: "Perplexity",
+  "ChatGPT-User": "OpenAI",
+  "Claude-User": "Anthropic",
+  "Perplexity-User": "Perplexity",
+  GPTBot: "OpenAI",
+  ClaudeBot: "Anthropic",
+  CCBot: "Common Crawl",
+  "Google-Extended": "Google",
+  Bytespider: "ByteDance",
+  "Applebot-Extended": "Apple",
+  "meta-externalagent": "Meta",
+  Amazonbot: "Amazon",
+  "cohere-ai": "Cohere",
+  YouBot: "You.com"
+};
+var BOT_CLASS_LABEL = {
+  search: "search crawlers",
+  "ai-search": "AI search crawlers",
+  user: "user-triggered fetchers",
+  training: "AI training crawlers"
+};
 
 // src/audit/checks/crawler-access.ts
 var BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
@@ -22497,23 +22253,6 @@ async function analyzeSiteMaturity(html, url) {
     contentToAuthorityRatio
   };
   const { strategy, recommendations } = determineStrategy(maturityLevel, authorityIndicators, contentMetrics);
-  if (maturityLevel === "new" && ageSource === "wayback" && estimatedAgeDays !== null) {
-    issues.push({
-      code: "NEW_SITE_STRATEGY",
-      severity: "notice",
-      category: "content",
-      title: "New website detected - Authority-first strategy recommended",
-      description: `The Wayback Machine first saw this site ${estimatedAgeDays} days ago. Standard SEO advice won't work well for a site under 90 days old.`,
-      impact: "Creating lots of content without authority is wasted effort. Content from new sites rarely ranks.",
-      howToFix: "Focus on building 10+ quality backlinks to ONE great page before expanding content. See strategic recommendations.",
-      affectedUrls: [url],
-      details: {
-        estimatedAge: estimatedAgeDays,
-        recommendedStrategy: strategy,
-        recommendations
-      }
-    });
-  }
   if (maturityLevel === "growing" && ageSource === "wayback" && !htmlSignals.hasBlog) {
     issues.push({
       code: "GROWING_SITE_NO_BLOG",
@@ -23953,29 +23692,6 @@ async function analyzeBingOptimization(html, url) {
   }
   if (!hasBingMetaTag && !hasBingSiteAuth && !hasBingDnsRecord) {
     detectedIssues.push("No Bing site verification");
-    issues.push({
-      code: "BING_NOT_VERIFIED",
-      // A notice: verification done through Search Console import or a DNS record this run
-      // could not see leaves no trace in the HTML, so this cannot be a warning.
-      severity: "notice",
-      category: "ai-readiness",
-      title: verification.dnsChecked ? "Site not verified with Bing Webmaster Tools" : "Bing Webmaster Tools verification not visible in the HTML",
-      description: verification.dnsChecked ? "No msvalidate.01 meta tag in the HTML, no MS= TXT record on the domain and no /BingSiteAuth.xml file. ChatGPT Search uses Bing's index. Verifying your site with Bing Webmaster Tools ensures proper indexing and access to Bing-specific SEO tools." : "No msvalidate.01 meta tag in the HTML and no /BingSiteAuth.xml file. The site may be verified through a DNS record instead, which this run could not check. ChatGPT Search uses Bing's index. Verifying your site with Bing Webmaster Tools ensures proper indexing and access to Bing-specific SEO tools.",
-      impact: "May reduce visibility in ChatGPT Search results and miss Bing-specific optimization opportunities.",
-      howToFix: "If the site is not yet in Bing Webmaster Tools: 1) Go to Bing Webmaster Tools, 2) Add your site (or import it from Google Search Console), 3) Choose a verification method (meta tag, DNS record or XML file), 4) Add the verification code to your site.",
-      affectedUrls: [url],
-      details: {
-        hasBingMetaTag,
-        hasBingSiteAuth,
-        hasBingDnsRecord,
-        dnsChecked: verification.dnsChecked,
-        verificationMethods: [
-          'Add <meta name="msvalidate.01" content="YOUR_CODE"> to <head>',
-          "Add an MS=YOUR_CODE TXT record to the domain's DNS",
-          "Upload BingSiteAuth.xml to root directory"
-        ]
-      }
-    });
   }
   if (!hasBingIndexNowKey) {
     detectedIssues.push("No IndexNow key for Bing");
@@ -24011,20 +23727,6 @@ async function analyzeBingOptimization(html, url) {
   const hasAddressOnPage = $("address").text().trim().length > 0 || detectAddresses(html).length > 0;
   if (hasAddressOnPage && !hasLocalBusinessSchema) {
     detectedIssues.push("Local business may not be on Bing Places");
-    issues.push({
-      code: "BING_PLACES_MISSING",
-      severity: "notice",
-      category: "ai-readiness",
-      title: "Local business not optimized for Bing Places",
-      description: "Your site appears to have a physical location but may not be listed on Bing Places. Bing Places listings appear in Bing Maps and can be referenced by AI assistants.",
-      impact: "Missing local search visibility in Bing and potential AI assistant recommendations for local queries.",
-      howToFix: "Claim your Bing Places listing: 1) Go to bingplaces.com, 2) Claim or add your business, 3) Verify ownership, 4) Add complete business information.",
-      affectedUrls: [url],
-      details: {
-        bingPlacesUrl: "https://www.bingplaces.com/",
-        recommendation: "Also add sameAs link to your Bing Places listing in Organization schema"
-      }
-    });
   }
   return {
     issues,
@@ -27032,19 +26734,6 @@ async function analyzeTrackingVerification(html, url) {
     sitemap: { inRobotsTxt: false }
     // Set later if we check robots.txt
   };
-  if (!hasGa4 && !hasGtm && otherAnalytics.length === 0) {
-    issues.push({
-      code: "GA4_MISSING",
-      // A notice: which analytics a site runs is a choice, not an SEO defect.
-      severity: "notice",
-      category: "on-page",
-      title: "Google Analytics 4 not detected",
-      description: "No GA4 tracking code found. GA4 is essential for measuring organic traffic and conversions.",
-      impact: "Cannot measure SEO impact without analytics tracking.",
-      howToFix: "Add GA4 tracking code to your site. Get your measurement ID from analytics.google.com.",
-      affectedUrls: [url]
-    });
-  }
   if (!hasGscVerification) {
     const dnsChecked = verification.dnsChecked;
     issues.push({
@@ -27062,31 +26751,8 @@ async function analyzeTrackingVerification(html, url) {
   }
   if (!hasBingVerification) {
     const dnsChecked = verification.dnsChecked;
-    issues.push({
-      code: "BING_VERIFICATION_MISSING",
-      severity: "notice",
-      category: "on-page",
-      title: dnsChecked ? "Bing Webmaster Tools verification not found" : "Bing Webmaster Tools verification not visible in the HTML",
-      description: dnsChecked ? "No msvalidate.01 meta tag in the HTML, no MS= TXT record on the domain and no /BingSiteAuth.xml file. Bing/Yahoo account for 5-8% of search traffic." : "No msvalidate.01 meta tag in the HTML and no /BingSiteAuth.xml file. The site may be verified through a DNS record instead, which this run could not check. Bing/Yahoo account for 5-8% of search traffic.",
-      impact: "Missing insights on Bing/Yahoo search traffic.",
-      howToFix: "If the site is not yet in Bing Webmaster Tools, add it there: import it from Google Search Console, or verify with the meta tag, a DNS record or BingSiteAuth.xml. Get it from bing.com/webmasters.",
-      affectedUrls: [url],
-      details: { dnsChecked }
-    });
   }
   if (!hasGtm) {
-    if (otherAnalytics.length === 0) {
-      issues.push({
-        code: "GTM_MISSING",
-        severity: "notice",
-        category: "on-page",
-        title: "Google Tag Manager not detected",
-        description: "GTM not found. While not required, GTM makes it easier to manage tracking tags without code changes.",
-        impact: "Tag management requires developer involvement for each change.",
-        howToFix: "Consider using GTM for easier tag management. It allows marketing to add tags without developer help.",
-        affectedUrls: [url]
-      });
-    }
   } else if (!hasGtmNoscript) {
     issues.push({
       code: "GTM_NOSCRIPT_MISSING",
@@ -27163,13 +26829,12 @@ var REDUNDANT_WHEN_PRESENT = [
   { keep: "APPLE_TOUCH_ICON_MISSING", drop: ["HTML_NO_APPLE_TOUCH_ICON"] },
   { keep: "LLMS_TXT_MISSING", drop: ["AI_NO_LLMS_TXT"] },
   { keep: "INDEXNOW_NOT_IMPLEMENTED", drop: ["BING_NO_INDEXNOW"] },
-  { keep: "BING_VERIFICATION_MISSING", drop: ["BING_NOT_VERIFIED"] },
-  { keep: "SITEMAP_MISSING", drop: ["BING_SITEMAP_MISSING", "SITEMAP_NOT_IN_ROBOTS"] },
+  // No sitemap makes IndexNow moot: Bing's advice is an accurate lastmod paired with IndexNow.
+  { keep: "SITEMAP_MISSING", drop: ["BING_SITEMAP_MISSING", "SITEMAP_NOT_IN_ROBOTS", "INDEXNOW_NOT_IMPLEMENTED"] },
   { keep: "ROBOTS_TXT_MISSING", drop: ["SITEMAP_NOT_IN_ROBOTS"] },
   { keep: "IMAGES_MISSING_DIMENSIONS", drop: ["IMG_NO_DIMENSIONS"] },
   { keep: "NO_MODERN_IMAGE_FORMATS", drop: ["IMAGE_NOT_WEBP_AVIF"] },
   { keep: "SOCIAL_PROFILES_NOT_LINKED", drop: ["NO_SOCIAL_PROFILES"] },
-  { keep: "NO_EXPERIENCE_SIGNALS", drop: ["AI_NO_EXPERIENCE_SIGNALS"] },
   // No structured data at all makes every "your schema lacks X" finding moot.
   {
     keep: "SCHEMA_MISSING",
@@ -27210,9 +26875,8 @@ var REDUNDANT_WHEN_PRESENT = [
   { keep: "NO_INTERNAL_LINKS", drop: ["NO_CONTENT_INTERNAL_LINKS", "HIGH_ORPHAN_RISK", "LINKS_NO_INTERNAL"] },
   // No testimonials on the page, said once instead of six times.
   { keep: "NO_SOCIAL_PROOF", drop: ["BOFU_NO_SOCIAL_PROOF", "AI_NO_TESTIMONIALS", "AI_NO_REVIEW_INTEGRATION", "AI_NO_REVIEW_PLATFORMS", "AI_WEAK_REVIEW_ECOSYSTEM"] },
-  { keep: "AI_NO_TESTIMONIALS", drop: ["AI_NO_REVIEW_INTEGRATION", "AI_NO_REVIEW_PLATFORMS", "AI_WEAK_REVIEW_ECOSYSTEM"] },
+  { keep: "AI_NO_TESTIMONIALS", drop: ["AI_NO_REVIEW_INTEGRATION", "AI_NO_REVIEW_PLATFORMS", "AI_WEAK_REVIEW_ECOSYSTEM"] }
   // The brand-score composite restates the brand-definition finding it is built from.
-  { keep: "AI_NO_BRAND_DEFINITION", drop: ["AI_LOW_BRAND_SCORE", "NO_ENTITY_DEFINITION"] }
 ];
 function dedupeIssues(issues) {
   const present = new Set(issues.map((i) => i.code));
@@ -27762,11 +27426,25 @@ function groupIssuesByCategory(issues) {
 
 // src/analyzers/geo-analyzer.ts
 import * as cheerio60 from "https://esm.sh/cheerio@1.0.0";
+var AI_CRAWLERS = Object.fromEntries(
+  KNOWN_BOTS.map((bot) => [
+    bot.name,
+    {
+      userAgent: bot.name,
+      company: BOT_OPERATOR[bot.name] ?? "",
+      purpose: `${BOT_CLASS_LABEL[bot.class].replace(/s$/, "")}: blocking it costs ${bot.loses}`,
+      class: bot.class,
+      loses: bot.loses
+    }
+  ])
+);
 function generateAIFriendlyRobotsTxt(siteUrl) {
-  return `# AI-Optimized robots.txt
+  const names = (cls) => KNOWN_BOTS.filter((bot) => bot.class === cls).map((bot) => `User-agent: ${bot.name}`).join("\n");
+  return `# robots.txt
 # Generated by RankCLI - https://rankcli.dev
+# Four kinds of bot read a site, and blocking each costs something different; the groups
+# below say which. An Allow in a bot's own group wins over a wildcard Disallow.
 
-# Allow all standard crawlers
 User-agent: *
 Allow: /
 Disallow: /api/
@@ -27774,50 +27452,19 @@ Disallow: /admin/
 Disallow: /_next/static/
 Disallow: /private/
 
-# === AI Search Crawlers ===
-# OpenAI (ChatGPT)
-User-agent: GPTBot
+# AI search crawlers: the index each assistant answers from. Disallowing one takes the site
+# out of that assistant's answers.
+${names("ai-search")}
 Allow: /
 
-User-agent: ChatGPT-User
+# Fetchers that read one page because a user asked about it. Disallowing one means the
+# assistant cannot read a page a user pastes.
+${names("user")}
 Allow: /
 
-User-agent: OAI-SearchBot
-Allow: /
-
-# Anthropic (Claude)
-User-agent: Claude-Web
-Allow: /
-
-User-agent: anthropic-ai
-Allow: /
-
-# Perplexity
-User-agent: PerplexityBot
-Allow: /
-
-# Google AI (Gemini/Bard)
-User-agent: Google-Extended
-Allow: /
-
-# Microsoft (Copilot)
-User-agent: bingbot
-Allow: /
-
-# Apple Intelligence
-User-agent: Applebot-Extended
-Allow: /
-
-# Meta AI
-User-agent: meta-externalagent
-Allow: /
-
-# You.com
-User-agent: YouBot
-Allow: /
-
-# Cohere
-User-agent: cohere-ai
+# Training crawlers: model-training data only. Allowed here; disallowing them costs no
+# search or answer visibility, so change this group to Disallow: / if that is the policy.
+${names("training")}
 Allow: /
 
 # Sitemap

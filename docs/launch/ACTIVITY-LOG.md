@@ -161,6 +161,26 @@ and the developer channels have produced no measurable visit.
 
 ### 2026-11-03
 
+- **v0.0.55 shipped: the always-on findings are gone, and there is one bot table.** rankcli
+  #12 merged once its two guards were fixed: the CLI's end-to-end check had asked for half of
+  the formerly encrypted checks' codes to survive dedupe, and the removed defaults were most
+  of that half (21/34 fell to 9/20 with every check still running); it now reads the engine's
+  dedupe rules and excuses only what a rule drops, and the Action's bundle test looks for a
+  surviving title. rankcli #13 merged: `rankcli geo`, the MCP server's robots tools and the
+  robots.txt the auto-fix writes derive from the audit's crawler classes (no `Claude-Web`, no
+  "all AI crawlers" group; Applebot-Extended, meta-externalagent, Amazonbot, cohere-ai and
+  YouBot join the table). Versions bumped (cli 0.0.55, agent-runtime 0.0.43, mcp-server
+  0.0.28; the CLI's checked-in version.ts had been stale at 0.0.53), release created from the
+  session after CI on main went green; npm has all three with provenance, the five binaries
+  and `rankcli-0.0.28.mcpb` are attached, Homebrew and Scoop are on 0.0.55. rankcli.dev
+  re-verified on the published 0.0.55: 92/100 (from 89), AI Readiness 93 (from 89), 19
+  notices (from 31), the twelve removed defaults gone and nothing new; the landing page's hero
+  run re-recorded at 92. Hosted product (this PR): pins to 0.0.43/0.0.28, the edge bundle
+  re-synced, and the audit worker's own crawler list, a third copy that still named
+  `Claude-Web`, replaced by the engine's class table in `seo_geo_check` and
+  `seo_robots_check`. The staged Action v1.3.0 was rebuilt on the 0.0.55 engine (clone commit
+  `d771074`, notes extended) and rankcli.dev #14 gained the v0.0.55 changelog entry; both
+  still wait on the founder, with the plugin publish credential.
 - **v0.0.54 shipped and stage 3 is live.** On the founder's "merge and continue": rankcli
   #3 to #10 merged, versions bumped (cli 0.0.54, agent-runtime 0.0.42, mcp-server 0.0.27),
   release created from the session; npm has all three (the CLI's `bin` intact; npm 12's
