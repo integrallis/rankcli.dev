@@ -13,9 +13,21 @@ like a regression when nothing has changed:
 
 | Measurement | Score | What it is |
 |---|---|---|
-| `--max-pages 1` | **89** since 2026-11-02 on `@rankcli/cli@0.0.54`, 0.0.53 and 0.0.52 alike (90 from 2026-10-29 to 2026-11-02 on 0.0.52 and 0.0.51; 85 on 0.0.50; 80 on 0.0.49; 75 until 2026-10-14) | The homepage. **This is the number all launch copy cites.** |
+| `--max-pages 1` | **92** since 2026-11-03 on `@rankcli/cli@0.0.55` (89 from 2026-11-02 on 0.0.54, 0.0.53 and 0.0.52 alike; 90 from 2026-10-29 to 2026-11-02 on 0.0.52 and 0.0.51; 85 on 0.0.50; 80 on 0.0.49; 75 until 2026-10-14) | The homepage. **This is the number all launch copy cites.** |
 | default crawl (5 pages) | 72 before 2026-10-14; 8 pages score 80 after | Averages in weaker inner pages |
 | SEO gate CI run | 81 (last checked 2026-10-02) | The published Action's own scope |
+
+**Re-verified 2026-11-03 on the published `@rankcli/cli@0.0.55`, from an empty directory:
+homepage 92/100, 0 errors, 3 warnings, 19 notices, AI Readiness 93, on-page 94, content 85,
+React; 310 checks run, 307 passed.** The three points are the removed defaults, not the site:
+twelve notices gone (`AI_LOW_CITATION_QUALITY`, `AI_LOW_CITATION_WORTHINESS`,
+`AI_NO_ORIGINAL_DATA`, `BING_VERIFICATION_MISSING`, `HIGH_BOUNCE_RISK`,
+`INVERTED_PYRAMID_MISSING`, `LOW_DWELL_TIME_SIGNALS`, `NO_BREADCRUMBS` on the homepage,
+`NO_ENTITY_DEFINITION`, `NO_EXPERIENCE_SIGNALS`, `NO_RELATED_CONTENT`,
+`RAG_CHUNK_SIZE_MISMATCH`), nothing new, the same three warnings (`AI_UNCITED_STATISTICS`,
+`MISSING_PRECONNECT`, `RENDER_BLOCKING_RESOURCES`). The landing page's recorded terminal run
+(`packages/saas/src/data/hero-run`) was re-recorded on 0.0.55 the same hour and shows the
+same 92.
 
 **Re-verified 2026-11-03 on the published `@rankcli/cli@0.0.54`, from an empty directory:
 homepage 89/100, 0 errors, 3 warnings, 31 notices, AI Readiness 89, on-page 85, React; 310
