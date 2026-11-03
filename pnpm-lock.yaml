@@ -24,11 +24,11 @@ importers:
         specifier: ^1.30.0
         version: 1.30.0(zod@4.3.6)
       '@rankcli/agent-runtime':
-        specifier: 0.0.43
-        version: 0.0.43(zod@4.3.6)
+        specifier: 0.0.44
+        version: 0.0.44(zod@4.3.6)
       '@rankcli/mcp-server':
-        specifier: 0.0.28
-        version: 0.0.28(zod@4.3.6)
+        specifier: 0.0.29
+        version: 0.0.29(zod@4.3.6)
       '@supabase/supabase-js':
         specifier: ^2.39.0
         version: 2.97.0
@@ -158,11 +158,11 @@ importers:
         specifier: ^1.57.0
         version: 1.58.2
       '@rankcli/agent-runtime':
-        specifier: 0.0.43
-        version: 0.0.43(zod@4.3.6)
+        specifier: 0.0.44
+        version: 0.0.44(zod@4.3.6)
       '@rankcli/mcp-server':
-        specifier: 0.0.28
-        version: 0.0.28(zod@4.3.6)
+        specifier: 0.0.29
+        version: 0.0.29(zod@4.3.6)
       '@resvg/resvg-js':
         specifier: ^2.6.2
         version: 2.6.2
@@ -2498,8 +2498,8 @@ packages:
     resolution: {integrity: sha512-HPwpGIzkl28mWyZqG52jiqDJ12waP11Pa1lGoiyUkIEuMLBP0oeK/C89esbXrxsky5we7dfd8U58nm0SgAWpVw==}
     dev: false
 
-  /@rankcli/agent-runtime@0.0.43(zod@4.3.6):
-    resolution: {integrity: sha512-5YJ+ABq/GA2IkDxU53CRJBtudSQLucLYvniJZS7qPT77NhWEoixQ2/aC5cBYLRTETSzdbHKDuUFFodXoBqCU8Q==}
+  /@rankcli/agent-runtime@0.0.44(zod@4.3.6):
+    resolution: {integrity: sha512-YBBhDG7Q3AoiVHM8EFC3VOsMk/c5IrIS+DKdJ8ZwtERQdWfCf37Qi4hsRcxsk+VsgAXhfDArw4XqmMDxe3MNEg==}
     engines: {node: '>=18.0.0'}
     dependencies:
       '@anthropic-ai/sdk': 0.52.0
@@ -2513,12 +2513,12 @@ packages:
       - ws
       - zod
 
-  /@rankcli/mcp-server@0.0.28(zod@4.3.6):
-    resolution: {integrity: sha512-bBc8H+GgEXi24N89R0Fp2Fy2iQ+XIVcr2MPI2wNd8ThdJ9CfOEd5fCXnImRVWPT2oh1P99VubRn30SiEjVVMQw==}
+  /@rankcli/mcp-server@0.0.29(zod@4.3.6):
+    resolution: {integrity: sha512-jvJkrXGlSI06mEbo1DQrv18fnh7Z+ylxUT10ku1EvwhvhKDd0v4yLzehk+DMPe3TdZ5vezYuYbQsEPwd49H/Rg==}
     hasBin: true
     dependencies:
       '@modelcontextprotocol/sdk': 1.30.0(zod@4.3.6)
-      '@rankcli/agent-runtime': 0.0.43(zod@4.3.6)
+      '@rankcli/agent-runtime': 0.0.44(zod@4.3.6)
       conf: 12.0.0
     transitivePeerDependencies:
       - '@cfworker/json-schema'

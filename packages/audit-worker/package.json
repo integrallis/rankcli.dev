@@ -12,8 +12,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@rankcli/agent-runtime": "0.0.43",
-    "@rankcli/mcp-server": "0.0.28",
+    "@rankcli/agent-runtime": "0.0.44",
+    "@rankcli/mcp-server": "0.0.29",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@supabase/supabase-js": "^2.39.0",
     "fastify": "^4.25.0",
