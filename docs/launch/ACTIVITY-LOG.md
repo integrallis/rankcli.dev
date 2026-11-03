@@ -161,6 +161,18 @@ and the developer channels have produced no measurable visit.
 
 ### 2026-11-03
 
+- **v0.0.57 shipped: the second pass over the always-on findings.** The first run's data,
+  re-read after 0.0.55 (56 codes per site down to 42 on the same 367 sites), still showed ten
+  heuristics on a third to two thirds of sites: the testimonials and review-ecosystem family
+  (59%), the "agent experience surface" notice (64%), a freshness composite (53%), a popup
+  detector that fires on docs sites' search dialogs (51%), a click-through estimate that was a
+  warning (47%), Search Console verification by meta tag (44%, the Bing rule applied to
+  Google), the unique-selling-proposition and social-platform checks (40%, 35%). rankcli #18
+  removed them with the same script as the first pass; dedupe rules trimmed; every suite green.
+  Released as cli 0.0.57, agent-runtime 0.0.45, mcp-server 0.0.30; hosted pins moved in this
+  PR. Kept on purpose: security headers, DMARC and SPF, SCHEMA_MISSING, the performance
+  findings Lighthouse also reports, LLMS_TXT_MISSING as framed, the intent-conditioned social
+  proof notices. Monday's corpus run (built from main) is the first with the shorter list.
 - **The production end-to-end checks pass after the day's deploys** (`node
   scripts/e2e-production.mjs`, 12 of 12: the free audit scores 92 on the 0.0.56 engine, the
   edge functions refuse unauthenticated and forged calls, the CLI audits a live site and exits
