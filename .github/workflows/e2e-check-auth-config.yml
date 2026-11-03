@@ -66,6 +66,30 @@ jobs:
           echo "--- time to first outcome, external accounts (founder's personal account included) ---"
           query "WITH u AS (SELECT id, created_at FROM auth.users WHERE email NOT ILIKE '%@integrallis.com'), fa AS (SELECT p.user_id, MIN(a.created_at) AS t FROM audits a JOIN projects p ON p.id = a.project_id GROUP BY 1), gh AS (SELECT DISTINCT user_id FROM projects WHERE github_installation_id IS NOT NULL), fp AS (SELECT p.user_id, MIN(g.created_at) AS t, MIN(g.merged_at) AS m FROM github_prs g JOIN projects p ON p.id = g.project_id WHERE g.kind = 'auto_fix' AND NOT (COALESCE(p.github_repo_url, '') ~* '^https://github\.com/(integrallis|integrallis-test|bsbodden)/') GROUP BY 1) SELECT COUNT(*) AS accounts, COUNT(fa.t) AS with_audit, COUNT(gh.user_id) AS with_github_app, COUNT(fp.t) AS with_auto_fix_pr, COUNT(fp.m) AS with_merged_pr, ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM fa.t - u.created_at) / 86400) FILTER (WHERE fa.t IS NOT NULL))::numeric, 2) AS median_days_signup_to_audit, ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM fp.t - fa.t) / 86400) FILTER (WHERE fp.t IS NOT NULL AND fa.t IS NOT NULL))::numeric, 2) AS median_days_audit_to_pr, ROUND((percentile_cont(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM fp.m - fp.t) / 86400) FILTER (WHERE fp.m IS NOT NULL))::numeric, 2) AS median_days_pr_to_merge FROM u LEFT JOIN fa ON fa.user_id = u.id LEFT JOIN gh ON gh.user_id = u.id LEFT JOIN fp ON fp.user_id = u.id"
 
+      # docs/OUTCOME_PLAN_2026-11.md, item 3.3: the first auto-fix PR on the Free plan runs on
+      # RankCLI's own model key (ai_gift_grants); its cost has to stay visible next to the
+      # outcome it buys. Aggregates only, for the same reason as above.
+      - name: Cost of the free hosted PR (aggregates only, no personal data)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          PROJECT_REF="bspljbxwbjiqueeyzyat"
+          query() {
+            node -e 'process.stdout.write(JSON.stringify({ query: process.argv[1] }))' "$1" \
+              | curl -s "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+                  -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+                  -H "Content-Type: application/json" \
+                  --data-binary @-
+            echo
+          }
+          echo "--- free hosted PR grants by status, all time ---"
+          query "SELECT status, COUNT(*) AS grants, COUNT(cost_usd) AS with_cost, ROUND(COALESCE(SUM(cost_usd), 0)::numeric, 4) AS total_cost_usd, ROUND(AVG(cost_usd)::numeric, 4) AS avg_cost_usd, ROUND(AVG(prompt_tokens))::int AS avg_prompt_tokens, ROUND(AVG(completion_tokens))::int AS avg_completion_tokens, MAX(cost_usd) AS max_cost_usd FROM ai_gift_grants GROUP BY 1 ORDER BY 1"
+          echo "--- free hosted PR cost per month (settled grants) ---"
+          query "SELECT date_trunc('month', granted_at)::date AS month, COUNT(*) AS settled, ROUND(SUM(cost_usd)::numeric, 4) AS total_cost_usd, ROUND(AVG(cost_usd)::numeric, 4) AS avg_cost_usd, COALESCE(model, 'unknown') AS model FROM ai_gift_grants WHERE status = 'settled' GROUP BY 1, 5 ORDER BY 1, 5"
+          echo "--- what the gift bought: settled grants whose PR was merged, closed or is still open ---"
+          query "WITH g AS (SELECT a.user_id, a.cost_usd, a.granted_at FROM ai_gift_grants a WHERE a.status = 'settled'), pr AS (SELECT p.user_id, gp.pr_state, gp.created_at FROM github_prs gp JOIN projects p ON p.id = gp.project_id WHERE gp.kind = 'auto_fix') SELECT COUNT(*) AS settled_grants, COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM pr WHERE pr.user_id = g.user_id AND pr.pr_state = 'merged')) AS with_merged_pr, COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM pr WHERE pr.user_id = g.user_id AND pr.pr_state = 'closed') AND NOT EXISTS (SELECT 1 FROM pr WHERE pr.user_id = g.user_id AND pr.pr_state = 'merged')) AS with_closed_only, ROUND(SUM(g.cost_usd)::numeric, 4) AS total_cost_usd, ROUND((SUM(g.cost_usd) / NULLIF(COUNT(*) FILTER (WHERE EXISTS (SELECT 1 FROM pr WHERE pr.user_id = g.user_id AND pr.pr_state = 'merged')), 0))::numeric, 4) AS cost_per_merged_pr_usd FROM g"
+
       - name: Signup funnel (aggregates only, no personal data)
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
