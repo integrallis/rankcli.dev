@@ -131,6 +131,18 @@ and the developer channels have produced no measurable visit.
   Also: rankcli.dev #14 holds the site docs for 0.0.54; rankcli #5 was made independent of #4
   (both added an import on the same line); the plugin publish now pins astro-rankcli's
   workspace dependency and refuses to run before the runtime version is on npm.
+- **The first full corpus dataset (local, not committed).** 400 sites in 659 seconds, 367
+  audited. 47 percent publish an llms.txt (Next.js sites 54 of 84), 41 percent have no
+  sitemap, 9 percent stamp one date on every sitemap URL (developer.mozilla.org, solidjs.com,
+  mantine.dev among them), 5 percent client-render the homepage, 3 percent refuse a training
+  crawler at the edge, three sites refuse the AI search crawlers at the edge, two refuse a
+  search crawler (ag-grid.com answers Googlebot and bingbot with 403), three disallow the AI
+  search crawlers in robots.txt, two stream metadata only to Googlebot (an HTMX and a Nuxt
+  site; none of the 84 Next.js sites), none has an IndexNow key; median score 70, median AI
+  Readiness 86. The run caught one wrong check: `METADATA_OUTSIDE_HEAD` fired on 41 sites
+  over an inline icon's `<svg><title>` (vuejs.org, getbootstrap.com, developer.mozilla.org);
+  fixed on rankcli #4 before it ever shipped, which is what the corpus is for. The numbers are
+  on rankcli #9 as a comment. The write-up waits for the first scheduled run after the merges.
 - **v0.0.53 and Action v1.2.0 shipped.** The founder created the v0.0.53 release at 19:48 UTC
   and pushed the staged Action at 19:49. `release.yml` published `@rankcli/agent-runtime`
   0.0.41, `@rankcli/mcp-server` 0.0.26 and `@rankcli/cli` 0.0.53 (both pin ^0.0.41) under
