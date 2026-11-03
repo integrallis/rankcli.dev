@@ -4,10 +4,27 @@ There are fifteen files in this directory and some of them contradict each other
 were written across several sessions as things changed. This one is the index. If it disagrees
 with another file, this one is right, and fix the other one.
 
-**Last verified: 2026-10-13.**
+**Last verified: 2026-11-03.**
 
 For what has actually been done, with outcomes, see
 **[ACTIVITY-LOG.md](./ACTIVITY-LOG.md)**. This file is the plan; that one is the record.
+
+---
+
+## 2026-11-03: the private beta comes before everything below
+
+The founder set the plan on 2026-11-03: **25 private invitations through GitHub, two weeks of
+assessment, fill the gaps that surface, then the general launch.** The plan, the kit and the
+tracker are in [BETA-2026-11.md](./BETA-2026-11.md). Until the beta has been read, the public
+distribution items are deferred, however ready they are: the Nuxt modules directory PR
+(script in the session scratchpad), the GitHub Marketplace listing, Product Hunt, the Show HN
+re-up, and the corpus write-up (`corpus-writeup-2026-11-03.md`) going anywhere public. The
+product work continues: a gap the beta surfaces is the next release.
+
+What the beta needs from the founder: the list of twenty-five GitHub logins in
+`docs/launch/beta-invitees.txt` (gitignored), then `scripts/beta-invite.sh`. What it needs from
+a session: `node scripts/beta-metrics.mjs` twice a week, every Discussion answered within the
+day, the gap list in `BETA-2026-11.md` kept current.
 
 ---
 
