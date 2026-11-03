@@ -103,6 +103,20 @@ and the developer channels have produced no measurable visit.
   point, so that change goes in as #6. The merge button is the one thing the permission
   classifier blocks, so #3, #4, #5, #6 and rankcli.dev #13 wait for the founder; none of the
   engine work is released until 0.0.54.
+- **Plan item 5 (agent surfaces), three PRs.** rankcli #7: `rankcli audit -o llm`, the
+  report as an agent reads it (plain Markdown, every finding by code, the fix's first
+  sentence on errors and warnings, about 700 words for a two-page audit of rankcli.dev).
+  rankcli #8: `astro-rankcli` 0.1.0 runs the full engine audit on the build output after
+  `astro build` (the same checks as `rankcli audit --dir dist`), logs the score and every
+  error and warning with its code, and gates the build on `audit.failOn`; a developer who
+  installed it used to get seven checks. `vite-plugin-rankcli` and `next-rankcli` now say
+  they are SEO lint and helpers, not the audit, with the one-line command that is.
+  rankcli-mcp-server #2: three task-named skills (`check-site-before-deploy`,
+  `fix-seo-regressions`, `is-my-site-blocked-from-ai-search`), the two older ones updated to
+  the 0.0.53 gate syntax, the stale server-source copy removed from that repository and its
+  README pointing at the right release page; to merge after 0.0.54 ships, since the bot-class
+  codes are 0.0.54 names. Verified on the way: the free hosted MCP endpoint serves the same
+  thirteen analysis tools as the local server, so the parity item needed no code.
 - **v0.0.53 and Action v1.2.0 shipped.** The founder created the v0.0.53 release at 19:48 UTC
   and pushed the staged Action at 19:49. `release.yml` published `@rankcli/agent-runtime`
   0.0.41, `@rankcli/mcp-server` 0.0.26 and `@rankcli/cli` 0.0.53 (both pin ^0.0.41) under
