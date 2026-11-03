@@ -49,6 +49,7 @@ const staticRoutes: SiteRoute[] = [
   { path: '/tools/chatgpt-checker', changefreq: 'monthly', priority: 0.7, sources: ['src/pages/tools/ChatGPTCheckerPage.tsx'] },
   { path: '/tools/compare', changefreq: 'monthly', priority: 0.7, sources: ['src/pages/tools/CompetitorAnalyzerPage.tsx'] },
   { path: '/changelog', changefreq: 'weekly', priority: 0.6, sources: ['src/pages/ChangelogPage.tsx'] },
+  { path: '/data/npm-sites', changefreq: 'weekly', priority: 0.6, sources: ['src/pages/DataNpmSitesPage.tsx', 'src/lib/corpus.ts'] },
   { path: '/about', changefreq: 'yearly', priority: 0.5, sources: ['src/pages/AboutPage.tsx'] },
   { path: '/contact', changefreq: 'yearly', priority: 0.4, sources: ['src/pages/ContactPage.tsx'] },
   { path: '/bot', changefreq: 'yearly', priority: 0.2, sources: ['src/pages/BotPage.tsx'] },
