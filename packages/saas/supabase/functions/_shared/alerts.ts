@@ -26,6 +26,7 @@ export type AlertEvent =
   | { kind: 'score_drop'; project: string; from: number; to: number; link: string }
   | { kind: 'pr_created'; project: string; prUrl: string; issuesFixed: number }
   | { kind: 'weekly_report'; project: string; score: number | null; change: number | null; openIssues: number; link: string }
+  | { kind: 'crawler_blocked'; project: string; crawlers: string[]; link: string }
   | { kind: 'test'; link: string };
 
 // Only real Slack/Discord incoming-webhook URLs: the URL comes from the user, and the
@@ -59,6 +60,8 @@ export function configsFor(
     if (!isAllowedWebhook(c.channel, c.webhook_url)) return false;
     switch (event.kind) {
       case 'error':
+      case 'crawler_blocked':
+        // A crawler that AI answers draw from stopped getting in: as urgent as a failed audit.
         return c.on_error;
       case 'score_drop':
         return c.on_score_drop && event.from - event.to >= Math.max(1, c.score_drop_threshold);
@@ -80,6 +83,14 @@ function summary(event: AlertEvent): { title: string; body: string; link: string
         body: event.error.slice(0, 300),
         link: event.link,
         linkLabel: 'Open in RankCLI',
+        color: 0xc62828,
+      };
+    case 'crawler_blocked':
+      return {
+        title: `Crawler blocked: ${event.project}`,
+        body: `${event.crawlers.join(', ')} can no longer read the site. AI answers that draw from ${event.crawlers.length === 1 ? 'it' : 'them'} will stop citing it.`,
+        link: event.link,
+        linkLabel: 'See which and why',
         color: 0xc62828,
       };
     case 'score_drop':
