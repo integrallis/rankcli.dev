@@ -319,6 +319,13 @@ export function Pricing({ headingLevel = 'h2' }: PricingProps) {
             </Link>{' '}
             — all 280+ checks, no signup required.
           </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Auditing client sites?{' '}
+            <Link to="/for-agencies" className="text-foreground hover:text-primary transition-colors">
+              Agency: reports under your brand, fifty sites
+            </Link>
+            .
+          </p>
         </ScrollReveal>
       </div>
     </section>
