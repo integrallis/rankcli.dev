@@ -378,6 +378,58 @@ Manage notifications: https://rankcli.dev/account?tab=notifications
 }
 
 /**
+ * Crawler blocked: a crawler that AI answers draw from stopped getting in since the last audit
+ * (refused at the edge, or disallowed in robots.txt). Sent on every plan; the alert that makes
+ * watching a site worth it.
+ */
+export interface CrawlerBlockedData {
+  siteName: string;
+  siteUrl: string;
+  blocked: Array<{ code: string; title: string }>;
+  auditUrl: string;
+}
+
+export function crawlerBlockedEmail(data: CrawlerBlockedData): { html: string; text: string; subject: string } {
+  const rowsHtml = data.blocked.map(b => `
+    <div class="issue issue-error">
+      <p class="issue-title">${escapeHtml(b.title)}</p>
+      <span class="issue-category">${escapeHtml(b.code)}</span>
+    </div>
+  `).join('');
+
+  const html = baseLayout(`
+    <div class="card" style="border-color: ${COLORS.error};">
+      <h1 style="color: ${COLORS.error};">A crawler stopped getting in</h1>
+      <p>Since the last audit of <strong>${escapeHtml(data.siteName)}</strong>, ${data.blocked.length === 1 ? 'a crawler that AI answers draw from' : `${data.blocked.length} crawler findings that AI answers draw from`} changed from allowed to blocked. Pages those crawlers cannot read stop being cited.</p>
+      ${rowsHtml}
+      <p>The usual causes: a CDN or WAF rule that answers 403 to a crawler while a browser gets the page, or a robots.txt change. The finding names the crawler and the cause.</p>
+      <div style="text-align: center; margin-top: 32px;">
+        <a href="${data.auditUrl}" class="button" style="background: ${COLORS.error};">See which and why</a>
+      </div>
+    </div>
+  `, `A crawler that AI answers draw from stopped getting into ${data.siteName}`);
+
+  const text = `
+A crawler stopped getting in: ${data.siteName}
+${data.siteUrl}
+
+Since the last audit, these changed from allowed to blocked:
+
+${data.blocked.map(b => `- ${b.title} (${b.code})`).join('\n')}
+
+Pages those crawlers cannot read stop being cited. The usual causes: a CDN or WAF rule that answers 403 to a crawler, or a robots.txt change.
+
+See which and why: ${data.auditUrl}
+
+---
+RankCLI - https://rankcli.dev
+Manage notifications: https://rankcli.dev/account?tab=notifications
+`;
+
+  return { html, text, subject: `Crawler blocked: ${data.siteName}` };
+}
+
+/**
  * Weekly Report Email
  */
 export interface WeeklyReportData {

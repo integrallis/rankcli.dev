@@ -19,12 +19,18 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { identifyCaller, bearerToken, safeEqual } from '../_shared/caller-auth.ts';
 import { getEntitlement } from '../_shared/tier.ts';
+import { sendEmail } from '../_shared/resend.ts';
+import { crawlerBlockedEmail } from '../_shared/email-templates.ts';
 import { configsFor, formatAlert, isAllowedWebhook, type AlertConfigRow, type AlertEvent } from '../_shared/alerts.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const APP_URL = Deno.env.get('APP_URL') || 'https://rankcli.dev';
 const ALERT_TIERS = new Set(['solo', 'pro', 'agency']);
+// The findings that mean a crawler AI answers draw from cannot read the site: refused at the
+// edge or disallowed in robots.txt, for the search and AI search classes. Training crawlers
+// are a policy choice and never alert.
+const BLOCKING_CODES = ['SEARCH_CRAWLER_BLOCKED_AT_EDGE', 'AI_SEARCH_CRAWLER_BLOCKED_AT_EDGE', 'AI_SEARCH_BOTS_DISALLOWED', 'ROBOTS_TXT_BLOCKS_ALL'];
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -93,7 +99,7 @@ serve(async (req) => {
       } else if (audit.status === 'completed' && typeof audit.score === 'number') {
         const { data: previous } = await supabase
           .from('audits')
-          .select('score')
+          .select('id, score')
           .eq('project_id', project.id)
           .eq('status', 'completed')
           .lt('created_at', audit.created_at)
@@ -102,6 +108,33 @@ serve(async (req) => {
           .maybeSingle();
         if (typeof previous?.score === 'number' && previous.score > audit.score) {
           event = { kind: 'score_drop', project: name, from: previous.score, to: audit.score, link };
+        }
+        // A crawler that AI answers draw from stopped getting in since the previous audit: the
+        // one alert every plan gets by email, and the most urgent one for the webhooks.
+        if (previous?.id) {
+          const { data: nowBlocked } = await supabase
+            .from('audit_issues')
+            .select('code, title')
+            .eq('audit_id', body.auditId)
+            .in('code', BLOCKING_CODES);
+          if (nowBlocked && nowBlocked.length > 0) {
+            const { data: thenBlocked } = await supabase
+              .from('audit_issues')
+              .select('code')
+              .eq('audit_id', previous.id)
+              .in('code', BLOCKING_CODES);
+            const before = new Set((thenBlocked || []).map((i: { code: string }) => i.code));
+            const fresh = (nowBlocked as Array<{ code: string; title: string }>).filter((i) => !before.has(i.code));
+            if (fresh.length > 0) {
+              event = { kind: 'crawler_blocked', project: name, crawlers: fresh.map((i) => i.title), link };
+              const { data: owner } = await supabase.auth.admin.getUserById(project.user_id);
+              if (owner?.user?.email) {
+                const mail = crawlerBlockedEmail({ siteName: name, siteUrl: project.domain || name, blocked: fresh, auditUrl: link });
+                const sent = await sendEmail({ to: owner.user.email, subject: mail.subject, html: mail.html, text: mail.text, tags: [{ name: 'type', value: 'crawler_blocked' }] });
+                if (!sent.success) console.warn(`[project-alerts] crawler-blocked email failed for ${project.id}: ${sent.error}`);
+              }
+            }
+          }
         }
       }
     } else if (body.event === 'pr_created' && typeof body.prUrl === 'string') {
