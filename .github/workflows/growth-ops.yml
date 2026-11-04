@@ -20,11 +20,10 @@
 name: Growth Ops
 
 on:
-  schedule:
-    # Runs daily; the scheduler decides which channels actually post today.
-    # An hour after SEO Monitoring's Monday 9am UTC run so this week's
-    # audit score is always fresh, not stale from a prior week.
-    - cron: '0 10 * * *'
+  # The daily schedule is off since 2026-11-04: in two months every automated channel measured
+  # zero referrals (ACTIVITY-LOG.md). The workflow stays for a post dispatched by hand.
+  #   schedule:
+  #     - cron: '0 10 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
