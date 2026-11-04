@@ -11,6 +11,21 @@ For what has actually been done, with outcomes, see
 
 ---
 
+## 2026-11-04: the funnel, rebuilt from what works elsewhere
+
+Zero of 136 free audits converted; the research in ACTIVITY-LOG.md (2026-11-04) says why and
+what the successful tools do instead. Shipped: the free audit shows everything and offers to
+watch the site; six free-tool pages (/tools); comparison pages against Otterly, Peec and
+Profound; the posting automation off. In PR: a 14-day Pro trial on every new account (#46)
+and the crawler-blocked alert on every plan (#47). The numbers to watch, weekly, from
+`e2e-check-auth-config.yml`'s report: free audits -> accounts, accounts -> trialing -> paid,
+and `scripts/cf-traffic.mjs` for the tool pages' landing paths.
+
+Still the founder's: the two plugin directory listings (FOUNDER_CHECKLIST 7 and 9), the
+LaunchBuck and LaunchBuff submissions (values provided), the Show HN
+(`docs/launch/show-hn-2026-11.md`), and two decisions: a referral or affiliate program, and
+whether the site should speak to agencies and marketers as well as developers.
+
 ## 2026-11-03: everything shipped; the plugins publish through Trusted Publishing
 
 The GitHub Action is on the Marketplace as "RankCLI SEO Audit" (verified 2026-11-04, v1.3.0 shown).

@@ -161,6 +161,24 @@ and the developer channels have produced no measurable visit.
 
 ### 2026-11-04
 
+- **What the successful tools do that we did not, implemented.** The founder: "what we are doing
+  is not working", "not trying is the failure"; the 2026-11-02 numbers: 20 accounts, 15
+  external, 0 paying, 0 of 136 free audits converted. Three research passes (Seobility,
+  SE Ranking, Ahrefs Free; Peec, Profound, Otterly; Checkly, Sentry, Unlighthouse) agreed on
+  six things: show the whole diagnosis free and gate scope; many indexed free-tool pages; a
+  hosted free tier that is a real product with alerts; a no-card trial of the paid tier; an
+  agency path with a referral program; comparison pages against the names people search.
+  Shipped the same day: the free audit shows every finding, leads with the crawler-access
+  table and offers "Watch this site" (no GitHub, no card; the dashboard creates the project
+  itself) (#43); six free-tool pages over the same audit with a /tools index (#44);
+  comparison pages against Otterly.AI, Peec AI and Profound, every rival claim sourced (#45);
+  the daily posting schedule off, every automated channel having measured zero (#42); a Show
+  HN draft for the founder. Open: a 14-day Pro trial on every new account, no card, ended by
+  date in the entitlement rule (#46); an email on every plan when a crawler that AI answers
+  draw from stops getting in, plus the webhook alert on paid plans (#47). Not done: the
+  referral program (billing work, a decision first) and the agency positioning (the founder's
+  call: the cohorts that arrive are marketers, the site speaks to developers). Declined by the
+  founder: contacting the fifteen accounts, asking developers for PRs.
 - **The coding-agent install paths are on the site; an image ad is drafted.** rankcli.dev #41
   adds "Use it from your coding agent" after How it works (Claude Code plugin, Codex, ChatGPT
   custom MCP server on the free endpoint) and the same in the docs; live. rankcli #27 puts MCP
