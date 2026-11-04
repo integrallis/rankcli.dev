@@ -19,8 +19,8 @@ const corsHeaders = {
 const RATE_LIMIT = 10;
 const RATE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
-// Free tier limits - show a subset of issues to encourage signup
-const FREE_TIER_MAX_ISSUES = 10;
+// Every finding is shown (2026-11-04): the diagnosis is free in the CLI too, and hiding it behind
+// sign-up converted nobody. What an account adds is watching the site over time and fixing it.
 
 interface FreeAuditIssue {
   code: string;
@@ -237,9 +237,8 @@ serve(async (req) => {
       return priorityOrder.indexOf(a.severity) - priorityOrder.indexOf(b.severity);
     });
 
-    // Limit issues shown for free tier
-    const displayedIssues = sortedIssues.slice(0, FREE_TIER_MAX_ISSUES);
-    const hiddenIssueCount = Math.max(0, allIssues.length - FREE_TIER_MAX_ISSUES);
+    const displayedIssues = sortedIssues;
+    const hiddenIssueCount = 0;
 
     // Calculate category scores
     const categories = {
@@ -297,14 +296,9 @@ serve(async (req) => {
     }
 
     // Determine upsell message based on results
-    let message: string;
-    if (hiddenIssueCount > 0) {
-      message = `Found ${allIssues.length} issues using ${totalChecksRun} checks. Sign up to see all issues and get detailed fix recommendations.`;
-    } else if (allIssues.length > 0) {
-      message = `Found ${allIssues.length} issues. Sign up to track improvements and get auto-fix PRs.`;
-    } else {
-      message = 'Great job! Sign up to monitor your site and track improvements over time.';
-    }
+    const message = allIssues.length > 0
+      ? `Found ${allIssues.length} findings from ${totalChecksRun} checks. Watch this site to be told when something changes.`
+      : 'Nothing to fix on this page. Watch this site to be told if that changes.';
 
     return new Response(JSON.stringify({
       score,

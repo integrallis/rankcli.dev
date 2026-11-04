@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SEO } from '@/components/SEO';
-import { Search, Loader2, ArrowRight, AlertCircle, CheckCircle, XCircle, Bot, Sparkles } from 'lucide-react';
+import { Search, Loader2, ArrowRight, AlertCircle, CheckCircle, XCircle, Bot, Sparkles, Eye, GitPullRequest } from 'lucide-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { CategoryRadarChart } from '@/components/audit/CategoryRadarChart';
 import { SERPPreview } from '@/components/audit/SERPPreview';
 import { ShareResults } from '@/components/audit/ShareResults';
 import { trackFreeAudit } from '@/lib/conversions';
+import { crawlerAccessRows, blockedForAnswers } from '@/lib/crawler-access';
 
 interface AuditResult {
   score: number;
@@ -46,6 +47,7 @@ export function FreeAuditPage() {
   const [result, setResult] = useState<AuditResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [auditRecordId, setAuditRecordId] = useState<string | null>(null);
+  const [showNotices, setShowNotices] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -310,56 +312,108 @@ export function FreeAuditPage() {
                 </CardContent>
               </Card>
 
-              {/* Issues Found */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    Issues Found
-                    <div className="flex gap-2">
-                      <Badge variant="outline">{result.totalIssues} total</Badge>
-                      {result.hiddenIssues > 0 && (
-                        <Badge variant="secondary">+{result.hiddenIssues} more</Badge>
+              {/* Crawler access: the finding no other checker gives, first */}
+              {(() => {
+                const rows = crawlerAccessRows(result.issues);
+                const costly = blockedForAnswers(rows);
+                return (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Bot className="h-5 w-5" />
+                        Can AI find this site?
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        {costly.length === 0
+                          ? 'The page was fetched as each crawler. Every crawler that AI answers draw from got in.'
+                          : `${costly.length} crawler class${costly.length === 1 ? '' : 'es'} that AI answers draw from cannot read this page.`}
+                      </p>
+                      <div className="divide-y divide-border rounded-lg border">
+                        {rows.map((row) => (
+                          <div key={row.cls} className="flex items-start gap-3 p-3 text-sm">
+                            {row.status === 'allowed' ? (
+                              <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                            ) : row.cls === 'training' ? (
+                              <AlertCircle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                            ) : (
+                              <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium">
+                                {row.label} <span className="text-muted-foreground font-normal">({row.bots})</span>
+                              </p>
+                              <p className="text-muted-foreground">
+                                {row.status === 'allowed'
+                                  ? 'allowed'
+                                  : row.status === 'edge'
+                                  ? 'refused at the edge: the CDN or server answers an error to this crawler while a browser gets the page'
+                                  : 'disallowed in robots.txt'}
+                                {row.status !== 'allowed' && row.cls !== 'training' ? `; costs ${row.cost}` : ''}
+                                {row.status !== 'allowed' && row.cls === 'training' ? '; a policy choice, costs nothing a user sees' : ''}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
+              {/* Every finding, errors and warnings open, notices on request */}
+              {(() => {
+                const important = result.issues.filter((i) => i.severity !== 'notice');
+                const notices = result.issues.filter((i) => i.severity === 'notice');
+                const renderIssue = (issue: AuditResult['issues'][number], index: number) => (
+                  <div key={`${issue.code}-${index}`} className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                    {getSeverityIcon(issue.severity)}
+                    <div className="flex-1">
+                      <p className="font-medium">{issue.title}</p>
+                      <p className="text-sm text-muted-foreground">{issue.category}</p>
+                      {issue.description && (
+                        <p className="text-sm text-muted-foreground mt-1">{issue.description}</p>
                       )}
                     </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {result.issues.map((issue, index) => (
-                      <div
-                        key={index}
-                        className="flex items-start gap-3 p-3 rounded-lg bg-muted/50"
-                      >
-                        {getSeverityIcon(issue.severity)}
-                        <div className="flex-1">
-                          <p className="font-medium">{issue.title}</p>
-                          <p className="text-sm text-muted-foreground">{issue.category}</p>
-                          {issue.description && (
-                            <p className="text-sm text-muted-foreground mt-1">{issue.description}</p>
-                          )}
-                        </div>
-                        <Badge
-                          variant={
-                            issue.severity === 'error'
-                              ? 'error'
-                              : issue.severity === 'warning'
-                              ? 'warning'
-                              : 'secondary'
-                          }
-                        >
-                          {issue.severity}
-                        </Badge>
-                      </div>
-                    ))}
+                    <Badge
+                      variant={issue.severity === 'error' ? 'error' : issue.severity === 'warning' ? 'warning' : 'secondary'}
+                    >
+                      {issue.severity}
+                    </Badge>
                   </div>
-
-                  {result.hiddenIssues > 0 && (
-                    <div className="mt-4 p-4 rounded-lg bg-muted/30 text-center text-sm text-muted-foreground">
-                      +{result.hiddenIssues} more issues found. Sign up to see the complete report.
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                );
+                return (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        Findings
+                        <div className="flex gap-2">
+                          <Badge variant="outline">{result.totalIssues} total</Badge>
+                        </div>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {important.length === 0 && (
+                        <p className="text-sm text-muted-foreground mb-4">No errors and no warnings on this page.</p>
+                      )}
+                      <div className="space-y-4">{important.map(renderIssue)}</div>
+                      {notices.length > 0 && (
+                        <div className="mt-4">
+                          <Button variant="ghost" size="sm" onClick={() => setShowNotices((v) => !v)}>
+                            {showNotices ? 'Hide' : 'Show'} {notices.length} notice{notices.length === 1 ? '' : 's'}
+                          </Button>
+                          {showNotices && <div className="space-y-4 mt-4">{notices.map(renderIssue)}</div>}
+                        </div>
+                      )}
+                      <p className="mt-4 text-xs text-muted-foreground">
+                        The same report, every check included, runs locally with{' '}
+                        <code className="bg-muted px-1 rounded">npx @rankcli/cli audit --url {url.replace(/^https?:\/\//, '')}</code>.
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
 
               {/* Share Results */}
               <Card>
@@ -372,28 +426,47 @@ export function FreeAuditPage() {
                 </CardContent>
               </Card>
 
-              {/* Upgrade CTA */}
+              {/* What an account adds: watching, and fixing */}
               <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="py-8 text-center">
-                  <h3 className="text-xl font-semibold mb-2">
-                    Get these fixed in a pull request
-                  </h3>
-                  <p className="text-muted-foreground mb-6 max-w-lg mx-auto">
-                    Create a free account and connect the site's GitHub repository. RankCLI
-                    opens a pull request with the fixes; you review it and merge what you want.
-                    The first one runs on us, no AI key needed.
-                  </p>
-                  <div className="flex justify-center gap-4">
-                    <Link to={`/signup?site=${encodeURIComponent(url)}`}>
-                      <Button className="gap-2">
-                        Fix this site in a PR
-                        <ArrowRight className="h-4 w-4" />
-                      </Button>
-                    </Link>
-                    <Link to="/tools/ai-visibility">
-                      <Button variant="outline">Check AI Visibility</Button>
-                    </Link>
+                <CardContent className="py-8">
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <div>
+                      <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                        <Eye className="h-5 w-5" />
+                        Watch this site
+                      </h3>
+                      <p className="text-muted-foreground mb-4">
+                        A weekly audit of this site, the score over time, and an alert when a crawler
+                        that AI answers draw from stops getting in. Free. No GitHub, no card.
+                      </p>
+                      <Link to={`/signup?site=${encodeURIComponent(url)}&intent=watch`}>
+                        <Button className="gap-2">
+                          Watch this site
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold mb-2 flex items-center gap-2">
+                        <GitPullRequest className="h-5 w-5" />
+                        Fix it in a pull request
+                      </h3>
+                      <p className="text-muted-foreground mb-4">
+                        Connect the site's GitHub repository and RankCLI opens a pull request with the
+                        fixes; you review it and merge what you want. The first one runs on us.
+                      </p>
+                      <Link to={`/signup?site=${encodeURIComponent(url)}&intent=pr`}>
+                        <Button variant="outline" className="gap-2">
+                          Fix this site in a PR
+                          <ArrowRight className="h-4 w-4" />
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
+                  <p className="mt-6 text-xs text-muted-foreground text-center">
+                    Wondering whether ChatGPT, Claude and Perplexity can read it today?{' '}
+                    <Link to="/tools/ai-visibility" className="underline">Check AI visibility</Link>.
+                  </p>
                 </CardContent>
               </Card>
             </div>

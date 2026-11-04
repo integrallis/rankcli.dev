@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { normalizeSite, setPendingSite, consumePendingSite } from './usePendingSite';
+import { normalizeSite, setPendingSite, consumePendingSite, setPendingIntent, consumePendingIntent } from './usePendingSite';
 
 describe('pending site from the free audit', () => {
   // Node 26 ships its own localStorage, which shadows jsdom's and is undefined without
@@ -25,5 +25,13 @@ describe('pending site from the free audit', () => {
     expect(normalizeSite('localhost')).toBeNull();
     expect(normalizeSite('')).toBeNull();
     expect(normalizeSite(`https://a.com/${'x'.repeat(3000)}`)).toBeNull();
+  });
+
+  it('carries the intent (watch or pr) once, and ignores anything else', () => {
+    setPendingIntent('nonsense');
+    expect(consumePendingIntent()).toBeNull();
+    setPendingIntent('watch');
+    expect(consumePendingIntent()).toBe('watch');
+    expect(consumePendingIntent()).toBeNull();
   });
 });

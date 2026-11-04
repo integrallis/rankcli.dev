@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { setPendingSite } from '@/hooks/usePendingSite';
+import { setPendingSite, setPendingIntent } from '@/hooks/usePendingSite';
 import { usePendingPlan } from '@/hooks/usePendingPlan';
 
 // SVG icons for OAuth providers
@@ -57,6 +57,7 @@ export function SignupPage() {
     if (plan) setPendingPlan(plan);
     if (ltd) setPendingLTD(ltd);
     setPendingSite(searchParams.get('site'));
+    setPendingIntent(searchParams.get('intent'));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
