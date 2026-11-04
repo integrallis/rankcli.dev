@@ -23,7 +23,11 @@ provenance statement. rankcli #17 is closed and the `NPM_TOKEN` secret is gone f
 repository; from here a plugin release is a version bump on main and `gh workflow run
 publish-plugins.yml`.
 
-Nothing is left for the founder from the 2026-11-03 plan. Open, and waiting on evidence or a
+Two listings are the founder's, both in FOUNDER_CHECKLIST: Anthropic's plugin directory (section
+7) and OpenAI's plugin directory for ChatGPT and Codex (section 9, added 2026-11-04). The site
+shows the install paths that work without either listing (rankcli.dev #41).
+
+Nothing else is left for the founder from the 2026-11-03 plan. Open, and waiting on evidence or a
 decision rather than work: rankcli.dev #31, #34, #35 (the outcome plan's thresholds and the
 first external auto-fix PRs), nuxt/modules #1719 and kmpilot-dev/kmpilot.dev#81 (their
 maintainers). The corpus runs Mondays at 04:17 UTC.

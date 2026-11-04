@@ -95,3 +95,33 @@ Bump `version` in `.claude-plugin/plugin.json` with each release after that.
    ```
 
    After that window, `npm deprecate <package>@0.0.0-stage "placeholder, use 0.0.1"` is the alternative.
+
+## 9. List RankCLI in OpenAI's plugin directory (ChatGPT and Codex) - fifteen minutes, then review
+
+OpenAI's directory (the former Apps SDK, now "plugins") is shared by ChatGPT and Codex. One
+package can hold skills, a remote MCP server, or both. Verified 2026-11-04 at
+https://developers.openai.com/plugins/guides/submit-claude-plugin: a Claude Code plugin bundle
+is accepted for the skills-only path as-is when it has `.claude-plugin/plugin.json` with a
+description and `skills/<name>/SKILL.md`; the portal converts the manifest. Ours qualifies: five
+skills, no `commands/`, `agents/` or hooks, and no Claude-only wording in the skills (checked).
+The `.mcp.json` server is not carried over in that path.
+
+Two submissions, the second optional:
+
+1. **Skills only.** Needs "Apps Management" write access in the OpenAI organization and
+   individual or business identity verification in the OpenAI Platform dashboard. Then
+   https://platform.openai.com/plugins -> Create plugin -> Skills only -> upload an archive of
+   `integrallis/rankcli-mcp-server` main (`git archive -o rankcli-plugin.zip HEAD` from a clone).
+   Review the generated `.codex-plugin/plugin.json`, complete the listing and review fields,
+   fix anything the scan flags, submit. Every plugin goes through OpenAI review.
+2. **With MCP.** The free hosted endpoint already meets the stated requirements: Streamable HTTP
+   on a public HTTPS domain, `https://mcp.rankcli.dev/mcp/free`, answering an unauthenticated
+   initialize (server 0.0.31). Two things to add before submitting: serve the portal's token at
+   `https://mcp.rankcli.dev/.well-known/openai-apps-challenge` (domain verification; a session
+   can add the route to the worker once you have the token) and set accurate tool annotations
+   (`readOnlyHint` true on every free tool; review checks them). OAuth 2.1 is required only
+   for tools that touch a user's own data, which the free endpoint does not. The API-key
+   endpoint cannot be submitted: ChatGPT supports no machine-to-machine grants.
+
+Until it is listed, any ChatGPT user can add the free endpoint themselves: Plugins -> the
+plus button -> Add custom MCP server -> the URL above -> no authentication. The site says so.
