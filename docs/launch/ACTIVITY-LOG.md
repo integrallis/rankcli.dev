@@ -161,6 +161,23 @@ and the developer channels have produced no measurable visit.
 
 ### 2026-11-04
 
+- **Nothing deploys without a green CI; the referral SQL is under test, and the test found a
+  production bug.** The founder saw four red runs from one afternoon, all on PR-branch commits
+  pushed before they were ready, and set the rule: no "success" until CI is clean, never
+  deploy without CI passing. Both deploy workflows now start with a job that waits for the
+  CI run on the same commit and stops unless it is green (#51; main is unprotected, so this
+  is what holds for a red merge or a direct push); the first gated deploy waited for CI
+  Complete before preflight ran. Then an E2E spec for the referral SQL (#53, run by the E2E
+  job against the real database with throwaway accounts deleted afterwards) failed on its
+  first local run: `my_referral_code()` had used `gen_random_bytes()`, which Supabase keeps
+  in the `extensions` schema, under a search_path of `public`, so every referral card on
+  /account had errored since #48 deployed. Fixed as a migration-only PR (#52, which also
+  makes the 30 days of Pro reach a referrer whose Stripe subscription was canceled or who
+  has no subscription row), deployed through the gate, and the spec passes against the
+  deployed database. #53 adds the promise a referred visitor sees on the home and signup
+  pages, the referral line in the weekly email, and the pricing page's pointer to
+  /for-agencies. Lesson recorded in memory: run the gates locally, chained so a failure
+  stops the push; a test against the real thing is worth more than a green type check.
 - **The referral program and the agency path, shipped.** On "implement a sensible referral
   program and an agency white label approach". Referral (#48, migration `20261104220000`):
   every account has a code (`my_referral_code()`), the link `rankcli.dev/?ref=<code>` is on

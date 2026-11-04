@@ -24,6 +24,11 @@ PDF, and `/for-agencies`). The numbers to watch, weekly, from `e2e-check-auth-co
 report: free audits -> accounts, accounts -> trialing -> paid, referrals by status; and
 `scripts/cf-traffic.mjs` for the tool pages' and `/for-agencies` landing paths.
 
+The rule since the afternoon: nothing deploys without a green CI on the same commit (the
+deploy workflows enforce it, #51) and nothing is reported as done until CI is green on the
+head commit and the deploy succeeded. The referral SQL is under an E2E test against the real
+database (#53); its first run found and #52 fixed a bug that had broken the referral card.
+
 Still the founder's: the two plugin directory listings (FOUNDER_CHECKLIST 7 and 9), the
 LaunchBuck and LaunchBuff submissions (values provided), the Show HN
 (`docs/launch/show-hn-2026-11.md`). The two decisions from the morning were taken by the
