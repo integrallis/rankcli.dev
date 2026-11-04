@@ -1,0 +1,22 @@
+{
+  "name": "RankCLI",
+  "tagline": "Ship code, get ranked. 280+ SEO and AI-search checks from the CLI, a CI gate, and fixes as pull requests.",
+  "description": "RankCLI audits a site the way a developer ships code: from the command line, in CI, and from the coding agent already in the codebase.\n\nOne command runs 280+ checks: crawlability, metadata, structured data, Core Web Vitals, internal links, and which crawlers your site actually lets in. The AI-search checks fetch the page as each bot and report by class, the way OpenAI and Anthropic document them: search crawlers, AI search crawlers (OAI-SearchBot, Claude-SearchBot, PerplexityBot), user-triggered fetchers, and training crawlers. A CDN rule that answers 403 to a crawler shows up by name, which robots.txt never tells you.\n\nWhere it runs:\n- CLI: npx @rankcli/cli audit --url yoursite.com, with JSON, SARIF and JUnit output and a --fail-on gate for CI\n- GitHub Action: integrallis/rankcli-action, with baselines so an existing site adopts the gate without fixing every old finding first\n- MCP server and skills: a Claude Code plugin, Codex, Cursor, VS Code, and ChatGPT as a custom MCP server\n- Framework plugins: Astro, Nuxt, Next.js and Vite audit the build output before it deploys\n\nThe hosted product audits sites on a schedule, keeps the history, and opens auto-fix pull requests on a connected GitHub repository. The free plan audits one site weekly with three auto-fix PRs a month; the CLI, the Action, the MCP server and local fixes are free forever.\n\nThe checks say what the evidence says. Every finding carries the study or the documented crawler behaviour behind it, and findings that fired on nearly every site were removed after a public run across the 400 most popular npm packages' homepages (the dataset is at rankcli.dev/data/npm-sites, refreshed weekly). The engine, CLI, MCP server and Action are source-available under FSL-1.1-MIT at github.com/integrallis/rankcli.",
+  "websiteUrl": "https://rankcli.dev",
+  "pricingType": "freemium",
+  "categories": ["dev-tools", "marketing", "devops"],
+  "keyFeatures": [
+    "280+ SEO and AI-search checks in one command, JSON, SARIF and JUnit output",
+    "Crawler access fetched as each bot: Googlebot, OAI-SearchBot, Claude-SearchBot, PerplexityBot, GPTBot",
+    "A CI gate with baselines: fail the build on new errors or a score drop, not on old findings",
+    "Auto-fix pull requests on a connected GitHub repository, with safety rules on what a fix may claim",
+    "Runs inside Claude Code, Codex, Cursor and ChatGPT through the MCP server and skills",
+    "Source-available engine (FSL-1.1-MIT); findings backed by cited evidence and a public corpus"
+  ],
+  "links": {
+    "docs": "https://rankcli.dev/docs",
+    "pricing": "https://rankcli.dev/pricing",
+    "blog": "https://rankcli.dev/blog",
+    "github": "https://github.com/integrallis/rankcli"
+  }
+}
