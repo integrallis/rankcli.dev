@@ -19,11 +19,12 @@ curl -s -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: appl
 
 Live since 2026-09-28: `CF_BEACON_TOKEN` is a repository variable and rankcli.dev's page source loads `static.cloudflareinsights.com/beacon.min.js` (re-checked 2026-10-15). Referrers are only in the Cloudflare dashboard: **Analytics & Logs -> Web Analytics -> rankcli.dev -> Referrers**.
 
-## 3. List the GitHub Action on the Marketplace (gap 12) - two minutes
+## 3. List the GitHub Action on the Marketplace (gap 12) - done
 
-Still not listed on 2026-10-13 (the Marketplace slugs 404). The manifest has `branding`, the name `RankCLI SEO Audit` is unique and the repo is public, so nothing but the tick is missing. GitHub has no API for this step; it needs your login with 2FA.
-
-https://github.com/integrallis/rankcli-action/releases/tag/v1.0.0 -> **Edit** -> tick **Publish this Action to the GitHub Marketplace** -> accept the Marketplace developer agreement (first time only) -> category "Code quality" or "Continuous integration" -> Update release.
+Listed as **RankCLI SEO Audit** at https://github.com/marketplace/actions/rankcli-seo-audit
+(categories Continuous integration and Code quality; verified 2026-11-04 showing v1.3.0 as the
+latest version and `uses: integrallis/rankcli-action@v1`). Each release pushed to
+`integrallis/rankcli-action` appears there; nothing to tick per release.
 
 ## 4. Repo linking for email/Google sign-ups (gap 12b) - one tick left
 

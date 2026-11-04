@@ -13,6 +13,8 @@ For what has actually been done, with outcomes, see
 
 ## 2026-11-03: everything shipped; the plugins publish through Trusted Publishing
 
+The GitHub Action is on the Marketplace as "RankCLI SEO Audit" (verified 2026-11-04, v1.3.0 shown).
+
 v0.0.55 to v0.0.57 shipped (35 always-on findings gone on corpus evidence, one bot table,
 the geo tools by crawler class), the hosted product follows each release, the plugins are on
 npm at 0.1.0, the Action is at v1.3.0, the corpus write-up is a blog post. The Nuxt modules directory PR is open (nuxt/modules #1719) and the write-up is on dev.to with its
