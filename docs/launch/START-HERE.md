@@ -4,7 +4,7 @@ There are fifteen files in this directory and some of them contradict each other
 were written across several sessions as things changed. This one is the index. If it disagrees
 with another file, this one is right, and fix the other one.
 
-**Last verified: 2026-11-03.**
+**Last verified: 2026-11-04.**
 
 For what has actually been done, with outcomes, see
 **[ACTIVITY-LOG.md](./ACTIVITY-LOG.md)**. This file is the plan; that one is the record.
@@ -16,15 +16,19 @@ For what has actually been done, with outcomes, see
 Zero of 136 free audits converted; the research in ACTIVITY-LOG.md (2026-11-04) says why and
 what the successful tools do instead. Shipped: the free audit shows everything and offers to
 watch the site; six free-tool pages (/tools); comparison pages against Otterly, Peec and
-Profound; the posting automation off. In PR: a 14-day Pro trial on every new account (#46)
-and the crawler-blocked alert on every plan (#47). The numbers to watch, weekly, from
-`e2e-check-auth-config.yml`'s report: free audits -> accounts, accounts -> trialing -> paid,
-and `scripts/cf-traffic.mjs` for the tool pages' landing paths.
+Profound; the posting automation off; a 14-day Pro trial on every new account (#46); the
+crawler-blocked alert on every plan (#47); a referral program (#48: a link per account, 30
+days of Pro for the referred, a month free for the referrer when they pay, credit never
+cash); the agency path (#49: the brand stored once and carried by every client report and
+PDF, and `/for-agencies`). The numbers to watch, weekly, from `e2e-check-auth-config.yml`'s
+report: free audits -> accounts, accounts -> trialing -> paid, referrals by status; and
+`scripts/cf-traffic.mjs` for the tool pages' and `/for-agencies` landing paths.
 
 Still the founder's: the two plugin directory listings (FOUNDER_CHECKLIST 7 and 9), the
 LaunchBuck and LaunchBuff submissions (values provided), the Show HN
-(`docs/launch/show-hn-2026-11.md`), and two decisions: a referral or affiliate program, and
-whether the site should speak to agencies and marketers as well as developers.
+(`docs/launch/show-hn-2026-11.md`). The two decisions from the morning were taken by the
+founder's "implement" the same day: the referral program is credit-only (no affiliate cash),
+and the site now speaks to agencies on one page without changing the developer home page.
 
 ## 2026-11-03: everything shipped; the plugins publish through Trusted Publishing
 

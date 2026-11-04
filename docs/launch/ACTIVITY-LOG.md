@@ -161,6 +161,22 @@ and the developer channels have produced no measurable visit.
 
 ### 2026-11-04
 
+- **The referral program and the agency path, shipped.** On "implement a sensible referral
+  program and an agency white label approach". Referral (#48, migration `20261104220000`):
+  every account has a code (`my_referral_code()`), the link `rankcli.dev/?ref=<code>` is on
+  the account page; a signup through it is recorded within seven days (`apply_referral`,
+  never self) and the new account's 14-day trial becomes 30 days; when the referred account
+  first pays, the referrer gets one month free, as a Stripe balance credit on a paying plan or
+  30 days of Pro on a free one (`reward_referrer` from the webhook's first `invoice.paid`).
+  Credit only, never cash; one reward per referred account; Terms section 13. Agency (#49,
+  migration `20261104230000`): the agency's name, logo, website and accent stored once
+  (`agency_branding`, own row); every client report link shows the brand and says "Prepared
+  by" with RankCLI nowhere on it; the PDF falls back to the stored brand; `/for-agencies` says
+  what the agency path is (any client site by URL, daily, the report under your brand, the
+  alert the day a crawler stops getting in, fixes as pull requests where there is a
+  repository, fifty sites for $99, the referral for the next agency). Not done, by design:
+  cash payouts, custom domains for client links, white-label email. The number to watch:
+  `referrals` by status in the weekly report, and `/for-agencies` landings in `cf-traffic.mjs`.
 - **What the successful tools do that we did not, implemented.** The founder: "what we are doing
   is not working", "not trying is the failure"; the 2026-11-02 numbers: 20 accounts, 15
   external, 0 paying, 0 of 136 free audits converted. Three research passes (Seobility,
@@ -175,10 +191,10 @@ and the developer channels have produced no measurable visit.
   the daily posting schedule off, every automated channel having measured zero (#42); a Show
   HN draft for the founder. Open: a 14-day Pro trial on every new account, no card, ended by
   date in the entitlement rule (#46); an email on every plan when a crawler that AI answers
-  draw from stops getting in, plus the webhook alert on paid plans (#47). Not done: the
-  referral program (billing work, a decision first) and the agency positioning (the founder's
-  call: the cohorts that arrive are marketers, the site speaks to developers). Declined by the
-  founder: contacting the fifteen accounts, asking developers for PRs.
+  draw from stops getting in, plus the webhook alert on paid plans (#47); both merged and
+  deployed later the same day. The referral program and the agency path followed in #48 and
+  #49 (the bullet above). Declined by the founder: contacting the fifteen accounts, asking
+  developers for PRs.
 - **The coding-agent install paths are on the site; an image ad is drafted.** rankcli.dev #41
   adds "Use it from your coding agent" after How it works (Claude Code plugin, Codex, ChatGPT
   custom MCP server on the free endpoint) and the same in the docs; live. rankcli #27 puts MCP
