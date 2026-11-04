@@ -33,6 +33,8 @@ interface ReportData {
     message: string;
     page_url: string;
   }>;
+  /** The agency's stored brand (agency_branding); null for a report served without one. */
+  branding?: { name: string; logo_url: string | null; website: string | null; accent: string | null } | null;
 }
 
 export function ClientReportPage() {
@@ -144,6 +146,16 @@ export function ClientReportPage() {
               </a>
             </div>
             <div className="text-right">
+              {data.branding && (
+                <div className="flex items-center justify-end gap-2 mb-1">
+                  {data.branding.logo_url && (
+                    <img src={data.branding.logo_url} alt={data.branding.name} className="h-7 max-w-[160px] object-contain" />
+                  )}
+                  <span className="text-sm font-medium" style={data.branding.accent ? { color: data.branding.accent } : undefined}>
+                    {data.branding.name}
+                  </span>
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">SEO Audit Report</p>
               <p className="text-sm text-muted-foreground">
                 {new Date(audit.created_at).toLocaleDateString()}
@@ -310,18 +322,31 @@ export function ClientReportPage() {
       {/* Footer */}
       <footer className="border-t py-6 mt-8">
         <div className="container text-center text-sm text-muted-foreground">
-          <p>
-            Powered by{' '}
-            <a
-              href="https://rankcli.dev"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              RankCLI
-            </a>{' '}
-            — SEO Autopilot for Developers
-          </p>
+          {data.branding ? (
+            <p>
+              Prepared by{' '}
+              {data.branding.website ? (
+                <a href={data.branding.website} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                  {data.branding.name}
+                </a>
+              ) : (
+                data.branding.name
+              )}
+            </p>
+          ) : (
+            <p>
+              Powered by{' '}
+              <a
+                href="https://rankcli.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                RankCLI
+              </a>{' '}
+              — SEO Autopilot for Developers
+            </p>
+          )}
         </div>
       </footer>
     </div>

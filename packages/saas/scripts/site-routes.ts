@@ -50,6 +50,7 @@ const staticRoutes: SiteRoute[] = [
   { path: '/tools/chatgpt-checker', changefreq: 'monthly', priority: 0.7, sources: ['src/pages/tools/ChatGPTCheckerPage.tsx'] },
   { path: '/tools/compare', changefreq: 'monthly', priority: 0.7, sources: ['src/pages/tools/CompetitorAnalyzerPage.tsx'] },
   { path: '/tools', changefreq: 'monthly', priority: 0.7, sources: ['src/pages/tools/ToolsIndexPage.tsx', 'src/config/free-tools.ts'] },
+  { path: '/for-agencies', changefreq: 'monthly', priority: 0.8, sources: ['src/pages/ForAgenciesPage.tsx'] },
   { path: '/changelog', changefreq: 'weekly', priority: 0.6, sources: ['src/pages/ChangelogPage.tsx'] },
   { path: '/data/npm-sites', changefreq: 'weekly', priority: 0.6, sources: ['src/pages/DataNpmSitesPage.tsx', 'src/lib/corpus.ts'] },
   { path: '/about', changefreq: 'yearly', priority: 0.5, sources: ['src/pages/AboutPage.tsx'] },
