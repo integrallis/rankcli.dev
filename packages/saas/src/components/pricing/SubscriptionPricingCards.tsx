@@ -105,6 +105,7 @@ export function SubscriptionPricingCards({
             </CardContent>
 
             <CardFooter>
+              <p className="text-xs text-muted-foreground mb-3">Every new account starts with 14 days of Pro. No card.</p>
               <Button className="w-full" variant="outline" onClick={() => onSelectPlan('free')}>
                 Sign Up Free
               </Button>

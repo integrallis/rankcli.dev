@@ -37,11 +37,11 @@
     "tagline": "Unlimited, forever, with your own API key"
   },
   "trial": {
-    "enabled": false,
+    "enabled": true,
     "duration_days": 14,
     "plan_access": "pro",
     "credit_card_required": false,
-    "description": "Not implemented - create-checkout has no trial_period_days configured. Disabled until it's actually wired up in Stripe; don't reference this in copy while disabled."
+    "description": "Every new account starts on Pro for 14 days, no card (migration 20261104210000: the signup trigger creates a trialing Pro subscription; effective_entitlement() ends it by date). Afterwards the account is on Free unless a plan was bought."
   },
   "founding_offer": {
     "enabled": true,
