@@ -4,9 +4,10 @@
 -- on the Pro plan with status 'trialing' and a period of 14 days; nothing else changes.
 --
 -- A trial ends by its date, not by a job: effective_entitlement() now counts a 'trialing' row
--- only while current_period_end is in the future (as it already did for 'canceled'), so an
--- expired trial reads as the Free plan everywhere the database decides. Stripe's own trials
--- carry a current_period_end from the webhook, so they are unaffected.
+-- with a current_period_end only while that end is in the future (as it already did for
+-- 'canceled'), so an expired trial reads as the Free plan everywhere the database decides. A
+-- trialing row without a period end (older rows) keeps its plan as before; Stripe's trials
+-- carry one from the webhook.
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER
@@ -62,7 +63,8 @@ AS $$
     WHERE us.user_id = p_user_id
       AND b.base IN ('solo', 'pro', 'agency')
       AND (us.status IN ('active', 'past_due')
-           OR (us.status IN ('trialing', 'canceled') AND us.current_period_end > NOW()))
+           OR (us.status = 'trialing' AND (us.current_period_end IS NULL OR us.current_period_end > NOW()))
+           OR (us.status = 'canceled' AND us.current_period_end > NOW()))
 
     UNION ALL
 

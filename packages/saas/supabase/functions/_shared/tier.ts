@@ -100,8 +100,12 @@ export interface SubscriptionRow {
  */
 export function subscriptionIsEntitled(sub: SubscriptionRow | null | undefined, now: Date = new Date()): boolean {
   if (!sub?.status) return false;
-  // A trial (the 14 days every new account gets at signup, or Stripe's) ends by its date.
-  if (sub.status === 'trialing' || sub.status === 'canceled') {
+  // A trial ends by its date: the 14 days every new account gets at signup carry a period
+  // end, and Stripe's trials do too; a trialing row without one (older rows) keeps its plan.
+  if (sub.status === 'trialing') {
+    return !sub.current_period_end || new Date(sub.current_period_end) > now;
+  }
+  if (sub.status === 'canceled') {
     return !!sub.current_period_end && new Date(sub.current_period_end) > now;
   }
   return ENTITLED_STATUSES.includes(sub.status);

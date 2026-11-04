@@ -49,6 +49,14 @@ describe.each([
     }
   });
 
+  it('ends a trial by its date, and keeps one that has no date', () => {
+    const trial = (end?: string) =>
+      tier.resolveEntitlement({ subscription: { status: 'trialing', current_period_end: end, plan: plan('pro') }, now: NOW }).tier;
+    expect(trial('2026-10-01T00:00:00Z')).toBe('pro');
+    expect(trial('2026-09-01T00:00:00Z')).toBe('free');
+    expect(trial()).toBe('pro');
+  });
+
   it('honours a canceled subscription until its paid period ends', () => {
     const until = (end: string) =>
       tier.resolveEntitlement({ subscription: { status: 'canceled', current_period_end: end, plan: plan('pro') }, now: NOW }).tier;
