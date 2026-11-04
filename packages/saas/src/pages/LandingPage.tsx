@@ -2,6 +2,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { Hero } from '@/components/landing/Hero';
 import { HowItWorks } from '@/components/landing/HowItWorks';
+import { AgentInstall } from '@/components/landing/AgentInstall';
 import { Features } from '@/components/landing/Features';
 import { Differentiators } from '@/components/landing/Differentiators';
 import { Pricing } from '@/components/landing/Pricing';
@@ -77,6 +78,7 @@ export function LandingPage() {
       <main>
         <Hero />
         <HowItWorks />
+        <AgentInstall />
         <Features />
         <Differentiators />
         <Pricing />

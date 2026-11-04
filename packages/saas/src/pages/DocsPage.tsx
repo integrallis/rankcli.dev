@@ -663,8 +663,34 @@ function MCPServerSection() {
         </p>
 
         <h4 className="font-medium mt-6 mb-2">Claude Code</h4>
-        <p className="text-sm text-muted-foreground mb-2">One line, no config file:</p>
+        <p className="text-sm text-muted-foreground mb-2">
+          The plugin: five skills (<code className="bg-muted px-1 rounded">/rankcli:seo-audit</code>,{' '}
+          <code className="bg-muted px-1 rounded">/rankcli:check-site-before-deploy</code>,{' '}
+          <code className="bg-muted px-1 rounded">/rankcli:is-my-site-blocked-from-ai-search</code>,{' '}
+          <code className="bg-muted px-1 rounded">/rankcli:fix-seo-regressions</code>,{' '}
+          <code className="bg-muted px-1 rounded">/rankcli:seo-ci-gate</code>) and the MCP server, two commands:
+        </p>
+        <CodeBlock code={`claude plugin marketplace add integrallis/rankcli-mcp-server
+claude plugin install rankcli@rankcli`} />
+        <p className="text-sm text-muted-foreground mt-3 mb-2">The MCP server alone, one line, no config file:</p>
         <CodeBlock code={`claude mcp add rankcli -- npx -y @rankcli/mcp-server`} />
+
+        <h4 className="font-medium mt-6 mb-2">Codex</h4>
+        <p className="text-sm text-muted-foreground mb-2">
+          The MCP server, then the same five skills in the open Agent Skills format (they land in{' '}
+          <code className="bg-muted px-1 rounded">.agents/skills</code>, where Codex reads them; the same
+          command installs them for Cursor and the other agents skills.sh supports):
+        </p>
+        <CodeBlock code={`codex mcp add rankcli -- npx -y @rankcli/mcp-server
+npx skills add integrallis/rankcli-mcp-server`} />
+
+        <h4 className="font-medium mt-6 mb-2">ChatGPT</h4>
+        <p className="text-sm text-muted-foreground mb-2">
+          A custom MCP server, no sign-in. In ChatGPT open Plugins, the plus button, "Add custom MCP
+          server", and paste the free hosted endpoint with no authentication. Its tools audit one page
+          at a time; the hosted endpoint below with an API key syncs to your dashboard.
+        </p>
+        <CodeBlock code={`https://mcp.rankcli.dev/mcp/free`} />
       </section>
 
       {/* Claude Desktop Setup */}
