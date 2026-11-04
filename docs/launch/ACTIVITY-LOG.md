@@ -159,6 +159,18 @@ and the developer channels have produced no measurable visit.
   says so until the first run is published. Footer link, prerender and sitemap entries,
   three tests for the data shaping.
 
+### 2026-11-04
+
+- **The coding-agent install paths are on the site; an image ad is drafted.** rankcli.dev #41
+  adds "Use it from your coding agent" after How it works (Claude Code plugin, Codex, ChatGPT
+  custom MCP server on the free endpoint) and the same in the docs; live. rankcli #27 puts MCP
+  safety annotations on every tool (read-only; open-world only when a URL is fetched), one of
+  the two things OpenAI's "With MCP" listing needs; the other is the verification token route,
+  which waits for the founder's portal token. FOUNDER_CHECKLIST section 9 has the OpenAI
+  directory steps next to section 7 for Anthropic's. `ad-assets/vibe-coding-2026-11-04/`:
+  "Vibe coding a website? Make sure AI can find it." at three sizes from one HTML source,
+  rendered with Playwright; the terminal panel is an illustration, no number is claimed.
+
 ### 2026-11-03
 
 - **Trusted Publishing proven; the token is gone.** The founder dispatched the staged publish
