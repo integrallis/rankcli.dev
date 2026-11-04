@@ -32,8 +32,54 @@ jobs:
   # ============================================
   # Preflight: Validate secrets exist
   # ============================================
+  # ---------------------------------------------------------------------------
+  # Nothing deploys without a green CI on the same commit (2026-11-04). The CI
+  # workflow starts in parallel with this one on every push to main; this job
+  # waits for it, and for "CI - SaaS" when that ran on the commit, and stops the
+  # deploy unless each of them concluded "success". A dispatch on a commit whose
+  # CI failed stops here too.
+  # ---------------------------------------------------------------------------
+  ci:
+    name: CI passed
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Wait for the CI workflows on this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          deadline=$((SECONDS + 2400))
+          while :; do
+            runs=$(gh run list --repo "$REPO" --commit "$SHA" --limit 50 --json name,status,conclusion,url \
+              --jq '[.[] | select(.name == "CI" or .name == "CI - SaaS")]')
+            ci_runs=$(echo "$runs" | jq '[.[] | select(.name == "CI")] | length')
+            if [ "$ci_runs" -eq 0 ]; then
+              if [ "$SECONDS" -gt 300 ]; then
+                echo "::error::No CI run exists for $SHA; nothing deploys without one." ; exit 1
+              fi
+              echo "No CI run for $SHA yet; waiting." ; sleep 20 ; continue
+            fi
+            pending=$(echo "$runs" | jq '[.[] | select(.status != "completed")] | length')
+            if [ "$pending" -gt 0 ]; then
+              if [ "$SECONDS" -gt "$deadline" ]; then
+                echo "::error::CI on $SHA did not finish in 40 minutes." ; exit 1
+              fi
+              echo "$runs" | jq -r '.[] | "\(.name): \(.status)"' ; sleep 30 ; continue
+            fi
+            failed=$(echo "$runs" | jq -r '.[] | select(.conclusion != "success") | "\(.name): \(.conclusion) \(.url)"')
+            if [ -n "$failed" ]; then
+              echo "::error::CI is not green on $SHA; the deploy stops here." ; echo "$failed" ; exit 1
+            fi
+            echo "$runs" | jq -r '.[] | "\(.name): \(.conclusion)"' ; exit 0
+          done
+
   preflight:
     name: Preflight Check
+    needs: ci
     runs-on: ubuntu-latest
     outputs:
       has_secrets: ${{ steps.check.outputs.has_secrets }}
