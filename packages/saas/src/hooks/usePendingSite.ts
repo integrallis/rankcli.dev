@@ -37,3 +37,27 @@ export function consumePendingSite(): string | null {
     return null;
   }
 }
+
+// What the visitor wanted from the site they carried: "watch" (a weekly audit and alerts, no
+// GitHub) or "pr" (an auto-fix pull request, which needs the repository). Read-once as well.
+const PENDING_INTENT_KEY = 'rankcli_pending_intent';
+export type PendingIntent = 'watch' | 'pr';
+
+export function setPendingIntent(input: string | null | undefined) {
+  if (input !== 'watch' && input !== 'pr') return;
+  try {
+    localStorage.setItem(PENDING_INTENT_KEY, input);
+  } catch {
+    // Storage blocked: the dashboard asks.
+  }
+}
+
+export function consumePendingIntent(): PendingIntent | null {
+  try {
+    const value = localStorage.getItem(PENDING_INTENT_KEY);
+    if (value) localStorage.removeItem(PENDING_INTENT_KEY);
+    return value === 'watch' || value === 'pr' ? value : null;
+  } catch {
+    return null;
+  }
+}

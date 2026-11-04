@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { consumePendingSite } from '@/hooks/usePendingSite';
+import { consumePendingSite, consumePendingIntent } from '@/hooks/usePendingSite';
+import { toast } from 'sonner';
 import { peekSignupSource, clearSignupSource } from '@/hooks/useSignupSource';
 import { supabase } from '@/integrations/supabase/client';
 import { AddProjectModal } from '@/components/dashboard/AddProjectModal';
@@ -58,7 +59,16 @@ export function DashboardPage() {
         return false;
       }
     });
+    const intent = consumePendingIntent();
     if (known || hasReachedLimit) return;
+    if (intent !== 'pr') {
+      // "Watch this site": the weekly audit needs no repository, so the project is created
+      // here and the dashboard shows it watched; the repository can be connected later.
+      createProject({ name: host, url: site }).then((created) => {
+        if (created) toast.success(`Watching ${host}: a weekly audit, and an alert when a crawler stops getting in.`);
+      });
+      return;
+    }
     setPendingSiteUrl(site);
     setIsAddModalOpen(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
