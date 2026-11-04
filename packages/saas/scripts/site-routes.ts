@@ -9,6 +9,7 @@
  * served by the SPA shell through the rewrites in scripts/prerender.ts.
  */
 import { blogPosts } from '../src/data/blog-posts';
+import { FREE_TOOLS } from '../src/config/free-tools';
 import frameworkGuides from '../src/config/framework-guides.json';
 import comparisons from '../src/config/comparisons.json';
 
@@ -48,6 +49,7 @@ const staticRoutes: SiteRoute[] = [
   { path: '/tools/ai-visibility', changefreq: 'monthly', priority: 0.7, sources: ['src/pages/tools/AIVisibilityCheckerPage.tsx'] },
   { path: '/tools/chatgpt-checker', changefreq: 'monthly', priority: 0.7, sources: ['src/pages/tools/ChatGPTCheckerPage.tsx'] },
   { path: '/tools/compare', changefreq: 'monthly', priority: 0.7, sources: ['src/pages/tools/CompetitorAnalyzerPage.tsx'] },
+  { path: '/tools', changefreq: 'monthly', priority: 0.7, sources: ['src/pages/tools/ToolsIndexPage.tsx', 'src/config/free-tools.ts'] },
   { path: '/changelog', changefreq: 'weekly', priority: 0.6, sources: ['src/pages/ChangelogPage.tsx'] },
   { path: '/data/npm-sites', changefreq: 'weekly', priority: 0.6, sources: ['src/pages/DataNpmSitesPage.tsx', 'src/lib/corpus.ts'] },
   { path: '/about', changefreq: 'yearly', priority: 0.5, sources: ['src/pages/AboutPage.tsx'] },
@@ -56,6 +58,13 @@ const staticRoutes: SiteRoute[] = [
   { path: '/privacy', changefreq: 'yearly', priority: 0.3, sources: ['src/pages/PrivacyPage.tsx'] },
   { path: '/terms', changefreq: 'yearly', priority: 0.3, sources: ['src/pages/TermsPage.tsx'] },
 ];
+
+const freeToolRoutes: SiteRoute[] = FREE_TOOLS.map((tool) => ({
+  path: `/tools/${tool.slug}`,
+  changefreq: 'monthly',
+  priority: 0.7,
+  sources: ['src/pages/tools/FreeToolPage.tsx', 'src/config/free-tools.ts'],
+}));
 
 const blogRoutes: SiteRoute[] = blogPosts.map((post) => ({
   path: `/blog/${post.slug}`,
@@ -93,7 +102,7 @@ const comparisonRoutes: SiteRoute[] = (comparisons.comparisons as ComparisonEntr
     lastmod: c.verifiedAt,
   }));
 
-export const siteRoutes: SiteRoute[] = [...staticRoutes, ...blogRoutes, ...frameworkRoutes, ...comparisonRoutes];
+export const siteRoutes: SiteRoute[] = [...staticRoutes, ...freeToolRoutes, ...blogRoutes, ...frameworkRoutes, ...comparisonRoutes];
 
 /** Absolute URL for a route, matching the canonical <SEO> emits. */
 export function routeUrl(path: string) {

@@ -6,6 +6,7 @@ import { SOCIAL_PROFILES } from '@/components/SEO';
 const footerLinks = {
   product: [
     { label: 'Free Audit', href: '/free-audit' },
+    { label: 'Free tools', href: '/tools' },
     { label: 'Pricing', href: '/pricing' },
     { label: 'Documentation', href: '/docs' },
     { label: 'Changelog', href: '/changelog' },
