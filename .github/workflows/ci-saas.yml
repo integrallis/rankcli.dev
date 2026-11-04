@@ -200,8 +200,8 @@ jobs:
         run: npx playwright install chromium
         working-directory: packages/saas
 
-      - name: Run Keyword Persistence Tests
-        run: npx playwright test keyword-persistence --reporter=list
+      - name: Run the database tests (keyword persistence, referral program)
+        run: npx playwright test keyword-persistence referral --reporter=list
         working-directory: packages/saas
         env:
           VITE_SUPABASE_URL: https://${{ vars.SUPABASE_PROJECT_REF }}.supabase.co

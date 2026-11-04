@@ -511,6 +511,10 @@ export function weeklyReportEmail(data: WeeklyReportData): { html: string; text:
       <div style="text-align: center; margin-top: 32px;">
         <a href="https://rankcli.dev/dashboard" class="button">Go to Dashboard</a>
       </div>
+
+      <p style="margin-top: 28px; font-size: 14px; color: ${COLORS.textMuted};">
+        Know a developer who ships without checking? <a href="https://rankcli.dev/account" style="color: ${COLORS.primary};">Your referral link</a> gives them 30 days of Pro, and you a month free when they pay.
+      </p>
     </div>
   `, `Weekly SEO Report: Average score ${avgScore}/100 across ${data.sites.length} sites`);
 
@@ -526,6 +530,8 @@ Your Sites:
 ${data.sites.map(s => `- ${s.name} (${s.domain}): ${s.score}/100 - ${s.errors} errors, ${s.warnings} warnings`).join('\n')}
 
 View dashboard: https://rankcli.dev/dashboard
+
+Know a developer who ships without checking? Your referral link (https://rankcli.dev/account) gives them 30 days of Pro, and you a month free when they pay.
 
 ---
 RankCLI - https://rankcli.dev

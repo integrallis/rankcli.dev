@@ -25,6 +25,21 @@ const clean = (value: string | null): string | undefined => {
   return v ? v : undefined;
 };
 
+/** The referral code in a query string, lowercased, or undefined when there is none. */
+export function referralCodeIn(search: string): string | undefined {
+  const ref = clean(new URLSearchParams(search).get('ref'));
+  return ref && /^[a-z0-9]{4,16}$/i.test(ref) ? ref.toLowerCase() : undefined;
+}
+
+/**
+ * First touch wins for where a visitor came from, but a referral is a promise to the person
+ * who clicked: a stored source without a code takes the code from a later referral link.
+ */
+export function withReferral(stored: SignupSource, search: string): SignupSource {
+  const code = referralCodeIn(search);
+  return code && !stored.referral_code ? { ...stored, referral_code: code } : stored;
+}
+
 export function buildSignupSource(search: string, pathname: string, referrer: string, now = new Date()): SignupSource | null {
   const params = new URLSearchParams(search);
   const source: SignupSource = { landing_path: pathname.slice(0, 200) || '/', captured_at: now.toISOString() };
@@ -32,8 +47,8 @@ export function buildSignupSource(search: string, pathname: string, referrer: st
     const v = clean(params.get(key));
     if (v) source[key] = v;
   }
-  const ref = clean(params.get('ref'));
-  if (ref && /^[a-z0-9]{4,16}$/i.test(ref)) source.referral_code = ref.toLowerCase();
+  const ref = referralCodeIn(search);
+  if (ref) source.referral_code = ref;
   try {
     if (referrer) {
       const host = new URL(referrer).hostname;
@@ -50,7 +65,14 @@ export function buildSignupSource(search: string, pathname: string, referrer: st
 /** Called once on app load. Keeps the first stored source. */
 export function captureSignupSource() {
   try {
-    if (localStorage.getItem(SIGNUP_SOURCE_KEY)) return;
+    const stored = localStorage.getItem(SIGNUP_SOURCE_KEY);
+    if (stored) {
+      const merged = withReferral(JSON.parse(stored) as SignupSource, window.location.search);
+      if (merged.referral_code !== (JSON.parse(stored) as SignupSource).referral_code) {
+        localStorage.setItem(SIGNUP_SOURCE_KEY, JSON.stringify(merged));
+      }
+      return;
+    }
     const source = buildSignupSource(window.location.search, window.location.pathname, document.referrer);
     if (source) localStorage.setItem(SIGNUP_SOURCE_KEY, JSON.stringify(source));
   } catch {

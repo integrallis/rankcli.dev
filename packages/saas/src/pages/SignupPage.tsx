@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { ReferralNotice } from '@/components/landing/ReferralNotice';
 import { useAuth } from '@/contexts/AuthContext';
 import { setPendingSite, setPendingIntent } from '@/hooks/usePendingSite';
 import { usePendingPlan } from '@/hooks/usePendingPlan';
@@ -125,11 +126,13 @@ export function SignupPage() {
           </Link>
         </div>
 
+        <ReferralNotice className="mb-6 rounded-lg border" />
+
         <Card>
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Create your account</CardTitle>
             <CardDescription>
-              Free to start, no credit card required
+              14 days of Pro to start, no credit card required
             </CardDescription>
           </CardHeader>
 
