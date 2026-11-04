@@ -122,6 +122,16 @@ export function TermsPage() {
             without regard to conflict-of-law principles.
           </p>
 
+          <h2>13. Referral program</h2>
+          <p>
+            Every account has a referral link. An account created through it within seven days of
+            signing up starts with 30 days of Pro instead of 14. When that account first pays for
+            a plan, the referrer receives one month of their own plan as a credit on their
+            subscription, or 30 days of Pro if they are not paying. Rewards are credit, never cash,
+            one per referred account, never for yourself, and we may withhold them where accounts
+            are created to earn them.
+          </p>
+
           <h2>Contact</h2>
           <p>
             Questions about these Terms can be sent to{' '}

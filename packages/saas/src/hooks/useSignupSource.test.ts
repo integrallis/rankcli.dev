@@ -40,4 +40,9 @@ describe('signup source (first touch)', () => {
     clearSignupSource();
     expect(peekSignupSource()).toBeNull();
   });
+
+  it('keeps a referral code from ?ref= and ignores a malformed one', () => {
+    expect(buildSignupSource('?ref=A1b2C3d4', '/', '')?.referral_code).toBe('a1b2c3d4');
+    expect(buildSignupSource('?ref=<script>', '/', '')).toBeNull();
+  });
 });

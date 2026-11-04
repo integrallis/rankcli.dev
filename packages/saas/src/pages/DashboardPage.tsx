@@ -44,6 +44,12 @@ export function DashboardPage() {
       .eq('id', user.id)
       .is('signup_source', null)
       .then(() => clearSignupSource(), () => clearSignupSource());
+    // A referral code rides with the source: the referred account gets 30 days of Pro.
+    if (source.referral_code) {
+      supabase.rpc('apply_referral', { p_code: source.referral_code }).then(({ data }) => {
+        if (data === true) toast.success('Referral applied: your Pro trial runs 30 days.');
+      });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 

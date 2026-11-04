@@ -21,6 +21,9 @@ export function PricingPage() {
       <Navbar />
       <main className="py-16">
         <Pricing headingLevel="h1" />
+        <p className="container px-6 md:px-8 mt-10 text-center text-sm text-muted-foreground">
+          Refer a developer from your account page: they start with 30 days of Pro; when they pay, you get a month of your plan free, or 30 days of Pro on the Free plan.
+        </p>
       </main>
       <Footer />
     </div>

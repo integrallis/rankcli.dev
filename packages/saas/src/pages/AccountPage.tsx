@@ -29,6 +29,7 @@ import { usePricingAvailability } from '@/hooks/usePricingAvailability';
 import { usePendingPlan } from '@/hooks/usePendingPlan';
 import { useEntitlement } from '@/hooks/useEntitlement';
 import { SubscriptionPricingCards, type SubscriptionTier } from '@/components/pricing/SubscriptionPricingCards';
+import { ReferralCard } from '@/components/account/ReferralCard';
 import { BillingIntervalToggle, type PricingView } from '@/components/pricing/BillingIntervalToggle';
 import { AlertConfigForm } from '@/components/settings/AlertConfigForm';
 import { AIProviderSettings } from '@/components/settings/AIProviderSettings';
@@ -705,6 +706,9 @@ export function AccountPage() {
       <Navbar />
 
       <main className="container py-8">
+        <div className="mb-8">
+          <ReferralCard />
+        </div>
         <h1 className="text-3xl font-bold mb-8">Account Settings</h1>
 
         <div className="flex flex-col md:flex-row gap-8">
