@@ -15,6 +15,8 @@ export interface SignupSource {
   utm_term?: string;
   landing_path: string;
   referrer?: string;
+  /** A referral code from ?ref=, applied after the first sign-in (apply_referral). */
+  referral_code?: string;
   captured_at: string;
 }
 
@@ -30,6 +32,8 @@ export function buildSignupSource(search: string, pathname: string, referrer: st
     const v = clean(params.get(key));
     if (v) source[key] = v;
   }
+  const ref = clean(params.get('ref'));
+  if (ref && /^[a-z0-9]{4,16}$/i.test(ref)) source.referral_code = ref.toLowerCase();
   try {
     if (referrer) {
       const host = new URL(referrer).hostname;
@@ -39,7 +43,7 @@ export function buildSignupSource(search: string, pathname: string, referrer: st
     // an unparsable referrer is left out
   }
   // A plain visit to the homepage with no referrer and no parameters says nothing worth storing.
-  const hasSignal = UTM_KEYS.some((k) => source[k]) || source.referrer || source.landing_path !== '/';
+  const hasSignal = UTM_KEYS.some((k) => source[k]) || source.referrer || source.referral_code || source.landing_path !== '/';
   return hasSignal ? source : null;
 }
 

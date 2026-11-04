@@ -180,6 +180,11 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
       const invoice = event.data.object as Stripe.Invoice;
       const subscriptionId = idOf(invoice.subscription as string | { id: string } | null);
       if (subscriptionId) await syncSubscriptionById(subscriptionId);
+      // A referred account's first payment rewards its referrer (migration 20261104220000):
+      // one month of the referrer's plan as a balance credit, or 30 days of Pro in the database.
+      if (event.type === "invoice.paid" && invoice.billing_reason === "subscription_create") {
+        await rewardReferrerFor(idOf(invoice.customer as string | { id: string } | null));
+      }
       return;
     }
 
@@ -213,6 +218,34 @@ async function handleEvent(event: Stripe.Event): Promise<void> {
 
     default:
       console.log(`[WEBHOOK] Unhandled event type: ${event.type}`);
+  }
+}
+
+async function rewardReferrerFor(customerId: string | null): Promise<void> {
+  if (!customerId) return;
+  try {
+    const { data: row } = await supabaseClient
+      .from("user_subscriptions")
+      .select("user_id")
+      .eq("stripe_customer_id", customerId)
+      .maybeSingle();
+    if (!row?.user_id) return;
+    const { data: reward, error } = await supabaseClient.rpc("reward_referrer", { p_referred: row.user_id });
+    if (error) { console.warn(`[WEBHOOK] reward_referrer failed: ${error.message}`); return; }
+    if (!reward) return;
+    if (reward.action === "stripe_credit" && reward.customer && reward.amount_cents > 0) {
+      await stripe.customers.createBalanceTransaction(reward.customer, {
+        amount: -Number(reward.amount_cents),
+        currency: "usd",
+        description: "RankCLI referral: one month free",
+      });
+      await supabaseClient.rpc("mark_referral_rewarded", { p_referral: reward.referral_id, p_reward: `credit_${reward.amount_cents}` });
+      console.log(`[WEBHOOK] referral credit of ${reward.amount_cents} cents applied to ${reward.customer}`);
+    } else {
+      console.log(`[WEBHOOK] referral reward: ${reward.action}`);
+    }
+  } catch (err) {
+    console.warn(`[WEBHOOK] referral reward error: ${err instanceof Error ? err.message : String(err)}`);
   }
 }
 
