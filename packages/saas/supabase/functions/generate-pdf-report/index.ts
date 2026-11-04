@@ -52,12 +52,21 @@ Deno.serve(async (req) => {
     }
 
     const options: ReportOptions = await req.json()
-    const { auditId, projectId, agencyName } = options
+    const { auditId, projectId } = options
     // White-label is an Agency feature: the request's flag only counts on that plan, checked
     // with the service role (the entitlement tables aren't all readable under the user's RLS).
     const admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
     const whiteLabel = options.whiteLabel === true && (await getEntitlement(admin, user.id)).tier === 'agency'
-    const agencyLogo = options.agencyLogo && /^https:\/\//i.test(options.agencyLogo) ? options.agencyLogo : undefined
+    // The brand: what the request names, else the agency's stored brand (agency_branding).
+    let agencyName = options.agencyName
+    let agencyLogo = options.agencyLogo && /^https:\/\//i.test(options.agencyLogo) ? options.agencyLogo : undefined
+    if (whiteLabel && (!agencyName || !agencyLogo)) {
+      const { data: stored } = await admin.from('agency_branding').select('name, logo_url').eq('user_id', user.id).maybeSingle()
+      if (stored) {
+        agencyName = agencyName || stored.name
+        agencyLogo = agencyLogo || (stored.logo_url && /^https:\/\//i.test(stored.logo_url) ? stored.logo_url : undefined)
+      }
+    }
 
     if (!auditId || !projectId) {
       return new Response(

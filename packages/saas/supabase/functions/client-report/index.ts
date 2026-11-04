@@ -73,6 +73,12 @@ Deno.serve(async (req) => {
       )
     }
 
+    // The agency's brand, when stored: the report then carries it instead of RankCLI's.
+    const { data: branding } = await supabase
+      .from('agency_branding')
+      .select('name, logo_url, website, accent')
+      .eq('user_id', project.user_id)
+      .maybeSingle()
     // Get latest completed audit
     const { data: audit, error: auditError } = await supabase
       .from('audits')
@@ -111,6 +117,7 @@ Deno.serve(async (req) => {
           pages_crawled: audit.pages_crawled || 1,
         },
         issues: issues || [],
+        branding: branding || null,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )

@@ -7,6 +7,7 @@ const footerLinks = {
   product: [
     { label: 'Free Audit', href: '/free-audit' },
     { label: 'Free tools', href: '/tools' },
+    { label: 'For agencies', href: '/for-agencies' },
     { label: 'Pricing', href: '/pricing' },
     { label: 'Documentation', href: '/docs' },
     { label: 'Changelog', href: '/changelog' },

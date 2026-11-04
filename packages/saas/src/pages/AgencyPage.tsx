@@ -17,6 +17,7 @@ import {
 import { Navbar } from '@/components/layout/Navbar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { AgencyBrandCard } from '@/components/agency/AgencyBrandCard';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -356,6 +357,11 @@ export function AgencyPage() {
       <Navbar />
 
       <main className="container py-8">
+        {isAgency && (
+          <div className="mb-8">
+            <AgencyBrandCard />
+          </div>
+        )}
         {/* Breadcrumb */}
         <div className="mb-6">
           <Link
@@ -601,7 +607,7 @@ export function AgencyPage() {
                       {!pdfBranding && (
                         <div className="grid sm:grid-cols-2 gap-4 pt-2">
                           <div className="space-y-2">
-                            <Label htmlFor="agencyName">Your Agency Name</Label>
+                            <Label htmlFor="agencyName">Agency name (leave empty to use your saved brand)</Label>
                             <Input
                               id="agencyName"
                               placeholder="Acme SEO Agency"
