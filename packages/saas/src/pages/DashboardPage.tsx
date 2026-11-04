@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { consumePendingSite, consumePendingIntent } from '@/hooks/usePendingSite';
 import { toast } from 'sonner';
+import { TrialBanner } from '@/components/dashboard/TrialBanner';
 import { peekSignupSource, clearSignupSource } from '@/hooks/useSignupSource';
 import { supabase } from '@/integrations/supabase/client';
 import { AddProjectModal } from '@/components/dashboard/AddProjectModal';
@@ -128,6 +129,7 @@ export function DashboardPage() {
       <Navbar />
 
       <main className="container py-8">
+        <TrialBanner />
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
           <div>
