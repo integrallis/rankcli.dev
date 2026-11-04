@@ -22,6 +22,9 @@ const footerLinks = {
     { label: 'vs Lighthouse CI', href: '/compare/lighthouse-ci' },
     { label: 'vs squirrelscan', href: '/compare/squirrelscan' },
     { label: 'vs GeoReady', href: '/compare/geoready' },
+    { label: 'vs Otterly.AI', href: '/compare/otterly' },
+    { label: 'vs Peec AI', href: '/compare/peec-ai' },
+    { label: 'vs Profound', href: '/compare/profound' },
     { label: 'Screaming Frog alternative', href: '/alternatives/screaming-frog' },
   ],
   legal: [

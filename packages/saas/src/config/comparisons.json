@@ -485,6 +485,224 @@
           "url": "https://www.screamingfrog.co.uk/seo-spider/faq/"
         }
       ]
+    },
+    {
+      "slug": "otterly",
+      "kind": "compare",
+      "rival": "Otterly.AI",
+      "title": "RankCLI vs Otterly.AI",
+      "description": "Otterly tracks what AI assistants say about a brand across prompts; RankCLI checks whether a site's pages can be read and cited at all, from the CLI and CI. Different jobs, with sources.",
+      "verifiedAt": "2026-11-04",
+      "summary": "Otterly.AI monitors brand mentions and citations across ChatGPT, Perplexity, Google AI Overviews and others for a set of prompts, and recommends content changes; it is a marketing team's monitoring product priced by prompt count. RankCLI audits the site itself: which crawlers get in, what the page declares, what blocks a citation before any prompt is asked, and it runs where developers work. A team that wants to know what the assistants say uses Otterly; a team that wants the site to be readable by them in the first place, and to keep it that way in CI, uses RankCLI. Many will use both.",
+      "rows": [
+        {
+          "aspect": "What it is",
+          "rankcli": "An SEO and AI-search audit for developers: 280+ checks from the CLI, a GitHub Action with a CI gate, an MCP server for coding agents, and fixes as pull requests. It checks whether crawlers can read the site; it does not track what assistants say about a brand.",
+          "rival": "\"AI Search Monitoring\" for brands: tracks brand mentions, citations and sentiment across AI assistants for the prompts you choose, with recommendations.",
+          "source": "https://otterly.ai/"
+        },
+        {
+          "aspect": "Price",
+          "rankcli": "CLI, Action, MCP server and local fixes free forever. Hosted: Free (1 site weekly, 3 auto-fix PRs a month), Solo $9/mo, Pro $29/mo, Agency $99/mo.",
+          "rival": "Lite $29/mo (15 prompts, 3 recommendations a week), Standard $189/mo (100 prompts, API and MCP), Premium $489/mo (400 prompts, 10,000 GEO URL audits); +100 prompts $99/mo. The same page shows lower figures ($25, $160, $422) that read as annual pricing.",
+          "source": "https://otterly.ai/pricing"
+        },
+        {
+          "aspect": "Free offering",
+          "rankcli": "The full audit of one page with every finding and no sign-up (rankcli.dev/free-audit), six free tool pages, the CLI with every check, and a Free hosted plan with a weekly audit and alerts.",
+          "rival": "A 7-day or 14-day free trial (the site states both), no card; a hub of free GEO tools (content GEO score, crawlability test, query fan-out simulator), a free email course and guide.",
+          "source": "https://otterly.ai/geo-tools/"
+        },
+        {
+          "aspect": "What it tracks",
+          "rankcli": "The site itself: crawler access fetched as each bot (search, AI search, user-triggered, training), metadata, structured data, sitemaps, Core Web Vitals, internal links, security headers; a score per category and the history of it.",
+          "rival": "Prompts: whether and how the brand is mentioned and cited per assistant, over time; AI search traffic analysis.",
+          "source": "https://otterly.ai/"
+        },
+        {
+          "aspect": "Fixes",
+          "rankcli": "Opens a pull request with the fix on a connected repository (the first one on the Free plan runs on RankCLI's own model key); local fixes with `rankcli fix`.",
+          "rival": "Recommendations (3 a week on Lite, unlimited above); no code changes.",
+          "source": "https://otterly.ai/pricing"
+        },
+        {
+          "aspect": "CI and agents",
+          "rankcli": "`--fail-on` gate in the CLI and the Action, with baselines; Claude Code plugin, Codex, Cursor, ChatGPT through the MCP server; Astro, Nuxt, Next.js and Vite plugins audit the build output.",
+          "rival": "API and MCP access on Standard and above, for reporting; no CI gate.",
+          "source": "https://otterly.ai/pricing"
+        },
+        {
+          "aspect": "Who it is for",
+          "rankcli": "Developers and the agencies who serve them; the Agency plan adds white-label reports and client links.",
+          "rival": "\"Marketing teams\", \"agencies\", \"SMEs\" and \"solo marketers\"; an agency partner program and a referral program.",
+          "source": "https://otterly.ai/"
+        },
+        {
+          "aspect": "Data",
+          "rankcli": "A weekly public dataset of the 400 most popular npm packages' sites (rankcli.dev/data/npm-sites), rebuildable from the public scripts.",
+          "rival": "Industry rankings, reports and GEO experiments published on the site.",
+          "source": "https://otterly.ai/ranking"
+        }
+      ],
+      "pickRival": [
+        "You want to know what ChatGPT, Perplexity and AI Overviews say about your brand for a set of prompts, with history.",
+        "A marketing team owns the work and wants recommendations, not pull requests."
+      ],
+      "pickRankcli": [
+        "You want to know whether the assistants can read the site at all, by crawler, and to be told when that changes.",
+        "The fix should land as a pull request in the repository, and a deploy that breaks it should fail CI."
+      ],
+      "sources": [
+        "https://otterly.ai/",
+        "https://otterly.ai/pricing",
+        "https://otterly.ai/geo-tools/",
+        "https://rankcli.dev/pricing"
+      ]
+    },
+    {
+      "slug": "peec-ai",
+      "kind": "compare",
+      "rival": "Peec AI",
+      "title": "RankCLI vs Peec AI",
+      "description": "Peec AI tracks brand visibility in AI answers by prompt and country; RankCLI checks whether the site can be read and cited, from the CLI and CI. Different jobs, with sources.",
+      "verifiedAt": "2026-11-04",
+      "summary": "Peec AI measures how a brand shows up in ChatGPT, Gemini, Perplexity and AI Mode answers for the prompts and countries you track, against competitors, and sells it by prompt volume to marketing teams and agencies. RankCLI audits the site: crawler access fetched as each bot, metadata, structured data, sitemaps, and a CI gate that fails a deploy which blocks a crawler. One measures the answer; the other keeps the source readable.",
+      "rows": [
+        {
+          "aspect": "What it is",
+          "rankcli": "An SEO and AI-search audit for developers: 280+ checks from the CLI, a GitHub Action with a CI gate, an MCP server for coding agents, and fixes as pull requests. It checks whether crawlers can read the site; it does not track what assistants say about a brand.",
+          "rival": "AI visibility tracking for brands: prompts tracked daily across assistants and countries, with competitor comparison, sources and an entity map.",
+          "source": "https://peec.ai/"
+        },
+        {
+          "aspect": "Price",
+          "rankcli": "CLI, Action, MCP server and local fixes free forever. Hosted: Free (1 site weekly, 3 auto-fix PRs a month), Solo $9/mo, Pro $29/mo, Agency $99/mo.",
+          "rival": "Starter $95/mo (50 prompts, 1 country, 1 project), Pro $245/mo (150 prompts, 3 countries, 2 projects), Advanced $495/mo (350 prompts, 5 projects, API, Data Studio); Enterprise custom; agency pricing separate.",
+          "source": "https://peec.ai/pricing"
+        },
+        {
+          "aspect": "Free offering",
+          "rankcli": "The full audit of one page with every finding and no sign-up (rankcli.dev/free-audit), six free tool pages, the CLI with every check, and a Free hosted plan with a weekly audit and alerts.",
+          "rival": "A free trial from the app (length and card requirement not stated on the public pages); no free standalone tool found.",
+          "source": "https://peec.ai/"
+        },
+        {
+          "aspect": "What it tracks",
+          "rankcli": "The site itself: crawler access fetched as each bot (search, AI search, user-triggered, training), metadata, structured data, sitemaps, Core Web Vitals, internal links, security headers; a score per category and the history of it.",
+          "rival": "Prompts: visibility, mentions, citations, sentiment and competitors per assistant and country, daily.",
+          "source": "https://peec.ai/"
+        },
+        {
+          "aspect": "Fixes",
+          "rankcli": "Opens a pull request with the fix on a connected repository (the first one on the Free plan runs on RankCLI's own model key); local fixes with `rankcli fix`.",
+          "rival": "Insights and \"AI instructions\" guidance; no code changes.",
+          "source": "https://peec.ai/"
+        },
+        {
+          "aspect": "CI and agents",
+          "rankcli": "`--fail-on` gate in the CLI and the Action, with baselines; Claude Code plugin, Codex, Cursor, ChatGPT through the MCP server; Astro, Nuxt, Next.js and Vite plugins audit the build output.",
+          "rival": "API and a Looker Studio connector on Advanced, an MCP server, for reporting; no CI gate.",
+          "source": "https://peec.ai/pricing"
+        },
+        {
+          "aspect": "Who it is for",
+          "rankcli": "Developers and the agencies who serve them.",
+          "rival": "\"Marketing teams\", \"SEO teams\" and agencies; \"trusted by 4000+ brands and agencies\"; agency, creator and media partnerships.",
+          "source": "https://peec.ai/"
+        },
+        {
+          "aspect": "Data",
+          "rankcli": "A weekly public dataset of the 400 most popular npm packages' sites (rankcli.dev/data/npm-sites), rebuildable from the public scripts.",
+          "rival": "Studies from its own tracking data (fan-outs, entity maps).",
+          "source": "https://peec.ai/"
+        }
+      ],
+      "pickRival": [
+        "You want prompt-level visibility against named competitors, by country, daily.",
+        "The budget is a marketing team's and the users are marketers."
+      ],
+      "pickRankcli": [
+        "You want the site itself checked and kept readable by every crawler, from the repository.",
+        "Nine dollars a month, or free, is the budget."
+      ],
+      "sources": [
+        "https://peec.ai/",
+        "https://peec.ai/pricing",
+        "https://rankcli.dev/pricing"
+      ]
+    },
+    {
+      "slug": "profound",
+      "kind": "compare",
+      "rival": "Profound",
+      "title": "RankCLI vs Profound",
+      "description": "Profound is an enterprise answer-engine optimization platform with a free AEO report; RankCLI is an audit and CI gate for the site itself. Different jobs, with sources.",
+      "verifiedAt": "2026-11-04",
+      "summary": "Profound tracks a brand across up to ten answer engines, runs a free AEO report, and sells enterprise plans with daily tracking, SSO and an \"AI Marketer\"; its customers are marketing organisations and agencies. RankCLI is the developer-side tool: it fetches the site as each crawler, audits what the page declares, fails a deploy that breaks it, and opens the fix as a pull request. The free AEO report and the free RankCLI audit are the closest pair: one reports how the brand appears in answers, the other why a page can or cannot be cited.",
+      "rows": [
+        {
+          "aspect": "What it is",
+          "rankcli": "An SEO and AI-search audit for developers: 280+ checks from the CLI, a GitHub Action with a CI gate, an MCP server for coding agents, and fixes as pull requests. It checks whether crawlers can read the site; it does not track what assistants say about a brand.",
+          "rival": "An answer-engine optimization platform: brand visibility across up to 10 answer engines, citation analysis, an \"AI Marketer\" agent, enterprise controls.",
+          "source": "https://tryprofound.com/"
+        },
+        {
+          "aspect": "Price",
+          "rankcli": "CLI, Action, MCP server and local fixes free forever. Hosted: Free (1 site weekly, 3 auto-fix PRs a month), Solo $9/mo, Pro $29/mo, Agency $99/mo.",
+          "rival": "A free trial plan (50 prompts run daily for 7 days, ChatGPT, Gemini and AI Overviews, prompts not editable); Enterprise custom with daily tracking, SSO/SAML and SOC 2; an agency plan with 400 credits a month per client workspace, price not shown.",
+          "source": "https://tryprofound.com/pricing"
+        },
+        {
+          "aspect": "Free offering",
+          "rankcli": "The full audit of one page with every finding and no sign-up (rankcli.dev/free-audit), six free tool pages, the CLI with every check, and a Free hosted plan with a weekly audit and alerts.",
+          "rival": "The free AEO Report (\"Analyze my brand\"), the Profound Index, an AEO guide and research reports.",
+          "source": "https://tryprofound.com/aeo-report"
+        },
+        {
+          "aspect": "What it tracks",
+          "rankcli": "The site itself: crawler access fetched as each bot (search, AI search, user-triggered, training), metadata, structured data, sitemaps, Core Web Vitals, internal links, security headers; a score per category and the history of it.",
+          "rival": "Brand mentions, citations and share of voice in answers; where citations come from; commercial conversations.",
+          "source": "https://tryprofound.com/"
+        },
+        {
+          "aspect": "Fixes",
+          "rankcli": "Opens a pull request with the fix on a connected repository (the first one on the Free plan runs on RankCLI's own model key); local fixes with `rankcli fix`.",
+          "rival": "Content and PR recommendations through the AI Marketer; no code changes.",
+          "source": "https://tryprofound.com/"
+        },
+        {
+          "aspect": "CI and agents",
+          "rankcli": "`--fail-on` gate in the CLI and the Action, with baselines; Claude Code plugin, Codex, Cursor, ChatGPT through the MCP server; Astro, Nuxt, Next.js and Vite plugins audit the build output.",
+          "rival": "\"200+ integrations\" for reporting and workflows; no CI gate.",
+          "source": "https://tryprofound.com/integrations"
+        },
+        {
+          "aspect": "Who it is for",
+          "rankcli": "Developers and the agencies who serve them.",
+          "rival": "\"AEO teams\", \"content teams\", \"PR & brand teams\", agencies and enterprise; a partner directory.",
+          "source": "https://tryprofound.com/"
+        },
+        {
+          "aspect": "Data",
+          "rankcli": "A weekly public dataset of the 400 most popular npm packages' sites (rankcli.dev/data/npm-sites), rebuildable from the public scripts.",
+          "rival": "Research reports from its own data (\"Where do AI citations come from?\", \"The AI mention effect\").",
+          "source": "https://tryprofound.com/"
+        }
+      ],
+      "pickRival": [
+        "You are an enterprise marketing organisation tracking a brand across many answer engines with SSO and a vendor on call.",
+        "You want an agent to draft the content and PR work."
+      ],
+      "pickRankcli": [
+        "You want the site readable by every crawler and the proof in CI, at developer prices.",
+        "You want fixes as pull requests, not recommendations."
+      ],
+      "sources": [
+        "https://tryprofound.com/",
+        "https://tryprofound.com/pricing",
+        "https://tryprofound.com/aeo-report",
+        "https://rankcli.dev/pricing"
+      ]
     }
   ]
 }
