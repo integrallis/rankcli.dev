@@ -153,7 +153,8 @@ jobs:
   # It used to build without prerendering and then skip the deploy (an unset variable).
   deploy-frontend:
     name: Deploy Frontend
-    runs-on: ubuntu-latest
+    # Pinned to 24.04: Playwright 1.58.2 does not support ubuntu-26.04 (ubuntu-latest).
+    runs-on: ubuntu-24.04
     needs: [preflight, changes]
     if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
     steps:

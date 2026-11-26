@@ -18,7 +18,8 @@ jobs:
   # ============================================
   build:
     name: Build
-    runs-on: ubuntu-latest
+    # Pinned to 24.04: Playwright 1.58.2 does not support ubuntu-26.04 (ubuntu-latest).
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
 
@@ -176,7 +177,8 @@ jobs:
   # ============================================
   e2e-database:
     name: E2E Database Tests
-    runs-on: ubuntu-latest
+    # Pinned to 24.04: Playwright 1.58.2 does not support ubuntu-26.04 (ubuntu-latest).
+    runs-on: ubuntu-24.04
     # Run on workflow_dispatch or if secrets are available
     if: |
       github.event_name == 'workflow_dispatch' ||
