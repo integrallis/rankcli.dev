@@ -1,27 +1,42 @@
 {
   "name": "rankcli-vscode",
-  "displayName": "RankCLI",
-  "description": "Real-time SEO linting for HTML, React, Vue, and Astro files - Ship code, get ranked.",
-  "version": "0.0.1",
-  "publisher": "rankcli",
+  "displayName": "RankCLI — SEO & AI Search Audit",
+  "description": "280+ SEO and AI-search readiness checks in your editor: audit live URLs or build directories, lint robots.txt by AI bot class, and catch HTML/JSX/Vue/Astro/Svelte issues as you type.",
+  "version": "0.1.0",
+  "publisher": "integrallis",
   "license": "MIT",
-  "homepage": "https://rankcli.dev",
+  "icon": "images/icon.png",
+  "galleryBanner": {
+    "color": "#101419",
+    "theme": "dark"
+  },
+  "homepage": "https://rankcli.dev/docs#vscode-extension",
   "repository": {
     "type": "git",
-    "url": "https://github.com/rankcli/rankcli"
+    "url": "https://github.com/integrallis/rankcli.dev",
+    "directory": "packages/vscode-extension"
+  },
+  "bugs": {
+    "url": "https://github.com/integrallis/rankcli/issues"
   },
   "engines": {
     "vscode": "^1.85.0"
   },
   "categories": [
     "Linters",
+    "Testing",
     "Other"
   ],
   "keywords": [
     "seo",
-    "meta tags",
+    "geo",
+    "ai-search",
+    "robots-txt",
+    "llms-txt",
+    "meta-tags",
     "html",
-    "accessibility",
+    "nextjs",
+    "astro",
     "linter",
     "rankcli"
   ],
@@ -31,19 +46,41 @@
     "onLanguage:typescriptreact",
     "onLanguage:vue",
     "onLanguage:astro",
-    "onLanguage:svelte"
+    "onLanguage:svelte",
+    "workspaceContains:**/rankcli.config.json",
+    "workspaceContains:**/robots.txt"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
+        "command": "rankcli.auditUrl",
+        "title": "Audit Site URL (280+ checks)",
+        "category": "RankCLI"
+      },
+      {
+        "command": "rankcli.auditBuildDir",
+        "title": "Audit Local Build Directory",
+        "category": "RankCLI"
+      },
+      {
+        "command": "rankcli.checkGeo",
+        "title": "Check AI Crawler Access (GEO)",
+        "category": "RankCLI"
+      },
+      {
         "command": "rankcli.runAudit",
-        "title": "Run SEO Audit",
+        "title": "Lint Current File",
         "category": "RankCLI"
       },
       {
         "command": "rankcli.showReport",
-        "title": "Show SEO Report",
+        "title": "Show Audit Report",
+        "category": "RankCLI"
+      },
+      {
+        "command": "rankcli.initConfig",
+        "title": "Create rankcli.config.json",
         "category": "RankCLI"
       }
     ],
@@ -53,13 +90,40 @@
         "rankcli.enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable/disable SEO linting"
+          "description": "Enable/disable real-time SEO and robots.txt linting"
         },
         "rankcli.severity": {
           "type": "string",
           "default": "warning",
-          "enum": ["error", "warning", "information", "hint"],
-          "description": "Severity level for SEO issues"
+          "enum": [
+            "error",
+            "warning",
+            "information",
+            "hint"
+          ],
+          "description": "Default severity level for live HTML/JSX/Vue/Astro/Svelte linting issues"
+        },
+        "rankcli.defaultUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Default site URL for audits when rankcli.config.json does not specify one"
+        },
+        "rankcli.buildDir": {
+          "type": "string",
+          "default": "",
+          "description": "Default local build output directory to audit (e.g. dist, out, .output/public)"
+        },
+        "rankcli.maxPages": {
+          "type": "number",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum number of pages to crawl per site or build-directory audit"
+        },
+        "rankcli.checkLinks": {
+          "type": "boolean",
+          "default": false,
+          "description": "Verify external and internal links for broken targets during audits"
         },
         "rankcli.checks": {
           "type": "object",
@@ -71,9 +135,11 @@
             "canonical": true,
             "headings": true,
             "images": true,
-            "links": true
+            "links": true,
+            "noindex": true,
+            "robotsTxt": true
           },
-          "description": "Enable/disable specific SEO checks"
+          "description": "Enable/disable specific real-time linting checks"
         }
       }
     },
@@ -81,18 +147,37 @@
       "editor/context": [
         {
           "command": "rankcli.runAudit",
-          "group": "rankcli",
-          "when": "editorLangId == html || editorLangId == typescriptreact || editorLangId == javascriptreact"
+          "group": "rankcli@1",
+          "when": "editorLangId == html || editorLangId == typescriptreact || editorLangId == javascriptreact || editorLangId == vue || editorLangId == astro || editorLangId == svelte || resourceFilename == robots.txt"
+        },
+        {
+          "command": "rankcli.auditUrl",
+          "group": "rankcli@2"
+        },
+        {
+          "command": "rankcli.auditBuildDir",
+          "group": "rankcli@3"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "rankcli.auditBuildDir",
+          "group": "rankcli@1",
+          "when": "explorerResourceIsFolder"
         }
       ]
     }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run build",
-    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
-    "watch": "pnpm run build --watch",
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --minify",
+    "watch": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --sourcemap --watch",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "package": "vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "@rankcli/agent-runtime": "0.0.46"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
@@ -101,6 +186,5 @@
     "esbuild": "^0.19.0",
     "typescript": "^5.3.0",
     "vitest": "^1.6.0"
-  },
-  "dependencies": {}
+  }
 }

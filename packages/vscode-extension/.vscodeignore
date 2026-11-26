@@ -2,5 +2,8 @@
 # pnpm workspace and packaged the repo root, .env and .git included.
 **
 !dist/extension.js
+!images/icon.png
 !README.md
+!CHANGELOG.md
+!LICENSE
 !package.json

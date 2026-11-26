@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 
 // Mock vscode module - must be inline since vi.mock is hoisted
 vi.mock('vscode', () => {
@@ -15,15 +18,22 @@ vi.mock('vscode', () => {
       endLine: number;
       endChar: number;
       constructor(
-        startLine: number,
-        startChar: number,
+        startOrLine: any,
+        endOrChar: any,
         endLine?: number,
         endChar?: number
       ) {
-        this.startLine = startLine;
-        this.startChar = startChar;
-        this.endLine = endLine ?? startLine;
-        this.endChar = endChar ?? startChar;
+        if (typeof startOrLine === 'object') {
+          this.startLine = startOrLine.line;
+          this.startChar = startOrLine.character;
+          this.endLine = endOrChar.line;
+          this.endChar = endOrChar.character;
+        } else {
+          this.startLine = startOrLine;
+          this.startChar = endOrChar;
+          this.endLine = endLine ?? startOrLine;
+          this.endChar = endChar ?? endOrChar;
+        }
       }
       get start() {
         return { line: this.startLine, character: this.startChar };
@@ -49,16 +59,21 @@ vi.mock('vscode', () => {
         get: (key: string, defaultValue: any) => {
           if (key === 'enabled') return true;
           if (key === 'severity') return 'warning';
-          if (key === 'checks') return {
-            title: true,
-            metaDescription: true,
-            openGraph: true,
-            twitterCard: true,
-            canonical: true,
-            headings: true,
-            images: true,
-            links: true,
-          };
+          if (key === 'defaultUrl') return 'https://example.com';
+          if (key === 'checks') {
+            return {
+              title: true,
+              metaDescription: true,
+              openGraph: true,
+              twitterCard: true,
+              canonical: true,
+              headings: true,
+              images: true,
+              links: true,
+              noindex: true,
+              robotsTxt: true,
+            };
+          }
           return defaultValue;
         },
       }),
@@ -66,290 +81,99 @@ vi.mock('vscode', () => {
   };
 });
 
-// Import after mocking
-import { analyzeDocument, SEOIssue } from './extension.js';
 import * as vscode from 'vscode';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { analyzeDocument } from './extension';
+import { isPageDocument, lintDocumentText, lintRobotsTxt } from './lint-document';
+import {
+  buildConfigTemplate,
+  buildGateSpecFromConfig,
+  detectBuildDirectory,
+  formatAuditMarkdown,
+  normalizeUrl,
+  runWorkspaceAudit,
+} from './audit-runner';
+import { renderReportHtml } from './report-panel';
 
-describe('manifest agreement', () => {
-  // Every command the code registers or binds must be declared in
-  // package.json, or VS Code reports "command not found" - which is what
-  // happened to both commands when the code said seo-autopilot.* and the
-  // manifest said rankcli.*. The settings section had the same split.
-  const source = readFileSync(join(__dirname, 'extension.ts'), 'utf8');
-  const manifest = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8'));
+describe('manifest agreement & packaging safety', () => {
+  const source = fs.readFileSync(path.join(__dirname, 'extension.ts'), 'utf8');
+  const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'));
+  const vscodeignore = fs.readFileSync(path.join(__dirname, '..', '.vscodeignore'), 'utf8');
 
-  it('declares every command id the code uses', () => {
+  it('declares every command id the code registers or binds', () => {
     const declared = new Set(manifest.contributes.commands.map((c: { command: string }) => c.command));
-    const used = [...source.matchAll(/(?:registerCommand\(|\.command = )'([^']+)'/g)].map(m => m[1]);
-    expect(used.length).toBeGreaterThan(0);
-    for (const id of used) expect(declared.has(id), id).toBe(true);
+    const used = [...source.matchAll(/(?:registerCommand\(|\.command = )'([^']+)'/g)].map((m) => m[1]);
+    expect(used.length).toBeGreaterThanOrEqual(6);
+    for (const id of used) {
+      expect(declared.has(id), id).toBe(true);
+    }
   });
 
   it('reads the configuration section the manifest declares', () => {
-    const sections = [...source.matchAll(/getConfiguration\('([^']+)'\)/g)].map(m => m[1]);
+    const sections = [...source.matchAll(/getConfiguration\('([^']+)'\)/g)].map((m) => m[1]);
     const properties = Object.keys(manifest.contributes.configuration.properties);
     expect(sections.length).toBeGreaterThan(0);
     for (const section of sections) {
-      expect(properties.some(p => p.startsWith(`${section}.`)), section).toBe(true);
+      expect(properties.some((p) => p.startsWith(`${section}.`)), section).toBe(true);
     }
+  });
+
+  it('uses the integrallis publisher and ships an existing icon', () => {
+    expect(manifest.publisher).toBe('integrallis');
+    expect(manifest.name).toBe('rankcli-vscode');
+    expect(manifest.icon).toBe('images/icon.png');
+    expect(fs.existsSync(path.join(__dirname, '..', manifest.icon))).toBe(true);
+  });
+
+  it('keeps an allowlist .vscodeignore so workspace secrets are never packaged', () => {
+    expect(vscodeignore).toContain('**');
+    expect(vscodeignore).toContain('!dist/extension.js');
+    expect(vscodeignore).toContain('!images/icon.png');
+    expect(vscodeignore).toContain('!package.json');
   });
 });
 
-// Mock document
-const createMockDocument = (text: string) => ({
+const createMockDocument = (text: string, languageId = 'html', fsPath = '/test/index.html') => ({
   getText: () => text,
   positionAt: (offset: number) => ({ line: 0, character: offset }),
-  languageId: 'html',
-  uri: { fsPath: '/test/file.html' },
+  languageId,
+  uri: { fsPath },
 });
 
-// Create config helper
-const getConfig = () => vscode.workspace.getConfiguration();
-
-describe('SEO Autopilot Extension', () => {
+describe('HTML & framework markup linting', () => {
   let config: any;
 
   beforeEach(() => {
-    config = getConfig();
+    config = vscode.workspace.getConfiguration();
   });
 
-  describe('analyzeDocument', () => {
-    it('detects missing title tag', () => {
-      const text = `<!DOCTYPE html>
+  it('detects missing title, meta description, OG, Twitter, canonical, and H1 on full HTML pages', () => {
+    const text = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
 </head>
-<body></body>
-</html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.some(i => i.code === 'MISSING_TITLE')).toBe(true);
-    });
-
-    it('does not report title issue when present', () => {
-      const text = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Page Title</title>
-</head>
-<body></body>
-</html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.some(i => i.code === 'MISSING_TITLE')).toBe(false);
-    });
-
-    it('detects missing meta description', () => {
-      const text = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Test</title>
-</head>
-<body></body>
-</html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.some(i => i.code === 'MISSING_META_DESCRIPTION')).toBe(true);
-    });
-
-    it('does not report meta description when present', () => {
-      const text = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Test</title>
-  <meta name="description" content="Page description">
-</head>
-<body></body>
-</html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.some(i => i.code === 'MISSING_META_DESCRIPTION')).toBe(false);
-    });
-
-    it('detects missing Open Graph tags', () => {
-      const text = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Test</title>
-</head>
-<body></body>
-</html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.some(i => i.code === 'MISSING_OG_TAGS')).toBe(true);
-    });
-
-    it('does not report OG tags when present', () => {
-      const text = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Test</title>
-  <meta property="og:title" content="OG Title">
-</head>
-<body></body>
-</html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.some(i => i.code === 'MISSING_OG_TAGS')).toBe(false);
-    });
-
-    it('detects missing Twitter Card tags', () => {
-      const text = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Test</title>
-</head>
-<body></body>
-</html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.some(i => i.code === 'MISSING_TWITTER_CARD')).toBe(true);
-    });
-
-    it('detects missing canonical URL', () => {
-      const text = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Test</title>
-</head>
-<body></body>
-</html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.some(i => i.code === 'MISSING_CANONICAL')).toBe(true);
-    });
-
-    it('does not report canonical when present', () => {
-      const text = `<!DOCTYPE html>
-<html>
-<head>
-  <title>Test</title>
-  <link rel="canonical" href="https://example.com">
-</head>
-<body></body>
-</html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.some(i => i.code === 'MISSING_CANONICAL')).toBe(false);
-    });
-
-    it('detects missing H1 heading', () => {
-      const text = `<!DOCTYPE html>
-<html>
-<head><title>Test</title></head>
 <body>
-  <h2>Section Title</h2>
+  <h2>Subheading</h2>
 </body>
 </html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
+    const doc = createMockDocument(text);
+    const issues = analyzeDocument(text, doc as any, config);
+    const codes = issues.map((i) => i.code);
 
-      expect(issues.some(i => i.code === 'MISSING_H1')).toBe(true);
-    });
+    expect(codes).toContain('MISSING_TITLE');
+    expect(codes).toContain('MISSING_META_DESCRIPTION');
+    expect(codes).toContain('MISSING_OG_TAGS');
+    expect(codes).toContain('MISSING_TWITTER_CARD');
+    expect(codes).toContain('MISSING_CANONICAL');
+    expect(codes).toContain('MISSING_H1');
+  });
 
-    it('does not report H1 when present', () => {
-      const text = `<!DOCTYPE html>
-<html>
-<head><title>Test</title></head>
-<body>
-  <h1>Page Title</h1>
-</body>
-</html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.some(i => i.code === 'MISSING_H1')).toBe(false);
-    });
-
-    it('detects multiple H1 headings', () => {
-      const text = `<!DOCTYPE html>
-<html>
-<head><title>Test</title></head>
-<body>
-  <h1>First H1</h1>
-  <h1>Second H1</h1>
-</body>
-</html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.some(i => i.code === 'MULTIPLE_H1')).toBe(true);
-    });
-
-    it('detects images without alt text', () => {
-      const text = `<!DOCTYPE html>
-<html>
-<head><title>Test</title></head>
-<body>
-  <img src="image.png">
-</body>
-</html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.some(i => i.code === 'IMG_MISSING_ALT')).toBe(true);
-    });
-
-    it('does not report images with alt text', () => {
-      const text = `<!DOCTYPE html>
-<html>
-<head><title>Test</title></head>
-<body>
-  <img src="image.png" alt="Description of image">
-</body>
-</html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.some(i => i.code === 'IMG_MISSING_ALT')).toBe(false);
-    });
-
-    it('detects empty links', () => {
-      const text = `<!DOCTYPE html>
-<html>
-<head><title>Test</title></head>
-<body>
-  <a href="/page"></a>
-</body>
-</html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.some(i => i.code === 'EMPTY_LINK')).toBe(true);
-    });
-
-    it('does not report links with content', () => {
-      const text = `<!DOCTYPE html>
-<html>
-<head><title>Test</title></head>
-<body>
-  <a href="/page">Click here</a>
-</body>
-</html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.some(i => i.code === 'EMPTY_LINK')).toBe(false);
-    });
-
-    it('returns no issues for well-optimized page', () => {
-      const text = `<!DOCTYPE html>
+  it('returns no issues for a well-optimized HTML page', () => {
+    const text = `<!DOCTYPE html>
 <html>
 <head>
   <title>Page Title - Brand</title>
-  <meta name="description" content="A detailed description of this page.">
+  <meta name="description" content="A clear description of this page.">
   <meta property="og:title" content="Page Title">
   <meta property="og:description" content="Description">
   <meta name="twitter:card" content="summary_large_image">
@@ -362,74 +186,208 @@ describe('SEO Autopilot Extension', () => {
   <a href="/link">Link text</a>
 </body>
 </html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.length).toBe(0);
-    });
-
-    it('respects disabled checks', () => {
-      const disabledConfig = {
-        get: (key: string, defaultValue: any) => {
-          if (key === 'enabled') return true;
-          if (key === 'severity') return 'warning';
-          if (key === 'checks') return {
-            title: false, // Disabled
-            metaDescription: false, // Disabled
-            openGraph: false,
-            twitterCard: false,
-            canonical: false,
-            headings: false,
-            images: true,
-            links: true,
-          };
-          return defaultValue;
-        },
-      };
-
-      const text = `<!DOCTYPE html>
-<html>
-<head></head>
-<body></body>
-</html>`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, disabledConfig);
-
-      expect(issues.some(i => i.code === 'MISSING_TITLE')).toBe(false);
-      expect(issues.some(i => i.code === 'MISSING_META_DESCRIPTION')).toBe(false);
-    });
+    const doc = createMockDocument(text);
+    const issues = analyzeDocument(text, doc as any, config);
+    expect(issues).toEqual([]);
   });
 
-  describe('JSX/React support', () => {
-    it('detects missing title in JSX', () => {
-      const text = `export default function Page() {
-  return (
-    <html>
-      <head>
-        <meta charSet="utf-8" />
-      </head>
-      <body>Content</body>
-    </html>
-  );
+  it('does NOT fire page-level false positives on React/Vue/Svelte UI components', () => {
+    const buttonTsx = `export function PrimaryButton({ label }: { label: string }) {
+  return <button className="btn">{label}</button>;
 }`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
+    expect(isPageDocument(buttonTsx, 'typescriptreact')).toBe(false);
 
-      expect(issues.some(i => i.code === 'MISSING_TITLE')).toBe(true);
+    const issues = lintDocumentText(buttonTsx, {
+      languageId: 'typescriptreact',
+      filePath: '/src/components/PrimaryButton.tsx',
     });
+    expect(issues).toEqual([]);
+  });
 
-    it('detects images without alt in JSX', () => {
-      const text = `export default function Page() {
+  it('still catches component-safe issues (missing img alt, empty link) inside JSX components', () => {
+    const cardTsx = `export function Card() {
   return (
     <div>
-      <img src="/logo.png" />
+      <img src="/hero.png" />
+      <img src="/ok.png" alt={dynamicAlt} />
+      <a href="/x"></a>
+      <a href="/icon" aria-label="Close"></a>
     </div>
   );
 }`;
-      const doc = createMockDocument(text);
-      const issues = analyzeDocument(text, doc as any, config);
-
-      expect(issues.some(i => i.code === 'IMG_MISSING_ALT')).toBe(true);
+    const issues = lintDocumentText(cardTsx, {
+      languageId: 'typescriptreact',
+      filePath: '/src/components/Card.tsx',
     });
+    const codes = issues.map((i) => i.code);
+    expect(codes).toEqual(['IMG_MISSING_ALT', 'EMPTY_LINK']);
   });
+
+  it('recognizes Next.js App Router metadata exports and flags robots.index = false', () => {
+    const goodPage = `export const metadata = {
+  title: 'Pricing',
+  description: 'Simple transparent pricing for developers.',
+  openGraph: { title: 'Pricing' },
+  twitter: { card: 'summary_large_image' },
+  alternates: { canonical: 'https://example.com/pricing' },
+};`;
+    expect(isPageDocument(goodPage, 'typescriptreact')).toBe(true);
+    expect(lintDocumentText(goodPage, { languageId: 'typescriptreact' })).toEqual([]);
+
+    const noindexPage = `export const metadata = {
+  title: 'Staging',
+  description: 'Desc',
+  openGraph: { title: 'Staging' },
+  twitter: { card: 'summary' },
+  alternates: { canonical: 'https://example.com' },
+  robots: { index: false, follow: false },
+};`;
+    const issues = lintDocumentText(noindexPage, { languageId: 'typescriptreact' });
+    expect(issues.some((i) => i.code === 'STRAY_NOINDEX' && i.severity === 'error')).toBe(true);
+  });
+
+  it('detects stray HTML robots noindex, empty/long titles, and multiple H1s', () => {
+    const text = `<!DOCTYPE html>
+<html>
+<head>
+  <title>This is an intentionally very long title that exceeds sixty characters by quite a bit</title>
+  <meta name="description" content="Valid description">
+  <meta name="robots" content="noindex, nofollow">
+  <meta property="og:title" content="T">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://example.com/">
+</head>
+<body>
+  <h1>First</h1>
+  <h1>Second</h1>
+</body>
+</html>`;
+    const issues = lintDocumentText(text, { languageId: 'html' });
+    const codes = issues.map((i) => i.code);
+    expect(codes).toContain('TITLE_TOO_LONG');
+    expect(codes).toContain('STRAY_NOINDEX');
+    expect(codes).toContain('MULTIPLE_H1');
+  });
+});
+
+describe('robots.txt AI crawler linting (powered by @rankcli/agent-runtime)', () => {
+  it('flags wildcard Disallow: / across bot classes with evidence-based severities', () => {
+    const robots = `User-agent: *\nDisallow: /\n`;
+    const findings = lintRobotsTxt(robots, 'https://rankcli.dev');
+
+    const byCode = Object.fromEntries(findings.map((f) => [f.code, f]));
+    expect(byCode.SEARCH_BOTS_DISALLOWED?.severity).toBe('error');
+    expect(byCode.AI_SEARCH_BOTS_DISALLOWED?.severity).toBe('error');
+    expect(byCode.AI_SEARCH_BOTS_DISALLOWED?.fix?.title).toContain('AI-search-friendly');
+    expect(byCode.AI_USER_FETCH_DISALLOWED?.severity).toBe('warning');
+    expect(byCode.AI_TRAINING_BOTS_DISALLOWED?.severity).toBe('information');
+    expect(byCode.SITEMAP_NOT_IN_ROBOTS?.severity).toBe('information');
+  });
+
+  it('treats disallowing training bots alone as informational policy with no errors', () => {
+    const robots = `User-agent: *
+Allow: /
+
+User-agent: GPTBot
+User-agent: ClaudeBot
+Disallow: /
+
+Sitemap: https://rankcli.dev/sitemap.xml
+`;
+    const findings = lintRobotsTxt(robots, 'https://rankcli.dev');
+    expect(findings.filter((f) => f.severity === 'error')).toEqual([]);
+    expect(findings.filter((f) => f.severity === 'warning')).toEqual([]);
+    expect(findings.some((f) => f.code === 'AI_TRAINING_BOTS_DISALLOWED' && f.severity === 'information')).toBe(true);
+  });
+
+  it('routes robots.txt files automatically through lintDocumentText', () => {
+    const findings = lintDocumentText('User-agent: OAI-SearchBot\nDisallow: /\n', {
+      languageId: 'plaintext',
+      filePath: '/project/public/robots.txt',
+    });
+    expect(findings.some((f) => f.code === 'AI_SEARCH_BOTS_DISALLOWED')).toBe(true);
+  });
+});
+
+describe('audit-runner & local build-directory engine audit', () => {
+  it('normalizes URLs cleanly', () => {
+    expect(normalizeUrl('rankcli.dev')).toBe('https://rankcli.dev');
+    expect(normalizeUrl('https://rankcli.dev/docs')).toBe('https://rankcli.dev/docs');
+  });
+
+  it('detects build directories and builds config templates with framework detection', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rankcli-vscode-'));
+    try {
+      fs.writeFileSync(
+        path.join(tmpDir, 'package.json'),
+        JSON.stringify({ dependencies: { astro: '^5.0.0' } })
+      );
+      fs.mkdirSync(path.join(tmpDir, 'dist'));
+      fs.writeFileSync(path.join(tmpDir, 'dist', 'index.html'), '<!doctype html><html><head><title>Hi</title></head><body><h1>Hi</h1></body></html>');
+
+      expect(detectBuildDirectory(tmpDir)).toBe(path.join(tmpDir, 'dist'));
+      const cfg = buildConfigTemplate(tmpDir, 'https://example.com');
+      expect(cfg.framework).toBe('astro');
+      expect(cfg.dir).toBe('dist');
+      expect(cfg.url).toBe('https://example.com');
+
+      const gateSpec = buildGateSpecFromConfig(cfg);
+      expect(gateSpec.failOn).toBe('error');
+      expect(gateSpec.budgets).toContainEqual({ category: 'overall', min: 80 });
+      expect(gateSpec.budgets).toContainEqual({ category: 'aiReadiness', min: 70 });
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('runs a real 280+ check local build-directory audit and renders the webview report', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rankcli-vscode-audit-'));
+    try {
+      const distDir = path.join(tmpDir, 'dist');
+      fs.mkdirSync(distDir);
+      fs.writeFileSync(
+        path.join(distDir, 'index.html'),
+        `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Test Site — Developer SEO</title>
+  <meta name="description" content="A local static build tested by RankCLI VS Code extension." />
+  <link rel="canonical" href="https://example.com/" />
+</head>
+<body>
+  <main>
+    <h1>Developer SEO Audit</h1>
+    <p>RankCLI checks technical SEO and AI-search readiness locally before you deploy.</p>
+  </main>
+</body>
+</html>`
+      );
+
+      const summary = await runWorkspaceAudit({
+        mode: 'dir',
+        url: 'https://example.com',
+        dir: distDir,
+        workspaceRoot: tmpDir,
+        maxPages: 1,
+      });
+
+      expect(summary.score).toBeGreaterThan(0);
+      expect(summary.score).toBeLessThanOrEqual(100);
+      expect(summary.pagesAudited).toBe(1);
+      expect(summary.checksRun).toBeGreaterThan(50);
+
+      const md = formatAuditMarkdown(summary);
+      expect(md).toContain('# RankCLI Audit Report');
+      expect(md).toContain('AI Readiness');
+
+      const html = renderReportHtml(summary, 'testnonce123');
+      expect(html).toContain("script-src 'nonce-testnonce123'");
+      expect(html).toContain('RankCLI SEO &amp; AI Search Report');
+      expect(html).toContain(summary.aiReadinessNote);
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  }, 30000);
 });

@@ -46,6 +46,12 @@ const sections = [
     subsections: ['what-is-mcp', 'installation-mcp', 'claude-desktop', 'available-tools'],
   },
   {
+    id: 'vscode-extension',
+    title: 'VS Code Extension',
+    icon: FileCode,
+    subsections: ['vscode-install', 'vscode-features', 'vscode-commands', 'vscode-settings'],
+  },
+  {
     id: 'cli-reference',
     title: 'CLI Reference',
     icon: Code,
@@ -87,6 +93,7 @@ const sectionContent: Record<string, () => JSX.Element> = {
   'getting-started': GettingStartedSection,
   geo: GEOSection,
   'mcp-server': MCPServerSection,
+  'vscode-extension': VSCodeExtensionSection,
   'cli-reference': CLIReferenceSection,
   dashboard: DashboardSection,
   github: GitHubSection,
@@ -119,8 +126,8 @@ export function DocsPage() {
   return (
     <div className="min-h-screen bg-background">
       <SEO
-        title="Docs: CLI, CI gate, MCP server and auto-fix PRs"
-        description="RankCLI docs: install the CLI, run SEO and GEO audits, use the MCP server with AI assistants, connect GitHub for auto-fix PRs, gate CI and call the API."
+        title="Docs: CLI, VS Code extension, CI gate, MCP server and auto-fix PRs"
+        description="RankCLI docs: install the CLI or VS Code / Open VSX extension, run 280+ SEO and GEO checks locally, use the MCP server with AI assistants, connect GitHub for auto-fix PRs, gate CI and call the API."
         path="/docs"
       />
       <Navbar />
@@ -200,11 +207,16 @@ function GettingStartedSection() {
         </p>
         <CodeBlock code="rankcli --version" />
 
-        <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-          <h4 className="font-medium text-blue-600 dark:text-blue-400 mb-2">Web Dashboard Alternative</h4>
+        <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg space-y-2">
+          <h4 className="font-medium text-blue-600 dark:text-blue-400">Editor Extension &amp; Web Dashboard</h4>
           <p className="text-sm text-muted-foreground">
-            Don't want to install anything? Use the <a href="/dashboard" className="text-primary underline">web dashboard</a> to
-            run audits directly in your browser. Just add your site URL and click "Run Audit".
+            Prefer working inside your editor? Install the{' '}
+            <Link to="#vscode-extension" className="text-primary underline">
+              VS Code &amp; Open VSX extension
+            </Link>{' '}
+            (<code className="bg-muted px-1 rounded">integrallis.rankcli-vscode</code>) for inline linting and
+            full 280+ check audits. Or use the{' '}
+            <a href="/dashboard" className="text-primary underline">web dashboard</a> directly in your browser.
           </p>
         </div>
       </section>
@@ -644,8 +656,14 @@ function MCPServerSection() {
             href="vscode:mcp/install?%7B%22name%22%3A%22rankcli%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40rankcli%2Fmcp-server%22%5D%7D"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-muted/40 hover:bg-muted transition-colors text-sm font-medium"
           >
-            Add to VS Code
+            Add MCP to VS Code
           </a>
+          <Link
+            to="#vscode-extension"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-muted/40 hover:bg-muted transition-colors text-sm font-medium"
+          >
+            VS Code Extension (Inline Linter &amp; Audits)
+          </Link>
         </div>
 
         <h4 className="font-medium mt-4 mb-2">Claude Desktop</h4>
@@ -2038,6 +2056,195 @@ function APISection() {
     "notice": 4
   },
   "timestamp": "2024-01-15T10:30:00Z"
+}`}
+        />
+      </section>
+    </div>
+  );
+}
+
+function VSCodeExtensionSection() {
+  return (
+    <div className="space-y-12">
+      <div>
+        <h2 className="text-3xl font-bold mb-4">VS Code &amp; Open VSX Extension</h2>
+        <p className="text-muted-foreground text-lg">
+          Run all 280+ RankCLI checks on live URLs or local build folders, lint{' '}
+          <code className="bg-muted px-1 rounded">robots.txt</code> by AI crawler class, and catch HTML, JSX,
+          TSX, Vue, Astro, and Svelte SEO regressions as you type — free, local, no account required.
+        </p>
+      </div>
+
+      {/* Installation */}
+      <section id="vscode-install">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <FileCode className="h-5 w-5" />
+          Installation
+        </h3>
+        <p className="text-muted-foreground mb-4">
+          Available on the Visual Studio Marketplace (VS Code) and Open VSX (Cursor, Windsurf, VSCodium,
+          Antigravity) under <code className="bg-muted px-1 rounded">integrallis.rankcli-vscode</code>.
+        </p>
+
+        <div className="flex flex-wrap gap-3 mb-6">
+          <a
+            href="vscode:extension/integrallis.rankcli-vscode"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium"
+          >
+            Open in VS Code
+          </a>
+          <a
+            href="https://marketplace.visualstudio.com/items?itemName=integrallis.rankcli-vscode"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-muted/40 hover:bg-muted transition-colors text-sm font-medium"
+          >
+            VS Code Marketplace
+          </a>
+          <a
+            href="https://open-vsx.org/extension/integrallis/rankcli-vscode"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-muted/40 hover:bg-muted transition-colors text-sm font-medium"
+          >
+            Open VSX (Cursor / Windsurf)
+          </a>
+        </div>
+
+        <p className="text-sm text-muted-foreground mb-2">Or install from the terminal:</p>
+        <CodeBlock code="code --install-extension integrallis.rankcli-vscode" />
+
+        <div className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
+          <h4 className="font-medium text-green-600 dark:text-green-400 mb-1">Runs locally, no account needed</h4>
+          <p className="text-sm text-muted-foreground">
+            The extension bundles <code className="bg-muted px-1 rounded">@rankcli/agent-runtime</code> directly —
+            every check runs on your machine without an API key or login.
+          </p>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section id="vscode-features">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Scan className="h-5 w-5" />
+          What it checks
+        </h3>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-medium mb-1">280+ Check URL &amp; Build Folder Audits</h4>
+            <p className="text-sm text-muted-foreground">
+              Audit any live or preview URL, or right-click a local build output folder (
+              <code className="bg-muted px-1 rounded">dist/</code>,{' '}
+              <code className="bg-muted px-1 rounded">out/</code>,{' '}
+              <code className="bg-muted px-1 rounded">.output/public/</code>) in the Explorer to run the full
+              engine before deploying. Findings map directly to local HTML files in the Problems panel.
+            </p>
+          </div>
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-medium mb-1">robots.txt AI Crawler Linting</h4>
+            <p className="text-sm text-muted-foreground">
+              Splits crawler verdicts by class: search (<code className="bg-muted px-1 rounded">Googlebot</code>),
+              AI search (<code className="bg-muted px-1 rounded">OAI-SearchBot</code>,{' '}
+              <code className="bg-muted px-1 rounded">Claude-SearchBot</code>,{' '}
+              <code className="bg-muted px-1 rounded">PerplexityBot</code>), user-triggered fetchers, and
+              training crawlers (informational policy note). Includes a one-click Quick Fix.
+            </p>
+          </div>
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-medium mb-1">Smart Page vs. Component Linting</h4>
+            <p className="text-sm text-muted-foreground">
+              Lints HTML, JSX, TSX, Vue, Astro, and Svelte as you type with quick fixes for{' '}
+              <code className="bg-muted px-1 rounded">&lt;title&gt;</code>, meta description, Open Graph, Twitter
+              Card, canonical, <code className="bg-muted px-1 rounded">alt</code> attributes, and stray{' '}
+              <code className="bg-muted px-1 rounded">noindex</code> directives — without false positives on UI
+              components.
+            </p>
+          </div>
+          <div className="p-4 border rounded-lg">
+            <h4 className="font-medium mb-1">Interactive Report &amp; CI Gate Parity</h4>
+            <p className="text-sm text-muted-foreground">
+              Reads <code className="bg-muted px-1 rounded">rankcli.config.json</code> (URL, build dir, ignore
+              rules, <code className="bg-muted px-1 rounded">failOn</code>, and category budgets) and displays a
+              filterable side-by-side report with Markdown and JSON export.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Commands */}
+      <section id="vscode-commands">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Terminal className="h-5 w-5" />
+          Commands
+        </h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left py-2 pr-4">Command</th>
+                <th className="text-left py-2">Description</th>
+              </tr>
+            </thead>
+            <tbody className="text-muted-foreground">
+              <tr className="border-b">
+                <td className="py-2 pr-4 font-mono text-xs text-foreground">RankCLI: Audit Site URL (280+ checks)</td>
+                <td className="py-2">Run a full multi-page audit on any live or preview URL</td>
+              </tr>
+              <tr className="border-b">
+                <td className="py-2 pr-4 font-mono text-xs text-foreground">RankCLI: Audit Local Build Directory</td>
+                <td className="py-2">Serve and audit a local static build folder (also in Explorer folder context menu)</td>
+              </tr>
+              <tr className="border-b">
+                <td className="py-2 pr-4 font-mono text-xs text-foreground">RankCLI: Check AI Crawler Access (GEO)</td>
+                <td className="py-2">Inspect AI crawler access and GEO signals on a URL or active robots.txt</td>
+              </tr>
+              <tr className="border-b">
+                <td className="py-2 pr-4 font-mono text-xs text-foreground">RankCLI: Lint Current File</td>
+                <td className="py-2">Run instant SEO linting on the active document</td>
+              </tr>
+              <tr className="border-b">
+                <td className="py-2 pr-4 font-mono text-xs text-foreground">RankCLI: Show Audit Report</td>
+                <td className="py-2">Open or reveal the interactive report webview for the last audit</td>
+              </tr>
+              <tr>
+                <td className="py-2 pr-4 font-mono text-xs text-foreground">RankCLI: Create rankcli.config.json</td>
+                <td className="py-2">Generate a workspace config with auto-detected framework and build folder</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {/* Settings */}
+      <section id="vscode-settings">
+        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+          <Settings className="h-5 w-5" />
+          Configuration
+        </h3>
+        <p className="text-muted-foreground mb-4">
+          Configure in VS Code <code className="bg-muted px-1 rounded">settings.json</code> or share CI gate
+          rules across your team in <code className="bg-muted px-1 rounded">rankcli.config.json</code>:
+        </p>
+        <CodeBlock
+          code={`{
+  "rankcli.enabled": true,
+  "rankcli.severity": "warning",
+  "rankcli.defaultUrl": "https://yoursite.com",
+  "rankcli.buildDir": "dist",
+  "rankcli.maxPages": 10,
+  "rankcli.checkLinks": false,
+  "rankcli.checks": {
+    "title": true,
+    "metaDescription": true,
+    "openGraph": true,
+    "twitterCard": true,
+    "canonical": true,
+    "headings": true,
+    "images": true,
+    "links": true,
+    "noindex": true,
+    "robotsTxt": true
+  }
 }`}
         />
       </section>

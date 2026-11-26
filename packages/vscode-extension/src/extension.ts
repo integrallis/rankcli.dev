@@ -1,12 +1,36 @@
 /**
  * RankCLI VS Code Extension
  *
- * Provides real-time SEO linting for HTML, React, Vue, and Astro files.
+ * 280+ SEO & AI-search readiness checks in VS Code:
+ * - Real-time linting for HTML, JSX/TSX, Vue, Astro, Svelte, and robots.txt
+ * - Full site URL & local build-directory audits powered by @rankcli/agent-runtime
+ * - Interactive Webview report, Problems panel integration, and rankcli.config.json support
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
 import * as vscode from 'vscode';
+import {
+  buildConfigTemplate,
+  detectBuildDirectory,
+  formatAuditMarkdown,
+  normalizeUrl,
+  resolveWorkspaceConfig,
+  runWorkspaceAudit,
+  writeConfigFile,
+  type ExtensionAuditSummary,
+  type RunAuditParams,
+} from './audit-runner';
+import {
+  isRobotsFile,
+  isSupportedDocument,
+  lintDocumentText,
+  type LintChecksConfig,
+  type LintFinding,
+  type LintSeverity,
+} from './lint-document';
+import { renderReportHtml } from './report-panel';
 
-// SEO Issue types
 export interface SEOIssue {
   code: string;
   message: string;
@@ -21,34 +45,44 @@ export interface SEOFix {
   range: vscode.Range;
 }
 
-// Diagnostic collection
-let diagnosticCollection: vscode.DiagnosticCollection;
+let lintDiagnostics: vscode.DiagnosticCollection;
+let auditDiagnostics: vscode.DiagnosticCollection;
 let statusBarItem: vscode.StatusBarItem;
+let outputChannel: vscode.OutputChannel;
+let reportPanel: vscode.WebviewPanel | undefined;
+let lastAuditSummary: ExtensionAuditSummary | undefined;
+let lastAuditParams: RunAuditParams | undefined;
 
-/**
- * Extension activation
- */
+const fixesByUri = new Map<string, Map<string, SEOFix>>();
+
 export function activate(context: vscode.ExtensionContext): void {
-  // Create diagnostic collection
-  diagnosticCollection = vscode.languages.createDiagnosticCollection('rankcli');
-  context.subscriptions.push(diagnosticCollection);
+  lintDiagnostics = vscode.languages.createDiagnosticCollection('rankcli');
+  auditDiagnostics = vscode.languages.createDiagnosticCollection('rankcli-audit');
+  outputChannel = vscode.window.createOutputChannel('RankCLI');
+  context.subscriptions.push(lintDiagnostics, auditDiagnostics, outputChannel);
 
-  // Create status bar item
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   statusBarItem.command = 'rankcli.showReport';
+  statusBarItem.text = '$(search) RankCLI';
+  statusBarItem.tooltip = 'Click to show RankCLI SEO report';
+  statusBarItem.show();
   context.subscriptions.push(statusBarItem);
 
-  // Register diagnostic provider
   const diagnosticProvider = new SEODiagnosticProvider();
 
-  // Listen for document changes
   context.subscriptions.push(
-    vscode.workspace.onDidOpenTextDocument(doc => diagnosticProvider.provideDiagnostics(doc)),
-    vscode.workspace.onDidChangeTextDocument(e => diagnosticProvider.provideDiagnostics(e.document)),
-    vscode.workspace.onDidSaveTextDocument(doc => diagnosticProvider.provideDiagnostics(doc))
+    vscode.workspace.onDidOpenTextDocument((doc) => diagnosticProvider.provideDiagnostics(doc)),
+    vscode.workspace.onDidChangeTextDocument((e) => diagnosticProvider.provideDiagnostics(e.document)),
+    vscode.workspace.onDidSaveTextDocument((doc) => diagnosticProvider.provideDiagnostics(doc)),
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      if (editor) diagnosticProvider.provideDiagnostics(editor.document);
+    }),
+    vscode.workspace.onDidCloseTextDocument((doc) => {
+      lintDiagnostics.delete(doc.uri);
+      fixesByUri.delete(doc.uri.toString());
+    })
   );
 
-  // Register code action provider
   context.subscriptions.push(
     vscode.languages.registerCodeActionsProvider(
       [
@@ -58,338 +92,41 @@ export function activate(context: vscode.ExtensionContext): void {
         { language: 'vue' },
         { language: 'astro' },
         { language: 'svelte' },
+        { pattern: '**/robots.txt' },
       ],
       new SEOCodeActionProvider(),
       { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }
     )
   );
 
-  // Register commands
   context.subscriptions.push(
-    vscode.commands.registerCommand('rankcli.runAudit', () => runAudit()),
-    vscode.commands.registerCommand('rankcli.showReport', () => showReport())
+    vscode.commands.registerCommand('rankcli.auditUrl', () => runUrlAuditCommand('url')),
+    vscode.commands.registerCommand('rankcli.auditBuildDir', (folderUri?: vscode.Uri) =>
+      runBuildDirAuditCommand(folderUri)
+    ),
+    vscode.commands.registerCommand('rankcli.checkGeo', () => runUrlAuditCommand('geo')),
+    vscode.commands.registerCommand('rankcli.runAudit', () => runFileLintCommand()),
+    vscode.commands.registerCommand('rankcli.showReport', () => showReportCommand()),
+    vscode.commands.registerCommand('rankcli.initConfig', () => initConfigCommand())
   );
 
-  // Initial scan of open documents
-  vscode.workspace.textDocuments.forEach(doc => diagnosticProvider.provideDiagnostics(doc));
+  vscode.workspace.textDocuments.forEach((doc) => diagnosticProvider.provideDiagnostics(doc));
 }
 
-/**
- * Extension deactivation
- */
 export function deactivate(): void {
-  diagnosticCollection?.dispose();
+  lintDiagnostics?.dispose();
+  auditDiagnostics?.dispose();
   statusBarItem?.dispose();
+  outputChannel?.dispose();
+  reportPanel?.dispose();
+  fixesByUri.clear();
 }
 
-/**
- * SEO Diagnostic Provider
- */
-class SEODiagnosticProvider {
-  provideDiagnostics(document: vscode.TextDocument): void {
-    if (!isSupported(document)) {
-      return;
-    }
-
-    const config = vscode.workspace.getConfiguration('rankcli');
-    if (!config.get('enabled', true)) {
-      diagnosticCollection.delete(document.uri);
-      updateStatusBar(0);
-      return;
-    }
-
-    const text = document.getText();
-    const issues = analyzeDocument(text, document, config);
-    const diagnostics = issues.map(issue => createDiagnostic(issue));
-
-    diagnosticCollection.set(document.uri, diagnostics);
-    updateStatusBar(issues.length);
-  }
+function getWorkspaceRoot(): string | undefined {
+  return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 }
 
-/**
- * SEO Code Action Provider
- */
-class SEOCodeActionProvider implements vscode.CodeActionProvider {
-  provideCodeActions(
-    document: vscode.TextDocument,
-    range: vscode.Range,
-    context: vscode.CodeActionContext
-  ): vscode.CodeAction[] {
-    const actions: vscode.CodeAction[] = [];
-
-    for (const diagnostic of context.diagnostics) {
-      if (diagnostic.source !== 'rankcli') continue;
-
-      const fix = getQuickFix(diagnostic.code as string, document, diagnostic.range);
-      if (fix) {
-        const action = new vscode.CodeAction(fix.title, vscode.CodeActionKind.QuickFix);
-        action.diagnostics = [diagnostic];
-        action.edit = new vscode.WorkspaceEdit();
-        action.edit.replace(document.uri, fix.range, fix.newText);
-        action.isPreferred = true;
-        actions.push(action);
-      }
-    }
-
-    return actions;
-  }
-}
-
-/**
- * Check if document is supported
- */
-function isSupported(document: vscode.TextDocument): boolean {
-  const supportedLanguages = ['html', 'typescriptreact', 'javascriptreact', 'vue', 'astro', 'svelte'];
-  return supportedLanguages.includes(document.languageId);
-}
-
-/**
- * Analyze document for SEO issues
- */
-export function analyzeDocument(
-  text: string,
-  document: vscode.TextDocument,
-  config: vscode.WorkspaceConfiguration
-): SEOIssue[] {
-  const issues: SEOIssue[] = [];
-  const checks = config.get<Record<string, boolean>>('checks', {});
-  const severityLevel = getSeverityLevel(config.get('severity', 'warning'));
-
-  // Check for title tag
-  if (checks.title !== false && !hasTitle(text)) {
-    const headPos = findHeadPosition(text, document);
-    issues.push({
-      code: 'MISSING_TITLE',
-      message: 'Missing <title> tag. Every page should have a unique title.',
-      severity: severityLevel,
-      range: headPos || new vscode.Range(0, 0, 0, 1),
-      fix: {
-        title: 'Add title tag',
-        newText: '  <title>Page Title</title>\n',
-        range: headPos ? new vscode.Range(headPos.end, headPos.end) : new vscode.Range(0, 0, 0, 0),
-      },
-    });
-  }
-
-  // Check for meta description
-  if (checks.metaDescription !== false && !hasMetaDescription(text)) {
-    const headPos = findHeadPosition(text, document);
-    issues.push({
-      code: 'MISSING_META_DESCRIPTION',
-      message: 'Missing meta description. Add a description for search engines.',
-      severity: severityLevel,
-      range: headPos || new vscode.Range(0, 0, 0, 1),
-      fix: {
-        title: 'Add meta description',
-        newText: '  <meta name="description" content="Page description goes here" />\n',
-        range: headPos ? new vscode.Range(headPos.end, headPos.end) : new vscode.Range(0, 0, 0, 0),
-      },
-    });
-  }
-
-  // Check for Open Graph tags
-  if (checks.openGraph !== false && !hasOpenGraph(text)) {
-    const headPos = findHeadPosition(text, document);
-    issues.push({
-      code: 'MISSING_OG_TAGS',
-      message: 'Missing Open Graph tags. Add og:title, og:description, og:image for social sharing.',
-      severity: severityLevel,
-      range: headPos || new vscode.Range(0, 0, 0, 1),
-    });
-  }
-
-  // Check for Twitter Card
-  if (checks.twitterCard !== false && !hasTwitterCard(text)) {
-    const headPos = findHeadPosition(text, document);
-    issues.push({
-      code: 'MISSING_TWITTER_CARD',
-      message: 'Missing Twitter Card tags. Add twitter:card, twitter:title, twitter:description.',
-      severity: severityLevel,
-      range: headPos || new vscode.Range(0, 0, 0, 1),
-    });
-  }
-
-  // Check for canonical URL
-  if (checks.canonical !== false && !hasCanonical(text)) {
-    const headPos = findHeadPosition(text, document);
-    issues.push({
-      code: 'MISSING_CANONICAL',
-      message: 'Missing canonical URL. Add rel="canonical" to prevent duplicate content issues.',
-      severity: severityLevel,
-      range: headPos || new vscode.Range(0, 0, 0, 1),
-      fix: {
-        title: 'Add canonical link',
-        newText: '  <link rel="canonical" href="https://example.com/page" />\n',
-        range: headPos ? new vscode.Range(headPos.end, headPos.end) : new vscode.Range(0, 0, 0, 0),
-      },
-    });
-  }
-
-  // Check for H1 heading
-  if (checks.headings !== false && !hasH1(text)) {
-    issues.push({
-      code: 'MISSING_H1',
-      message: 'Missing H1 heading. Each page should have exactly one H1.',
-      severity: severityLevel,
-      range: new vscode.Range(0, 0, 0, 1),
-    });
-  }
-
-  // Check for multiple H1s
-  if (checks.headings !== false) {
-    const h1Count = countH1s(text);
-    if (h1Count > 1) {
-      issues.push({
-        code: 'MULTIPLE_H1',
-        message: `Found ${h1Count} H1 headings. Each page should have exactly one H1.`,
-        severity: severityLevel,
-        range: new vscode.Range(0, 0, 0, 1),
-      });
-    }
-  }
-
-  // Check for images without alt text
-  if (checks.images !== false) {
-    const imgIssues = findImagesWithoutAlt(text, document);
-    issues.push(...imgIssues.map(issue => ({
-      ...issue,
-      severity: severityLevel,
-    })));
-  }
-
-  // Check for links without text
-  if (checks.links !== false) {
-    const linkIssues = findEmptyLinks(text, document);
-    issues.push(...linkIssues.map(issue => ({
-      ...issue,
-      severity: severityLevel,
-    })));
-  }
-
-  return issues;
-}
-
-/**
- * Check if text has a title tag
- */
-function hasTitle(text: string): boolean {
-  return /<title[^>]*>[\s\S]*?<\/title>/i.test(text);
-}
-
-/**
- * Check if text has a meta description
- */
-function hasMetaDescription(text: string): boolean {
-  return /<meta[^>]*name=["']description["'][^>]*>/i.test(text);
-}
-
-/**
- * Check if text has Open Graph tags
- */
-function hasOpenGraph(text: string): boolean {
-  return /<meta[^>]*property=["']og:(title|description)["'][^>]*>/i.test(text);
-}
-
-/**
- * Check if text has Twitter Card tags
- */
-function hasTwitterCard(text: string): boolean {
-  return /<meta[^>]*name=["']twitter:(card|title)["'][^>]*>/i.test(text);
-}
-
-/**
- * Check if text has a canonical URL
- */
-function hasCanonical(text: string): boolean {
-  return /<link[^>]*rel=["']canonical["'][^>]*>/i.test(text);
-}
-
-/**
- * Check if text has an H1 heading
- */
-function hasH1(text: string): boolean {
-  return /<h1[^>]*>/i.test(text);
-}
-
-/**
- * Count H1 headings
- */
-function countH1s(text: string): number {
-  const matches = text.match(/<h1[^>]*>/gi);
-  return matches ? matches.length : 0;
-}
-
-/**
- * Find position of <head> tag
- */
-function findHeadPosition(text: string, document: vscode.TextDocument): vscode.Range | null {
-  const match = text.match(/<head[^>]*>/i);
-  if (match && match.index !== undefined) {
-    const startPos = document.positionAt(match.index);
-    const endPos = document.positionAt(match.index + match[0].length);
-    return new vscode.Range(startPos, endPos);
-  }
-  return null;
-}
-
-/**
- * Find images without alt text
- */
-function findImagesWithoutAlt(text: string, document: vscode.TextDocument): SEOIssue[] {
-  const issues: SEOIssue[] = [];
-  const imgRegex = /<img[^>]*>/gi;
-  let match;
-
-  while ((match = imgRegex.exec(text)) !== null) {
-    const imgTag = match[0];
-    // Check if alt attribute exists and has content
-    if (!imgTag.match(/alt=["'][^"']+["']/i)) {
-      const startPos = document.positionAt(match.index);
-      const endPos = document.positionAt(match.index + imgTag.length);
-      issues.push({
-        code: 'IMG_MISSING_ALT',
-        message: 'Image missing alt text. Add descriptive alt text for accessibility and SEO.',
-        severity: vscode.DiagnosticSeverity.Warning,
-        range: new vscode.Range(startPos, endPos),
-        fix: {
-          title: 'Add alt attribute',
-          newText: imgTag.replace(/<img/, '<img alt="Image description"'),
-          range: new vscode.Range(startPos, endPos),
-        },
-      });
-    }
-  }
-
-  return issues;
-}
-
-/**
- * Find empty links
- */
-function findEmptyLinks(text: string, document: vscode.TextDocument): SEOIssue[] {
-  const issues: SEOIssue[] = [];
-  const linkRegex = /<a[^>]*>[\s]*<\/a>/gi;
-  let match;
-
-  while ((match = linkRegex.exec(text)) !== null) {
-    const startPos = document.positionAt(match.index);
-    const endPos = document.positionAt(match.index + match[0].length);
-    issues.push({
-      code: 'EMPTY_LINK',
-      message: 'Link has no text content. Add descriptive text for accessibility and SEO.',
-      severity: vscode.DiagnosticSeverity.Warning,
-      range: new vscode.Range(startPos, endPos),
-    });
-  }
-
-  return issues;
-}
-
-/**
- * Get severity level from config string
- */
-function getSeverityLevel(severity: string): vscode.DiagnosticSeverity {
+function mapSeverity(severity: LintSeverity): vscode.DiagnosticSeverity {
   switch (severity) {
     case 'error':
       return vscode.DiagnosticSeverity.Error;
@@ -404,86 +141,393 @@ function getSeverityLevel(severity: string): vscode.DiagnosticSeverity {
   }
 }
 
-/**
- * Create diagnostic from SEO issue
- */
-function createDiagnostic(issue: SEOIssue): vscode.Diagnostic {
-  const diagnostic = new vscode.Diagnostic(issue.range, issue.message, issue.severity);
-  diagnostic.code = issue.code;
-  diagnostic.source = 'rankcli';
-  return diagnostic;
+function toVSCodeIssue(finding: LintFinding, document: vscode.TextDocument): SEOIssue {
+  const start = document.positionAt(finding.startOffset);
+  const end = document.positionAt(finding.endOffset);
+  const issue: SEOIssue = {
+    code: finding.code,
+    message: finding.message,
+    severity: mapSeverity(finding.severity),
+    range: new vscode.Range(start, end),
+  };
+
+  if (finding.fix) {
+    issue.fix = {
+      title: finding.fix.title,
+      newText: finding.fix.newText,
+      range: new vscode.Range(
+        document.positionAt(finding.fix.startOffset),
+        document.positionAt(finding.fix.endOffset)
+      ),
+    };
+  }
+
+  return issue;
 }
 
-/**
- * Get quick fix for issue
- */
-function getQuickFix(code: string, document: vscode.TextDocument, range: vscode.Range): SEOFix | null {
-  const text = document.getText();
-  const headPos = findHeadPosition(text, document);
-  const insertPos = headPos ? headPos.end : new vscode.Position(0, 0);
+export function analyzeDocument(
+  text: string,
+  document: vscode.TextDocument,
+  config: vscode.WorkspaceConfiguration
+): SEOIssue[] {
+  const checks = config.get<LintChecksConfig>('checks', {});
+  const defaultSeverity = config.get<LintSeverity>('severity', 'warning');
+  const defaultUrl = config.get<string>('defaultUrl', '');
 
-  switch (code) {
-    case 'MISSING_TITLE':
-      return {
-        title: 'Add title tag',
-        newText: '\n  <title>Page Title</title>',
-        range: new vscode.Range(insertPos, insertPos),
-      };
-    case 'MISSING_META_DESCRIPTION':
-      return {
-        title: 'Add meta description',
-        newText: '\n  <meta name="description" content="Page description goes here" />',
-        range: new vscode.Range(insertPos, insertPos),
-      };
-    case 'MISSING_CANONICAL':
-      return {
-        title: 'Add canonical link',
-        newText: '\n  <link rel="canonical" href="https://example.com/page" />',
-        range: new vscode.Range(insertPos, insertPos),
-      };
-    case 'MISSING_OG_TAGS':
-      return {
-        title: 'Add Open Graph tags',
-        newText: `\n  <meta property="og:title" content="Page Title" />
-  <meta property="og:description" content="Page description" />
-  <meta property="og:image" content="https://example.com/image.png" />
-  <meta property="og:url" content="https://example.com/page" />`,
-        range: new vscode.Range(insertPos, insertPos),
-      };
-    case 'MISSING_TWITTER_CARD':
-      return {
-        title: 'Add Twitter Card tags',
-        newText: `\n  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Page Title" />
-  <meta name="twitter:description" content="Page description" />
-  <meta name="twitter:image" content="https://example.com/image.png" />`,
-        range: new vscode.Range(insertPos, insertPos),
-      };
-    default:
-      return null;
+  const findings = lintDocumentText(text, {
+    languageId: document.languageId,
+    filePath: document.uri?.fsPath,
+    defaultSeverity,
+    checks,
+    siteUrl: defaultUrl || 'https://example.com',
+  });
+
+  return findings.map((f) => toVSCodeIssue(f, document));
+}
+
+class SEODiagnosticProvider {
+  provideDiagnostics(document: vscode.TextDocument): void {
+    const filePath = document.uri?.fsPath;
+    if (!isSupportedDocument(document.languageId, filePath)) {
+      return;
+    }
+
+    const config = vscode.workspace.getConfiguration('rankcli');
+    if (!config.get('enabled', true)) {
+      lintDiagnostics.delete(document.uri);
+      fixesByUri.delete(document.uri.toString());
+      updateStatusBarForFile(0);
+      return;
+    }
+
+    const issues = analyzeDocument(document.getText(), document, config);
+    const fixMap = new Map<string, SEOFix>();
+    const diagnostics = issues.map((issue) => {
+      const diag = new vscode.Diagnostic(issue.range, issue.message, issue.severity);
+      diag.code = issue.code;
+      diag.source = 'rankcli';
+      if (issue.fix) {
+        fixMap.set(`${issue.code}:${issue.range.start.line}:${issue.range.start.character}`, issue.fix);
+      }
+      return diag;
+    });
+
+    fixesByUri.set(document.uri.toString(), fixMap);
+    lintDiagnostics.set(document.uri, diagnostics);
+
+    if (vscode.window.activeTextEditor?.document.uri.toString() === document.uri.toString()) {
+      updateStatusBarForFile(issues.length);
+    }
   }
 }
 
-/**
- * Update status bar with issue count
- */
-function updateStatusBar(issueCount: number): void {
+class SEOCodeActionProvider implements vscode.CodeActionProvider {
+  provideCodeActions(
+    document: vscode.TextDocument,
+    _range: vscode.Range,
+    context: vscode.CodeActionContext
+  ): vscode.CodeAction[] {
+    const actions: vscode.CodeAction[] = [];
+    const fixMap = fixesByUri.get(document.uri.toString());
+
+    for (const diagnostic of context.diagnostics) {
+      if (diagnostic.source !== 'rankcli') continue;
+      const key = `${String(diagnostic.code)}:${diagnostic.range.start.line}:${diagnostic.range.start.character}`;
+      const fix = fixMap?.get(key);
+      if (!fix) continue;
+
+      const action = new vscode.CodeAction(fix.title, vscode.CodeActionKind.QuickFix);
+      action.diagnostics = [diagnostic];
+      action.edit = new vscode.WorkspaceEdit();
+      action.edit.replace(document.uri, fix.range, fix.newText);
+      action.isPreferred = true;
+      actions.push(action);
+    }
+
+    return actions;
+  }
+}
+
+function updateStatusBarForFile(issueCount: number): void {
+  if (lastAuditSummary) {
+    updateStatusBarForAudit(lastAuditSummary);
+    return;
+  }
+
   if (issueCount === 0) {
-    statusBarItem.text = '$(check) SEO: OK';
+    statusBarItem.text = '$(check) RankCLI: OK';
     statusBarItem.backgroundColor = undefined;
-    statusBarItem.tooltip = 'No SEO issues found';
+    statusBarItem.tooltip = 'No SEO issues in current file. Click to view report.';
   } else {
-    statusBarItem.text = `$(warning) SEO: ${issueCount} issue${issueCount > 1 ? 's' : ''}`;
+    statusBarItem.text = `$(warning) RankCLI: ${issueCount} issue${issueCount === 1 ? '' : 's'}`;
     statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
-    statusBarItem.tooltip = `${issueCount} SEO issue${issueCount > 1 ? 's' : ''} found`;
+    statusBarItem.tooltip = `${issueCount} SEO issue${issueCount === 1 ? '' : 's'} in current file`;
   }
   statusBarItem.show();
 }
 
-/**
- * Run full SEO audit command
- */
-function runAudit(): void {
+function updateStatusBarForAudit(summary: ExtensionAuditSummary): void {
+  const icon = summary.gate
+    ? summary.gate.passed
+      ? '$(pass)'
+      : '$(error)'
+    : summary.score >= 80
+      ? '$(check)'
+      : '$(warning)';
+
+  statusBarItem.text = `${icon} RankCLI: ${summary.score}/100`;
+  statusBarItem.backgroundColor =
+    summary.gate && !summary.gate.passed
+      ? new vscode.ThemeColor('statusBarItem.errorBackground')
+      : summary.score < 60
+        ? new vscode.ThemeColor('statusBarItem.warningBackground')
+        : undefined;
+  statusBarItem.tooltip = `Last audit: ${summary.target} — Overall ${summary.score}/100, AI Readiness ${summary.healthScore.aiReadiness}/100. Click to open report.`;
+  statusBarItem.show();
+}
+
+async function resolveTargetUrl(promptTitle: string, workspaceRoot?: string): Promise<string | undefined> {
+  const { config } = resolveWorkspaceConfig(workspaceRoot);
+  const vsConfig = vscode.workspace.getConfiguration('rankcli');
+  const suggested = config?.url || vsConfig.get<string>('defaultUrl', '') || '';
+
+  const entered = await vscode.window.showInputBox({
+    title: promptTitle,
+    prompt: 'Enter the site URL to audit (runs locally with 280+ checks, no account required)',
+    placeHolder: 'https://yoursite.com',
+    value: suggested,
+    validateInput: (val) => {
+      if (!val.trim()) return 'Enter a URL to audit';
+      try {
+        new URL(normalizeUrl(val));
+        return null;
+      } catch {
+        return 'Enter a valid URL (e.g. https://yoursite.com)';
+      }
+    },
+  });
+
+  return entered ? normalizeUrl(entered) : undefined;
+}
+
+async function executeAuditAndDisplay(params: RunAuditParams): Promise<void> {
+  lastAuditParams = params;
+  const label = params.dir
+    ? `Auditing ${path.basename(params.dir)}...`
+    : params.mode === 'geo'
+      ? `Checking AI crawler access for ${params.url}...`
+      : `Auditing ${params.url}...`;
+
+  try {
+    const summary = await vscode.window.withProgress(
+      {
+        location: vscode.ProgressLocation.Notification,
+        title: `RankCLI: ${label}`,
+        cancellable: false,
+      },
+      async (progress) => {
+        progress.report({ message: 'Starting 280+ checks locally...' });
+        return runWorkspaceAudit({
+          ...params,
+          onProgress: (event) => {
+            if (event.phase === 'discovery' && event.status === 'done') {
+              progress.report({
+                message: `Discovered ${event.pages} page${event.pages === 1 ? '' : 's'}...`,
+              });
+            }
+          },
+        });
+      }
+    );
+
+    lastAuditSummary = summary;
+    updateStatusBarForAudit(summary);
+    publishAuditDiagnostics(summary, params.workspaceRoot);
+
+    outputChannel.clear();
+    outputChannel.appendLine(formatAuditMarkdown(summary));
+
+    openReportWebview(summary, params.workspaceRoot);
+
+    const errors = summary.issues.filter((i) => i.severity === 'error').length;
+    const warnings = summary.issues.filter((i) => i.severity === 'warning').length;
+    if (summary.gate && !summary.gate.passed) {
+      vscode.window.showErrorMessage(
+        `RankCLI gate failed (${summary.score}/100): ${summary.gate.failures.join('; ')}`
+      );
+    } else {
+      vscode.window.showInformationMessage(
+        `RankCLI audit complete: ${summary.score}/100 (${errors} errors, ${warnings} warnings across ${summary.pagesAudited} page${summary.pagesAudited === 1 ? '' : 's'})`
+      );
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    outputChannel.appendLine(`[RankCLI Error] ${message}`);
+    vscode.window.showErrorMessage(`RankCLI audit failed: ${message}`);
+  }
+}
+
+function publishAuditDiagnostics(summary: ExtensionAuditSummary, workspaceRoot?: string): void {
+  auditDiagnostics.clear();
+  if (!summary.files || !workspaceRoot) return;
+
+  const byFile = new Map<string, vscode.Diagnostic[]>();
+  for (const issue of summary.issues) {
+    const urls = issue.affectedUrls ?? [];
+    for (const url of urls) {
+      const relFile = summary.files[url];
+      if (!relFile) continue;
+      const absFile = path.isAbsolute(relFile) ? relFile : path.join(workspaceRoot, relFile);
+      if (!fs.existsSync(absFile)) continue;
+
+      const list = byFile.get(absFile) ?? [];
+      const sev =
+        issue.severity === 'error'
+          ? vscode.DiagnosticSeverity.Error
+          : issue.severity === 'warning'
+            ? vscode.DiagnosticSeverity.Warning
+            : vscode.DiagnosticSeverity.Information;
+      const diag = new vscode.Diagnostic(
+        new vscode.Range(0, 0, 0, 1),
+        `${issue.title}${issue.howToFix ? ` — ${issue.howToFix}` : ''}`,
+        sev
+      );
+      diag.code = issue.code;
+      diag.source = 'rankcli-audit';
+      list.push(diag);
+      byFile.set(absFile, list);
+    }
+  }
+
+  for (const [absFile, diagnostics] of byFile.entries()) {
+    auditDiagnostics.set(vscode.Uri.file(absFile), diagnostics);
+  }
+}
+
+function openReportWebview(summary: ExtensionAuditSummary, workspaceRoot?: string): void {
+  if (!reportPanel) {
+    reportPanel = vscode.window.createWebviewPanel(
+      'rankcliReport',
+      'RankCLI Audit Report',
+      vscode.ViewColumn.Beside,
+      { enableScripts: true, retainContextWhenHidden: true }
+    );
+    reportPanel.onDidDispose(() => {
+      reportPanel = undefined;
+    });
+    reportPanel.webview.onDidReceiveMessage(async (msg) => {
+      if (!lastAuditSummary) return;
+      if (msg.type === 'rerun' && lastAuditParams) {
+        await executeAuditAndDisplay(lastAuditParams);
+      } else if (msg.type === 'copyMarkdown') {
+        await vscode.env.clipboard.writeText(formatAuditMarkdown(lastAuditSummary));
+        vscode.window.showInformationMessage('Copied Markdown audit report to clipboard.');
+      } else if (msg.type === 'exportJson') {
+        const uri = await vscode.window.showSaveDialog({
+          defaultUri: workspaceRoot
+            ? vscode.Uri.file(path.join(workspaceRoot, 'rankcli-report.json'))
+            : undefined,
+          filters: { JSON: ['json'] },
+        });
+        if (uri) {
+          fs.writeFileSync(uri.fsPath, JSON.stringify(lastAuditSummary.rawResult, null, 2), 'utf8');
+          vscode.window.showInformationMessage(`Saved RankCLI report to ${uri.fsPath}`);
+        }
+      } else if (msg.type === 'openFile' && typeof msg.file === 'string' && workspaceRoot) {
+        const target = path.isAbsolute(msg.file) ? msg.file : path.join(workspaceRoot, msg.file);
+        if (fs.existsSync(target)) {
+          const doc = await vscode.workspace.openTextDocument(target);
+          await vscode.window.showTextDocument(doc, vscode.ViewColumn.One);
+        }
+      }
+    });
+  } else {
+    reportPanel.reveal(vscode.ViewColumn.Beside);
+  }
+
+  reportPanel.title = `RankCLI: ${summary.score}/100`;
+  reportPanel.webview.html = renderReportHtml(summary);
+}
+
+async function runUrlAuditCommand(mode: 'url' | 'geo'): Promise<void> {
+  const workspaceRoot = getWorkspaceRoot();
+  const activeDoc = vscode.window.activeTextEditor?.document;
+
+  if (mode === 'geo' && activeDoc && isRobotsFile(activeDoc.uri.fsPath)) {
+    const choice = await vscode.window.showQuickPick(
+      [
+        { label: 'Audit a live URL for AI crawler access & GEO', value: 'url' },
+        { label: 'Lint this robots.txt file', value: 'file' },
+      ],
+      { placeHolder: 'How would you like to check AI crawler access?' }
+    );
+    if (!choice) return;
+    if (choice.value === 'file') {
+      runFileLintCommand();
+      return;
+    }
+  }
+
+  const url = await resolveTargetUrl(
+    mode === 'geo' ? 'RankCLI: Check AI Crawler Access (GEO)' : 'RankCLI: Audit Site URL',
+    workspaceRoot
+  );
+  if (!url) return;
+
+  const vsConfig = vscode.workspace.getConfiguration('rankcli');
+  await executeAuditAndDisplay({
+    mode,
+    url,
+    workspaceRoot,
+    maxPages: vsConfig.get<number>('maxPages', 10),
+    checkLinks: vsConfig.get<boolean>('checkLinks', false),
+  });
+}
+
+async function runBuildDirAuditCommand(folderUri?: vscode.Uri): Promise<void> {
+  const workspaceRoot = getWorkspaceRoot();
+  if (!workspaceRoot && !folderUri) {
+    vscode.window.showWarningMessage('Open a workspace folder to audit a local build directory.');
+    return;
+  }
+
+  const { config } = resolveWorkspaceConfig(workspaceRoot);
+  const vsConfig = vscode.workspace.getConfiguration('rankcli');
+  let targetDir = folderUri?.fsPath;
+
+  if (!targetDir && workspaceRoot) {
+    const preferred = config?.dir || vsConfig.get<string>('buildDir', '');
+    targetDir = detectBuildDirectory(workspaceRoot, preferred) ?? undefined;
+  }
+
+  if (!targetDir) {
+    const picked = await vscode.window.showOpenDialog({
+      canSelectFiles: false,
+      canSelectFolders: true,
+      canSelectMany: false,
+      openLabel: 'Audit Build Folder',
+      defaultUri: workspaceRoot ? vscode.Uri.file(workspaceRoot) : undefined,
+    });
+    if (!picked?.[0]) return;
+    targetDir = picked[0].fsPath;
+  }
+
+  const siteUrl =
+    config?.url ||
+    vsConfig.get<string>('defaultUrl', '') ||
+    'https://example.com';
+
+  await executeAuditAndDisplay({
+    mode: 'dir',
+    url: normalizeUrl(siteUrl),
+    dir: targetDir,
+    workspaceRoot: workspaceRoot ?? path.dirname(targetDir),
+    maxPages: vsConfig.get<number>('maxPages', 10),
+    checkLinks: false,
+  });
+}
+
+function runFileLintCommand(): void {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     vscode.window.showWarningMessage('No active editor');
@@ -494,41 +538,69 @@ function runAudit(): void {
   const issues = analyzeDocument(editor.document.getText(), editor.document, config);
 
   if (issues.length === 0) {
-    vscode.window.showInformationMessage('No SEO issues found!');
+    vscode.window.showInformationMessage('RankCLI: No SEO issues found in current file.');
   } else {
-    vscode.window.showWarningMessage(`Found ${issues.length} SEO issue${issues.length > 1 ? 's' : ''}`);
+    vscode.window.showWarningMessage(
+      `RankCLI: Found ${issues.length} SEO issue${issues.length === 1 ? '' : 's'} in current file.`
+    );
   }
 }
 
-/**
- * Show SEO report command
- */
-function showReport(): void {
+function showReportCommand(): void {
+  if (lastAuditSummary) {
+    openReportWebview(lastAuditSummary, getWorkspaceRoot());
+    return;
+  }
+
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
-    vscode.window.showWarningMessage('No active editor');
+    vscode.window.showInformationMessage(
+      'Run "RankCLI: Audit Site URL" or "RankCLI: Audit Local Build Directory" to generate a full report.'
+    );
     return;
   }
 
-  const diagnostics = diagnosticCollection.get(editor.document.uri) || [];
-
+  const diagnostics = lintDiagnostics.get(editor.document.uri) || [];
   if (diagnostics.length === 0) {
-    vscode.window.showInformationMessage('No SEO issues in current file');
+    vscode.window.showInformationMessage(
+      'No SEO issues in current file. Run "RankCLI: Audit Site URL" for a full 280+ check audit.'
+    );
     return;
   }
 
-  // Show quick pick with all issues
-  const items = diagnostics.map(d => ({
-    label: `$(warning) ${d.code}`,
+  const items = diagnostics.map((d) => ({
+    label: `$(warning) ${String(d.code)}`,
     description: d.message,
     diagnostic: d,
   }));
 
-  vscode.window.showQuickPick(items, { placeHolder: 'SEO Issues' }).then(selected => {
+  vscode.window.showQuickPick(items, { placeHolder: 'RankCLI File Issues' }).then((selected) => {
     if (selected) {
       const range = selected.diagnostic.range;
       editor.selection = new vscode.Selection(range.start, range.end);
       editor.revealRange(range);
     }
   });
+}
+
+async function initConfigCommand(): Promise<void> {
+  const workspaceRoot = getWorkspaceRoot();
+  if (!workspaceRoot) {
+    vscode.window.showWarningMessage('Open a workspace folder to create rankcli.config.json.');
+    return;
+  }
+
+  const url = await vscode.window.showInputBox({
+    title: 'RankCLI: Create rankcli.config.json',
+    prompt: 'Production site URL for this project',
+    placeHolder: 'https://yoursite.com',
+    value: 'https://example.com',
+  });
+  if (!url) return;
+
+  const template = buildConfigTemplate(workspaceRoot, normalizeUrl(url));
+  const configPath = writeConfigFile(workspaceRoot, template);
+  const doc = await vscode.workspace.openTextDocument(configPath);
+  await vscode.window.showTextDocument(doc);
+  vscode.window.showInformationMessage(`Created ${path.basename(configPath)}.`);
 }

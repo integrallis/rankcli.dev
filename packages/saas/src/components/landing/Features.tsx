@@ -94,6 +94,13 @@ const features = [
     description:
       '`uses: integrallis/rankcli-action@v1` audits every deploy, comments on the pull request, and fails the build when SEO regresses.',
   },
+  {
+    icon: Terminal,
+    title: 'VS Code & Open VSX Extension',
+    description:
+      'Run all 280+ checks on any URL or local build folder inside VS Code, Cursor, or Windsurf, plus live HTML/JSX/Vue/Astro/Svelte and robots.txt AI-crawler linting.',
+    highlight: true,
+  },
 ];
 
 export function Features() {

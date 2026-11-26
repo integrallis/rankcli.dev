@@ -109,8 +109,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Type-check
+        run: pnpm typecheck
+
       - name: Run tests
         run: pnpm test
+
+      - name: Build and verify VSIX package
+        run: pnpm build && pnpm package && rm -f *.vsix
 
   # ---------------------------------------------------------------------------
   # ---------------------------------------------------------------------------
