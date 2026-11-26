@@ -76,11 +76,16 @@ export function AgentInstall() {
 
         <ScrollReveal className="text-center mt-10">
           <p className="text-sm text-muted-foreground">
-            Cursor, VS Code and Claude Desktop install in one click from{' '}
+            Cursor, VS Code and Claude Desktop install the MCP server in one click from{' '}
             <Link to="/docs#one-click-install" className="underline">
               the docs
             </Link>
             ; any other MCP client runs <code className="bg-muted px-1 rounded text-xs">npx @rankcli/mcp-server</code>.
+            For inline diagnostics and reports in VS Code, Cursor or Windsurf, install the{' '}
+            <Link to="/docs#vscode-extension" className="underline">
+              VS Code &amp; Open VSX extension
+            </Link>
+            .
           </p>
         </ScrollReveal>
       </div>

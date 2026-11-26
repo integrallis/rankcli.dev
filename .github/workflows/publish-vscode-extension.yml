@@ -1,0 +1,117 @@
+# =============================================================================
+# Publish VS Code Extension (VS Code Marketplace + Open VSX)
+# =============================================================================
+# Packages integrallis.rankcli-vscode as a .vsix after running typecheck, tests,
+# and esbuild, uploads the .vsix artifact, and publishes to the Visual Studio
+# Marketplace (VSCE_PAT) and Open VSX (OVSX_PAT).
+#
+# Required Secrets (GitHub repo Settings > Secrets > Actions):
+# - VSCE_PAT  (Azure DevOps PAT with Marketplace > Publish scope for `integrallis`)
+# - OVSX_PAT  (Open VSX access token for namespace `integrallis`)
+
+name: Publish VS Code Extension
+
+on:
+  push:
+    tags:
+      - 'vscode-v*'
+  workflow_dispatch:
+    inputs:
+      publish_marketplace:
+        description: 'Publish to Visual Studio Marketplace (requires VSCE_PAT)'
+        type: boolean
+        default: true
+      publish_openvsx:
+        description: 'Publish to Open VSX Registry (requires OVSX_PAT)'
+        type: boolean
+        default: true
+      dry_run:
+        description: 'Package .vsix and upload artifact only (skip publishing)'
+        type: boolean
+        default: false
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  build-and-publish:
+    name: Build, Test & Publish Extension
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check extension
+        working-directory: packages/vscode-extension
+        run: pnpm typecheck
+
+      - name: Run extension tests
+        working-directory: packages/vscode-extension
+        run: pnpm test
+
+      - name: Build and package .vsix
+        id: package
+        working-directory: packages/vscode-extension
+        run: |
+          pnpm build
+          pnpm package
+          VSIX_FILE=$(ls -1 *.vsix | head -n 1)
+          echo "vsix=$VSIX_FILE" >> "$GITHUB_OUTPUT"
+          echo "Packaged: $VSIX_FILE"
+
+      - name: Upload .vsix artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rankcli-vscode-vsix
+          path: packages/vscode-extension/${{ steps.package.outputs.vsix }}
+
+      - name: Publish to Visual Studio Marketplace
+        id: marketplace
+        if: inputs.dry_run != true && (github.event_name == 'push' || inputs.publish_marketplace == true)
+        working-directory: packages/vscode-extension
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          if [ -z "$VSCE_PAT" ]; then
+            echo "::warning::VSCE_PAT secret is not set; skipping Visual Studio Marketplace publish."
+            echo "status=skipped (missing VSCE_PAT)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          npx vsce publish --packagePath "${{ steps.package.outputs.vsix }}" -p "$VSCE_PAT"
+          echo "status=published" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to Open VSX Registry
+        id: openvsx
+        if: inputs.dry_run != true && (github.event_name == 'push' || inputs.publish_openvsx == true)
+        working-directory: packages/vscode-extension
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        run: |
+          if [ -z "$OVSX_PAT" ]; then
+            echo "::warning::OVSX_PAT secret is not set; skipping Open VSX publish."
+            echo "status=skipped (missing OVSX_PAT)" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          npx -y ovsx publish "${{ steps.package.outputs.vsix }}" -p "$OVSX_PAT"
+          echo "status=published" >> "$GITHUB_OUTPUT"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "## RankCLI VS Code Extension" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Package:** \`${{ steps.package.outputs.vsix }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **VS Code Marketplace:** ${{ steps.marketplace.outputs.status || 'skipped' }} — https://marketplace.visualstudio.com/items?itemName=integrallis.rankcli-vscode" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Open VSX:** ${{ steps.openvsx.outputs.status || 'skipped' }} — https://open-vsx.org/extension/integrallis/rankcli-vscode" >> "$GITHUB_STEP_SUMMARY"

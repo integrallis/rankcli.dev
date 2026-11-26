@@ -10,6 +10,7 @@ const footerLinks = {
     { label: 'For agencies', href: '/for-agencies' },
     { label: 'Pricing', href: '/pricing' },
     { label: 'Documentation', href: '/docs' },
+    { label: 'VS Code Extension', href: '/docs#vscode-extension' },
     { label: 'Changelog', href: '/changelog' },
   ],
   company: [

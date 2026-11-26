@@ -7,6 +7,11 @@ import frameworks from '@/config/frameworks.json';
 
 const highlights = [
   {
+    title: 'VS Code & Open VSX Extension (v0.1.0)',
+    description:
+      'Run all 280+ technical SEO and AI-search readiness checks directly inside VS Code, Cursor, Windsurf, and any Open VSX-compatible editor (integrallis.rankcli-vscode) with no account required. Audit live URLs or right-click a local build directory (dist, out, .output/public) to inspect findings in an interactive report panel and the Problems tab, lint robots.txt by AI crawler class (search, AI search, user fetchers, training) with one-click fixes, catch stray noindex tags and missing metadata on page documents without false positives on UI components, and honor rankcli.config.json CI gates.',
+  },
+  {
     title: 'v0.0.58: five findings from dogfooding, fixed',
     description:
       'Found by auditing a plain static site and reading the source behind each finding. An inline style block is no longer a render-blocking resource (the check had recommended inlining critical CSS and then counted it). A 401, 403, 405 or 429 from an external link is retried with a browser-like GET and, if still refused, is indeterminate rather than broken, so links to Medium stop being reported dead. /index.html is the homepage, so NAV_NOT_IN_HTML no longer reports zero links over ten static ones. The FAQ and plaintext-email recommendations now say what the checks accept. The auto-fixer writes a WebSite or WebPage from the page\'s own title and description, never a SoftwareApplication with a free Offer. A lazy-loaded image\'s origin no longer asks for a preconnect.',

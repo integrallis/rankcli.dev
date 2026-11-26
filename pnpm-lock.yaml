@@ -234,6 +234,10 @@ importers:
         version: 4.0.18(@types/node@22.19.11)(jsdom@27.4.0)(tsx@4.21.0)
 
   packages/vscode-extension:
+    dependencies:
+      '@rankcli/agent-runtime':
+        specifier: 0.0.46
+        version: 0.0.46(zod@4.3.6)
     devDependencies:
       '@types/node':
         specifier: ^20.10.0

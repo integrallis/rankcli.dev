@@ -96,6 +96,9 @@ pat.txt
 packages/mcp-server/mcpb-build/
 packages/mcp-server/*.mcpb
 
+# VS Code extension build output (built in CI, attached as artifact / published)
+packages/vscode-extension/*.vsix
+
 # Generated launcher, rebuilt from campaign-config.json on demand
 docs/launch/reddit-launcher.html
 docs/launch/reddit-comments.html

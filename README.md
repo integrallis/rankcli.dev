@@ -93,6 +93,13 @@ npx @rankcli/mcp-server
 ```
 A free hosted endpoint (`https://mcp.rankcli.dev/mcp/free`) is also available — no npx, no signup. For teams that want dashboard sync, GitHub auto-fix PRs, and scheduled monitoring, use the paid hosted endpoint (`https://mcp.rankcli.dev/mcp`) — see [`packages/mcp-server`](packages/mcp-server).
 
+### VS Code & Open VSX Extension
+Run all 280+ checks on live URLs or local build directories (`dist/`, `out/`, `.output/public/`), lint `robots.txt` by AI crawler class, and catch HTML/JSX/Vue/Astro/Svelte SEO issues as you type inside VS Code, Cursor, or Windsurf — free, local, no signup:
+```bash
+code --install-extension integrallis.rankcli-vscode
+```
+Available on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=integrallis.rankcli-vscode) and [Open VSX](https://open-vsx.org/extension/integrallis/rankcli-vscode) — see [`packages/vscode-extension`](packages/vscode-extension) and [rankcli.dev/docs#vscode-extension](https://rankcli.dev/docs#vscode-extension).
+
 ## CLI Commands
 
 | Command | Description |
