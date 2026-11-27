@@ -20,15 +20,15 @@
 
 ### VS Code Marketplace
 
-Search for **RankCLI** (`integrallis.rankcli-vscode`) in the Extensions view, or install via CLI:
+Search for **RankCLI** (`Integrallis.rankcli-vscode`) in the Extensions view, or install via CLI:
 
 ```bash
-code --install-extension integrallis.rankcli-vscode
+code --install-extension Integrallis.rankcli-vscode
 ```
 
 ### Open VSX (Cursor, Windsurf, VSCodium, Antigravity)
 
-Search for **RankCLI** (`integrallis.rankcli-vscode`) in your editor's Extensions view, or install from [Open VSX](https://open-vsx.org/extension/integrallis/rankcli-vscode).
+Search for **RankCLI** (`Integrallis.rankcli-vscode`) in your editor's Extensions view, or install from [Open VSX](https://open-vsx.org/extension/Integrallis/rankcli-vscode).
 
 ## Commands
 

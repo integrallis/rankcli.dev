@@ -16,4 +16,4 @@ All notable changes to the RankCLI VS Code extension will be documented in this 
 ### Fixed
 - **Component false positives**: `.jsx`, `.tsx`, `.vue`, `.astro`, and `.svelte` UI components are no longer flagged for missing `<title>`, `<meta description>`, Open Graph, Twitter Card, canonical, or `<h1>` tags unless the file is a page/document shell or defines page metadata.
 - **Framework metadata awareness**: Recognizes Next.js App Router `metadata`/`generateMetadata`, Nuxt `useSeoMeta`/`useHead`, `<Head>`, `<Helmet>`, `<svelte:head>`, JSX `alt={...}`, and icon links with `aria-label` or `<svg>`/`<img>`.
-- Published under the `integrallis` publisher (`integrallis.rankcli-vscode`) with Marketplace and Open VSX support.
+- Published under the `Integrallis` publisher (`Integrallis.rankcli-vscode`) with Marketplace and Open VSX support.

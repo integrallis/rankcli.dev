@@ -214,7 +214,7 @@ function GettingStartedSection() {
             <Link to="#vscode-extension" className="text-primary underline">
               VS Code &amp; Open VSX extension
             </Link>{' '}
-            (<code className="bg-muted px-1 rounded">integrallis.rankcli-vscode</code>) for inline linting and
+            (<code className="bg-muted px-1 rounded">Integrallis.rankcli-vscode</code>) for inline linting and
             full 280+ check audits. Or use the{' '}
             <a href="/dashboard" className="text-primary underline">web dashboard</a> directly in your browser.
           </p>
@@ -2083,18 +2083,18 @@ function VSCodeExtensionSection() {
         </h3>
         <p className="text-muted-foreground mb-4">
           Available on the Visual Studio Marketplace (VS Code) and Open VSX (Cursor, Windsurf, VSCodium,
-          Antigravity) under <code className="bg-muted px-1 rounded">integrallis.rankcli-vscode</code>.
+          Antigravity) under <code className="bg-muted px-1 rounded">Integrallis.rankcli-vscode</code>.
         </p>
 
         <div className="flex flex-wrap gap-3 mb-6">
           <a
-            href="vscode:extension/integrallis.rankcli-vscode"
+            href="vscode:extension/Integrallis.rankcli-vscode"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium"
           >
             Open in VS Code
           </a>
           <a
-            href="https://marketplace.visualstudio.com/items?itemName=integrallis.rankcli-vscode"
+            href="https://marketplace.visualstudio.com/items?itemName=Integrallis.rankcli-vscode"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-muted/40 hover:bg-muted transition-colors text-sm font-medium"
@@ -2102,7 +2102,7 @@ function VSCodeExtensionSection() {
             VS Code Marketplace
           </a>
           <a
-            href="https://open-vsx.org/extension/integrallis/rankcli-vscode"
+            href="https://open-vsx.org/extension/Integrallis/rankcli-vscode"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border bg-muted/40 hover:bg-muted transition-colors text-sm font-medium"
@@ -2112,7 +2112,7 @@ function VSCodeExtensionSection() {
         </div>
 
         <p className="text-sm text-muted-foreground mb-2">Or install from the terminal:</p>
-        <CodeBlock code="code --install-extension integrallis.rankcli-vscode" />
+        <CodeBlock code="code --install-extension Integrallis.rankcli-vscode" />
 
         <div className="mt-4 p-4 bg-green-500/10 border border-green-500/20 rounded-lg">
           <h4 className="font-medium text-green-600 dark:text-green-400 mb-1">Runs locally, no account needed</h4>

@@ -117,8 +117,8 @@ describe('manifest agreement & packaging safety', () => {
     }
   });
 
-  it('uses the integrallis publisher and ships an existing icon', () => {
-    expect(manifest.publisher).toBe('integrallis');
+  it('uses the Integrallis publisher and ships an existing icon', () => {
+    expect(manifest.publisher).toBe('Integrallis');
     expect(manifest.name).toBe('rankcli-vscode');
     expect(manifest.icon).toBe('images/icon.png');
     expect(fs.existsSync(path.join(__dirname, '..', manifest.icon))).toBe(true);

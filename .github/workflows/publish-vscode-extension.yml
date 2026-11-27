@@ -1,13 +1,13 @@
 # =============================================================================
 # Publish VS Code Extension (VS Code Marketplace + Open VSX)
 # =============================================================================
-# Packages integrallis.rankcli-vscode as a .vsix after running typecheck, tests,
+# Packages Integrallis.rankcli-vscode as a .vsix after running typecheck, tests,
 # and esbuild, uploads the .vsix artifact, and publishes to the Visual Studio
 # Marketplace (VSCE_PAT) and Open VSX (OVSX_PAT).
 #
 # Required Secrets (GitHub repo Settings > Secrets > Actions):
-# - VSCE_PAT  (Azure DevOps PAT with Marketplace > Publish scope for `integrallis`)
-# - OVSX_PAT  (Open VSX access token for namespace `integrallis`)
+# - VSCE_PAT  (Azure DevOps PAT with Marketplace > Publish scope for `Integrallis`)
+# - OVSX_PAT  (Open VSX access token for namespace `Integrallis`)
 
 name: Publish VS Code Extension
 
@@ -113,5 +113,5 @@ jobs:
           echo "## RankCLI VS Code Extension" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- **Package:** \`${{ steps.package.outputs.vsix }}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **VS Code Marketplace:** ${{ steps.marketplace.outputs.status || 'skipped' }} — https://marketplace.visualstudio.com/items?itemName=integrallis.rankcli-vscode" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Open VSX:** ${{ steps.openvsx.outputs.status || 'skipped' }} — https://open-vsx.org/extension/integrallis/rankcli-vscode" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **VS Code Marketplace:** ${{ steps.marketplace.outputs.status || 'skipped' }} — https://marketplace.visualstudio.com/items?itemName=Integrallis.rankcli-vscode" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Open VSX:** ${{ steps.openvsx.outputs.status || 'skipped' }} — https://open-vsx.org/extension/Integrallis/rankcli-vscode" >> "$GITHUB_STEP_SUMMARY"

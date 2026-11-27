@@ -129,14 +129,14 @@ plus button -> Add custom MCP server -> the URL above -> no authentication. The 
 
 ## 10. Publish the VS Code extension to VS Code Marketplace and Open VSX - five minutes
 
-`packages/vscode-extension` (`integrallis.rankcli-vscode`, v0.1.0) is built, tested, and wired to `.github/workflows/publish-vscode-extension.yml`. Publishing needs two publisher tokens stored as GitHub Actions secrets:
+`packages/vscode-extension` (`Integrallis.rankcli-vscode`, v0.1.0) is built, tested, and wired to `.github/workflows/publish-vscode-extension.yml`. Publishing needs two publisher tokens stored as GitHub Actions secrets:
 
 1. **VS Code Marketplace (`VSCE_PAT`):**
-   - Sign in at https://marketplace.visualstudio.com/manage and create (or verify) the `integrallis` publisher.
+   - Sign in at https://marketplace.visualstudio.com/manage and create (or verify) the `Integrallis` publisher.
    - In Azure DevOps (https://dev.azure.com -> User settings -> Personal access tokens), create a PAT with **Organization: All accessible organizations** and scope **Marketplace → Manage**.
    - Store it as a repo secret: `gh secret set VSCE_PAT`
 2. **Open VSX (`OVSX_PAT`, covers Cursor, Windsurf, VSCodium, Antigravity):**
-   - Sign in at https://open-vsx.org with GitHub, accept the Eclipse publisher agreement, create the `integrallis` namespace (`npx ovsx create-namespace integrallis -p <token>`), and generate an access token under Settings → Access Tokens.
+   - Sign in at https://open-vsx.org with GitHub, accept the Eclipse publisher agreement, create the `Integrallis` namespace (`npx ovsx create-namespace Integrallis -p <token>`), and generate an access token under Settings → Access Tokens.
    - Store it as a repo secret: `gh secret set OVSX_PAT`
 3. **Publish:**
    - Dispatch `.github/workflows/publish-vscode-extension.yml` from GitHub Actions (or push tag `vscode-v0.1.0`), or publish locally from `packages/vscode-extension`:

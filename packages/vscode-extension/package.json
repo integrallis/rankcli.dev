@@ -3,7 +3,7 @@
   "displayName": "RankCLI — SEO & AI Search Audit",
   "description": "280+ SEO and AI-search readiness checks in your editor: audit live URLs or build directories, lint robots.txt by AI bot class, and catch HTML/JSX/Vue/Astro/Svelte issues as you type.",
   "version": "0.1.0",
-  "publisher": "integrallis",
+  "publisher": "Integrallis",
   "license": "MIT",
   "icon": "images/icon.png",
   "galleryBanner": {
