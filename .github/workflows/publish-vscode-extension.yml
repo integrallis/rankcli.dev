@@ -1,13 +1,17 @@
 # =============================================================================
-# Publish VS Code Extension (VS Code Marketplace + Open VSX)
+# Publish VS Code Extension (VS Code Marketplace + Open VSX via Trusted Publishing)
 # =============================================================================
 # Packages Integrallis.rankcli-vscode as a .vsix after running typecheck, tests,
-# and esbuild, uploads the .vsix artifact, and publishes to the Visual Studio
-# Marketplace (VSCE_PAT) and Open VSX (OVSX_PAT).
+# and esbuild, uploads the .vsix artifact, and publishes to:
+# - Visual Studio Marketplace via OIDC Trusted Publishing (`--oidc`, no PAT)
+# - Open VSX via OIDC Trusted Publishing (or `OVSX_PAT` for the initial v0.1.0 publish)
 #
-# Required Secrets (GitHub repo Settings > Secrets > Actions):
-# - VSCE_PAT  (Azure DevOps PAT with Marketplace > Publish scope for `Integrallis`)
-# - OVSX_PAT  (Open VSX access token for namespace `Integrallis`)
+# One-time Trusted Publishing setup (see docs/FOUNDER_CHECKLIST.md §10):
+# - VS Marketplace: publisher Integrallis -> Trusted Publishing -> GitHub Actions
+#     owner: integrallis, repo: rankcli.dev, workflow: publish-vscode-extension.yml
+# - Open VSX: after the first publish with OVSX_PAT, add Trusted Publisher in
+#     Settings -> Trusted Publishers for integrallis/rankcli.dev (publish-vscode-extension.yml)
+#     and delete the OVSX_PAT secret.
 
 name: Publish VS Code Extension
 
@@ -18,11 +22,11 @@ on:
   workflow_dispatch:
     inputs:
       publish_marketplace:
-        description: 'Publish to Visual Studio Marketplace (requires VSCE_PAT)'
+        description: 'Publish to Visual Studio Marketplace (OIDC Trusted Publishing)'
         type: boolean
         default: true
       publish_openvsx:
-        description: 'Publish to Open VSX Registry (requires OVSX_PAT)'
+        description: 'Publish to Open VSX Registry (OIDC Trusted Publishing or OVSX_PAT)'
         type: boolean
         default: true
       dry_run:
@@ -37,6 +41,10 @@ jobs:
   build-and-publish:
     name: Build, Test & Publish Extension
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - uses: actions/checkout@v7
@@ -77,20 +85,13 @@ jobs:
           name: rankcli-vscode-vsix
           path: packages/vscode-extension/${{ steps.package.outputs.vsix }}
 
-      - name: Publish to Visual Studio Marketplace
+      - name: Publish to Visual Studio Marketplace (OIDC)
         id: marketplace
         if: inputs.dry_run != true && (github.event_name == 'push' || inputs.publish_marketplace == true)
         working-directory: packages/vscode-extension
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
         run: |
-          if [ -z "$VSCE_PAT" ]; then
-            echo "::warning::VSCE_PAT secret is not set; skipping Visual Studio Marketplace publish."
-            echo "status=skipped (missing VSCE_PAT)" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          npx vsce publish --packagePath "${{ steps.package.outputs.vsix }}" -p "$VSCE_PAT"
-          echo "status=published" >> "$GITHUB_OUTPUT"
+          npx -y @vscode/vsce@latest publish --packagePath "${{ steps.package.outputs.vsix }}" --oidc
+          echo "status=published (OIDC)" >> "$GITHUB_OUTPUT"
 
       - name: Publish to Open VSX Registry
         id: openvsx
@@ -99,13 +100,13 @@ jobs:
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
         run: |
-          if [ -z "$OVSX_PAT" ]; then
-            echo "::warning::OVSX_PAT secret is not set; skipping Open VSX publish."
-            echo "status=skipped (missing OVSX_PAT)" >> "$GITHUB_OUTPUT"
-            exit 0
+          if [ -n "$OVSX_PAT" ]; then
+            npx -y ovsx@latest publish "${{ steps.package.outputs.vsix }}" -p "$OVSX_PAT"
+            echo "status=published (token)" >> "$GITHUB_OUTPUT"
+          else
+            npx -y ovsx@latest publish "${{ steps.package.outputs.vsix }}"
+            echo "status=published (OIDC)" >> "$GITHUB_OUTPUT"
           fi
-          npx -y ovsx publish "${{ steps.package.outputs.vsix }}" -p "$OVSX_PAT"
-          echo "status=published" >> "$GITHUB_OUTPUT"
 
       - name: Summary
         if: always()

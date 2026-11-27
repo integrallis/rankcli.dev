@@ -127,22 +127,23 @@ Two submissions, the second optional:
 Until it is listed, any ChatGPT user can add the free endpoint themselves: Plugins -> the
 plus button -> Add custom MCP server -> the URL above -> no authentication. The site says so.
 
-## 10. Publish the VS Code extension to VS Code Marketplace and Open VSX - five minutes
+## 10. Set up Trusted Publishing for the VS Code extension (Marketplace + Open VSX) - five minutes
 
-`packages/vscode-extension` (`Integrallis.rankcli-vscode`, v0.1.0) is built, tested, and wired to `.github/workflows/publish-vscode-extension.yml`. Publishing needs two publisher tokens stored as GitHub Actions secrets:
+`packages/vscode-extension` (`Integrallis.rankcli-vscode`, v0.1.0) is wired to `.github/workflows/publish-vscode-extension.yml` using **OIDC Trusted Publishing** (`id-token: write`). Global Azure DevOps PATs retire on 2026-12-01, so no `VSCE_PAT` secret is needed.
 
-1. **VS Code Marketplace (`VSCE_PAT`):**
-   - Sign in at https://marketplace.visualstudio.com/manage and create (or verify) the `Integrallis` publisher.
-   - In Azure DevOps (https://dev.azure.com -> User settings -> Personal access tokens), create a PAT with **Organization: All accessible organizations** and scope **Marketplace → Manage**.
-   - Store it as a repo secret: `gh secret set VSCE_PAT`
-2. **Open VSX (`OVSX_PAT`, covers Cursor, Windsurf, VSCodium, Antigravity):**
-   - Sign in at https://open-vsx.org with GitHub, accept the Eclipse publisher agreement, create the `Integrallis` namespace (`npx ovsx create-namespace Integrallis -p <token>`), and generate an access token under Settings → Access Tokens.
-   - Store it as a repo secret: `gh secret set OVSX_PAT`
-3. **Publish:**
-   - Dispatch `.github/workflows/publish-vscode-extension.yml` from GitHub Actions (or push tag `vscode-v0.1.0`), or publish locally from `packages/vscode-extension`:
+1. **VS Code Marketplace (OIDC Trusted Publishing — no secret):**
+   - Open https://marketplace.visualstudio.com/manage/publishers/Integrallis → **Trusted Publishing** tab → add a GitHub Actions policy:
+     - **Repository Owner:** `integrallis`
+     - **Repository Name:** `rankcli.dev`
+     - **Workflow Filename:** `publish-vscode-extension.yml`
+   - Done: future runs of `publish-vscode-extension.yml` authenticate via `npx @vscode/vsce@latest publish --oidc`.
+2. **Open VSX (covers Cursor, Windsurf, VSCodium, Antigravity):**
+   - Sign in at https://open-vsx.org with GitHub and sign the Eclipse Publisher Agreement under **Settings → Publisher Agreement**.
+   - **First publish only (v0.1.0):** Open VSX requires one published version before Trusted Publishing can be attached. Generate a temporary token at https://open-vsx.org/user-settings/tokens, create the namespace and publish v0.1.0 once:
      ```bash
-     pnpm build && pnpm package
-     npx vsce publish --packagePath rankcli-vscode-0.1.0.vsix -p "$VSCE_PAT"
-     npx ovsx publish rankcli-vscode-0.1.0.vsix -p "$OVSX_PAT"
+     npx -y ovsx@latest create-namespace Integrallis -p "$OVSX_PAT"
+     npx -y ovsx@latest publish packages/vscode-extension/rankcli-vscode-0.1.0.vsix -p "$OVSX_PAT"
      ```
+   - **After v0.1.0 is live:** Go to **Settings → Trusted Publishers** on Open VSX, register GitHub Actions for `integrallis/rankcli.dev` (`publish-vscode-extension.yml`), and delete/revoke the temporary token. Subsequent workflow runs publish via OIDC with no secrets.
+3. **Future releases:** Bump `version` in `packages/vscode-extension/package.json` and `CHANGELOG.md`, push tag `vscode-v<version>` (or dispatch `publish-vscode-extension.yml`).
 
